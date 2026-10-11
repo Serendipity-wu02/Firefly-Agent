@@ -2429,7 +2429,9 @@ body {
 .preset-card.is-active {
   color: var(--rb-text-strong);
   background: rgba(var(--rb-accent-rgb), 0.16);
-  border-color: rgba(var(--rb-accent-rgb), 0.24);
+  border-color: rgb(var(--rb-accent-rgb));
+  box-shadow: inset 0 0 0 1px rgb(var(--rb-accent-rgb));
+  font-weight: 600;
 }
 
 .preset-card.is-disabled {
@@ -4866,7 +4868,6 @@ button:disabled, .save-btn:disabled, .ghost-btn:disabled { cursor: not-allowed; 
 .reasoning-levels__chip input:checked + span {
   border-color: rgb(var(--rb-accent-rgb)); background: rgb(var(--rb-accent-rgb)); color: #fff; font-weight: 600;
 }
-.reasoning-levels.is-locked .reasoning-levels__chip input:checked + span { opacity: .55; }
 .reasoning-levels__chip input:focus-visible + span { outline: 2px solid rgb(var(--rb-accent-rgb)); outline-offset: 2px; }
 .reasoning-levels__chip input:disabled,
 .reasoning-levels.is-locked .reasoning-levels__chip { cursor: not-allowed; }
@@ -4891,3 +4892,7 @@ button:disabled, .save-btn:disabled, .ghost-btn:disabled { cursor: not-allowed; 
 .model-picker__id { flex: 1 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-family: ui-monospace, SFMono-Regular, Consolas, monospace; }
 .model-picker__name { flex: none; max-width: 45%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--rb-text-muted); font-size: 12px; font-weight: 400; }
 .model-picker__empty { padding: 6px 10px; }
+
+/* 开关旁的文字标签：让"自动"这类开关一眼看懂在控制什么。 */
+.switch-with-label { display: inline-flex; flex: none; align-items: center; gap: 10px; }
+.switch-with-label__text { color: var(--rb-text-muted); font-size: 13px; }
