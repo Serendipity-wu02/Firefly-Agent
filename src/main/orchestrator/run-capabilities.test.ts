@@ -11,7 +11,6 @@ describe("resolveRunCapabilities", () => {
     tool("git_commit", ["code"]),
     tool("web_search"),
     tool("weather"),
-    tool("play_live2d_action", ["chat", "work"]),
     tool("fixture_chat_read", ["chat"], true),
     tool("fixture_chat_write", ["chat"], true),
   ];
@@ -44,16 +43,6 @@ describe("resolveRunCapabilities", () => {
     const result = resolveRunCapabilities({ ...input("chat"), chatToolsEnabled: true });
     expect([...result.toolIds]).toEqual(["fixture_chat_read", "fixture_chat_write"]);
     expect(result.skills).toEqual([]);
-  });
-
-  it("keeps the Live2D tool behind Chat opt-in but available in Work", () => {
-    expect(resolveRunCapabilities(input("chat")).toolIds.has("play_live2d_action")).toBe(false);
-    expect(resolveRunCapabilities({ ...input("chat"), chatToolsEnabled: true }).toolIds.has("play_live2d_action")).toBe(false);
-    expect(resolveRunCapabilities({
-      ...input("chat", { play_live2d_action: { chat: true } }),
-      chatToolsEnabled: true,
-    }).toolIds.has("play_live2d_action")).toBe(true);
-    expect(resolveRunCapabilities(input("work")).toolIds.has("play_live2d_action")).toBe(true);
   });
 
   it("exposes only explicitly opted-in tools for enhanced chat", () => {

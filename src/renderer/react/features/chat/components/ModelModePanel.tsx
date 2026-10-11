@@ -26,7 +26,7 @@ const PROVIDER_ORDER = [
   "Qwen（通义千问）",
   "DeepSeek（深度求索）",
   "Moonshot AI",
-  "火山引擎",
+  "OpenRouter",
 ];
 
 function getProviderLabel(provider: string | undefined, fallback: string): string {
@@ -42,7 +42,7 @@ function getProviderLabel(provider: string | undefined, fallback: string): strin
     qwen: "Qwen（通义千问）",
     deepseek: "DeepSeek（深度求索）",
     moonshot: "Moonshot AI",
-    volcengine: "火山引擎",
+    openrouter: "OpenRouter",
   };
   return map[provider.toLowerCase()] ?? provider;
 }
@@ -59,13 +59,14 @@ function getProviderIconUrl(provider: string | undefined): string | null {
   const key = (() => {
     if (normalized.includes("minimax")) return "minimax";
     if (normalized.includes("deepseek")) return "deepseek";
-    if (normalized.includes("火山") || normalized.includes("豆包") || normalized.includes("volcengine")) return "volcengine";
     if (normalized.includes("glm") || normalized.includes("智谱") || normalized.includes("zhipu")) return "glm";
     if (normalized.includes("kimi") || normalized.includes("moonshot")) return "kimi-light";
     if (normalized.includes("qwen") || normalized.includes("通义") || normalized.includes("dashscope")) return "qwen";
     if (normalized.includes("openai") || normalized.includes("chatgpt")) return "openai";
     if (normalized.includes("anthropic") || normalized.includes("claude")) return "claude";
     if (normalized.includes("mimo") || normalized.includes("小米")) return "xiaomimimo";
+    // OpenRouter 暂无官方图标：用通用占位图标（不引入第三方图标资源）
+    if (normalized.includes("openrouter")) return "custom-endpoint";
     if (normalized.includes("custom") || normalized.includes("自定义") || normalized.includes("本地模型")) return "custom-endpoint";
     return null;
   })();

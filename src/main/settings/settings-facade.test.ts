@@ -132,6 +132,14 @@ describe("tool switch persistence round trip (chatToolsEnabled + toolModeOverrid
     expect(JSON.parse(fs.readFileSync(settingsFile, "utf8"))).toEqual({ ...saved, launchAtLogin: true });
   });
 
+  it("ignores the removed GPU render switch left in an old settings file", async () => {
+    const settingsFile = path.join(electronMock.userDataDir, "app-settings.json");
+    fs.writeFileSync(settingsFile, JSON.stringify({ disableGpuElectron: true, chatSocialContextEnabled: true }));
+    const { loadGeneralSettings } = await importFresh();
+    expect(loadGeneralSettings()).not.toHaveProperty("disableGpuElectron");
+    expect(loadGeneralSettings()).toMatchObject({ chatSocialContextEnabled: true });
+  });
+
   it("reads retired settings without rewriting configuration or old Moments data", async () => {
     const settingsFile = path.join(electronMock.userDataDir, "app-settings.json");
     const original = JSON.stringify({ ...retiredMomentsSettings, chatSocialContextEnabled: true, asrEngine: "mossland" });
@@ -195,6 +203,13 @@ describe("tool switch persistence round trip (chatToolsEnabled + toolModeOverrid
   });
 });
 
+it("keeps the interface language to zh-CN or en and falls back to zh-CN for anything else", () => {
+  expect(normalizeGeneralSettings({}).language).toBe("zh-CN");
+  expect(normalizeGeneralSettings({ language: "en" } as never).language).toBe("en");
+  expect(normalizeGeneralSettings({ language: "ja" } as never).language).toBe("zh-CN");
+  expect(normalizeGeneralSettings({ language: "ko" } as never).language).toBe("zh-CN");
+});
+
 it("ignores retired TTS settings while preserving text, ordinary audio preferences and internal channel ASR", () => {
   const settings = normalizeGeneralSettings({ttsEngine: "mossland", ttsAutoRead: true,
     ttsMosslandKey: "synthetic-existing-channel-key", asrEngine: "mossland", toastSoundEnabled: true} as never);
@@ -208,4 +223,55 @@ it("normalizes valid custom colors and rejects malformed stored colors", () => {
   const colors = { enabled: true, accent: "#123456", background: "#ffffff", foreground: "#222222" };
   expect(normalizeGeneralSettings({ uiColors: colors }).uiColors).toEqual(colors);
   expect(normalizeGeneralSettings({ uiColors: { ...colors, accent: "url(secret)" } }).uiColors.accent).toBe("#0285ff");
+});
+
+describe("appearance typography settings", () => {
+  beforeEach(() => {
+    vi.resetModules();
+    electronMock.userDataDir = fs.mkdtempSync(path.join(os.tmpdir(), "firefly-settings-appearance-"));
+  });
+
+  it("defaults to the current real sizes and spacing", () => {
+    expect(normalizeGeneralSettings({})).toMatchObject({
+      chatLineHeight: 1.75,
+      chatParaSpacing: 0.5,
+      uiFontSize: 16,
+      chatFontSize: 14,
+      codeFontSize: 13,
+    });
+  });
+
+  it("reads a legacy archive with the removed corner-radius fields without keeping them", () => {
+    const settings = normalizeGeneralSettings({
+      chatLineHeight: 1.6,
+      windowCornerRadius: 30,
+      uiThemeRadius: true,
+    } as never);
+    expect(settings).toMatchObject({ chatLineHeight: 1.6, chatFontSize: 14, codeFontSize: 13, uiFontSize: 16 });
+    expect(settings).not.toHaveProperty("windowCornerRadius");
+    expect(settings).not.toHaveProperty("uiThemeRadius");
+  });
+
+  it("clamps out-of-range sizes on normalize", () => {
+    expect(normalizeGeneralSettings({ uiFontSize: 3, chatFontSize: 60, codeFontSize: 2, chatParaSpacing: 9 })).toMatchObject({
+      uiFontSize: 12,
+      chatFontSize: 22,
+      codeFontSize: 11,
+      chatParaSpacing: 1.2,
+    });
+  });
+
+  it("persists the typography values across a settings-store reopen", async () => {
+    const first = await import("./settings-facade");
+    first.saveGeneralSettings({ uiFontSize: 18, chatFontSize: 99, codeFontSize: 12, chatParaSpacing: 0.9, chatLineHeight: 1.9 });
+    vi.resetModules();
+    const reopened = await import("./settings-facade");
+    expect(reopened.loadGeneralSettings()).toMatchObject({
+      uiFontSize: 18,
+      chatFontSize: 22,
+      codeFontSize: 12,
+      chatParaSpacing: 0.9,
+      chatLineHeight: 1.9,
+    });
+  });
 });

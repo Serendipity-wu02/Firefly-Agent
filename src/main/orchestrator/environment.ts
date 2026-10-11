@@ -14,17 +14,18 @@ import { app } from "electron";
 import * as os from "os";
 import { listMcpServers } from "./mcp-manager";
 import { ACCESS_LEVEL_LABEL, getCurrentLevel } from "../permission";
-import { getCapability } from "./vendors/capabilities";
 import { resolveChatContextTimezone } from "../chat-time-context";
 import { getDateLocale } from "../locale-context";
 import { resolveUserAddress } from "../../shared/user-address";
 
 const LOG_PREFIX = "[Env]";
 
-/** 当前模型信息（用于查 capability 判断视觉等能力），可选。 */
+/** 当前模型信息（用于告诉模型它能不能看图），可选。 */
 export interface ModelInfo {
   provider: string;
   model: string;
+  /** 主模型能否直发图片：取自 ModelSettings.multimodal（唯一判定入口 resolveInputModalities）。 */
+  multimodal?: boolean;
 }
 
 /** 用户信息片段（由 index.ts 注入，避免循环依赖）。 */
@@ -156,11 +157,8 @@ export function buildEnvironmentContext(modelInfo?: ModelInfo, userInfo?: UserIn
   // 模型能力边界：把"你当前这个模型能不能看图"作为事实告诉模型，
   // 让它遇到图片问题时敢于说"我看不了"，而不是硬编。
   // 没传 modelInfo（比如降级路径）时保守地告诉它"看不了"。
-  let supportsVision = false;
-  if (modelInfo) {
-    const cap = getCapability(modelInfo.provider);
-    supportsVision = cap?.supportsVision ?? false;
-  }
+  // 能力判定不在这里重做：调用方传入的是已由 resolveInputModalities 得出的 multimodal。
+  const supportsVision = modelInfo?.multimodal === true;
   lines.push(`- 当前模型是否支持查看图片：${supportsVision ? "支持（可调 read_image 看图）" : "不支持（看不了图片，遇到图片问题必须如实说明，不许编造图片内容）"}`);
   lines.push("");
 

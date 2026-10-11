@@ -75,10 +75,21 @@ it("resolves new labels, tabs, configuration state and actions in English", () =
   expect(root.querySelector('[data-profile-action="delete"]')?.textContent).toBe("Delete");
 });
 
+it("offers the input type as an automatic, image, or text-only choice inside the advanced section, and no multimodal switch", () => {
+  document.body.innerHTML = html;
+  const editor = document.getElementById("profile-editor")!;
+  const choices = [...document.querySelectorAll<HTMLButtonElement>("#input-modalities-select .option-block")];
+  expect(choices.map(button => button.dataset.value)).toEqual(["auto", "image", "text"]);
+  expect(choices.find(button => button.dataset.value === "auto")?.getAttribute("aria-pressed")).toBe("true");
+  expect(document.getElementById("provider-advanced")!.contains(document.getElementById("input-modalities-hint"))).toBe(true);
+  expect(editor.textContent).not.toMatch(/多模态|profile-multimodal/);
+  expect(editor.querySelector('[id*="multimodal"]')).toBeNull();
+});
+
 it("does not expose the retired standalone status-panel control", () => {
   document.body.innerHTML = html;
   expect(document.getElementById("sidebar-visible")).toBeNull();
-  expect(document.getElementById("general-save-status")).not.toBeNull();
+  expect(document.getElementById("general-save-status")).toBeNull();
 });
 
 it("lists profiles as one column of cards with an add button below, and keeps routing outside the editor", () => {
@@ -100,14 +111,15 @@ it("groups the editor into connection, model and a collapsed advanced section, w
   expect(sections).toEqual(["provider-section-connection", "provider-section-model"]);
   expect(document.getElementById("provider-section-connection")!.closest("section")!.contains(document.getElementById("api-key"))).toBe(true);
   const model = document.getElementById("provider-section-model")!.closest("section")!;
-  for (const id of ["model-input", "fetch-models-btn", "fetch-models-picker", "context-window-input", "multimodal-toggle", "reasoning-levels-auto"]) {
+  for (const id of ["model-input", "fetch-models-btn", "fetch-models-picker", "context-window-input", "reasoning-levels-auto"]) {
     expect(model.contains(document.getElementById(id)), id).toBe(true);
   }
   const advanced = document.getElementById("provider-advanced") as HTMLDetailsElement;
   expect(advanced.open).toBe(false);
-  for (const id of ["timeout-test", "vision-base-url", "custom-endpoint-overrides", "test-vision-btn"]) {
+  for (const id of ["input-modalities-select", "timeout-test", "custom-endpoint-overrides"]) {
     expect(advanced.contains(document.getElementById(id)), id).toBe(true);
   }
+  expect(model.contains(document.getElementById("input-modalities-select"))).toBe(false);
   const footer = [...editor.querySelectorAll<HTMLButtonElement>(".provider-editor__footer button")].map(button => button.id || button.type);
   expect(footer).toEqual(["delete-profile-btn", "close-profile-editor", "test-connection-btn", "submit"]);
 });

@@ -133,4 +133,13 @@ describe("buildEnvironmentContext tool list removal (方案 B)", () => {
     expect(ctx).toContain("工具能否调用以本轮提供的工具清单为准");
     expect(ctx).toContain("高风险操作可能触发审批确认");
   });
+
+  it("tells the model whether it can see images, using the resolved multimodal flag the caller passes in", () => {
+    expect(buildEnvironmentContext({ provider: "ChatGPT（OpenAI）", model: "gpt-4o", multimodal: true }, undefined))
+      .toContain("当前模型是否支持查看图片：支持（可调 read_image 看图）");
+    expect(buildEnvironmentContext({ provider: "GLM（智谱）", model: "glm-5.2", multimodal: false }, undefined))
+      .toContain("当前模型是否支持查看图片：不支持");
+    // 没传 modelInfo（降级路径）保守地按"看不了"
+    expect(buildEnvironmentContext(undefined, undefined)).toContain("当前模型是否支持查看图片：不支持");
+  });
 });

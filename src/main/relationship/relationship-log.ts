@@ -8,7 +8,7 @@ export type RelationshipChannel = "desktop" | ChannelId
 export interface RelationshipTurnInput {
   userText: string
   assistantText: string
-  fireflyFeeling: string
+  fireflyFeeling?: string
   channel: RelationshipChannel
 }
 

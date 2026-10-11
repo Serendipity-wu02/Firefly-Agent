@@ -2,29 +2,17 @@ import { DEFAULT_UI_COLORS, normalizeUiColors } from "../../shared/ui-colors";
 import * as fs from "fs";
 import * as path from "path";
 import { logger, LogTag } from "../logger";
-import {
-  DEFAULT_WINDOW_CORNER_RADIUS,
-  normalizeWindowCornerRadius,
-} from "../../shared/window-corner-radius";
 import { DEFAULT_UI_FONT, normalizeUiFont } from "../../shared/ui-font";
-import {
-  DEFAULT_CUSTOM_STYLE,
-  normalizeCustomStyleConfig,
-  normalizeStyleId,
-} from "../../shared/style-sampling";
 import { normalizeUiTheme } from "../../shared/ui-theme";
 import { normalizeUiIcon } from "../../shared/ui-icon";
-import { normalizeChatAppearance } from "../../shared/chat-appearance";
+import { DEFAULT_CHAT_APPEARANCE, normalizeChatAppearance } from "../../shared/chat-appearance";
 import {
   normalizeChatSocialContextEnabled,
-  normalizeDefaultChatMode,
-  normalizeMobileMessageSegmentationMode,
   normalizeProactiveChatMode,
   normalizeProactiveDeliveryTarget,
   normalizeSegmentedOutputMode,
 } from "../../shared/preferences";
 import { normalizeWindowVisibilitySettings } from "../window-visibility-settings";
-import { normalizeCitaSettings } from "../cita/settings";
 import { getGeneralSettingsPath } from "../settings-store";
 import type { GeneralSettings } from "./general-settings";
 
@@ -40,8 +28,6 @@ import {
 const DEFAULT_GENERAL_SETTINGS: GeneralSettings = {
   plugins: {},
   maxParallelToolCalls: 4,
-  citaEnabled: false,
-  citaSemanticEngine: "remote",
   chatSocialContextEnabled: false,
   petAlwaysOnTop: true,
   petVisible: true,
@@ -52,15 +38,9 @@ const DEFAULT_GENERAL_SETTINGS: GeneralSettings = {
   language: "zh-CN",
   uiTheme: "pearl-white",
   uiColors: { ...DEFAULT_UI_COLORS },
-  windowCornerRadius: DEFAULT_WINDOW_CORNER_RADIUS,
-  uiThemeRadius: false,
   uiFont: DEFAULT_UI_FONT,
   uiIcon: "firefly",
-  defaultChatMode: "chat",
-  currentStyleId: "default",
-  customStyle: DEFAULT_CUSTOM_STYLE,
   segmentedOutputMode: "off",
-  mobileMessageSegmentation: "off",
   proactiveChatMode: "off",
   proactiveDeliveryTarget: "local",
 
@@ -88,7 +68,7 @@ const DEFAULT_GENERAL_SETTINGS: GeneralSettings = {
   asrAliyunAccessKeySecret: "",
   asrLanguage: "zh",
   screenshotHotkey: "Alt+Shift+S",
-  chatLineHeight: 1.75,
+  ...DEFAULT_CHAT_APPEARANCE,
   toolModeOverrides: {},
   chatToolsEnabled: false,
   skillModeOverrides: {},
@@ -122,10 +102,6 @@ export function normalizeGeneralSettings(
   input: Partial<GeneralSettings> | null | undefined,
 ): GeneralSettings {
   const windowVisibility = normalizeWindowVisibilitySettings(input);
-  const cita = normalizeCitaSettings({
-    enabled: input?.citaEnabled,
-    semanticEngine: input?.citaSemanticEngine,
-  });
   const clamp = (value: unknown, fallback: number) => {
     const num = typeof value === "number" ? value : Number(value);
     return Number.isFinite(num) ? Math.max(0, Math.min(100, Math.round(num))) : fallback;
@@ -151,8 +127,6 @@ export function normalizeGeneralSettings(
       ),
     ),
     maxParallelToolCalls: normalizeMaxParallelToolCalls(input?.maxParallelToolCalls),
-    citaEnabled: cita.enabled,
-    citaSemanticEngine: cita.semanticEngine,
     chatSocialContextEnabled: normalizeChatSocialContextEnabled(input?.chatSocialContextEnabled),
     petAlwaysOnTop: input?.petAlwaysOnTop === undefined
       ? DEFAULT_GENERAL_SETTINGS.petAlwaysOnTop
@@ -169,24 +143,17 @@ export function normalizeGeneralSettings(
     petWindowY: typeof input?.petWindowY === "number" && isFinite(input.petWindowY)
       ? Math.round(input.petWindowY)
       : undefined,
-    disableGpuElectron: input?.disableGpuElectron,
     sidebarVisible: windowVisibility.sidebarVisible,
     toastSoundEnabled: input?.toastSoundEnabled === undefined
       ? DEFAULT_GENERAL_SETTINGS.toastSoundEnabled
       : Boolean(input.toastSoundEnabled),
     launchAtLogin: Boolean(input?.launchAtLogin),
-    language: "zh-CN",
+    language: input?.language === "en" ? "en" : "zh-CN",
     uiTheme: normalizeUiTheme(input?.uiTheme),
     uiColors: normalizeUiColors(input?.uiColors),
-    windowCornerRadius: normalizeWindowCornerRadius(input?.windowCornerRadius),
-    uiThemeRadius: input?.uiThemeRadius ?? true,
     uiFont: normalizeUiFont(input?.uiFont),
     uiIcon: normalizeUiIcon(input?.uiIcon),
-    defaultChatMode: normalizeDefaultChatMode(input?.defaultChatMode),
-    currentStyleId: normalizeStyleId(input?.currentStyleId),
-    customStyle: normalizeCustomStyleConfig(input?.customStyle),
     segmentedOutputMode: normalizeSegmentedOutputMode(input?.segmentedOutputMode),
-    mobileMessageSegmentation: normalizeMobileMessageSegmentationMode(input?.mobileMessageSegmentation),
     proactiveChatMode: normalizeProactiveChatMode(input?.proactiveChatMode),
     proactiveDeliveryTarget: normalizeProactiveDeliveryTarget(input?.proactiveDeliveryTarget),
 

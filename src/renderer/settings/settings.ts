@@ -11,13 +11,9 @@ import "./settings.css";
 import "../ui/theme";
 import {
   normalizeChatSocialContextEnabled,
-  normalizeDefaultChatMode,
-  normalizeMobileMessageSegmentationMode,
   normalizeProactiveChatMode,
   normalizeProactiveDeliveryTarget,
   normalizeSegmentedOutputMode,
-  type DefaultChatMode,
-  type MobileMessageSegmentationMode,
   type ProactiveChatMode,
   type ProactiveDeliveryTarget,
   type SegmentedOutputMode,
@@ -26,22 +22,20 @@ import { isProactiveDeliveryTargetSelectable } from "../../shared/proactive-deli
 import { normalizeUiTheme, type UiTheme } from "../../shared/ui-theme";
 import { DEFAULT_UI_FONT, normalizeUiFont, type UiFont } from "../../shared/ui-font";
 import { normalizeUiIcon, type UiIcon } from "../../shared/ui-icon";
-import {
-  DEFAULT_WINDOW_CORNER_RADIUS,
-  normalizeWindowCornerRadius,
-} from "../../shared/window-corner-radius";
-import { applyWindowCornerRadius } from "../ui/window-corner-radius";
-import { getCitaUiState } from "./cita-settings-state";
 import { type ReasoningPreference } from "../../shared/reasoning";
 import { resolveApiEndpoint, type ApiTransport } from "../../shared/api-endpoint";
-import type { ChatAppearanceSettings } from "../../shared/chat-appearance";
 import {
-  DEFAULT_CUSTOM_STYLE,
-  normalizeCustomStyleConfig,
-  type CustomStyleConfig,
-  type DiversityPreference,
-  type RepetitionLevel,
-} from "../../shared/style-sampling";
+  CHAT_FONT_SIZE_MAX,
+  CHAT_FONT_SIZE_MIN,
+  CODE_FONT_SIZE_MAX,
+  CODE_FONT_SIZE_MIN,
+  DEFAULT_CHAT_APPEARANCE,
+  UI_FONT_SIZE_MAX,
+  UI_FONT_SIZE_MIN,
+  clampFiniteNumber,
+  normalizeChatAppearance,
+  type ChatAppearanceSettings,
+} from "../../shared/chat-appearance";
 import {
   CUSTOM_ENDPOINT_PROVIDERS,
   getCustomEndpointMode,
@@ -66,22 +60,21 @@ import { channelsWechatEnabledEl, channelsFeishuEnabledEl, channelsWechatStatusE
 import { memoryImportedList } from "./memory/dom";
 import { schedulerState } from "./scheduler/state";
 import { schedulerNewBtn, schedulerEmpty, schedulerList, schedulerEditor, schedulerEditorTitle, schedulerEditorClose, schedulerTitleInput, schedulerPromptInput, schedulerEnabledInput, schedulerKindInput, schedulerOnceRunAtInput, schedulerTimeOfDayInput, schedulerDayOfWeekInput, schedulerIntervalEveryInput, schedulerIntervalUnitInput, schedulerToolLimitInput, schedulerToolPicker, schedulerToolEmptyHint, schedulerSaveStatus, schedulerCancelBtn, schedulerSaveBtn } from "./scheduler/dom";
-import { tokensState } from "./tokens/state";
 import { modalState } from "./shared/modal-state";
 import { formatDateTime, escapeHtml } from "./shared/format";
 import { parsePositiveIntOrThrow, parseCommandLine } from "./shared/parse";
 import { apiState, type SavedProfileLite } from "./api/state";
 import { bindReasoningLevels, readReasoningLevels, writeReasoningLevels } from "./api/reasoning-levels";
 import { createModelPicker } from "./api/model-picker";
-import { apiForm, apiRuntimeForm, presetCards, profileList, profileListCount, profileEditorTitle, deleteProfileBtn, presetWebsiteLink, displayNameInput, baseUrlInput, baseUrlResetBtn, modelInput, modelInputSuggestions, contextWindowInput, apiKeyInput, apiKeyLabel, apiKeyHint, testConnectionBtn, transportSelect, transportHint, endpointPreview, customEndpointControls, customEndpointOverrides, customEndpointSummary, customEndpointGuideBtn, workFlowAdaptBtn, apiNoteText, multimodalToggle, fetchModelsBtn, fetchModelsStatus, fetchModelsPicker, fetchModelsSearch, fetchModelsList, fetchModelsEmpty, embeddingDimensionsInput, toggleEnableThinking, toggleDisableThinking, toggleDisableMaxToken } from "./api/dom";
-import { visionBaseUrlInput, visionApiKeyInput, visionModelInput, visionFieldsWrap, testVisionBtn, visionTestStatus } from "./vision/dom";
-import { appearanceForm, appearanceSaveStatus, runtimeSyncSelect, runtimeSyncNote, windowCornerRadiusInput, windowCornerRadiusVal, petAlwaysOnTopInput, petVisibleInput, petZoomInput, petZoomVal, chatLineHeightInput, chatLineHeightVal, chatParaSpacingInput, chatParaSpacingVal, launchAtLoginInput, uiFontCurrent, uiFontImportButton, uiFontResetButton, uiIconSelect, uiThemeSelect, screenshotHotkeyInput, openChromeGpu, disableGpuInput, toastSoundEnabledInput } from "./appearance/dom";
-import { generalForm, generalSaveStatus, languageSelect, defaultChatModeSelect, segmentedOutputSelect, mobileMessageSegmentationSelect, proactiveChatSelect, proactiveDeliveryRow, proactiveDeliverySelect, chatSocialContextEnabledInput, citaEnabledInput, citaEngineSelect, customStyleSamplingBtn, customStylePromptBtn } from "./general/dom";
+import { createInputModalitiesPanel, declarationOf, type InputModalitiesPanel } from "./api/input-modalities";
+import { inputModalitiesSelect, inputModalitiesHint } from "./api/dom";
+import type { InputModality } from "../../shared/input-modalities";
+import { apiForm, apiRuntimeForm, presetCards, profileList, profileListCount, profileEditorTitle, deleteProfileBtn, presetWebsiteLink, displayNameInput, baseUrlInput, baseUrlResetBtn, modelInput, modelInputSuggestions, contextWindowInput, apiKeyInput, apiKeyLabel, apiKeyHint, testConnectionBtn, transportSelect, transportHint, endpointPreview, customEndpointControls, customEndpointOverrides, customEndpointSummary, customEndpointGuideBtn, workFlowAdaptBtn, apiNoteText, fetchModelsBtn, fetchModelsStatus, fetchModelsPicker, fetchModelsSearch, fetchModelsList, fetchModelsEmpty, embeddingDimensionsInput, toggleEnableThinking, toggleDisableThinking, toggleDisableMaxToken } from "./api/dom";
+import { appearanceForm, appearanceSaveStatus, petAlwaysOnTopInput, petVisibleInput, petZoomInput, petZoomVal, chatLineHeightInput, chatLineHeightVal, chatParaSpacingInput, chatParaSpacingVal, uiFontCurrent, uiFontSelect, uiFontCustomOption, uiFontImportButton, uiFontResetButton, uiFontSizeInput, chatFontSizeInput, codeFontSizeInput, uiIconSelect, uiThemeSelect, screenshotHotkeyInput } from "./appearance/dom";
+import { generalForm, languageSelect, segmentedOutputSelect, proactiveChatSelect, proactiveDeliveryRow, proactiveDeliverySelect, chatSocialContextEnabledInput, toastSoundEnabledInput, launchAtLoginInput, desktopSaveStatus } from "./general/dom";
 import { minBtn, closeBtn, preferencesForm, sectionTitle, sectionHint, placeholderPanel, fireflyPanel, disclaimerPanel, pluginsPanel, placeholderIcon, placeholderTitle, placeholderCopy, saveStatus, runtimeSaveStatus, preferencesSaveStatus, fireflySaveStatus, openStickerManagerBtn, addStickerBtn } from "./shared/shell";
 import { pluginAddBtn, permissionBlocksWrap, permissionNote } from "./plugins/dom";
-import { preferencesState } from "./preferences/state";
 import { stickerEnabledInput, stickerSizeSelect, stickerThresholdInput, stickerThresholdVal, stickerAddOverlay, stickerAddPickBtn, stickerAddFileName, stickerAddId, stickerAddDesc, stickerAddPhrases, stickerAddError, stickerAddConfirm, stickerAddCancel } from "./preferences/dom";
-import { diversityDriverOf, diversityValueOf } from "./preferences/style-utils";
 import { pluginsState } from "./plugins/state";
 import type {
   GeneralSettings,
@@ -97,7 +90,7 @@ import { MODEL_PRESETS } from "./api/presets";
 import { showConfirm, showHtmlModal, showInputModal } from "./shared/modal";
 import {
   setSaveStatus, setFireflySaveStatus, setPreferencesSaveStatus, setAppearanceSaveStatus,
-  setGeneralSaveStatus, setRuntimeSaveStatus,
+  setRuntimeSaveStatus,
 } from "./shared/save-status";
 import { renderEmptyState, renderInfoList } from "./shared/render";
 import { shallowEqual, safeGet } from "./shared/utils";
@@ -122,8 +115,8 @@ import "./plugins/permission";  // 副作用导入：权限档位 UI + 风险确
 import "./rag/panel";  // 副作用导入：RAG 模型切换 + Reranker 模式
 import "./preferences/panel";  // 副作用导入：截图热键捕获 + 表情包列表/添加/删除
 import "./mcp/panel";  // 副作用导入：MCP Server 添加/删除/启停 + 自定义端点接入说明
-import "./tokens/panel";  // 副作用导入：Token 用量图表 + 时间范围切换
 import { t, subscribeLocaleChanged } from "./i18n";
+import { renderStickerSendStatus } from "./preferences/sticker-send-status";
 
 // Inline modal (to avoid Vite tree-shaking)
 
@@ -162,39 +155,25 @@ if (!window.settings) {
         baseUrl: "https://api.deepseek.com",
         model: "deepseek-v4-pro",
         apiKey: "",
-        runtimeSync: "off",
         stickerEnabled: false,
         stickerSize: "standard",
         stickerSimilarityThreshold: 0.55,
         chatRequestTimeoutSec: 300,
-        citaRepairBudgetSec: 8,
-        multimodal: true,
       }),
     saveConfig: (c) => Promise.resolve(c as ModelSettings),
     getGeneral: () => Promise.resolve({
       maxParallelToolCalls: 4,
-      citaEnabled: false,
-      citaSemanticEngine: "remote",
       petAlwaysOnTop: true,
       petVisible: true,
       petZoom: 1,
-      chatLineHeight: 1.75,
-      chatParaSpacing: 0.5,
+      ...DEFAULT_CHAT_APPEARANCE,
       sidebarVisible: true,
-      toastSoundEnabled: true,
-      launchAtLogin: false,
       language: "zh-CN",
       uiTheme: "pearl-white",
       uiColors: { ...DEFAULT_UI_COLORS },
-      uiThemeRadius: false,
       uiFont: DEFAULT_UI_FONT,
       uiIcon: "firefly",
-      windowCornerRadius: DEFAULT_WINDOW_CORNER_RADIUS,
-      defaultChatMode: "chat",
-      currentStyleId: "default",
-      customStyle: DEFAULT_CUSTOM_STYLE,
       segmentedOutputMode: "off",
-      mobileMessageSegmentation: "off",
       proactiveChatMode: "off",
       proactiveDeliveryTarget: "local",
       chatSocialContextEnabled: false,
@@ -218,7 +197,6 @@ if (!window.settings) {
       emailFromName: "",
     }),
     saveGeneral: (c) => Promise.resolve(c as GeneralSettings),
-    openCustomStylePrompt: async () => ({ ok: false, error: "settings api unavailable" }),
     channelsGetConfig: () => Promise.resolve({ wechat: {}, feishu: {}, qq: {} }),
     channelsSaveConfig: () => Promise.resolve({}),
     channelsRestart: () => Promise.resolve({ ok: false }),
@@ -241,14 +219,12 @@ if (!window.settings) {
     endScreenshotHotkeyCapture: () => Promise.resolve(true),
     openSidebar: () => {},
     closeSidebar: () => {},
-    openChromeGpu: () => {},
     setPetAlwaysOnTop: () => {},
     setPetVisible: () => {},
     setPetZoom: () => {},
     pickUiFont: () => Promise.resolve(null),
     importUiFont: () => Promise.resolve(DEFAULT_UI_FONT),
     resetUiFont: () => Promise.resolve(DEFAULT_UI_FONT),
-    previewRuntimeSync: () => {},
     openStickerManager: async () => ({ ok: false, error: "settings api unavailable" }),
     stickerPickFile: async () => null,
     stickerAdd: async () => { throw new Error("settings api unavailable"); },
@@ -289,7 +265,6 @@ if (!window.fireflyScheduler) {
 // 用户看到的是"昵称"框——给模型起自定义名字，状态栏"正在喂养"显示它。
 // API 协议下拉（openai / anthropic）—— 不根据 URL 自动猜测。
 
-// 视觉模型配置区元素
 
 // 高级运行设置
 
@@ -310,12 +285,11 @@ const NAV_LABELS: Record<string, { emoji: string; title: string; hint: string }>
   plugins: { emoji: "🔌", title: t("settings.nav.plugins"), hint: t("settings.nav.pluginsHint") },
   preferences: { emoji: `<svg width="24" height="24" viewBox="0 0 48 48" fill="none" aria-hidden="true" style="vertical-align:-3px"><title>偏好设置</title><path d="M12 35.0137H9H4V8.01273C4 6.90868 4.89543 6.01367 6 6.01367H42C43.1046 6.01367 44 6.90868 44 8.01273V35.0137H36" stroke="currentColor" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/><path d="M24 32L14 42H34L24 32Z" fill="none" stroke="currentColor" stroke-width="4" stroke-linejoin="round"/></svg>`, title: "偏好设置", hint: "设置聊天窗口和输出行为的默认偏好" },
   appearance: { emoji: `<svg width="24" height="24" viewBox="0 0 48 48" fill="none" aria-hidden="true" style="vertical-align:-3px"><title>外观设置</title><path d="M24 44C29.9601 44 26.3359 35.136 30 31C33.1264 27.4709 44 29.0856 44 24C44 12.9543 35.0457 4 24 4C12.9543 4 4 12.9543 4 24C4 35.0457 12.9543 44 24 44Z" fill="none" stroke="currentColor" stroke-width="4" stroke-linejoin="round"/><path d="M28 17C29.6569 17 31 15.6569 31 14C31 12.3431 29.6569 11 28 11C26.3431 11 25 12.3431 25 14C25 15.6569 26.3431 17 28 17Z" fill="none" stroke="currentColor" stroke-width="4" stroke-linejoin="round"/><path d="M16 21C17.6569 21 19 19.6569 19 18C19 16.3431 17.6569 15 16 15C14.3431 15 13 16.3431 13 18C13 19.6569 14.3431 21 16 21Z" fill="none" stroke="currentColor" stroke-width="4" stroke-linejoin="round"/><path d="M17 34C18.6569 34 20 32.6569 20 31C20 29.3431 18.6569 28 17 28C15.3431 28 14 29.3431 14 31C14 32.6569 15.3431 34 17 34Z" fill="none" stroke="currentColor" stroke-width="4" stroke-linejoin="round"/></svg>`, title: "外观设置", hint: "调整窗口布局、界面主题与流萤桌宠" },
-  general: { emoji: `<svg width="24" height="24" viewBox="0 0 48 48" fill="none" aria-hidden="true" style="vertical-align:-3px"><title>通用设置</title><path d="M18.2838 43.1713C14.9327 42.1736 11.9498 40.3213 9.58787 37.867C10.469 36.8227 11 35.4734 11 34.0001C11 30.6864 8.31371 28.0001 5 28.0001C4.79955 28.0001 4.60139 28.01 4.40599 28.0292C4.13979 26.7277 4 25.3803 4 24.0001C4 21.9095 4.32077 19.8938 4.91579 17.9995C4.94381 17.9999 4.97188 18.0001 5 18.0001C8.31371 18.0001 11 15.3138 11 12.0001C11 11.0488 10.7786 10.1493 10.3846 9.35011C12.6975 7.1995 15.5205 5.59002 18.6521 4.72314C19.6444 6.66819 21.6667 8.00013 24 8.00013C26.3333 8.00013 28.3556 6.66819 29.3479 4.72314C32.4795 5.59002 35.3025 7.1995 37.6154 9.35011C37.2214 10.1493 37 11.0488 37 12.0001C37 15.3138 39.6863 18.0001 43 18.0001C43.0281 18.0001 43.0562 17.9999 43.0842 17.9995C43.6792 19.8938 44 21.9095 44 24.0001C44 25.3803 43.8602 26.7277 43.594 28.0292C43.3986 28.01 43.2005 28.0001 43 28.0001C39.6863 28.0001 37 30.6864 37 34.0001C37 35.4734 37.531 36.8227 38.4121 37.867C36.0502 40.3213 33.0673 42.1736 29.7162 43.1713C28.9428 40.752 26.676 39.0001 24 39.0001C21.324 39.0001 19.0572 40.752 18.2838 43.1713Z" fill="none" stroke="currentColor" stroke-width="4" stroke-linejoin="round"/><path d="M24 31C27.866 31 31 27.866 31 24C31 20.134 27.866 17 24 17C20.134 17 17 20.134 17 24C17 27.866 20.134 31 24 31Z" fill="none" stroke="currentColor" stroke-width="4" stroke-linejoin="round"/></svg>`, title: "通用设置", hint: "管理窗口、音频和系统行为" },
+  general: { emoji: `<svg width="24" height="24" viewBox="0 0 48 48" fill="none" aria-hidden="true" style="vertical-align:-3px"><title>通用设置</title><path d="M18.2838 43.1713C14.9327 42.1736 11.9498 40.3213 9.58787 37.867C10.469 36.8227 11 35.4734 11 34.0001C11 30.6864 8.31371 28.0001 5 28.0001C4.79955 28.0001 4.60139 28.01 4.40599 28.0292C4.13979 26.7277 4 25.3803 4 24.0001C4 21.9095 4.32077 19.8938 4.91579 17.9995C4.94381 17.9999 4.97188 18.0001 5 18.0001C8.31371 18.0001 11 15.3138 11 12.0001C11 11.0488 10.7786 10.1493 10.3846 9.35011C12.6975 7.1995 15.5205 5.59002 18.6521 4.72314C19.6444 6.66819 21.6667 8.00013 24 8.00013C26.3333 8.00013 28.3556 6.66819 29.3479 4.72314C32.4795 5.59002 35.3025 7.1995 37.6154 9.35011C37.2214 10.1493 37 11.0488 37 12.0001C37 15.3138 39.6863 18.0001 43 18.0001C43.0281 18.0001 43.0562 17.9999 43.0842 17.9995C43.6792 19.8938 44 21.9095 44 24.0001C44 25.3803 43.8602 26.7277 43.594 28.0292C43.3986 28.01 43.2005 28.0001 43 28.0001C39.6863 28.0001 37 30.6864 37 34.0001C37 35.4734 37.531 36.8227 38.4121 37.867C36.0502 40.3213 33.0673 42.1736 29.7162 43.1713C28.9428 40.752 26.676 39.0001 24 39.0001C21.324 39.0001 19.0572 40.752 18.2838 43.1713Z" fill="none" stroke="currentColor" stroke-width="4" stroke-linejoin="round"/><path d="M24 31C27.866 31 31 27.866 31 24C31 20.134 27.866 17 24 17C20.134 17 17 20.134 17 24C17 27.866 20.134 31 24 31Z" fill="none" stroke="currentColor" stroke-width="4" stroke-linejoin="round"/></svg>`, title: "通用设置", hint: t("settings.nav.generalHint") },
   api: { emoji: `<svg width="24" height="24" viewBox="0 0 48 48" fill="none" aria-hidden="true" style="vertical-align:-3px"><title>API 设置</title><g clip-path="url(#api-key-nav-clip)"><circle cx="15" cy="33" r="8" fill="none" stroke="currentColor" stroke-width="4"/><path d="M29 16L35.5 22" stroke="currentColor" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/><path d="M20 26L37 7" stroke="currentColor" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/><path d="M35 11L42 17.5" stroke="currentColor" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/></g><defs><clipPath id="api-key-nav-clip"><rect width="48" height="48" fill="none"/></clipPath></defs></svg>`, title: "API 设置", hint: "选择预设后只需要填写 API Key。" },
   "api-advanced": { emoji: `<svg width="24" height="24" viewBox="0 0 48 48" fill="none" aria-hidden="true" style="vertical-align:-3px"><title>高级设置</title><path d="M34.0003 41L44 24L34.0003 7H14.0002L4 24L14.0002 41H34.0003Z" fill="none" stroke="currentColor" stroke-width="4" stroke-linejoin="round"/><path d="M24 29C26.7614 29 29 26.7614 29 24C29 21.2386 26.7614 19 24 19C21.2386 19 19 21.2386 19 24C19 26.7614 21.2386 29 24 29Z" fill="none" stroke="currentColor" stroke-width="4" stroke-linejoin="round"/></svg>`, title: "高级设置", hint: "配置 API 超时时间、调用模式．" },
   firefly: { emoji: "🌸", title: t("settings.nav.firefly"), hint: t("settings.nav.fireflyHint") },
 
-	  tokens: { emoji: `<svg width="24" height="24" viewBox="0 0 48 48" fill="none" aria-hidden="true" style="vertical-align:-3px"><title>Token 用量</title><path d="M4 42H44" stroke="currentColor" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/><rect x="8" y="28" width="6" height="14" fill="none" stroke="currentColor" stroke-width="4" stroke-linejoin="round"/><rect x="21" y="18" width="6" height="24" fill="none" stroke="currentColor" stroke-width="4" stroke-linejoin="round"/><rect x="34" y="6" width="6" height="36" fill="none" stroke="currentColor" stroke-width="4" stroke-linejoin="round"/></svg>`, title: "Token 用量", hint: "查看 API 调用统计与消耗" },
 	  disclaimer: { emoji: `<svg width="24" height="24" viewBox="0 0 48 48" fill="none" aria-hidden="true" style="vertical-align:-3px"><title>免责声明</title><rect x="13" y="10" width="28" height="34" fill="none" stroke="currentColor" stroke-width="4" stroke-linejoin="round"/><path d="M35 10V4H8C7.44772 4 7 4.44772 7 5V38H13" stroke="currentColor" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/><path d="M21 22H33" stroke="currentColor" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/><path d="M21 30H33" stroke="currentColor" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/></svg>`, title: "免责声明", hint: "使用条款与隐私说明" },
 };
 
@@ -335,23 +309,6 @@ async function saveAppearancePatch(patch: Partial<GeneralSettings>, successText 
   }
 }
 
-function getRuntimeSyncValue(): "off" | "local" | "llm" {
-  const v = runtimeSyncSelect.querySelector<HTMLButtonElement>(".option-block.is-active")?.dataset.value; return v === "llm" ? "llm" : v === "local" ? "local" : "off";
-}
-
-function applyRuntimeSyncSelection(value: "off" | "local" | "llm"): void {
-  runtimeSyncSelect.querySelectorAll<HTMLButtonElement>(".option-block").forEach((button) => {
-    const active = button.dataset.value === value;
-    button.classList.toggle("is-active", active);
-    button.setAttribute("aria-pressed", String(active));
-  });
-  syncRuntimeNote();
-}
-
-function syncRuntimeNote(): void {
-  runtimeSyncNote.classList.toggle("is-hidden", getRuntimeSyncValue() !== "llm");
-}
-
 function getStickerSizeValue(): "small" | "standard" | "large" {
   const value = stickerSizeSelect.querySelector<HTMLButtonElement>(".option-block.is-active")?.dataset.value;
   return value === "small" || value === "large" ? value : "standard";
@@ -365,7 +322,13 @@ function applyStickerSizeSelection(value: "small" | "standard" | "large"): void 
   });
 }
 
-function applyLanguageSelection(language: "zh-CN"): void {
+type UiLanguage = "zh-CN" | "en";
+
+function normalizeUiLanguage(value: unknown): UiLanguage {
+  return value === "en" ? "en" : "zh-CN";
+}
+
+function applyLanguageSelection(language: UiLanguage): void {
   languageSelect.querySelectorAll<HTMLButtonElement>(".language-option").forEach((button) => {
     const active = button.dataset.lang === language;
     button.classList.toggle("is-active", active);
@@ -385,28 +348,12 @@ function getOptionGroupValue(group: HTMLElement, fallback: string): string {
   return group.querySelector<HTMLButtonElement>(".option-block.is-active")?.dataset.value ?? fallback;
 }
 
-function applyDefaultChatModeSelection(mode: DefaultChatMode): void {
-  applyOptionGroupValue(defaultChatModeSelect, mode);
-}
-
-function getDefaultChatModeValue(): DefaultChatMode {
-  return normalizeDefaultChatMode(getOptionGroupValue(defaultChatModeSelect, "chat"));
-}
-
 function applySegmentedOutputSelection(mode: SegmentedOutputMode): void {
   applyOptionGroupValue(segmentedOutputSelect, mode);
 }
 
 function getSegmentedOutputValue(): SegmentedOutputMode {
   return normalizeSegmentedOutputMode(getOptionGroupValue(segmentedOutputSelect, "off"));
-}
-
-function applyMobileMessageSegmentationSelection(mode: MobileMessageSegmentationMode): void {
-  applyOptionGroupValue(mobileMessageSegmentationSelect, mode);
-}
-
-function getMobileMessageSegmentationValue(): MobileMessageSegmentationMode {
-  return normalizeMobileMessageSegmentationMode(getOptionGroupValue(mobileMessageSegmentationSelect, "off"));
 }
 
 function applyProactiveChatSelection(mode: ProactiveChatMode): void {
@@ -425,121 +372,6 @@ function getProactiveDeliveryValue(): ProactiveDeliveryTarget {
   return normalizeProactiveDeliveryTarget(getOptionGroupValue(proactiveDeliverySelect, "local"));
 }
 
-function buildCustomStyleConfigFromModal(): CustomStyleConfig {
-  if (!preferencesState.customStyleOverlay) return preferencesState.currentCustomStyleConfig;
-  const diversityDriver = (
-    preferencesState.customStyleOverlay.querySelector<HTMLInputElement>('input[name="custom-diversity"]:checked')?.value
-    ?? "model-default"
-  ) as DiversityPreference["driver"];
-  const rawValue = Number((
-    preferencesState.customStyleOverlay.querySelector<HTMLInputElement>("#custom-diversity-value")?.value
-    ?? ""
-  ).trim());
-  const repetition = (
-    preferencesState.customStyleOverlay.querySelector<HTMLInputElement>('input[name="custom-repetition"]:checked')?.value
-    ?? "model-default"
-  ) as RepetitionLevel;
-  return normalizeCustomStyleConfig({
-    diversity: diversityDriver === "model-default"
-      ? { driver: "model-default" }
-      : { driver: diversityDriver, value: rawValue },
-    repetition,
-  });
-}
-
-function ensureCustomStyleModal(): HTMLElement {
-  if (preferencesState.customStyleOverlay) return preferencesState.customStyleOverlay;
-  preferencesState.customStyleOverlay = document.createElement("div");
-  preferencesState.customStyleOverlay.id = "custom-style-overlay";
-  preferencesState.customStyleOverlay.className = "cy-modal-overlay is-hidden custom-style-overlay";
-  preferencesState.customStyleOverlay.innerHTML = [
-    '<div class="cy-modal custom-style-modal" role="dialog" aria-modal="true">',
-    '  <div class="cy-modal__head"><span class="cy-modal__icon">🖊️</span><h3 class="cy-modal__title">自定义风格采样</h3></div>',
-    '  <hr class="cy-modal__divider">',
-    '  <div class="custom-style-modal__section">',
-    '    <div class="custom-style-modal__label">多样性控制</div>',
-    '    <label><input type="radio" name="custom-diversity" value="model-default"> 跟随模型</label>',
-    '    <label><input type="radio" name="custom-diversity" value="temperature"> Temperature</label>',
-    '    <label><input type="radio" name="custom-diversity" value="top-p"> Top-P</label>',
-    '    <div class="custom-style-modal__value" id="custom-diversity-row"><span id="custom-diversity-label">Temperature</span><input id="custom-diversity-value" type="number" min="0" max="2" step="0.01"></div>',
-    '  </div>',
-    '  <div class="custom-style-modal__section">',
-    '    <div class="custom-style-modal__label">重复控制</div>',
-    '    <label><input type="radio" name="custom-repetition" value="model-default"> 跟随模型</label>',
-    '    <label><input type="radio" name="custom-repetition" value="light"> 轻度抑制</label>',
-    '    <label><input type="radio" name="custom-repetition" value="medium"> 中度抑制</label>',
-    '    <label><input type="radio" name="custom-repetition" value="strong"> 重度抑制</label>',
-    '  </div>',
-    '  <div class="cy-modal__actions">',
-    '    <button type="button" class="ghost-btn" id="custom-style-reset">恢复默认</button>',
-    '    <button type="button" class="ghost-btn" id="custom-style-cancel">取消</button>',
-    '    <button type="button" class="btn-primary" id="custom-style-save">保存</button>',
-    '  </div>',
-    '</div>',
-  ].join("\n");
-  document.body.appendChild(preferencesState.customStyleOverlay);
-
-  const updateDiversityRow = () => {
-    const driver = preferencesState.customStyleOverlay!.querySelector<HTMLInputElement>(
-      'input[name="custom-diversity"]:checked',
-    )?.value ?? "model-default";
-    const row = preferencesState.customStyleOverlay!.querySelector<HTMLElement>("#custom-diversity-row");
-    const label = preferencesState.customStyleOverlay!.querySelector<HTMLElement>("#custom-diversity-label");
-    const value = preferencesState.customStyleOverlay!.querySelector<HTMLInputElement>("#custom-diversity-value");
-    if (!row || !label || !value) return;
-    row.hidden = driver === "model-default";
-    label.textContent = driver === "top-p" ? "Top-P" : "Temperature";
-    value.min = "0";
-    value.max = driver === "top-p" ? "1" : "2";
-  };
-  preferencesState.customStyleOverlay.querySelectorAll<HTMLInputElement>('input[name="custom-diversity"]').forEach((input) => {
-    input.addEventListener("change", updateDiversityRow);
-  });
-  preferencesState.customStyleOverlay.querySelector<HTMLButtonElement>("#custom-style-cancel")?.addEventListener("click", () => {
-    preferencesState.customStyleOverlay?.classList.add("is-hidden");
-  });
-  preferencesState.customStyleOverlay.querySelector<HTMLButtonElement>("#custom-style-reset")?.addEventListener("click", () => {
-    renderCustomStyleModal(DEFAULT_CUSTOM_STYLE);
-  });
-  preferencesState.customStyleOverlay.querySelector<HTMLButtonElement>("#custom-style-save")?.addEventListener("click", async () => {
-    try {
-      preferencesState.currentCustomStyleConfig = buildCustomStyleConfigFromModal();
-      await window.settings!.saveGeneral({ customStyle: preferencesState.currentCustomStyleConfig });
-      preferencesState.customStyleOverlay?.classList.add("is-hidden");
-      setPreferencesSaveStatus(t("settings.modal.customStyle.saved"), "is-ok");
-    } catch {
-      setPreferencesSaveStatus(t("settings.modal.customStyle.saveFailed"), "is-error");
-    }
-  });
-  return preferencesState.customStyleOverlay;
-}
-
-function renderCustomStyleModal(config: CustomStyleConfig): void {
-  const overlay = ensureCustomStyleModal();
-  const normalized = normalizeCustomStyleConfig(config);
-  const driver = diversityDriverOf(normalized);
-  const repetition = normalized.repetition;
-  const driverInput = overlay.querySelector<HTMLInputElement>(
-    `input[name="custom-diversity"][value="${driver}"]`,
-  );
-  const repetitionInput = overlay.querySelector<HTMLInputElement>(
-    `input[name="custom-repetition"][value="${repetition}"]`,
-  );
-  if (driverInput) driverInput.checked = true;
-  if (repetitionInput) repetitionInput.checked = true;
-  const valueInput = overlay.querySelector<HTMLInputElement>("#custom-diversity-value");
-  if (valueInput) valueInput.value = String(diversityValueOf(normalized));
-  overlay.querySelectorAll<HTMLInputElement>('input[name="custom-diversity"]').forEach((input) => {
-    input.dispatchEvent(new Event("change"));
-  });
-}
-
-function openCustomStyleModal(): void {
-  const overlay = ensureCustomStyleModal();
-  renderCustomStyleModal(preferencesState.currentCustomStyleConfig);
-  overlay.classList.remove("is-hidden");
-}
-
 function renderProactiveDeliveryVisibility(): void {
   proactiveDeliveryRow.hidden = getProactiveChatValue() !== "on";
 }
@@ -547,6 +379,60 @@ function renderProactiveDeliveryVisibility(): void {
 function renderUiFont(font: UiFont): void {
   uiFontCurrent.textContent = font.kind === "custom" ? font.displayName : t("settings.appearance.font.defaultNotion");
   uiFontResetButton.hidden = font.kind !== "custom";
+  uiFontCustomOption.disabled = font.kind !== "custom";
+  uiFontSelect.value = font.kind === "custom" ? "custom" : "default";
+}
+
+// 外观排版：行高、段间距、三个字号。设置窗口自己的界面字号即时生效，其他窗口由主进程广播。
+type PixelSizeKey = "uiFontSize" | "chatFontSize" | "codeFontSize";
+const pixelSizeInputs: Record<PixelSizeKey, HTMLInputElement> = {
+  uiFontSize: uiFontSizeInput,
+  chatFontSize: chatFontSizeInput,
+  codeFontSize: codeFontSizeInput,
+};
+const pixelSizeRanges: Record<PixelSizeKey, [number, number]> = {
+  uiFontSize: [UI_FONT_SIZE_MIN, UI_FONT_SIZE_MAX],
+  chatFontSize: [CHAT_FONT_SIZE_MIN, CHAT_FONT_SIZE_MAX],
+  codeFontSize: [CODE_FONT_SIZE_MIN, CODE_FONT_SIZE_MAX],
+};
+let savedChatAppearance: ChatAppearanceSettings = { ...DEFAULT_CHAT_APPEARANCE };
+
+function renderChatAppearanceControls(settings: ChatAppearanceSettings): void {
+  savedChatAppearance = settings;
+  chatLineHeightInput.value = String(settings.chatLineHeight);
+  chatLineHeightVal.textContent = settings.chatLineHeight.toFixed(2);
+  document.documentElement.style.setProperty("--rb-chat-line-height", String(settings.chatLineHeight));
+  chatParaSpacingInput.value = String(settings.chatParaSpacing);
+  chatParaSpacingVal.textContent = settings.chatParaSpacing.toFixed(2) + "em";
+  document.documentElement.style.setProperty("--rb-chat-para-spacing", settings.chatParaSpacing + "em");
+  for (const key of Object.keys(pixelSizeInputs) as PixelSizeKey[]) {
+    pixelSizeInputs[key].value = String(settings[key]);
+  }
+  document.documentElement.style.setProperty("--cy-ui-font-size", `${settings.uiFontSize}px`);
+}
+
+function bindPixelSizeInput(key: PixelSizeKey): void {
+  const input = pixelSizeInputs[key];
+  const [min, max] = pixelSizeRanges[key];
+  input.addEventListener("input", () => {
+    const value = Number(input.value);
+    if (input.value.trim() && Number.isFinite(value) && key === "uiFontSize") {
+      document.documentElement.style.setProperty("--cy-ui-font-size", `${clampFiniteNumber(value, min, max, savedChatAppearance.uiFontSize)}px`);
+    }
+    setAppearanceSaveStatus(t("settings.status.releaseApply"));
+  });
+  input.addEventListener("change", () => {
+    const raw = input.value.trim();
+    const value = Number(raw);
+    if (!raw || !Number.isFinite(value)) {
+      input.value = String(savedChatAppearance[key]);
+      return;
+    }
+    const next = Math.round(clampFiniteNumber(value, min, max, savedChatAppearance[key]));
+    input.value = String(next);
+    savedChatAppearance = { ...savedChatAppearance, [key]: next };
+    void saveAppearancePatch({ [key]: next } as Partial<GeneralSettings>);
+  });
 }
 
 function renderUiTheme(theme: UiTheme): void {
@@ -628,10 +514,21 @@ function findPreset(providerName: string): ModelPreset {
  * 模式按钮已删除——只有一个输入框，可手填，按方向键也能从厂商预设里选。
  */
 // 表单每次被填成另一个档案 / 厂商，就作废还在路上的“获取模型列表”，并收起上一个档案的候选列表。
+// 输入类型面板：三态控件 + 生效结果说明；状态与保存口径见 api/input-modalities.ts。
+const inputModalities: InputModalitiesPanel = createInputModalitiesPanel({ select: inputModalitiesSelect, hint: inputModalitiesHint }, {
+  getProvider: () => apiState.activeProvider,
+  getModel: () => modelInput.value.trim(),
+  resolve: (input) => window.settings?.resolveInputModalities?.(input) ?? Promise.resolve(undefined),
+  t: (key) => t(key),
+  onChange: () => updateProfileDraftState(),
+});
+/** 最近一次“获取模型列表”给出的各型号输入模态；选中某个型号时记为厂商接口记录。 */
+const fetchedInputModalities = new Map<string, InputModality[] | undefined>();
 let fetchModelsGeneration = 0;
 let closeFetchedModelPicker: () => void = () => {};
 function fillModelOptions(preset: ModelPreset, preferredModel?: string): void {
   fetchModelsGeneration += 1;
+  fetchedInputModalities.clear();
   closeFetchedModelPicker();
   if (fetchModelsStatus) { fetchModelsStatus.textContent = ""; fetchModelsStatus.classList.remove("is-error", "is-ok"); }
   // datalist 联想建议
@@ -646,12 +543,13 @@ function fillModelOptions(preset: ModelPreset, preferredModel?: string): void {
   // preferredModel 不在预设里（用户自填型号）也保留显示，不强行清空。
   const fallback = preset.mainModels[0] ?? "";
   modelInput.value = preferredModel ?? fallback;
+  inputModalities.modelChanged();
 }
 
 // ── 档案编辑（表单绑定档案，不再绑定"当前厂商"） ────────────────
 
-// Only profile fields are replaced by profile/provider navigation. Global vision,
-// timeout and override controls retain their values when the editor changes.
+// Only profile fields are replaced by profile/provider navigation. Global timeout
+// and override controls retain their values when the editor changes.
 // An async response belongs to the form instance that submitted it.
 function isCurrentProfilePanel(): boolean {
   return document.getElementById("api-form") === apiForm;
@@ -667,8 +565,9 @@ function profileDraftSnapshot(): string {
   return JSON.stringify([
     apiState.activeProvider, displayNameInput.value, baseUrlInput.value,
     modelInput.value, apiKeyInput.value, transportSelect.value,
-    contextWindowInput.value, multimodalToggle.checked,
+    contextWindowInput.value,
     readReasoningLevels() ?? null,
+    inputModalities.declared() ?? null,
   ]);
 }
 
@@ -715,21 +614,6 @@ function changeProfileEditor(change: () => void): void {
     profileTransitionPending = false;
     if (confirmed) change();
   });
-}
-
-/** 视觉三框是全局配置：切换档案/预设时先快照再恢复，避免被 preset 默认值覆盖。 */
-function snapshotVisionInputs(): { baseUrl: string; apiKey: string; model: string } {
-  return {
-    baseUrl: visionBaseUrlInput.value,
-    apiKey: visionApiKeyInput.value,
-    model: visionModelInput.value,
-  };
-}
-
-function restoreVisionInputs(snapshot: { baseUrl: string; apiKey: string; model: string }): void {
-  visionBaseUrlInput.value = snapshot.baseUrl;
-  visionApiKeyInput.value = snapshot.apiKey;
-  visionModelInput.value = snapshot.model;
 }
 
 /** 已配置模型列表：每个档案一张卡片，编辑器内联在选中的卡片里。 */
@@ -803,8 +687,7 @@ function syncCustomEndpointControlsVisibility(): void {
 }
 
 /** 载入档案到编辑表单。 */
-function editProfile(profile: SavedProfileLite, globalMultimodal: boolean): void {
-  const visionSnapshot = snapshotVisionInputs();
+function editProfile(profile: SavedProfileLite): void {
   apiState.editorOpen = true;
   apiState.editingProfileId = profile.id;
   apiState.editingReasoning = profile.reasoning;
@@ -816,12 +699,10 @@ function editProfile(profile: SavedProfileLite, globalMultimodal: boolean): void
     profile.displayName,
     profile.explicitTransport as ProviderProfile["explicitTransport"],
   );
-  restoreVisionInputs(visionSnapshot);
-  // 档案级字段：未定义 = 老档案，回退全局值显示
+  // 档案级字段：未定义 = 老档案，留空按默认值
   contextWindowInput.value = profile.contextWindowTokens ? String(profile.contextWindowTokens) : "";
-  multimodalToggle.checked = profile.multimodal ?? globalMultimodal;
   writeReasoningLevels(profile.reasoningLevels);
-  applyMultimodalUI();
+  inputModalities.load(declarationOf(profile), modelInput.value.trim());
   applyEditingStateUI();
   renderProfileList();
   profileDraftBaseline = profileDraftSnapshot();
@@ -833,17 +714,13 @@ function editProfile(profile: SavedProfileLite, globalMultimodal: boolean): void
 /** 开始新建草稿：preset 预填 URL/模型/协议，清空 Key 与昵称。 */
 function startNewDraft(providerName: string): void {
   profileEditorReturnProfileId = undefined;
-  const visionSnapshot = snapshotVisionInputs();
   apiState.editorOpen = true;
   apiState.editingProfileId = undefined;
   apiState.editingReasoning = undefined;
   applyPreset(providerName);
-  restoreVisionInputs(visionSnapshot);
   contextWindowInput.value = "";
-  // 新建草稿默认开多模态；applyPreset 已不再按厂商门控
-  multimodalToggle.checked = true;
   writeReasoningLevels(undefined);
-  applyMultimodalUI();
+  inputModalities.load(undefined, modelInput.value.trim());
   applyEditingStateUI();
   renderProfileList();
   profileDraftBaseline = profileDraftSnapshot();
@@ -854,24 +731,6 @@ function startNewDraft(providerName: string): void {
 /** 模式按钮已删除——模型名永远从 input 读取。保留函数名供旧调用点用，语义不变。 */
 function getCurrentModelValue(): string {
   return modelInput.value;
-}
-
-/** 多模态开关 UI：ON 时隐藏视觉配置区，OFF 时显示。不清空输入框值。 */
-function applyMultimodalUI(): void {
-  const on = multimodalToggle.checked;
-  visionFieldsWrap.classList.toggle("is-hidden", on);
-}
-
-/** 填充视觉模型输入框的 datalist 候选。仅渲染候选，不修改 visionModelInput.value。 */
-function fillVisionModelOptions(preset: ModelPreset): void {
-  const datalist = document.getElementById("vision-model-suggestions") as HTMLDataListElement | null;
-  if (!datalist) return;
-  datalist.replaceChildren();
-  for (const m of preset.visionModels ?? []) {
-    const option = document.createElement("option");
-    option.value = m;
-    datalist.appendChild(option);
-  }
 }
 
 const LOCAL_ENDPOINT_AUTH_FALLBACK = "__FIREFLY_LOCAL_NO_AUTH__";
@@ -964,8 +823,6 @@ export function applyPreset(
   preferredBaseUrl?: string,
   preferredDisplayName?: string,
   preferredExplicitTransport?: ApiTransport,
-  preferredVision?: { baseUrl: string; apiKey: string; model: string },
-  preferredMultimodal?: boolean,
 ): void {
   const preset = findPreset(providerName);
 
@@ -1005,24 +862,6 @@ export function applyPreset(
   applyCustomEndpointUI(preset);
   updateEndpointPreview();
 
-  // 多模态默认开（与主进程 normalizeModelSettings 的默认值对齐）：
-  // 不按厂商/型号门控——直发判错有服务端仲裁 + caption 自动降级兜底。
-  // 要单配独立视觉模型是用户自己的事，用户自己关开关。
-  multimodalToggle.checked = preferredMultimodal ?? true;
-
-  // 视觉三框：始终写入值（从 preferredVision 或 preset 默认），不受开关影响
-  if (preferredVision) {
-    visionBaseUrlInput.value = preferredVision.baseUrl;
-    visionApiKeyInput.value = preferredVision.apiKey;
-    visionModelInput.value = preferredVision.model;
-  } else {
-    visionBaseUrlInput.value = preset.visionBaseUrl ?? baseUrlInput.value;
-    visionApiKeyInput.value = apiKeyInput.value;
-    visionModelInput.value = preset.defaultVisionModel ?? modelInput.value;
-  }
-
-  fillVisionModelOptions(preset);
-
   // 官网链接：有 websiteUrl 就显示并指向，没有就隐藏。
   if (preset.websiteUrl) {
     presetWebsiteLink.href = preset.websiteUrl;
@@ -1034,7 +873,6 @@ export function applyPreset(
 
   apiState.activeProvider = preset.providerName;
   applyProviderEditorLayout(apiForm, customMode ? "custom" : "preset", Boolean(apiState.editingProfileId));
-  applyMultimodalUI();
 }
 
 async function loadConfig(): Promise<void> {
@@ -1043,7 +881,6 @@ async function loadConfig(): Promise<void> {
     const cfg = await window.settings!.getConfig();
     if (!isCurrentProfilePanel()) return;
     // 模式按钮已删除——mode 字段不再用 UI 控制，直接忽略 cfg.mode
-    const vision = cfg.vision;
     applyPreset(
       cfg.provider,
       cfg.model,
@@ -1051,17 +888,9 @@ async function loadConfig(): Promise<void> {
       cfg.baseUrl,
       cfg.displayName,
       cfg.explicitTransport,
-      vision
-        ? {
-            baseUrl: vision.baseUrl,
-            apiKey: vision.apiKey,
-            model: vision.model,
-          }
-        : undefined,
-      cfg.multimodal,
     );
-    applyRuntimeSyncSelection(cfg.runtimeSync);
     stickerEnabledInput.checked = cfg.stickerEnabled !== false;
+    syncStickerSendStatus();
     applyStickerSizeSelection(cfg.stickerSize);
     const threshold = cfg.stickerSimilarityThreshold ?? 0.55;
     stickerThresholdInput.value = String(threshold);
@@ -1074,10 +903,9 @@ async function loadConfig(): Promise<void> {
     toggleDisableMaxToken.checked = !!cfg.disableMaxToken;
 
     // 所有卡片默认折叠（默认档案只带“默认”标记），点“编辑”才展开；
-    // 表单里的全局项（超时 / 视觉模型等）已由上面的 applyPreset 和各自面板按已存配置填好。
+    // 表单里的全局项（超时等）已由各自面板按已存配置填好。
     await reloadProfiles();
     if (!isCurrentProfilePanel()) return;
-    if (apiState.profiles.length === 0) contextWindowInput.value = String(cfg.contextWindowTokens ?? 256000);
 
     applyEditingStateUI();
     setSaveStatus(t("settings.status.waiting"));
@@ -1096,37 +924,18 @@ async function loadGeneralSettings(): Promise<void> {
   try {
     const cfg = await window.settings!.getGeneral();
     uiColorControls.load(cfg.uiColors);
-    const cita = getCitaUiState({ enabled: cfg.citaEnabled, semanticEngine: cfg.citaSemanticEngine });
-    citaEnabledInput.checked = cita.enabled;
     chatSocialContextEnabledInput.checked = normalizeChatSocialContextEnabled(cfg.chatSocialContextEnabled);
-    citaEngineSelect.querySelectorAll<HTMLButtonElement>(".option-block").forEach((button) => {
-      const selected = button.dataset.value === cita.selectedEngine;
-      button.classList.toggle("is-active", selected);
-      button.setAttribute("aria-pressed", String(selected));
-    });
-    const windowCornerRadius = normalizeWindowCornerRadius(cfg.windowCornerRadius);
-    windowCornerRadiusInput.value = String(windowCornerRadius);
-    windowCornerRadiusVal.textContent = `${windowCornerRadius}px`;
-    applyWindowCornerRadius(windowCornerRadius);
+    toastSoundEnabledInput.checked = cfg.toastSoundEnabled !== false;
+    launchAtLoginInput.checked = cfg.launchAtLogin === true;
     petAlwaysOnTopInput.checked = cfg.petAlwaysOnTop;
     petVisibleInput.checked = cfg.petVisible;
     petZoomInput.value = String(cfg.petZoom ?? 1);
     petZoomVal.textContent = Math.round((cfg.petZoom ?? 1) * 100) + "%";
-    chatLineHeightInput.value = String(cfg.chatLineHeight ?? 1.75);
-    chatLineHeightVal.textContent = (cfg.chatLineHeight ?? 1.75).toFixed(2);
-    document.documentElement.style.setProperty("--rb-chat-line-height", String(cfg.chatLineHeight ?? 1.75));
-    chatParaSpacingInput.value = String(cfg.chatParaSpacing ?? 0.5);
-    chatParaSpacingVal.textContent = (cfg.chatParaSpacing ?? 0.5).toFixed(2) + "em";
-    document.documentElement.style.setProperty("--rb-chat-para-spacing", (cfg.chatParaSpacing ?? 0.5) + "em");
-    disableGpuInput.checked = cfg.disableGpuElectron ?? false;
-    launchAtLoginInput.checked = cfg.launchAtLogin;
+    renderChatAppearanceControls(normalizeChatAppearance(cfg));
     renderUiFont(normalizeUiFont(cfg.uiFont));
     renderUiIcon(normalizeUiIcon(cfg.uiIcon));
     renderUiTheme(normalizeUiTheme(cfg.uiTheme));
-    applyDefaultChatModeSelection(normalizeDefaultChatMode(cfg.defaultChatMode));
-    preferencesState.currentCustomStyleConfig = normalizeCustomStyleConfig(cfg.customStyle);
     applySegmentedOutputSelection(normalizeSegmentedOutputMode(cfg.segmentedOutputMode));
-    applyMobileMessageSegmentationSelection(normalizeMobileMessageSegmentationMode(cfg.mobileMessageSegmentation));
     applyProactiveChatSelection(normalizeProactiveChatMode(cfg.proactiveChatMode));
     applyProactiveDeliverySelection(normalizeProactiveDeliveryTarget(cfg.proactiveDeliveryTarget));
     renderProactiveDeliveryVisibility();
@@ -1136,14 +945,12 @@ async function loadGeneralSettings(): Promise<void> {
     void window.settings!.channelsGetStatus()
       .then((status: unknown) => renderProactiveDeliveryAvailability(status as Record<string, { phase?: string }>))
       .catch(() => renderProactiveDeliveryAvailability({}));
-    applyLanguageSelection("zh-CN");
+    applyLanguageSelection(normalizeUiLanguage(cfg.language));
     setPreferencesSaveStatus(t("settings.status.waiting"));
     setAppearanceSaveStatus(t("settings.status.waiting"));
-    setGeneralSaveStatus(t("settings.status.waiting"));
   } catch {
     setPreferencesSaveStatus(t("settings.status.prefsReadFailed"), "is-error");
     setAppearanceSaveStatus(t("settings.status.appearanceReadFailed"), "is-error");
-    setGeneralSaveStatus(t("settings.status.generalReadFailed"), "is-error");
   }
 }
 
@@ -1158,16 +965,14 @@ toggleDisableThinking.addEventListener("change", () => {
   }
 });
 
-runtimeSyncSelect.querySelectorAll<HTMLButtonElement>(".option-block").forEach((button) => {
-  button.addEventListener("click", () => {
-    const value = button.dataset.value as "off" | "local" | "llm";
-    applyRuntimeSyncSelection(value);
-    window.settings?.previewRuntimeSync(value);
-    setFireflySaveStatus(t("settings.status.dirty"));
-  });
-});
+/** 表情包“发送状态”文案跟随开关（开 = 允许发送，关 = 不发送）。 */
+function syncStickerSendStatus(): void {
+  const statusEl = document.getElementById("sticker-send-status");
+  if (statusEl) renderStickerSendStatus(statusEl, stickerEnabledInput.checked);
+}
 
 stickerEnabledInput.addEventListener("change", () => {
+  syncStickerSendStatus();
   setFireflySaveStatus(t("settings.status.dirty"));
 });
 
@@ -1184,23 +989,10 @@ stickerThresholdInput.addEventListener("input", () => {
   setFireflySaveStatus(t("settings.status.dirty"));
 });
 
-openChromeGpu.addEventListener("click", () => {
-  window.settings?.openChromeGpu();
-});
-
-disableGpuInput.addEventListener("change", () => {
-  void window.settings?.saveGeneral({ disableGpuElectron: disableGpuInput.checked });
-});
-
-windowCornerRadiusInput.addEventListener("input", () => {
-  const radius = applyWindowCornerRadius(windowCornerRadiusInput.value);
-  windowCornerRadiusVal.textContent = `${radius}px`;
-  setAppearanceSaveStatus(t("settings.status.releaseApply"));
-});
-
-windowCornerRadiusInput.addEventListener("change", () => {
-  const windowCornerRadius = normalizeWindowCornerRadius(windowCornerRadiusInput.value);
-  void saveAppearancePatch({ windowCornerRadius });
+(["uiFontSize", "chatFontSize", "codeFontSize"] as PixelSizeKey[]).forEach(bindPixelSizeInput);
+uiFontSelect.addEventListener("change", () => {
+  // 选“系统默认”等同于恢复默认字体；“已导入字体”只在存在自定义字体时可选，无需额外动作。
+  if (uiFontSelect.value === "default") uiFontResetButton.click();
 });
 
 petAlwaysOnTopInput.addEventListener("change", () => {
@@ -1304,23 +1096,9 @@ chatParaSpacingInput.addEventListener("change", () => {
   void saveAppearancePatch({ chatParaSpacing: Number(chatParaSpacingInput.value) });
 });
 
-defaultChatModeSelect.querySelectorAll<HTMLButtonElement>(".option-block").forEach((button) => {
-  button.addEventListener("click", () => {
-    applyDefaultChatModeSelection(normalizeDefaultChatMode(button.dataset.value));
-    setPreferencesSaveStatus(t("settings.status.dirty"));
-  });
-});
-
 segmentedOutputSelect.querySelectorAll<HTMLButtonElement>(".option-block").forEach((button) => {
   button.addEventListener("click", () => {
     applySegmentedOutputSelection(normalizeSegmentedOutputMode(button.dataset.value));
-    setPreferencesSaveStatus(t("settings.status.dirty"));
-  });
-});
-
-mobileMessageSegmentationSelect.querySelectorAll<HTMLButtonElement>(".option-block").forEach((button) => {
-  button.addEventListener("click", () => {
-    applyMobileMessageSegmentationSelection(normalizeMobileMessageSegmentationMode(button.dataset.value));
     setPreferencesSaveStatus(t("settings.status.dirty"));
   });
 });
@@ -1341,10 +1119,6 @@ proactiveDeliverySelect.querySelectorAll<HTMLButtonElement>(".option-block").for
   });
 });
 
-citaEnabledInput.addEventListener("change", () => {
-  setPreferencesSaveStatus(t("settings.status.dirty"));
-});
-
 // ── 模型厂商 Work 流程适配说明 ──────────────────────────────
 // 展示各厂商结构化输出档位与实测兼容性；「详细文档」在 app 内本地渲染完整实测报告。
 // 模型厂商 Work 流程适配（手写 HTML，避免引入 markdown 渲染依赖）
@@ -1358,13 +1132,13 @@ const WORK_FLOW_COMPAT_MD = `
   <tbody>
     <tr><td>OpenAI</td><td>⚠️ 文档适配</td><td>A</td><td>-</td><td>已完成官方协议适配，等待实测。</td></tr>
     <tr><td>Claude</td><td>⚠️ 文档适配</td><td>A</td><td>-</td><td>已完成官方协议适配，等待实测。</td></tr>
-    <tr><td>豆包</td><td>✅ 已实测</td><td>A</td><td>Seed 2.1 Turbo / Pro</td><td>推荐使用，完整 Work 流程稳定。</td></tr>
     <tr><td>Kimi</td><td>✅ 已实测</td><td>A</td><td>K2.6、K2.7 Code</td><td>推荐普通 API，Coding 端点不建议用于 Work。</td></tr>
     <tr><td>DeepSeek</td><td>✅ 已实测</td><td>B</td><td>V4.1 Flash、V4 Pro</td><td>推荐，速度快、稳定。</td></tr>
     <tr><td>Qwen</td><td>✅ 已实测</td><td>B</td><td>Qwen3.7 Max</td><td>推荐，表现稳定。</td></tr>
     <tr><td>GLM</td><td>✅ 已实测</td><td>B</td><td>GLM 5.1、5.2</td><td>推荐，4.7 不建议。</td></tr>
     <tr><td>MiMo</td><td>✅ 已实测</td><td>B</td><td>MiMo 2.5、2.5 Pro</td><td>推荐，表现稳定。</td></tr>
     <tr><td>MiniMax</td><td>✅ 已实测</td><td>M</td><td>MiniMax M3</td><td>推荐，需使用 M 档适配。</td></tr>
+    <tr><td>OpenRouter</td><td>⚠️ 文档适配</td><td>D</td><td>-</td><td>聚合网关，型号由所选模型决定，未实测；请自行验证。</td></tr>
     <tr><td>其他模型</td><td>⚠️ 文档适配</td><td>D</td><td>-</td><td>使用通用兼容模式，请自行验证。</td></tr>
   </tbody>
 </table>
@@ -1444,12 +1218,6 @@ if (testConnectionBtn) {
   });
 }
 
-// ── 视觉模型配置事件 ──────────────────────────────────────
-// 多模态开关：ON 隐藏视觉配置区，OFF 显示
-multimodalToggle.addEventListener("change", () => {
-  applyMultimodalUI();
-  setSaveStatus(t("settings.status.dirty"));
-});
 bindReasoningLevels();
 
 // ── 从厂商获取模型列表：型号由接入的厂商决定，预设只是拉不到时的兜底建议 ──
@@ -1457,10 +1225,14 @@ const modelPicker = fetchModelsPicker && fetchModelsSearch && fetchModelsList &&
   ? createModelPicker({ root: fetchModelsPicker, search: fetchModelsSearch, list: fetchModelsList, empty: fetchModelsEmpty }, (id) => {
     modelInput.value = id;
     modelInput.dispatchEvent(new Event("input", { bubbles: true }));
+    inputModalities.picked(id, fetchedInputModalities.get(id));
   })
   : undefined;
 closeFetchedModelPicker = () => modelPicker?.close();
-modelInput.addEventListener("input", () => modelPicker?.syncCurrent(modelInput.value.trim()));
+modelInput.addEventListener("input", () => {
+  modelPicker?.syncCurrent(modelInput.value.trim());
+  inputModalities.modelChanged();
+});
 function fetchModelsErrorText(error: string): string {
   const status = /^HTTP_(\d+)$/.exec(error)?.[1];
   if (status === "401" || status === "403") return t("settings.panel.api.field.model.fetch.unauthorized", { status });
@@ -1493,6 +1265,8 @@ fetchModelsBtn?.addEventListener("click", async () => {
     if (generation !== fetchModelsGeneration) return;
     if (!result) { show(fetchModelsErrorText("NETWORK"), "is-error"); return; }
     if (!result.ok) { show(fetchModelsErrorText(result.error), "is-error"); return; }
+    fetchedInputModalities.clear();
+    for (const model of result.models) fetchedInputModalities.set(model.id, model.inputModalities);
     modelInputSuggestions.replaceChildren();
     for (const model of result.models) {
       const option = document.createElement("option");
@@ -1545,37 +1319,6 @@ transportSelect.addEventListener("change", () => {
   updateProfileDraftState();
 });
 
-// 测试视觉模型按钮（仅在多模态开关 OFF 时可见）
-testVisionBtn.addEventListener("click", async () => {
-  const synced = multimodalToggle.checked;
-  const baseUrl = synced ? baseUrlInput.value : visionBaseUrlInput.value;
-  const apiKey = synced ? apiKeyInput.value : visionApiKeyInput.value;
-  const model = synced ? getCurrentModelValue() : visionModelInput.value;
-  if (!baseUrl) { visionTestStatus.textContent = t("settings.vision.needUrl"); return; }
-  if (!model) { visionTestStatus.textContent = t("settings.vision.needModel"); return; }
-  visionTestStatus.textContent = t("settings.vision.testing");
-  testVisionBtn.disabled = true;
-  try {
-    const result = await window.settings!.testVision?.({ baseUrl, apiKey, model });
-    if (result?.ok) {
-      visionTestStatus.textContent = t("settings.vision.testOk", {
-        latency: result.latency,
-        sample: result.sample ?? "",
-      });
-    } else {
-      visionTestStatus.textContent = t("settings.vision.testFailed", {
-        error: result?.error ?? t("settings.api.unknownError"),
-      });
-    }
-  } catch (e) {
-    visionTestStatus.textContent = t("settings.vision.testFailed", {
-      error: e instanceof Error ? e.message : String(e),
-    });
-  } finally {
-    testVisionBtn.disabled = false;
-  }
-});
-
 apiRuntimeForm.addEventListener("submit", async (e) => {
   e.preventDefault();
   setRuntimeSaveStatus(t("settings.status.saving"));
@@ -1591,21 +1334,49 @@ appearanceForm.addEventListener("submit", (e) => {
   e.preventDefault();
 });
 
-generalForm.addEventListener("submit", async (e) => {
-  e.preventDefault();
-  setGeneralSaveStatus(t("settings.status.saving"));
-  try {
-    await window.settings!.saveGeneral({
-      disableGpuElectron: disableGpuInput.checked,
-      toastSoundEnabled: toastSoundEnabledInput.checked,
-      launchAtLogin: launchAtLoginInput.checked,
-      language: "zh-CN",
-    });
-    setGeneralSaveStatus(t("settings.status.saved"), "is-ok");
-  } catch {
-    setGeneralSaveStatus(t("settings.status.saveFailed"), "is-error");
-  }
+// 通用设置只有语言一项：选择即保存（main 端 saveGeneralSettings 与既有配置合并，单项保存不会覆盖其他字段）。
+languageSelect.querySelectorAll<HTMLButtonElement>(".language-option").forEach((button) => {
+  button.addEventListener("click", async () => {
+    const previous = normalizeUiLanguage(languageSelect.querySelector<HTMLButtonElement>(".language-option.is-active")?.dataset.lang);
+    const language = normalizeUiLanguage(button.dataset.lang);
+    applyLanguageSelection(language);
+    try {
+      await window.settings!.saveGeneral({ language });
+    } catch {
+      applyLanguageSelection(previous);
+    }
+  });
 });
+
+// 桌面与系统：两个开关同样选择即保存；失败时回滚开关并显示提示。
+function setDesktopSaveStatus(text: string, cls = ""): void {
+  desktopSaveStatus.textContent = text;
+  desktopSaveStatus.className = `save-status ${cls}`.trim();
+  desktopSaveStatus.hidden = !text;
+}
+
+function bindDesktopSwitch(input: HTMLInputElement, save: (checked: boolean) => Promise<unknown>): void {
+  input.addEventListener("change", async () => {
+    const next = input.checked;
+    try {
+      await save(next);
+      setDesktopSaveStatus("");
+    } catch {
+      input.checked = !next;
+      setDesktopSaveStatus(t("settings.panel.general.desktopSaveFailed"), "is-error");
+    }
+  });
+}
+
+bindDesktopSwitch(toastSoundEnabledInput, checked => window.settings!.saveGeneral({ toastSoundEnabled: checked }));
+bindDesktopSwitch(launchAtLoginInput, checked => window.settings!.saveGeneral({ launchAtLogin: checked }));
+
+// 版本号：设置页底部与“关于”卡片共用 appUpdate 状态里的 currentVersion。
+void window.appUpdate?.getState().then((state) => {
+  document.querySelectorAll<HTMLElement>("[data-app-version]").forEach((el) => {
+    el.textContent = state.currentVersion;
+  });
+}).catch(() => {});
 
 fireflyPanel.addEventListener("submit", async (e) => {
   e.preventDefault();
@@ -1617,7 +1388,6 @@ fireflyPanel.addEventListener("submit", async (e) => {
       ? Math.max(1, Math.min(65536, Math.round(parsedNum)))
       : undefined;
     await window.settings!.saveConfig({
-      runtimeSync: getRuntimeSyncValue(),
       stickerEnabled: stickerEnabledInput.checked,
       stickerSize: getStickerSizeValue(),
       stickerSimilarityThreshold: parseFloat(stickerThresholdInput.value),
@@ -1642,18 +1412,13 @@ apiForm.addEventListener("submit", async (e) => {
   updateProfileDraftState();
   const submittedDraft = profileDraftSnapshot();
   const submittedGlobalOptions = {
-    vision: {
-      baseUrl: visionBaseUrlInput.value.trim(),
-      apiKey: visionApiKeyInput.value.trim(),
-      model: visionModelInput.value.trim(),
-    },
     thinkingOverride: toggleEnableThinking.checked ? 1 as const : toggleDisableThinking.checked ? -1 as const : 0 as const,
     disableMaxToken: toggleDisableMaxToken.checked,
   };
   setSaveStatus(t("settings.status.saving"));
   try {
     // 档案保存：editingProfileId 存在 = 更新（字段全量覆盖），否则新增。
-    // 上下文窗口与多模态跟随档案；留空/非法按 256000 兜底。
+    // 上下文窗口跟随档案；留空/非法按 256000 兜底。
     const isEditing = Boolean(apiState.editingProfileId);
     const profile = {
       id: apiState.editingProfileId,
@@ -1666,8 +1431,10 @@ apiForm.addEventListener("submit", async (e) => {
       reasoning: apiState.editingReasoning,
       // 没声明（自动）= undefined：保存时清掉旧声明，回到按型号名判断。
       reasoningLevels: readReasoningLevels(),
+      // 输入类型：未声明（自动）= undefined，保存时清掉旧声明；厂商记录只在它对应的型号上带出（见 input-modalities.ts）
+      inputModalities: inputModalities.declared()?.modalities,
+      inputModalitiesSource: inputModalities.declared()?.source,
       contextWindowTokens: Math.max(4096, parseInt(contextWindowInput.value, 10) || 256000),
-      multimodal: multimodalToggle.checked,
     };
     if (!await saveTimeoutSettings(true) || !isCurrentProfilePanel()) return;
     setSaveStatus(t("settings.status.saving"));
@@ -1688,7 +1455,7 @@ apiForm.addEventListener("submit", async (e) => {
         renderProfileList();
       }
     }
-    // 全局选项（视觉模型/思考开关/maxToken）不随档案走，单独保存
+    // 全局选项（思考开关/maxToken）不随档案走，单独保存
     await settings.saveConfig(submittedGlobalOptions);
     if (!isCurrentProfilePanel()) return;
     await reloadProfiles();
@@ -1700,9 +1467,10 @@ apiForm.addEventListener("submit", async (e) => {
         const saved = apiState.profiles.find(profile => profile.id === apiState.editingProfileId);
         if (saved) {
           applyPreset(saved.provider, saved.model, apiKeyInput.value, saved.baseUrl, saved.displayName,
-            saved.explicitTransport, snapshotVisionInputs(), saved.multimodal);
+            saved.explicitTransport);
           contextWindowInput.value = saved.contextWindowTokens ? String(saved.contextWindowTokens) : "";
           writeReasoningLevels(saved.reasoningLevels);
+          inputModalities.load(declarationOf(saved), saved.model);
           apiState.editingReasoning = saved.reasoning;
         }
         profileDraftBaseline = profileDraftSnapshot();
@@ -1747,7 +1515,6 @@ function switchSection(requestedSection: string): void {
   const isUser = section === "user";
   const isTasks = section === "tasks";
   const isPlugins = section === "plugins";
-  const isTokens = section === "tokens";
   const isChannels = section === "channels";
 
   const isMusic = section === "music";
@@ -1766,8 +1533,6 @@ function switchSection(requestedSection: string): void {
   if (tasksPanel) tasksPanel.classList.toggle("is-hidden", !isTasks);
   if (isTasks) void loadSchedulerPanel();
   pluginsPanel.classList.toggle("is-hidden", !isPlugins);
-  const tokenPanel = document.getElementById("token-panel");
-  if (tokenPanel) tokenPanel.classList.toggle("is-hidden", !isTokens);
   const channelsPanel = document.getElementById("channels-panel");
   if (channelsPanel) channelsPanel.classList.toggle("is-hidden", !isChannels);
   if (isChannels) void loadChannelsPanel();
@@ -1778,7 +1543,7 @@ function switchSection(requestedSection: string): void {
   else disposeMusicPanel();
   placeholderPanel.classList.toggle(
     "is-hidden",
-    isAsr || isApi || isApiAdvanced || isAppearance || isGeneral || isPreferences || isFirefly || isDisclaimer || isMemory || isUser || isTasks || isPlugins || isTokens || isChannels || isMusic,
+    isAsr || isApi || isApiAdvanced || isAppearance || isGeneral || isPreferences || isFirefly || isDisclaimer || isMemory || isUser || isTasks || isPlugins || isChannels || isMusic,
   );
 
   if (
@@ -1794,7 +1559,6 @@ function switchSection(requestedSection: string): void {
     !isUser &&
     !isTasks &&
     !isPlugins &&
-    !isTokens &&
     !isChannels &&
     !isMusic
   ) {
@@ -1864,7 +1628,7 @@ memoryImportedList?.addEventListener("click", async (event) => {
     title: t("settings.importDoc.deleteTitle"),
     message: t("settings.importDoc.deleteMessage", { fileName }),
     confirmText: t("settings.importDoc.deleteConfirm"),
-    cancelText: t("settings.modal.customStyle.cancel"),
+    cancelText: t("settings.modal.cancel"),
     dangerous: true,
   });
 
@@ -1942,7 +1706,7 @@ profileList?.addEventListener("click", (e) => {
   } else {
     changeProfileEditor(() => {
       profileEditorReturnProfileId = profile.id;
-      editProfile(profile, multimodalToggle.checked);
+      editProfile(profile);
     });
   }
 });
@@ -2051,26 +1815,9 @@ subscribeLocaleChanged(() => {
   updateProfileDraftState();
 });
 
-// ── 偏好设置：聊天社交上下文 / 自定义风格 / 表单提交 ─────────
+// ── 偏好设置：聊天社交上下文 / 表单提交 ─────────
 chatSocialContextEnabledInput.addEventListener("change", () => {
   setPreferencesSaveStatus(t("settings.status.dirty"));
-});
-
-customStyleSamplingBtn?.addEventListener("click", () => {
-  openCustomStyleModal();
-});
-
-customStylePromptBtn?.addEventListener("click", async () => {
-  try {
-    const result = await window.settings?.openCustomStylePrompt?.();
-    if (!result?.ok) {
-      setPreferencesSaveStatus(t("settings.prompt.openFailed"), "is-error");
-      return;
-    }
-    setPreferencesSaveStatus(t("settings.prompt.opened"), "is-ok");
-  } catch {
-    setPreferencesSaveStatus(t("settings.prompt.openFailed"), "is-error");
-  }
 });
 
 preferencesForm.addEventListener("submit", async (e) => {
@@ -2078,12 +1825,8 @@ preferencesForm.addEventListener("submit", async (e) => {
   setPreferencesSaveStatus(t("settings.status.saving"));
   try {
     await window.settings!.saveGeneral({
-      citaEnabled: citaEnabledInput.checked,
-      citaSemanticEngine: "remote",
       chatSocialContextEnabled: chatSocialContextEnabledInput.checked,
-      defaultChatMode: "chat",
       segmentedOutputMode: "off",
-      mobileMessageSegmentation: getMobileMessageSegmentationValue(),
       proactiveChatMode: getProactiveChatValue(),
       proactiveDeliveryTarget: getProactiveDeliveryValue(),
       screenshotHotkey: screenshotHotkeyInput?.value || "Alt+Shift+S",

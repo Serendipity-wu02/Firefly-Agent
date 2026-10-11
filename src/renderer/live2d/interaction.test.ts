@@ -1,32 +1,90 @@
-import { describe, expect, it, vi } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import { readFileSync } from "node:fs";
-import { FIREFLY_DOUBLE_CLICK_TARGET, InteractionController, type HitAreaDef } from "./interaction";
+import { InteractionController, pickDoubleClickTarget, type HitAreaDef } from "./interaction";
 import { FireflyActionController } from "./action-controller";
 import { FireflyExpressionState } from "./expression-state";
 
-function setup(doubleClickTarget?: HitAreaDef["target"]) {
+const AREAS: HitAreaDef[] = [
+  { name: "Head", id: "ArtMesh23" },
+  { name: "Body", id: "ArtMesh154" },
+];
+
+function setup(options: { random?: () => number; hit?: string[] } = {}) {
   const listeners = new Map<string, (event: PointerEvent) => void>();
   const canvas = {
     addEventListener: vi.fn((name: string, listener: (event: PointerEvent) => void) => listeners.set(name, listener)),
     removeEventListener: vi.fn((name: string) => listeners.delete(name)),
   } as unknown as HTMLCanvasElement;
-  const hitTest = vi.fn(() => ["Head"]);
+  let hit = options.hit ?? ["Head"];
+  const hitTest = vi.fn(() => hit);
   const model = { hitTest } as never;
-  const area: HitAreaDef = { name: "Head", id: "ArtMesh23", target: { kind: "expression", name: "expression4" } };
-  const playAction = vi.fn(async (_target: HitAreaDef["target"]) => true);
+  const playAction = vi.fn(async () => true);
   const onTrigger = vi.fn();
-  const controller = new InteractionController(canvas, model, [area], { playAction, onTrigger, doubleClickTarget });
+  const onMiss = vi.fn();
+  const controller = new InteractionController(canvas, model, AREAS, {
+    playAction,
+    onTrigger,
+    onMiss,
+    random: options.random ?? (() => 0),
+  });
   const emit = (name: string, screenX: number, screenY: number, pointerId = 1, button = 0) => {
     listeners.get(name)?.({ clientX: 100, clientY: 100, screenX, screenY, pointerId, button } as PointerEvent);
   };
-  return { controller, emit, playAction, onTrigger, hitTest, listeners };
+  const click = (x = 100, y = 100) => {
+    emit("pointerdown", x, y);
+    emit("pointerup", x, y);
+  };
+  return {
+    controller,
+    emit,
+    click,
+    playAction,
+    onTrigger,
+    onMiss,
+    hitTest,
+    listeners,
+    setHit: (next: string[]) => { hit = next; },
+  };
 }
 
+describe("pickDoubleClickTarget", () => {
+  it("picks expression2 for 75% of head double-clicks and expression1 for the remaining 25%", () => {
+    expect(pickDoubleClickTarget("Head", () => 0)).toEqual({ kind: "expression", name: "expression2" });
+    expect(pickDoubleClickTarget("Head", () => 0.7499)).toEqual({ kind: "expression", name: "expression2" });
+    expect(pickDoubleClickTarget("Head", () => 0.75)).toEqual({ kind: "expression", name: "expression1" });
+    expect(pickDoubleClickTarget("Head", () => 0.9999)).toEqual({ kind: "expression", name: "expression1" });
+  });
+
+  it("splits body double-clicks evenly between expression9 and expression10", () => {
+    expect(pickDoubleClickTarget("Body", () => 0)).toEqual({ kind: "expression", name: "expression9" });
+    expect(pickDoubleClickTarget("Body", () => 0.4999)).toEqual({ kind: "expression", name: "expression9" });
+    expect(pickDoubleClickTarget("Body", () => 0.5)).toEqual({ kind: "expression", name: "expression10" });
+    expect(pickDoubleClickTarget("Body", () => 0.9999)).toEqual({ kind: "expression", name: "expression10" });
+  });
+
+  it("returns nothing for areas without a double-click rule", () => {
+    expect(pickDoubleClickTarget("Other", () => 0)).toBeUndefined();
+  });
+
+  it("uses Math.random when no random source is injected", () => {
+    const spy = vi.spyOn(Math, "random").mockReturnValue(0.9);
+    try {
+      expect(pickDoubleClickTarget("Head")).toEqual({ kind: "expression", name: "expression1" });
+    } finally {
+      spy.mockRestore();
+    }
+  });
+});
+
 describe("Firefly hit-area interaction", () => {
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+
   it("maps double-click to the confirmed cat-ear resource and its existing reset parameter", () => {
     const modelRoot = "src/renderer/public/models/firefly/";
     const manifest = JSON.parse(readFileSync(modelRoot + "Firefly.model3.json", "utf8"));
-    const resource = manifest.FileReferences.Expressions.find((entry: { Name: string }) => entry.Name === FIREFLY_DOUBLE_CLICK_TARGET.name);
+    const resource = manifest.FileReferences.Expressions.find((entry: { Name: string }) => entry.Name === "expression2");
     expect(resource.File).toBe("Expressions/Expressions_2_File_0.json");
     const expression = JSON.parse(readFileSync(modelRoot + resource.File, "utf8"));
     const resetResource = manifest.FileReferences.Expressions.find((entry: { Name: string }) => entry.Name === "expression00");
@@ -35,17 +93,97 @@ describe("Firefly hit-area interaction", () => {
     expect(reset.Parameters).toContainEqual({ Id: "Param40", Value: 0, Blend: "Add" });
   });
 
-  it("plays only for a left-button click on the same model area", async () => {
+  it("plays the weighted head expression on a double-click and reports the trigger", async () => {
+    vi.useFakeTimers();
+    const state = setup({ random: () => 0.8 });
+    state.click();
+    state.click();
+    expect(state.playAction).toHaveBeenCalledOnce();
+    expect(state.playAction).toHaveBeenCalledWith({ kind: "expression", name: "expression1" });
+    await vi.advanceTimersByTimeAsync(0);
+    expect(state.onTrigger).toHaveBeenCalledWith({ name: "Head", id: "ArtMesh23" }, { kind: "expression", name: "expression1" });
+    state.controller.dispose();
+  });
+
+  it("plays a body expression on a body double-click", async () => {
+    vi.useFakeTimers();
+    const state = setup({ random: () => 0.6, hit: ["Body"] });
+    state.click();
+    state.click();
+    expect(state.playAction).toHaveBeenCalledWith({ kind: "expression", name: "expression10" });
+    await vi.advanceTimersByTimeAsync(0);
+    state.controller.dispose();
+  });
+
+  it("does nothing on a single click, even after the double-click window closes", async () => {
+    vi.useFakeTimers();
     const state = setup();
-    state.emit("pointerdown", 100, 100);
-    state.emit("pointerup", 102, 101);
-    await vi.waitFor(() => expect(state.playAction).toHaveBeenCalledOnce());
-    expect(state.playAction).toHaveBeenCalledWith({ kind: "expression", name: "expression4" });
-    expect(state.onTrigger).toHaveBeenCalledOnce();
+    state.click();
+    await vi.advanceTimersByTimeAsync(1000);
+    expect(state.playAction).not.toHaveBeenCalled();
+    state.controller.dispose();
+  });
+
+  it("uses an injected region resolver instead of model.hitTest", async () => {
+    vi.useFakeTimers();
+    const listeners = new Map<string, (event: PointerEvent) => void>();
+    const canvas = {
+      addEventListener: vi.fn((name: string, listener: (event: PointerEvent) => void) => listeners.set(name, listener)),
+      removeEventListener: vi.fn((name: string) => listeners.delete(name)),
+    } as unknown as HTMLCanvasElement;
+    const modelHitTest = vi.fn(() => ["Head"]);
+    const resolveRegions = vi.fn(() => ["Body"]);
+    const playAction = vi.fn(async () => true);
+    const controller = new InteractionController(canvas, { hitTest: modelHitTest } as never, AREAS, {
+      playAction,
+      random: () => 0.6,
+      resolveRegions,
+    });
+    const emit = (name: string) => listeners.get(name)?.({ clientX: 50, clientY: 60, screenX: 50, screenY: 60, pointerId: 1, button: 0 } as PointerEvent);
+    emit("pointerdown");
+    emit("pointerup");
+    emit("pointerdown");
+    emit("pointerup");
+    expect(resolveRegions).toHaveBeenCalledWith(50, 60);
+    expect(modelHitTest).not.toHaveBeenCalled();
+    expect(playAction).toHaveBeenCalledWith({ kind: "expression", name: "expression10" });
+    controller.dispose();
+    vi.useRealTimers();
+  });
+
+  it("ignores double-clicks on areas without a rule", async () => {
+    vi.useFakeTimers();
+    const state = setup({ hit: ["Other"] });
+    state.click();
+    state.click();
+    await vi.advanceTimersByTimeAsync(0);
+    expect(state.playAction).not.toHaveBeenCalled();
+    state.controller.dispose();
+  });
+
+  it("does not combine clicks on different areas into a double-click", async () => {
+    vi.useFakeTimers();
+    const state = setup();
+    state.click();
+    state.setHit(["Body"]);
+    state.click();
+    await vi.advanceTimersByTimeAsync(1000);
+    expect(state.playAction).not.toHaveBeenCalled();
+    state.controller.dispose();
+  });
+
+  it("does not combine clicks separated by more than the double-click window", async () => {
+    vi.useFakeTimers();
+    const state = setup();
+    state.click();
+    await vi.advanceTimersByTimeAsync(400);
+    state.click();
+    expect(state.playAction).not.toHaveBeenCalled();
     state.controller.dispose();
   });
 
   it("ignores drag release, right-click, unmatched pointer, and cancel", async () => {
+    vi.useFakeTimers();
     const state = setup();
     state.emit("pointerdown", 100, 100);
     state.emit("pointerup", 120, 100);
@@ -55,95 +193,59 @@ describe("Firefly hit-area interaction", () => {
     state.emit("pointerup", 100, 100, 2);
     state.emit("pointercancel", 100, 100);
     state.emit("pointerup", 100, 100);
+    await vi.advanceTimersByTimeAsync(1000);
     expect(state.playAction).not.toHaveBeenCalled();
     state.controller.dispose();
   });
 
-  it("does not stack simultaneous clicks or act on disposed listeners", async () => {
+  it("does not stack simultaneous double-clicks or act on disposed listeners", async () => {
+    vi.useFakeTimers();
     const state = setup();
     let release!: (started: boolean) => void;
     state.playAction.mockImplementation(() => new Promise<boolean>((resolve) => { release = resolve; }));
-    state.emit("pointerdown", 100, 100);
-    state.emit("pointerup", 100, 100);
-    state.emit("pointerdown", 100, 100);
-    state.emit("pointerup", 100, 100);
+    state.click();
+    state.click();
+    state.click();
+    state.click();
     expect(state.playAction).toHaveBeenCalledOnce();
     release(true);
-    await vi.waitFor(() => expect(state.onTrigger).toHaveBeenCalledOnce());
+    await vi.advanceTimersByTimeAsync(0);
+    expect(state.onTrigger).toHaveBeenCalledOnce();
     state.controller.dispose();
     expect(state.listeners.size).toBe(0);
   });
 
-  it("starts only the double-click expression and restores single-click behavior afterward", async () => {
+  it("reports a miss when the expression could not start", async () => {
     vi.useFakeTimers();
-    try {
-      const doubleTarget = FIREFLY_DOUBLE_CLICK_TARGET;
-      const state = setup(doubleTarget);
-      state.emit("pointerdown", 100, 100);
-      state.emit("pointerup", 100, 100);
-      await vi.advanceTimersByTimeAsync(100);
-      state.emit("pointerdown", 101, 100);
-      state.emit("pointerup", 101, 100);
-      await vi.advanceTimersByTimeAsync(300);
-      expect(state.playAction).toHaveBeenCalledTimes(1);
-      expect(state.playAction).toHaveBeenCalledWith(doubleTarget);
-      expect(state.onTrigger).toHaveBeenCalledTimes(1);
-      state.emit("pointerdown", 100, 100);
-      state.emit("pointerup", 100, 100);
-      await vi.advanceTimersByTimeAsync(300);
-      expect(state.playAction).toHaveBeenCalledTimes(2);
-      expect(state.playAction).toHaveBeenLastCalledWith({ kind: "expression", name: "expression4" });
-      state.controller.dispose();
-    } finally {
-      vi.useRealTimers();
-    }
+    const state = setup();
+    state.playAction.mockResolvedValueOnce(false);
+    state.click();
+    state.click();
+    await vi.advanceTimersByTimeAsync(0);
+    expect(state.onMiss).toHaveBeenCalledWith({ name: "Head", id: "ArtMesh23" }, { kind: "expression", name: "expression2" });
+    expect(state.onTrigger).not.toHaveBeenCalled();
+    state.controller.dispose();
   });
 
-  it("does not turn a drag or disposed pending click into a double-click action", async () => {
-    vi.useFakeTimers();
-    try {
-      const state = setup({ kind: "expression", name: "double-expression" });
-      state.emit("pointerdown", 100, 100);
-      state.emit("pointerup", 100, 100);
-      state.emit("pointerdown", 100, 100);
-      state.emit("pointerup", 120, 100);
-      await vi.advanceTimersByTimeAsync(300);
-      expect(state.playAction).toHaveBeenCalledOnce();
-      expect(state.playAction).toHaveBeenCalledWith({ kind: "expression", name: "expression4" });
-      state.emit("pointerdown", 100, 100);
-      state.emit("pointerup", 100, 100);
-      state.controller.dispose();
-      await vi.advanceTimersByTimeAsync(300);
-      expect(state.playAction).toHaveBeenCalledOnce();
-    } finally {
-      vi.useRealTimers();
-    }
-  });
-
-  it("rejects repeated double-click playback until the existing expression timer restores idle", async () => {
+  it("rejects repeated double-click playback until the expression timer restores the base expression", async () => {
     vi.useFakeTimers();
     vi.stubGlobal("window", { setInterval, clearInterval, setTimeout, clearTimeout });
     const expression = vi.fn(async (_name: string) => true);
     const model = { expression } as never;
     const expressions = new FireflyExpressionState(model);
     const manager = {
-      getModel: () => model,
       hasAction: () => true,
-      playAction: vi.fn(async (target: HitAreaDef["target"]) => target.kind === "expression" && expression(target.name)),
+      playAction: vi.fn(async (target: { kind: string; name?: string }) => target.kind === "expression" && expression(target.name!)),
     };
     const actions = new FireflyActionController(manager, expressions);
-    const state = setup(FIREFLY_DOUBLE_CLICK_TARGET);
-    state.playAction.mockImplementation((target) => actions.play(target, 5000));
-    const doubleClick = () => {
-      for (let clickIndex = 0; clickIndex < 2; clickIndex++) {
-        state.emit("pointerdown", 100, 100);
-        state.emit("pointerup", 100, 100);
-      }
-    };
+    const state = setup({ random: () => 0 });
+    state.playAction.mockImplementation(async (target) => actions.play(target, 5000));
     try {
-      doubleClick();
+      state.click();
+      state.click();
       await vi.advanceTimersByTimeAsync(100);
-      doubleClick();
+      state.click();
+      state.click();
       await vi.advanceTimersByTimeAsync(100);
       expect(manager.playAction).toHaveBeenCalledOnce();
       expect(expression).toHaveBeenCalledWith("expression2");
@@ -151,7 +253,8 @@ describe("Firefly hit-area interaction", () => {
       await vi.advanceTimersByTimeAsync(4800);
       expect(expression).toHaveBeenLastCalledWith("expression00");
       expect(actions.isBusy()).toBe(false);
-      doubleClick();
+      state.click();
+      state.click();
       await vi.advanceTimersByTimeAsync(5000);
       expect(manager.playAction).toHaveBeenCalledTimes(2);
       expect(expression).toHaveBeenLastCalledWith("expression00");
@@ -161,7 +264,6 @@ describe("Firefly hit-area interaction", () => {
       actions.dispose();
       expressions.dispose();
       vi.unstubAllGlobals();
-      vi.useRealTimers();
     }
   });
 });

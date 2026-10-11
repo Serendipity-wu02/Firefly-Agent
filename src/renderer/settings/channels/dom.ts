@@ -53,3 +53,11 @@ export const channelsContextTargetEl = document.getElementById("channels-context
 export const channelsContextBindBtn = document.getElementById("channels-context-bind");
 export const channelsContextBindingsListEl = document.getElementById("channels-context-bindings-list");
 export const channelsContextFeedbackEl = document.getElementById("channels-context-feedback");
+
+export const channelsOverviewSummaryEl = document.getElementById("channels-overview-summary");
+export const channelsAppStatusEl = document.getElementById("channels-app-status");
+export const channelsAppPairBtn = document.getElementById("channels-app-pair") as HTMLButtonElement | null;
+export const channelsWechatCardEl = document.getElementById("channels-wechat-card");
+export const channelsFeishuCardEl = document.getElementById("channels-feishu-card");
+export const channelsQqCardEl = document.getElementById("channels-qq-card");
+export const channelsQqBotCardEl = document.getElementById("channels-qqbot-card");

@@ -179,6 +179,13 @@
     "title": "上下文 {{summary}}",
     "footnote": "估算值（按字符折算），对话后自动刷新"
   },
+  "tokenUsageBar": {
+    "ariaLabel": "近 {{days}} 天 token 用量",
+    "requests": "{{count}} 次请求",
+    "total": "近 {{days}} 天 {{value}} tok",
+    "cacheHit": "缓存命中 {{rate}}",
+    "tooltip": "近 {{days}} 天累计：输入 {{input}} tok · 输出 {{output}} tok"
+  },
   "agentRounds": {
     "liveListDir": "列出目录",
     "liveReadFile": "读取文件",
@@ -259,12 +266,6 @@
     "directFallback": "已切换为直接执行，接下来会继续完成任务。",
     "partial": "部分步骤没有完成，流萤会在回复中说明可用结果。",
     "failed": "这一轮没有顺利完成，请查看回复中的说明后再试一次。"
-  },
-  "statusFloat": {
-    "offline": "离线",
-    "listening": "聆听中",
-    "companion": "陪伴中",
-    "remind": "提醒"
   },
   "rightInspector": {
     "closeTab": "关闭 {{name}}（在标签上按 Delete）",
@@ -566,15 +567,6 @@
     "entryFailed": "计划执行失败 · 点击查看",
     "entryCancelled": "计划已取消 · 点击查看"
   },
-  "style": {
-    "panelTitle": "回复风格",
-    "optionDefault": "温柔 · 和善",
-    "optionLively": "元气 · 活泼",
-    "optionHealing": "治愈 · 安心",
-    "optionFocused": "知性 · 认真",
-    "optionSweet": "撒娇 · 黏人",
-    "optionCustom": "自定义"
-  },
   "todo": {
     "modeWork": "工作",
     "modeLearn": "学习",
@@ -801,6 +793,7 @@
     "tools": "工具",
     "skills": "技能",
     "plugins": "插件",
+    "scheduledTasks": "定时任务",
     "modelNotConnected": "模型未连接",
     "userAlt": "用户",
     "settings": "设置",

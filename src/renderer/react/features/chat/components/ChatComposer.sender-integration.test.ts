@@ -16,7 +16,6 @@ import type { ComposerAttachment } from "./ChatComposer";
 // 只 mock 与 IPC/资产耦合的子控件，保留 Sender / antd 真实渲染与键盘逻辑
 vi.mock("./ModelEffortControl", () => ({ ModelEffortControl: () => null }));
 vi.mock("./DesktopAsrButton", () => ({ DesktopAsrButton: () => null }));
-vi.mock("./StyleControl", () => ({ StyleControl: () => null }));
 vi.mock("./PermissionControl", () => ({ PermissionControl: () => null }));
 vi.mock("./PlanModeToggle", () => ({ PlanModeToggle: () => null }));
 vi.mock("./ContextUsageRing", () => ({ ContextUsageRing: () => null }));

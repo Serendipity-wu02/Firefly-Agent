@@ -441,6 +441,7 @@ it("more menu retains visible text and row layout inside its sidebar popup conta
       expect(window.getComputedStyle(label).display).not.toBe("none");
       expect(window.getComputedStyle(label.closest(".cy-side-action")!).display).toBe("flex");
     }
-    expect(menu!.querySelectorAll(".cy-side-action-label")).toHaveLength(3);
+    expect(menu!.querySelectorAll(".cy-side-action-label")).toHaveLength(4);
+    expect([...menu!.querySelectorAll(".cy-side-action-label")].at(-1)?.textContent).toBe(t("ui.scheduledTasks"));
   } finally { style.remove(); }
 });

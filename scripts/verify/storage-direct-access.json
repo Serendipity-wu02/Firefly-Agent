@@ -593,16 +593,6 @@
     ]
   },
   {
-    "file": "src/main/style-prompt.ts",
-    "method": "getPath",
-    "root": "userData",
-    "count": 1,
-    "category": "MIGRATE_LATER",
-    "lines": [
-      7
-    ]
-  },
-  {
     "file": "src/main/timeout-manager.ts",
     "method": "getPath",
     "root": "userData",

@@ -53,7 +53,11 @@
       "saveFailed": "保存失败，请重试。",
       "loadFailed": "读取失败，请重新打开设置后重试。"
     },
-    "layout": { "common": "常用设置", "assistant": "助手与工具", "about": "关于" },
+    "layout": {
+      "common": "常用设置",
+      "assistant": "助手与工具",
+      "about": "关于"
+    },
     "agentRouting": {
       "loading": "正在读取角色配置…",
       "notice": "继承角色默认路由不会使用主聊天模型，路由未配置时拒绝执行。改变绑定的模型档案 ID 不会迁移已有 Agent 会话；编辑同一档案的模型会影响使用它的会话。",
@@ -66,18 +70,24 @@
       "source": "配置来源",
       "sourceDescription": "默认路由：{{route}}；角色选择：{{selected}}；实际档案：{{effective}}",
       "unconfigured": "未配置",
+      "unconfiguredRefused": "未指定模型 · 将拒绝执行",
       "saveUnavailable": "角色配置保存接口不可用",
       "loadUnavailable": "角色配置读取接口不可用",
       "saveFailed": "保存失败：{{error}}",
       "loadFailed": "角色配置加载失败：{{error}}"
     },
     "providerUi": {
-      "draftState": { "saved": "已保存的档案", "dirty": "未保存的更改", "new": "新建草稿 · 尚未保存", "saving": "保存中…" },
+      "draftState": {
+        "saved": "已保存的档案",
+        "dirty": "未保存的更改",
+        "new": "新建草稿 · 尚未保存",
+        "saving": "保存中…"
+      },
       "savedWithChanges": "提交的版本已保存，仍有未保存的更改",
       "emptyTitle": "选择或添加模型配置",
       "emptyHint": "从左侧选择已保存的配置，或添加一个模型提供商开始设置。",
       "discardTitle": "放弃未保存的更改？",
-      "discardMessage": "切换会丢弃当前模型档案的未保存更改。全局视觉设置会保留。",
+      "discardMessage": "切换会丢弃当前模型档案的未保存更改。",
       "discardConfirm": "放弃更改",
       "discardCancel": "继续编辑",
       "listTitle": "已配置模型提供商",
@@ -97,7 +107,21 @@
       "sectionModel": "模型",
       "connectionMore": "自定义设置",
       "cancel": "取消",
-      "tagCustom": "自定义"
+      "tagCustom": "自定义",
+      "inputModalities": {
+        "label": "输入类型",
+        "group": "输入类型",
+        "auto": "自动",
+        "image": "图片",
+        "text": "仅文本",
+        "hint": "默认自动：优先采用厂商接口给出的输入类型，其次内置目录；都没有时按仅文本处理。需要修正时选择“图片”或“仅文本”。",
+        "stateImage": "支持图片",
+        "stateText": "仅文本",
+        "sourceVendor": "来自厂商接口",
+        "sourceCatalog": "来自内置目录",
+        "sourceUser": "手动设置",
+        "sourceUnknown": "未能识别（可手动设为“图片”）"
+      }
     },
     "nav": {
       "ariaLabel": "设置导航",
@@ -115,7 +139,6 @@
       "channels": "连接手机",
       "tts": "TTS 设置",
       "asr": "ASR 设置",
-      "tokens": "Token 用量",
       "disclaimer": "免责声明",
       "memoryHint": "管理长期记忆与画像",
       "chat": "聊天",
@@ -128,10 +151,9 @@
       "asrHint": "语音识别服务配置",
       "preferencesHint": "设置聊天窗口和输出行为的默认偏好",
       "appearanceHint": "调整窗口布局、界面主题与流萤桌宠",
-      "generalHint": "管理窗口、音频和系统行为",
+      "generalHint": "选择流萤的界面语言，切换后立即保存。",
       "apiHint": "选择预设后只需要填写 API Key。",
       "apiAdvancedHint": "配置 API 超时时间、调用模式．",
-      "tokensHint": "查看 API 调用统计与消耗",
       "disclaimerHint": "使用条款与隐私说明"
     },
     "app": {
@@ -176,7 +198,7 @@
         },
         "editor": {
           "title": "新建档案",
-          "subtitle": "昵称用于区分同模型名、不同 API 的配置；上下文窗口与多模态跟随档案，聊天窗口切档案时自动生效。"
+          "subtitle": "昵称用于区分同模型名、不同 API 的配置；上下文窗口跟随档案，聊天窗口切档案时自动生效。"
         },
         "field": {
           "nickname": {
@@ -200,10 +222,6 @@
             "label": "模型名",
             "contextWindow": "上下文窗口（Token）",
             "contextWindowHint": "按档案保存；留空按 256000。",
-            "multimodal": {
-              "title": "多模态（能直发图片）",
-              "desc": "开启后图片直发该模型；关闭则走下方视觉模型转述。跟随档案生效。"
-            },
             "fetch": {
               "button": "从厂商获取模型列表",
               "loading": "正在向厂商获取…",
@@ -225,7 +243,6 @@
               "autoLabel": "自动",
               "group": "推理强度档位",
               "off": "可关闭",
-              "pro": "PRO（Responses）",
               "hint": "一个档位都不勾，表示这个 API 只有“开 / 关”（OpenAI 写法需同时勾选“可关闭”才有效）。输入框右下角的强度滑块会只显示这里勾选的档位。"
             }
           },
@@ -236,21 +253,6 @@
         "presetWebsiteLink": "↗ 官网",
         "noteText": "选择模型预设后会自动填入 Provider、Base URL 和模型名；你只需要填写对应平台的 API Key。配置只保存在本机 Electron 用户数据目录。",
         "workFlowAdapt": "模型厂商 Work 流程适配",
-        "vision": {
-          "title": "视觉模型（全局）",
-          "desc": "档案未开多模态时，用这里的独立视觉模型转述图片。留空则诚实告知看不了。",
-          "baseUrl": {
-            "label": "Base URL"
-          },
-          "apiKey": {
-            "label": "API Key"
-          },
-          "model": {
-            "label": "视觉型号"
-          },
-          "hint": "ⓘ 该模型需支持 OpenAI 兼容的 /chat/completions 接口及 image_url 多模态能力",
-          "testButton": "测试视觉模型"
-        },
         "saveStatus": "等待保存",
         "deleteProfileButton": "删除档案",
         "testConnectionButton": "测试连接",
@@ -258,14 +260,7 @@
       },
       "preferences": {
         "heading": "偏好设置",
-        "subheading": "设置聊天窗口打开后的默认行为。这里的选择会保存为全局默认值。",
-        "chatMode": {
-          "title": "默认模式",
-          "desc": "打开聊天窗口时默认使用的模式；窗口内仍可临时切换。",
-          "option": {
-            "chat": "Chat"
-          }
-        },
+        "subheading": "设置聊天气泡分段、主动聊天与上下文增强等偏好，选择会保存为全局默认值。",
         "segmented": {
           "title": "分段输出",
           "desc": "控制流萤回复在聊天气泡中的分段显示；不会改变模型实际回复内容。",
@@ -274,20 +269,6 @@
             "chat": "聊天",
             "off": "关闭"
           }
-        },
-        "mobileSeg": {
-          "title": "手机信息分段",
-          "desc": "连接手机回复会按 。！？； 拆成多条发送；请在关闭工具使用后开启。",
-          "option": {
-            "off": "关闭",
-            "on": "开启"
-          }
-        },
-        "customStyle": {
-          "title": "自定义风格",
-          "desc": "配置聊天窗口“自定义”风格的采样参数，或打开自定义 Prompt 文件。",
-          "button": "自定义风格采样",
-          "promptButton": "打开 Prompt 文件"
         },
         "proactive": {
           "title": "主动聊天",
@@ -310,37 +291,61 @@
           "title": "聊天上下文增强",
           "desc": "仅在 Chat 模式下使用相关的过去信息和未接话题，让连续交流更自然；每轮最多增加一次异步模型调用。"
         },
-        "cita": {
-          "title": "CITA 上下文认知",
-          "desc": "辅助流萤理解跨轮状态、指代和省略表达。",
-          "engine": {
-            "title": "语义认知方式",
-            "desc": "本地语义模型将在后续版本开放。",
-            "option": {
-              "remote": "在线大模型",
-              "local": "本地语义模型（暂不可用）"
-            }
-          }
-        },
         "saveStatus": "等待保存",
         "saveButton": "保存偏好"
       },
       "appearance": {
         "heading": "外观设置",
-        "subheading": "调整界面颜色、字体和窗口外观。",
+        "subheading": "调整主题、自定义颜色、字体与字号；修改后自动应用。",
         "theme": {
           "title": "主题",
           "desc": "浅色是冷灰蓝，深色取流萤的墨绿与萤光青绿；切换后所有窗口同步应用。",
-          "light": { "title": "浅色", "desc": "冷灰蓝，明亮清爽" },
-          "dark": { "title": "深色 · 流萤", "desc": "墨绿底色，萤光青绿点缀" }
+          "light": {
+            "title": "浅色",
+            "desc": "冷灰蓝，明亮清爽"
+          },
+          "dark": {
+            "title": "深色 · 流萤",
+            "desc": "墨绿底色，萤光青绿点缀"
+          }
+        },
+        "custom": {
+          "title": "自定义",
+          "enabled": {
+            "title": "启用自定义颜色",
+            "desc": "设置强调色、背景色和前景色；修改后自动保存，其他窗口同步应用。"
+          },
+          "accent": "强调色",
+          "background": "背景",
+          "foreground": "前景",
+          "reset": "恢复默认颜色"
+        },
+        "font": {
+          "title": "字体",
+          "family": "界面字体",
+          "option": {
+            "default": "系统默认",
+            "custom": "已导入字体"
+          }
+        },
+        "advanced": {
+          "title": "高级",
+          "uiFontSize": {
+            "title": "界面字号",
+            "desc": "调整界面的基础字号（12 ~ 20px）。"
+          },
+          "chatFontSize": {
+            "title": "内容字体大小",
+            "desc": "调整消息正文的字号（12 ~ 22px）。"
+          },
+          "codeFontSize": {
+            "title": "代码字体大小",
+            "desc": "调整聊天和差异视图中代码块的字号（11 ~ 20px）。"
+          }
         },
         "personalize": {
           "title": "个性化",
           "desc": "字体和图标会立即应用；请仅导入你有权使用的字体文件。",
-          "windowCornerRadius": {
-            "title": "窗口圆角",
-            "desc": "统一调整所有应用窗口的四角弧度（0 ~ 40px）。"
-          },
           "uiFont": {
             "title": "界面字体",
             "current": "思源黑体（默认）",
@@ -380,11 +385,16 @@
       },
       "general": {
         "heading": "通用设置",
-        "groups": { "desktop": "桌面与提醒", "system": "系统" },
-        "subheading": "控制状态栏、基础音频和系统行为。",
-        "statusBar": {
-          "title": "状态栏窗口",
-          "desc": "不小心关闭后可以从这里重新打开。"
+        "subheading": "选择流萤的界面语言，切换后立即保存。",
+        "language": {
+          "title": "语言",
+          "desc": "流萤界面的显示语言。聊天界面会在重启流萤后生效。",
+          "option": {
+            "zh": "中文"
+          }
+        },
+        "groups": {
+          "desktop": "桌面与系统"
         },
         "toastSound": {
           "title": "提醒音效",
@@ -394,48 +404,20 @@
           "title": "开机自启",
           "desc": "系统启动时自动打开流萤。"
         },
-        "language": {
-          "title": "语言",
-          "desc": "当前仅支持中文，其他语言待开发。",
-          "option": {
-            "zh": "中文",
-            "ja": "日文",
-            "ko": "韩语"
-          }
-        },
-        "disableGpu": {
-          "title": "禁用客户端 GPU 渲染",
-          "desc": "向 Electron 添加 --disable-gpu 参数以使用软件渲染，降低客户端 GPU 负载，但会增加 CPU 负载．",
-          "descLink": "可以通过查看",
-          "gpuInternalsLink": "GPU Internals 页面",
-          "descLink2": "得知当前是否使用 GPU 渲染．",
-          "descBefore": "修改后",
-          "notice": "完全退出并重启客户端",
-          "descAfter": "才可生效．"
-        },
+        "desktopSaveFailed": "保存失败，请重试。",
         "about": {
           "title": "关于",
           "desc": "· 轻量情感陪伴桌面 Agent"
-        },
-        "saveStatus": "等待保存"
+        }
       },
       "firefly": {
         "heading": "流萤设置",
-        "subheading": "这里集中管理流萤的 Agent 行为、状态更新、表情包、记忆和本地检索能力。",
-        "runtimeSync": {
-          "title": "状态栏实时更新",
-          "desc": "控制状态与心情如何同步到状态栏。",
-          "option": {
-            "off": "关闭",
-            "local": "本地关键词",
-            "llm": "LLM 分析"
-          },
-          "note": "LLM 模式每轮会额外调用一次模型，产生额外 Token 用量。"
-        },
+        "subheading": "这里集中管理流萤的 Agent 行为、表情包、记忆和本地检索能力。",
         "sticker": {
           "title": "表情包发送",
           "desc": "控制流萤是否在聊天框里发送表情包，以及表情包显示大小。",
           "sendEnabled": "发送状态：允许发送表情包",
+          "sendDisabled": "发送状态：不发送表情包",
           "size": {
             "title": "表情包显示大小",
             "option": {
@@ -471,70 +453,159 @@
       },
       "memory": {
         "heading": "流萤记忆",
-        "subheading": "流萤对你的认知和记忆，你可以查看、编辑和管理。",
-        "l0": {
-          "title": "长期画像",
-          "desc": "流萤一直记得、基本不会变化的信息",
-          "hint": "手动修改的内容优先级高于自动推断",
-          "fieldName": "称呼",
-          "fieldOccupation": "职业 / 身份",
-          "fieldInterests": "长期兴趣",
-          "fieldLanguage": "常用语言",
-          "fieldNote": "永久备注"
+        "subheading": "流萤从聊天中记住的长期信息。你可以查看、编辑、遗忘，也可以确认待确认的内容。",
+        "loading": "正在读取记忆…",
+        "overview": {
+          "title": "记忆概览",
+          "desc": "流萤整理出的内容，需要你确认后才会真正记住。",
+          "service": "记忆服务",
+          "serviceOk": "正常",
+          "serviceDown": "暂不可用",
+          "serviceUnknown": "读取失败，请重试",
+          "count": "已记住",
+          "pending": "待确认",
+          "updated": "最近更新",
+          "never": "暂无",
+          "coverage": "来源覆盖",
+          "coverageValue": "存在 {{present}} / {{population}}，缺失 {{missing}}，未知或拒绝 {{unknownDenied}}"
         },
-        "editButton": "编辑",
-        "cancelButton": "取消",
-        "l1": {
-          "title": "近况",
-          "desc": "最近的目标、偏好和状态，会随时间变化",
-          "hint": "手动修改的内容优先级高于自动推断",
-          "fieldGoals": "最近目标",
-          "fieldPreferences": "近期偏好",
-          "fieldProject": "当前项目"
+        "entries": {
+          "title": "我的记忆",
+          "desc": "查看流萤记住的内容，可以编辑、遗忘，或确认待确认的内容。",
+          "searchLabel": "搜索记忆内容",
+          "searchPlaceholder": "搜索记忆内容",
+          "filterLabel": "按类型筛选",
+          "filterAll": "全部",
+          "filterFacts": "已记住",
+          "filterPending": "待确认",
+          "kindUser": "你说过",
+          "kindInference": "流萤推断",
+          "activationConfirmed": "你已确认",
+          "activationAuto": "自动记住",
+          "pendingTag": "待确认",
+          "pendingNeedsConfirm": "等你确认后才会记住",
+          "pendingUntitled": "候选内容待明确",
+          "recordedAt": "记录于 {{time}}",
+          "edit": "编辑",
+          "forget": "遗忘",
+          "source": {
+            "loading": "正在读取来源…",
+            "failed": "来源读取失败，请重试。",
+            "none": "没有可展示的来源。",
+            "statusEligible": "有依据",
+            "statusPendingReview": "等待复核",
+            "statusForgotten": "已遗忘",
+            "kindAutomatic": "自动记录",
+            "kindConfirmed": "你确认过",
+            "kindReview": "复核记录",
+            "unknownTime": "时间未知"
+          },
+          "confirm": "确认",
+          "reject": "拒绝",
+          "editLabel": "写下正确的内容",
+          "saveEdit": "保存修改",
+          "cancel": "取消",
+          "emptyAll": "还没有记住任何内容。流萤会在聊天中整理出需要长期保留的信息。",
+          "emptyFacts": "还没有已记住的内容。",
+          "emptyPending": "当前没有待确认的内容。",
+          "emptySearch": "没有找到符合搜索条件的内容。",
+          "backendDown": "记忆服务暂不可用，暂时无法查看记忆。",
+          "loadFailed": "记忆读取失败，请重试。",
+          "apiMissing": "记忆接口不可用，无法读取记忆。",
+          "busy": "正在处理…",
+          "emptyCorrection": "请输入正确的内容。",
+          "saved": {
+            "confirm": "已确认，之后会记住这件事。",
+            "reject": "已拒绝这条待确认内容。",
+            "correct": "已保存修改。",
+            "forget": "已遗忘这条记忆。"
+          },
+          "reason": {
+            "revision": "这条内容刚刚被更新，列表已刷新，请再试一次。",
+            "notFound": "这条内容已经不存在，列表已刷新。",
+            "secret": "这段内容包含敏感信息，无法保存。",
+            "unresolved": "无法确定修改后的内容，请换一种写法。",
+            "backend": "记忆服务暂不可用。",
+            "failed": "操作未完成，请稍后重试。"
+          }
         },
-        "l2": {
-          "title": "事件片段",
-          "desc": "从聊天中提炼的重要事件，可搜索和管理",
-          "empty": "暂无事件片段",
-          "emptyHint": "聊天后流萤会自动提炼重要信息"
+        "obsidian": {
+          "title": "Obsidian 同步",
+          "desc": "把记忆写成 .md 文件，放进一个文件夹。用 Obsidian 打开该文件夹，即可通过双链查看关系。",
+          "unbound": "还没有绑定文件夹",
+          "bound": "已绑定文件夹",
+          "unboundHint": "选择一个文件夹后，记忆会同步成 .md 文件。",
+          "boundPathPrefix": "绑定路径：",
+          "bindButton": "绑定文件夹",
+          "syncButton": "立即同步",
+          "unbindButton": "解绑",
+          "autoSync": "自动同步",
+          "autoSyncHint": "记忆变化后 2 秒自动写入",
+          "exportButton": "导出一次",
+          "exportHint": "导出到任意文件夹，不会绑定它。",
+          "binding": "绑定中…",
+          "syncing": "同步中…",
+          "exporting": "导出中…",
+          "boundDone": "已绑定并同步 {{n}} 个文件",
+          "syncDone": "已同步 {{n}} 个文件 · {{time}}",
+          "exported": "已导出 {{n}} 个文件",
+          "unboundDone": "已解绑。文件夹里的 .md 文件不会被删除。",
+          "autoSyncOn": "已开启自动同步",
+          "autoSyncOff": "已关闭自动同步",
+          "lastSync": "上次同步：{{time}}",
+          "unavailable": "当前记忆版本暂不支持 Obsidian 同步。",
+          "apiMissing": "Obsidian 接口不可用。",
+          "loadFailed": "读取 Obsidian 设置失败，请重试。",
+          "failed": "操作失败：{{error}}"
         },
         "imported": {
           "title": "导入知识",
-          "desc": "用户上传的文档和知识库",
+          "desc": "在聊天窗口上传的文档会被索引，流萤回答时会参考。",
           "empty": "暂无导入文档",
-          "emptyHint": "在聊天窗口上传文件后会自动索引"
-        },
-        "reflection": {
-          "title": "回顾",
-          "desc": "AI 自动生成的阶段性回顾",
-          "empty": "暂无回顾",
-          "emptyHint": "持续聊天后会自动生成"
-        },
-        "obsidian": {
-          "title": "Obsidian Vault 绑定",
-          "desc": "绑定一个文件夹，把记忆同步成 .md 文件，用 [[双链]] 互连",
-          "hint": "用 Obsidian 打开绑定的文件夹，即可看到关系图谱",
-          "bindButton": "绑定 Vault 文件夹",
-          "syncButton": "立即同步",
-          "unbindButton": "解绑",
-          "autoSync": "自动同步（记忆变化后 2 秒自动写入）"
+          "emptyHint": "在聊天窗口上传文件后会自动索引",
+          "unavailable": "导入知识接口不可用",
+          "loadFailed": "导入知识读取失败，请重试",
+          "indexed": "已索引 {{n}} 个片段",
+          "importedAt": "最近导入：{{time}}",
+          "deleteTitle": "删除此导入文档",
+          "deleteAria": "删除 {{name}}"
         }
       },
       "user": {
         "heading": "我的信息",
-        "subheading": "你的个人标识与云端账号（即将支持）",
+        "subheading": "你的个人资料与云端账号",
+        "accountTitle": "账号",
+        "profileTitle": "个人资料",
+        "locationTitle": "位置与时间",
+        "account": {
+          "signedOutTitle": "未登录",
+          "signedOutDesc": "登录后可在多台设备间同步你的资料与设置（即将支持）",
+          "loginButton": "登录 / 注册",
+          "comingSoon": "即将开放",
+          "logoutButton": "退出登录",
+          "unnamed": "未命名账号"
+        },
+        "avatarTitle": "头像",
         "uploadAvatarButton": "上传头像",
         "avatarHint": "支持 JPG、PNG，建议 1:1 比例",
         "nicknameLabel": "昵称",
+        "nicknameDesc": "称呼偏好为空时，流萤会用昵称称呼你。",
+        "nicknamePlaceholder": "你想让流萤怎么称呼你",
         "genderLabel": "性别",
+        "genderDesc": "选填。选择保密时，流萤不会记录这一项。",
         "genderSecret": "保密",
         "genderMale": "男生",
         "genderFemale": "女生",
         "callPrefLabel": "称呼偏好",
+        "callPrefDesc": "流萤称呼你时优先使用这个。",
         "callPrefPlaceholder": "例如：开拓者",
         "birthdayLabel": "生日",
+        "birthdayDesc": "选填，流萤会把它记在你的个人信息里。",
         "cityLabel": "默认城市",
+        "cityDesc": "天气等需要定位的工具，未指定城市时默认使用它。",
+        "cityPlaceholder": "例如：上海",
         "timezoneLabel": "时区",
+        "timezoneDesc": "仅用于时间计算，不代表所在城市。",
         "fieldHint": "称呼偏好优先于昵称；两者都留空时流萤称呼你为开拓者。默认城市用于天气等需要定位的工具；时区仅用于时间计算，不代表所在城市。"
       },
       "tasks": {
@@ -581,6 +652,16 @@
         "logRefresh": "刷新",
         "logClear": "清空",
         "logEmpty": "暂无消息。",
+        "overviewTitle": "连接概览",
+        "overviewNone": "尚未连接任何渠道",
+        "overviewCount": "已连接 {{running}} / {{total}} 个渠道",
+        "publicTitle": "公共设置",
+        "publicHint": "以下设置对所有渠道生效。",
+        "appTitle": "Firefly 手机 App",
+        "appStatusComingSoon": "即将推出",
+        "appDesc": "配对后可在手机上直接和流萤聊天、接收提醒。",
+        "appPairButton": "开始配对",
+        "thirdPartyTitle": "其它渠道",
         "heading": "连接手机",
         "subheading": "把 Firefly 接到微信、飞书等聊天平台。在外部渠道里的每个用户会拥有独立的对话上下文与记忆。",
         "wechatTitle": "微信",
@@ -632,14 +713,13 @@
         "qqBotSaveButton": "保存并连接",
         "qqBotTestButton": "测试连接",
         "contextBindingTitle": "上下文绑定",
-        "contextHint": "选择一个最近收到消息的外部聊天和一个已有桌面对话。绑定后，两边会继续使用同一段文字上下文；不会改变外部渠道的工具权限。",
+        "contextHint": "把最近的外部聊天与一个桌面对话绑定，两边共享同一段文字上下文；不改变外部渠道的工具权限。",
         "contextSource": "外部聊天",
         "contextEmpty": "暂无最近聊天",
         "contextTarget": "桌面对话",
         "contextTargetEmpty": "暂无可用对话",
         "contextBindButton": "绑定上下文",
         "contextBindingsEmpty": "暂无绑定。",
-        "globalTitle": "全局",
         "rateUser": "限速 (每用户 / 分钟)",
         "rateChannel": "限速 (单渠道 / 分钟)",
         "sendTts": "发送 TTS 音频消息",
@@ -777,27 +857,6 @@
           "p1": "安装或使用本软件即视为您已阅读、理解并同意本免责声明的全部条款。"
         }
       },
-      "tokens": {
-        "heading": "Token 用量",
-        "subheading": "查看 API 调用统计与消耗",
-        "realUsage": "真实消耗",
-        "requestCount": "请求数",
-        "inputLabel": "输入",
-        "outputLabel": "输出",
-        "cacheHitLabel": "缓存命中",
-        "cacheSummaryTitle": "统计 Token",
-        "resetButton": "重置计算",
-        "summaryRequests": "统计请求数",
-        "summaryTotal": "统计总 Token",
-        "summaryHit": "缓存命中 Token",
-        "summaryHitRate": "统计缓存命中率",
-        "summaryHitRateEmpty": "模型未提供缓存统计",
-        "empty": "暂无用量数据",
-        "emptyHint": "和流萤聊天后这里会显示真实的 Token 消耗统计",
-        "chartBar": "每日消耗柱状图",
-        "chartTrend": "使用趋势",
-        "chartModelShare": "模型用量占比"
-      },
       "asr": {
         "heading": "ASR 设置",
         "subheading": "语音识别服务配置",
@@ -853,7 +912,6 @@
       "readFailed": "读取配置失败",
       "prefsReadFailed": "读取偏好失败",
       "appearanceReadFailed": "读取外观失败",
-      "generalReadFailed": "读取设置失败",
       "dirty": "有未保存的更改",
       "releaseApply": "松开后自动应用",
       "appliedOk": "已应用",
@@ -871,26 +929,7 @@
       "saveFailed": "保存失败"
     },
     "modal": {
-      "customStyle": {
-        "title": "自定义风格采样",
-        "diversity": {
-          "label": "多样性控制",
-          "followModel": "跟随模型"
-        },
-        "temperature": "Temperature",
-        "topP": "Top-P",
-        "repetition": {
-          "label": "重复控制",
-          "light": "轻度抑制",
-          "medium": "中度抑制",
-          "strong": "重度抑制"
-        },
-        "reset": "恢复默认",
-        "cancel": "取消",
-        "save": "保存",
-        "saved": "自定义风格已保存",
-        "saveFailed": "自定义风格保存失败"
-      }
+      "cancel": "取消"
     },
     "appearance": {
       "font": {
@@ -908,8 +947,7 @@
       "loading": "正在读取档案…",
       "readFailed": "档案读取失败，原文件已保留。请检查文件或读取权限。",
       "badge": {
-        "default": "默认",
-        "vision": "多模态"
+        "default": "默认"
       },
       "editorTitle": {
         "edit": "编辑档案",
@@ -973,13 +1011,6 @@
       "localDraftHint": "请填写本地服务地址和模型 ID",
       "cloudDraftHint": "请填写云端服务地址、API Key 和模型 ID"
     },
-    "vision": {
-      "needUrl": "请先填写 API URL",
-      "needModel": "请先填写视觉型号",
-      "testing": "测试中…",
-      "testOk": "✅ 连接成功 {{latency}}ms · {{sample}}",
-      "testFailed": "❌ {{error}}"
-    },
     "default": {
       "provider": "MiniMax（稀宇科技）"
     },
@@ -997,13 +1028,13 @@
       "row": {
         "openAI": "OpenAI / ⚠️ 文档适配 / A / - / 已完成官方协议适配，等待实测。",
         "claude": "Claude / ⚠️ 文档适配 / A / - / 已完成官方协议适配，等待实测。",
-        "doubao": "豆包 / ✅ 已实测 / A / Seed 2.1 Turbo / Pro / 推荐使用，完整 Work 流程稳定。",
         "kimi": "Kimi / ✅ 已实测 / A / K2.6、K2.7 Code / 推荐普通 API，Coding 端点不建议用于 Work。",
         "deepSeek": "DeepSeek / ✅ 已实测 / B / V4.1 Flash、V4 Pro / 推荐，速度快、稳定。",
         "qwen": "Qwen / ✅ 已实测 / B / Qwen3.7 Max / 推荐，表现稳定。",
         "glm": "GLM / ✅ 已实测 / B / GLM 5.1、5.2 / 推荐，4.7 不建议。",
         "miMo": "MiMo / ✅ 已实测 / B / MiMo 2.5、2.5 Pro / 推荐，表现稳定。",
         "minimax": "MiniMax / ✅ 已实测 / M / MiniMax M3 / 推荐，需使用 M 档适配。",
+        "openRouter": "OpenRouter / ⚠️ 文档适配 / D / - / 聚合网关，型号由所选模型决定，未实测；请自行验证。",
         "others": "其他模型 / ⚠️ 文档适配 / D / - / 使用通用兼容模式，请自行验证。"
       }
     },
@@ -1012,10 +1043,6 @@
       "deleteTitle": "删除导入知识",
       "deleteMessage": "确定删除导入知识？\n\n文件：\n《{{fileName}}》\n\n删除后不可恢复，如需使用请重新导入。",
       "deleteConfirm": "删除"
-    },
-    "prompt": {
-      "openFailed": "打开 Prompt 文件失败",
-      "opened": "已打开 Prompt 文件位置"
     }
   }
 }

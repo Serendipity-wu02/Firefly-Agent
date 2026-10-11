@@ -269,8 +269,6 @@ export class AgentRunController {
     this.deps.registries.eventUnsubscribers.current.add(off);
 
     try {
-      const general = await window.chat?.getGeneralSettings?.();
-
       const ack = await api.run({
         // 权威模型上下文已由主进程轨迹构建；此数组仅一个版本周期的渲染端回退用，发送完整历史
         messages: this.input.session.messages.map((item) => ({
@@ -280,7 +278,6 @@ export class AgentRunController {
         })),
         userTurnId: this.input.userMessageId,
         assistantTurnId: this.input.assistantId,
-        styleId: general?.currentStyleId,
         sessionId: this.input.sessionId,
         recoveryContext: buildTodoRecoveryContext(this.input.session.messages, this.input.assistantId),
         ...(this.input.resumeFromRunId ? { resumeFromRunId: this.input.resumeFromRunId } : {}),

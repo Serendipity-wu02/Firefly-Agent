@@ -753,7 +753,7 @@
   min-width: 0;
   color: inherit;
   font-weight: 400;
-  font-size: 14px;
+  font-size: var(--cy-chat-font-size, 14px);
   line-height: var(--cy-chat-line-height, 1.75);
   font-family: var(--rb-font-sans, sans-serif);
   user-select: text;
@@ -794,6 +794,17 @@
 .cy-message-markdown pre {
   max-width: 100%;
   overflow-x: auto;
+}
+
+/* 代码块字号来自外观设置；highlighter 会给 pre/code 写行内 font-size，所以这里需要 !important 才能覆盖。 */
+.cy-message-markdown pre,
+.cy-message-markdown pre code {
+  font-size: var(--cy-code-font-size, 13px) !important;
+}
+
+/* 段间距来自外观设置（默认 0.5em）。 */
+.cy-message-markdown p + p {
+  margin-top: var(--cy-chat-para-spacing, 0.5em);
 }
 
 /* 工作区文件引用保持为轻量行内链接：用品牌粉强调，不用 chip 底色打断正文。 */

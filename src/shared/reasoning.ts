@@ -10,7 +10,7 @@
 //   - main/orchestrator/vendors/reasoning.ts：纯函数 applyReasoningPreference
 //
 // providerId 必须与 main/orchestrator/vendors/capabilities.ts 的 ProviderCapability.id
-// 完全一致：chatgpt / claude / deepseek / glm / kimi / qwen / minimax / mimo / doubao / unknown。
+// 完全一致：chatgpt / claude / deepseek / glm / kimi / qwen / minimax / mimo / openrouter / unknown。
 //
 // 规则优先级：第一条匹配的 capability 生效（find() + first-match-wins）。
 // 排序原则：具体型号在前，宽泛系列在后（Qwen /-thinking$/ 必须在 /^qwen3/ 之前；
@@ -37,6 +37,8 @@ export type ReasoningControl =
 
 export type ReasoningRequestStyle =
   | "openai-effort"
+  // OpenRouter 统一写法：请求体 reasoning: { effort }（不是顶层 reasoning_effort）；线上取值见 vendors/reasoning.ts。
+  | "openrouter-reasoning"
   | "thinking-type"
   | "anthropic-adaptive"
   | "qwen-enable-thinking"
@@ -59,12 +61,6 @@ export interface ReasoningCapability {
    */
   keepOnTools?: boolean;
   /**
-   * 是否支持 Responses API 的 reasoning.mode:"pro"（GPT-5.6 系列，2026-07 GA）。
-   * pro 与 effort 正交；仅 Responses 协议生效 —— Chat Completions 无该字段，
-   * openai 路径静默忽略 proMode。
-   */
-  supportsProMode?: boolean;
-  /**
    * auto 档显式映射的 effort。不设置时 auto = 不发字段（交给服务端默认）。
    * 用于服务端默认档不可控/过重的模型：GLM-5.3 服务端默认 effort=max，
    * auto 不发字段 ≡ max，多步任务思考会吃穿输出预算。
@@ -76,14 +72,17 @@ export interface ReasoningCapability {
 export interface ReasoningPreference {
   mode: ReasoningMode;
   effort?: ReasoningEffort;
-  /** Responses 专属 pro 模式（reasoning.mode="pro"）。仅 mode="on" 且 capability.supportsProMode 时生效 */
-  proMode?: boolean;
 }
 
 export interface ModelReasoningRule {
   providerId: string;
   modelPattern: RegExp;
   capability: ReasoningCapability;
+  /**
+   * 只对 providerId 本家生效，不参与 matchReasoningRule 第二轮的跨家族推断。
+   * 聚合网关（如 OpenRouter）的规则是匹配任意型号的通配规则，不加此标记会被套到其它厂商的未知型号上。
+   */
+  ownProviderOnly?: boolean;
 }
 
 /** 兜底 capability：未知 provider / 模型 */
@@ -94,17 +93,17 @@ const UNKNOWN_CAPABILITY: ReasoningCapability = {
 };
 
 /**
- * 9 家厂商规则表。第一条匹配的 capability 生效。
+ * 10 家厂商规则表（含聚合网关 OpenRouter）。第一条匹配的 capability 生效。
  *
  * 修改本表前请同步更新 src/shared/reasoning.test.ts
- * （A. 规则匹配优先级 + B. 9 家全部存在性），并保持每条规则的
+ * （A. 规则匹配优先级 + B. 厂商全部存在性），并保持每条规则的
  * 注释说明 control / requestStyle / 支持档位，便于新读者核对厂商文档。
  */
 export const MODEL_REASONING_RULES: readonly ModelReasoningRule[] = [
   // ── chatgpt（OpenAI）──
   // 按具体型号拆分；GPT-6 Astra（2026-09-03 发布）：effort 五档与 5.6 相同，
   // 官方迁移说明明确不支持 none 档 → supportsDisable=false，off 折叠为 on 落
-  // defaultEffort；pro mode 与 5.6 一致继续支持（官方迁移指南）。
+  // defaultEffort。
   // defaultEffort 是 Firefly 的产品默认档（质量/延迟/成本的平衡点），非官方 API 默认。
   { providerId: "chatgpt", modelPattern: /^gpt-6/i, capability: {
     control: "effort",
@@ -112,18 +111,15 @@ export const MODEL_REASONING_RULES: readonly ModelReasoningRule[] = [
     defaultEffort: "medium",
     requestStyle: "openai-effort",
     supportsDisable: false,
-    supportsProMode: true,
   } },
   // GPT-5.6 当前 Chat Completions 接受 low/medium/high/xhigh/max
   // （不含 minimal）；supportsDisable=true，off → reasoning_effort:"none"。
-  // supportsProMode=true：Responses API 支持 reasoning.mode:"pro"（与 effort 正交）。
   { providerId: "chatgpt", modelPattern: /^gpt-5\.6/i, capability: {
     control: "effort",
     supportedEfforts: ["low", "medium", "high", "xhigh", "max"],
     defaultEffort: "medium",
     requestStyle: "openai-effort",
     supportsDisable: true,
-    supportsProMode: true,
   } },
   { providerId: "chatgpt", modelPattern: /^gpt-5/i, capability: {
     control: "effort",
@@ -343,21 +339,26 @@ export const MODEL_REASONING_RULES: readonly ModelReasoningRule[] = [
   } },
   { providerId: "mimo", modelPattern: /.*/, capability: UNKNOWN_CAPABILITY },
 
-  // ── doubao（火山方舟）──
-  { providerId: "doubao", modelPattern: /^doubao-seed-/i, capability: {
-    control: "toggle",
-    requestStyle: "thinking-type",
+  // ── openrouter（聚合网关）──
+  // 统一写法：请求体 reasoning: { effort }，不是 OpenAI 的 reasoning_effort。
+  // 型号数百个且 id 形如 vendor/model，没有型号级信息时给通用档位 low / medium / high，最高 max；
+  // max 线上写 xhigh（见 vendors/reasoning.ts 的 openRouterWireEffort）。关闭 = effort "none"（OpenRouter 文档列出该取值）。
+  // ownProviderOnly：不参与跨家族推断，否则通配规则会套到其它厂商的未知型号上。
+  { providerId: "openrouter", modelPattern: /.*/, ownProviderOnly: true, capability: {
+    control: "effort",
+    supportedEfforts: ["low", "medium", "high", "max"],
+    defaultEffort: "medium",
+    requestStyle: "openrouter-reasoning",
     supportsDisable: true,
   } },
-  { providerId: "doubao", modelPattern: /.*/, capability: UNKNOWN_CAPABILITY },
 ];
 
 /**
  * 按 (providerId, model) 解析推理 capability。
  * 未命中任何规则时返回兜底 { control: "none", requestStyle: "none", supportsDisable: false }。
  *
- * 模型名推断兜底：厂商家族与模型家族不一致时（自定义端点 / 托管场景，如方舟
- * coding plan 上跑 glm-5.3-flash，档案厂商登记为「豆包（火山方舟）」），第一轮
+ * 模型名推断兜底：厂商家族与模型家族不一致时（自定义端点 / 托管场景，如某托管
+ * 端点上跑 glm-5.3-flash，档案厂商登记为其它家族），第一轮
  * 同厂商匹配只能命中表尾通配兜底。此时按模型名跨家族找回真正的推理规则，
  * 使推理控制在托管端点上同样可用。各家族表尾的通配兜底规则均引用同一个
  * UNKNOWN_CAPABILITY 常量，用恒等判断跳过即可，不会误匹配。
@@ -380,9 +381,9 @@ function matchReasoningRule(providerId: string, model: string): ReasoningCapabil
       return rule.capability;
     }
   }
-  // 第二轮：模型名跨家族推断（第一轮未出真实规则时兜底）
+  // 第二轮：模型名跨家族推断（第一轮未出真实规则时兜底；ownProviderOnly 规则不参与）
   for (const rule of MODEL_REASONING_RULES) {
-    if (rule.modelPattern.test(model) && rule.capability !== UNKNOWN_CAPABILITY) {
+    if (rule.modelPattern.test(model) && rule.capability !== UNKNOWN_CAPABILITY && !rule.ownProviderOnly) {
       return rule.capability;
     }
   }
@@ -439,10 +440,7 @@ export function resolveEffectiveReasoning(
     effort = capability.defaultEffort;
   }
 
-  // proMode 仅在 capability 声明支持且显式为 true 时保留
-  const proMode = capability.supportsProMode === true && pref.proMode === true;
-
-  return { mode, ...(effort !== undefined ? { effort } : {}), ...(proMode ? { proMode: true } : {}) };
+  return { mode, ...(effort !== undefined ? { effort } : {}) };
 }
 
 // ── 档案级档位声明：由用户接入的 API 决定，优先于上面的型号规则表 ──
@@ -456,22 +454,19 @@ export interface ReasoningLevelsConfig {
   efforts: ReasoningEffort[];
   /** 是否允许显式关闭思考。 */
   allowOff?: boolean;
-  /** 是否支持 Responses 的 PRO 档。 */
-  pro?: boolean;
 }
 
 const EFFORT_ORDER: readonly ReasoningEffort[] = ["minimal", "low", "medium", "high", "xhigh", "max"];
 
-/** 非对象 → undefined（= 没声明，回退规则表）；档位去重并按强弱排序，未知档位丢弃。 */
+/** 非对象 → undefined（= 没声明，回退规则表）；档位去重并按强弱排序，未知档位丢弃（旧存档的 pro 字段也丢弃）。 */
 export function normalizeReasoningLevels(input: unknown): ReasoningLevelsConfig | undefined {
   if (!input || typeof input !== "object") return undefined;
-  const raw = input as { efforts?: unknown; allowOff?: unknown; pro?: unknown };
+  const raw = input as { efforts?: unknown; allowOff?: unknown };
   const wanted = new Set(Array.isArray(raw.efforts) ? raw.efforts : []);
   const efforts = EFFORT_ORDER.filter((effort) => wanted.has(effort));
   return {
     efforts: [...efforts],
     ...(raw.allowOff === true ? { allowOff: true } : {}),
-    ...(raw.pro === true ? { pro: true } : {}),
   };
 }
 
@@ -491,7 +486,9 @@ function applyReasoningLevels(
   const requestStyle = base.requestStyle === "none" ? fallbackStyle : base.requestStyle;
   // 没有档位的开/关，在 openai-effort 写法里只有“关”有对应的线上字段（reasoning_effort: "none"）；
   // “开”就是服务端默认。没声明可关闭时开关两边请求体完全一样，等于没有可控项，所以不暴露开关。
-  const toggleHasWireField = requestStyle !== "openai-effort" || levels.allowOff === true;
+  // openrouter-reasoning 与 openai-effort 同属“关 = effort none”的写法：没有档位时同样只有“关”有线上字段。
+  const effortOffStyle = requestStyle === "openai-effort" || requestStyle === "openrouter-reasoning";
+  const toggleHasWireField = !effortOffStyle || levels.allowOff === true;
   return {
     ...base,
     control: hasEfforts ? "effort" : toggleHasWireField ? "toggle" : "none",
@@ -501,7 +498,6 @@ function applyReasoningLevels(
     defaultEffort: hasEfforts ? pickDefaultEffort(efforts, base.defaultEffort) : undefined,
     autoEffort: base.autoEffort && efforts.includes(base.autoEffort) ? base.autoEffort : undefined,
     supportsDisable: levels.allowOff === true,
-    supportsProMode: levels.pro === true,
   };
 }
 
@@ -513,12 +509,12 @@ const EFFORT_SET: ReadonlySet<ReasoningEffort> = new Set([
 ]);
 
 /**
- * 把任意 input 归一化为合法 { mode, effort?, proMode? }。
+ * 把任意 input 归一化为合法 { mode, effort? }。
  * - 完全非法对象 → undefined
  * - mode 非法 → undefined
  * - mode 合法但 effort 非法 → 返 { mode }，effort 字段丢弃
- * - mode 合法但 proMode 非布尔 → 返 { mode, ... }，proMode 字段丢弃
- * - 完全合法 → 原样
+ * - 旧版 PRO 档位已下线：effort "pro"，或 mode "on" 只带 proMode 没有档位 → 映射为最高档 "max"；
+ *   旧存档里的 proMode 字段本身不再保留。
  */
 export function normalizeReasoningPreference(
   input: unknown,
@@ -529,19 +525,18 @@ export function normalizeReasoningPreference(
     return undefined;
   }
   const mode = obj.mode as ReasoningMode;
+  const hasEffort = obj.effort !== undefined && obj.effort !== null;
   let effort: ReasoningEffort | undefined;
-  if (obj.effort !== undefined && obj.effort !== null) {
-    if (typeof obj.effort !== "string" || !EFFORT_SET.has(obj.effort as ReasoningEffort)) {
-      effort = undefined;
-    } else {
-      effort = obj.effort as ReasoningEffort;
-    }
+  if (obj.effort === "pro") {
+    effort = "max";
+  } else if (hasEffort && typeof obj.effort === "string" && EFFORT_SET.has(obj.effort as ReasoningEffort)) {
+    effort = obj.effort as ReasoningEffort;
+  } else if (!hasEffort && mode === "on" && obj.proMode === true) {
+    effort = "max";
   }
-  const proMode = obj.proMode === true ? true : undefined;
   return {
     mode,
     ...(effort !== undefined ? { effort } : {}),
-    ...(proMode !== undefined ? { proMode } : {}),
   };
 }
 

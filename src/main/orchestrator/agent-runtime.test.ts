@@ -42,9 +42,6 @@ function createDeps(
   publishPluginHostEvent: AgentRuntimeDeps["publishPluginHostEvent"],
 ): AgentRuntimeDeps {
   return {
-    runtimeStateService: {
-      getState: () => ({ status: "idle", expression: 0, updatedAt: 0 }),
-    },
     getStickerEmbeddingIndex: () => undefined,
     publishPluginHostEvent,
   } as unknown as AgentRuntimeDeps;
@@ -287,14 +284,6 @@ function modelSettingsFixture() {
 /** 覆盖装配链路的完整依赖桩：所有外部依赖都是可控的 vi.fn。 */
 function createFullDeps(overrides?: Partial<AgentRuntimeDeps>): AgentRuntimeDeps {
   return {
-    runtimeStateService: {
-      getState: () => ({ status: "idle", expression: 0, updatedAt: 0 }),
-      smoothFeeling: vi.fn(),
-      inferFromText: vi.fn(() => ({ status: "idle" })),
-      setStateWithoutNotify: vi.fn(),
-    },
-    llmClient: { chat: vi.fn() },
-    enqueueLLMTask: vi.fn(async (_label: string, task: () => Promise<unknown>) => task()),
     loadModelSettings: () => modelSettingsFixture(),
     loadGeneralSettings: () => ({ skillModeOverrides: { chat: ["skill-a"] } }),
     loadUserProfile: () => ({}),
@@ -309,8 +298,6 @@ function createFullDeps(overrides?: Partial<AgentRuntimeDeps>): AgentRuntimeDeps
     },
     getStickerEmbeddingIndex: () => undefined,
     getEmbeddingProvider: () => undefined,
-    broadcastRuntimeStateChanged: vi.fn(),
-    citaService: { prepareTurn: vi.fn(async () => "cita-turn") },
     socialContextScheduler: { schedule: vi.fn() },
     chatsStore: { getWorkspaceBinding: vi.fn(() => ({ workspaceRoot: "E:/ws", displayName: "ws", boundAt: 1 })) },
     socialAtomStore: { listActive: vi.fn(() => []) },
@@ -434,9 +421,7 @@ describe("AgentRuntime buildOptions 依赖装配", () => {
       captured!.toolRegistry.getEnabledToolsForMode("work");
       expect(deps.toolRegistry.getEnabledToolsForMode).toHaveBeenCalledWith("work", undefined);
 
-      // cita、工作区绑定、插件提示词上下文透传
-      await captured!.prepareCitaTurn({} as never);
-      expect(deps.citaService.prepareTurn).toHaveBeenCalledWith({});
+      // 工作区绑定、插件提示词上下文透传
       captured!.getWorkspaceBinding("conversation-1");
       expect(deps.chatsStore.getWorkspaceBinding).toHaveBeenCalledWith("conversation-1");
       await captured!.buildPluginPromptContext({ source: "desktop", mode: "chat" } as never);
@@ -447,135 +432,12 @@ describe("AgentRuntime buildOptions 依赖装配", () => {
       expect(deps.socialAtomStore.listActive).toHaveBeenCalledWith("conversation-1", expect.any(Number));
       expect(social).toEqual({ contextBlock: "", retrievedAtoms: [] });
 
-      // 图片兜底：纯文本主模型且未配独立视觉模型时明确拒绝而不是给出注定失败的配置
+      // 图片兜底：型号不支持图片时明确拒绝而不是给出注定失败的配置
       const caption = await captured!.captionImageForFallback("a.png");
       expect(caption).toMatchObject({ ok: false });
-      expect((caption as { error: string }).error).toContain("未配置独立视觉模型");
+      expect((caption as { error: string }).error).toContain("不支持查看图片");
     } finally {
       spy.mockRestore();
-    }
-  });
-});
-
-describe("AgentRuntime 心情观察器", () => {
-  beforeEach(() => {
-    mocks.onAgentRunFinished.mockReset();
-    mocks.onAgentRunFinished.mockImplementation(async () => ({ sticker: null }));
-  });
-
-  async function captureOnRunFinishedDeps() {
-    const deps = createFullDeps();
-    const runtime = createAgentRuntime(deps);
-    await runtime.onRunFinished(
-      { reply: "回复", toolResults: [] },
-      "问题",
-      { source: "desktop", mode: "chat", conversationId: "conversation-observer" },
-    );
-    const call = mocks.onAgentRunFinished.mock.calls.at(-1);
-    return { deps, onRunFinishedDeps: call![2] as import("./build-options").OnRunFinishedDeps };
-  }
-
-  it("解析到合法心情时通过低优先级队列平滑注入", async () => {
-    const { deps, onRunFinishedDeps } = await captureOnRunFinishedDeps();
-    (deps.llmClient.chat as Mock).mockResolvedValue('{"feeling": "开心"}');
-
-    await onRunFinishedDeps.observeRuntimeState({ provider: "p", baseUrl: "https://observer.example/v1", model: "m", apiKey: "k" }, [], "问题", "回复");
-
-    // 观察器走 enqueueLLMTask 低优先级通道且不记日志
-    expect(deps.enqueueLLMTask).toHaveBeenCalledWith("心情观察器", expect.any(Function), { log: false });
-    expect(deps.llmClient.chat).toHaveBeenCalledTimes(1);
-    // 判定的是流萤的心情，system 提示词带人格设定，user 带最后一轮回复
-    const chatArgs = (deps.llmClient.chat as Mock).mock.calls[0];
-    expect(chatArgs[1][0].role).toBe("system");
-    expect(chatArgs[1][0].content).toContain("情绪分析器");
-    expect(chatArgs[1][1].content).toContain("回复");
-    expect(deps.runtimeStateService.smoothFeeling).toHaveBeenCalledWith("开心");
-  });
-
-  it("观察器输出非法心情时保持当前心情不变", async () => {
-    const { deps, onRunFinishedDeps } = await captureOnRunFinishedDeps();
-    (deps.llmClient.chat as Mock).mockResolvedValue("我今天心情不错！");
-
-    await onRunFinishedDeps.observeRuntimeState({ provider: "p", baseUrl: "https://observer.example/v1", model: "m", apiKey: "k" }, [], "问题", "回复");
-
-    expect(deps.runtimeStateService.smoothFeeling).not.toHaveBeenCalled();
-  });
-
-  it("观察器失败只告警，不影响对话主流程", async () => {
-    const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
-    const deps = createFullDeps({
-      enqueueLLMTask: vi.fn(async () => { throw new Error("队列已满"); }),
-    });
-    const runtime = createAgentRuntime(deps);
-    await runtime.onRunFinished(
-      { reply: "回复", toolResults: [] },
-      "问题",
-      { source: "desktop", mode: "chat", conversationId: "conversation-observer-error" },
-    );
-    const call = mocks.onAgentRunFinished.mock.calls.at(-1);
-    const onRunFinishedDeps = call![2] as import("./build-options").OnRunFinishedDeps;
-
-    await expect(onRunFinishedDeps.observeRuntimeState(
-      { provider: "p", baseUrl: "https://observer.example/v1", model: "m", apiKey: "k" }, [], "问题", "回复",
-    )).resolves.toBeUndefined();
-    expect(warn).toHaveBeenCalledWith(
-      "[Firefly] observe runtime failed; keeping current feeling:",
-      expect.any(Error),
-    );
-  });
-
-  it("selected model profile reaches the observer through the finished-run context", async () => {
-    const info = vi.spyOn(console, "info").mockImplementation(() => {});
-    try {
-      const settings = modelSettingsFixture();
-      settings.modelProfiles.push({
-        id: "profile-2",
-        provider: "测试厂商",
-        baseUrl: "https://selected.example/v1",
-        model: "selected-model",
-        apiKey: "selected-key",
-        explicitTransport: "responses",
-      });
-      const deps = createFullDeps({ loadModelSettings: () => settings as never });
-      const runtime = createAgentRuntime(deps);
-      await runtime.onRunFinished(
-        { reply: "公开回复", toolResults: [] },
-        "公开问题",
-        { source: "desktop", mode: "chat", conversationId: "conversation-selected", modelProfileId: "profile-2" },
-      );
-      const onRunFinishedDeps = mocks.onAgentRunFinished.mock.calls.at(-1)![2] as import("./build-options").OnRunFinishedDeps;
-      expect(onRunFinishedDeps.loadModelSettings()).toMatchObject({
-        baseUrl: "https://selected.example/v1",
-        model: "selected-model",
-        explicitTransport: "responses",
-      });
-      (deps.llmClient.chat as Mock).mockResolvedValue('{"feeling": "平静"}');
-      await onRunFinishedDeps.observeRuntimeState(onRunFinishedDeps.loadModelSettings(), [], "公开问题", "公开回复");
-      expect(deps.llmClient.chat).toHaveBeenCalledWith(
-        expect.objectContaining({ baseUrl: "https://selected.example/v1", model: "selected-model", explicitTransport: "responses" }),
-        expect.any(Array),
-        undefined,
-        30000,
-        "心情观察器",
-        false,
-      );
-      expect(info).toHaveBeenCalledWith("[Firefly] mood observation request", { profileSelection: "conversation", transport: "responses" });
-      expect(info).toHaveBeenCalledWith("[Firefly] mood observation applied");
-    } finally {
-      info.mockRestore();
-    }
-  });
-
-  it("does not enqueue an observer request when its model or service URL is absent", async () => {
-    const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
-    try {
-      const { deps, onRunFinishedDeps } = await captureOnRunFinishedDeps();
-      await onRunFinishedDeps.observeRuntimeState({ provider: "p", baseUrl: "", model: "", apiKey: "" }, [], "问题", "回复");
-      expect(deps.enqueueLLMTask).not.toHaveBeenCalled();
-      expect(deps.llmClient.chat).not.toHaveBeenCalled();
-      expect(warn).toHaveBeenCalledWith(expect.stringContaining("mood observation unavailable"));
-    } finally {
-      warn.mockRestore();
     }
   });
 });
@@ -708,7 +570,7 @@ describe("ordinary Main memory injection",()=>{
    const runtime=createAgentRuntime(deps),built=await runtime.buildOptions({sessionId:"session-a",messages:[{role:"user",content:"synthetic prompt"}],mode:"chat",modelProfileId:"profile-1"} as never);
    expect(openRun).not.toHaveBeenCalled();expect(built.options.openMemoryRun).toBeTypeOf("function");
    expect(mocks.buildAlwaysOnContext).not.toHaveBeenCalled();expect(mocks.buildWorldbookContext).toHaveBeenCalled();
-   expect(built.options.soulRuntimeContext).toContain("[WORLD_ONLY]");expect(deps.citaService.prepareTurn).not.toHaveBeenCalled();
+   expect(built.options.soulRuntimeContext).toContain("[WORLD_ONLY]");
    const actual={...built.options,runId:"run-a"};await built.options.openMemoryRun!(actual);expect(openRun).toHaveBeenCalledWith(actual);
   }finally{electronMocks.userDataRoot="";rmSync(root,{recursive:true,force:true})}
  });

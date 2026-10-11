@@ -8,6 +8,8 @@ import {
   userBirthdayInput, userTimezoneSelect, userGenderGroup,
 } from "./dom";
 import { TIMEZONE_OPTIONS, normalizeTimezoneOptionValue } from "../timezone-options";
+import { subscribeLocaleChanged } from "../i18n";
+import { buildAccountCardView, getAccountState, renderAccountCardDom } from "./account";
 
 const avatarImg = avatarEl?.querySelector("img") as HTMLImageElement | null;
 const avatarPlaceholder = avatarEl?.querySelector("span") as HTMLElement | null;
@@ -128,6 +130,11 @@ if (uploadAvatarBtn) {
     }
   });
 }
+
+// 账号卡片：当前恒为未登录（来源见 ./account.ts）；切换语言时重画占位文案
+const renderAccountCard = (): void => renderAccountCardDom(buildAccountCardView(getAccountState()));
+renderAccountCard();
+subscribeLocaleChanged(renderAccountCard);
 
 // 模块加载时拉一次配置
 void loadUserProfile();

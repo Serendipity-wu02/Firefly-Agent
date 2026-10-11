@@ -24,7 +24,6 @@ export interface PublicModelConfig {
   shortName: string;
   model: string;
   connected: boolean;
-  runtimeSync: "off" | "local" | "llm";
   stickerSize: StickerSize;
   rerankerMode: "standard" | "none";
 }

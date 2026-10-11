@@ -82,7 +82,7 @@ it("keeps ambiguous send failure explicit without retrying",async()=>{
 it("actual AgentRuntime reaches canonical Main counts/permit and direct SDK sender",async()=>{
  const f=await fixture(),{createAgentRuntime}=await import("../orchestrator/agent-runtime");
  const legacy=vi.fn(()=>{throw Error("LEGACY_MODEL_FORBIDDEN")}),provision=vi.fn(()=>f.port);
- const runtime=createAgentRuntime({runtimeStateService:{},sContext:{enabled:true,createPort:provision},loadModelSettings:legacy,llmClient:{chat:legacy}} as any);
+ const runtime=createAgentRuntime({sContext:{enabled:true,createPort:provision},loadModelSettings:legacy,llmClient:{chat:legacy}} as any);
  await expect(runtime.runSContext({request:f.request})).resolves.toMatchObject({status:"sent",result:{id:"synthetic-response"}});
  expect(provision).toHaveBeenCalledTimes(1);expect(legacy).not.toHaveBeenCalled();expect(f.sends).toHaveLength(1);
  expect(f.commands.some((c:any)=>c.kind==="permit")).toBe(true);expect(f.commands.filter((c:any)=>c.kind==="claim")).toHaveLength(1);
@@ -131,7 +131,7 @@ it("AgentRuntime snapshots request before a delayed lazy factory resolves",async
  const f=await fixture(),{createAgentRuntime}=await import("../orchestrator/agent-runtime");let release!:(port:typeof f.port)=>void,started!:()=>void;
  const pending=new Promise<typeof f.port>(resolve=>{release=resolve}),start=new Promise<void>(resolve=>{started=resolve});
  const createPort=vi.fn(()=>{started();return pending});
- const runtime=createAgentRuntime({runtimeStateService:{},sContext:{enabled:true,createPort}} as any);
+ const runtime=createAgentRuntime({sContext:{enabled:true,createPort}} as any);
  const input={request:f.request},run=runtime.runSContext(input);await start;
  f.request.messages[0].content="changed during factory";f.request.tools![0].parameters={type:"string"};
  input.request={...f.request,messages:[{role:"system",content:"replaced request during factory"}]};release(f.port);
@@ -142,7 +142,7 @@ it("AgentRuntime fixes the original signal while a delayed factory is pending",a
  const f=await fixture(),{createAgentRuntime}=await import("../orchestrator/agent-runtime");let release!:(port:typeof f.port)=>void,started!:()=>void;
  const pending=new Promise<typeof f.port>(resolve=>{release=resolve}),start=new Promise<void>(resolve=>{started=resolve});
  const original=new AbortController(),replacement=new AbortController(),createPort=vi.fn(()=>{started();return pending});
- const runtime=createAgentRuntime({runtimeStateService:{},sContext:{enabled:true,createPort}} as any);
+ const runtime=createAgentRuntime({sContext:{enabled:true,createPort}} as any);
  const input={request:f.request,signal:original.signal},run=runtime.runSContext(input);const rejected=expect(run).rejects.toThrow("MEMORY_CONTEXT_CANCELLED");await start;
  input.signal=replacement.signal;original.abort();release(f.port);await rejected;
  expect(f.captures).toBe(0);expect(f.counts).toHaveLength(0);expect(f.sends).toHaveLength(0);
@@ -154,7 +154,7 @@ it.each(["request-getter","signal-getter","message-getter","schema-getter","sche
  if(kind==="message-getter")Object.defineProperty(f.request.messages[0],"content",{enumerable:true,get:()=>{touched++;return "unexpected"}});
  if(kind==="schema-getter")Object.defineProperty(f.request.tools![0].parameters,"type",{enumerable:true,get:()=>{touched++;return "object"}});
  if(kind==="schema-toJSON")Object.defineProperty(f.request.tools![0].parameters,"toJSON",{value:()=>{touched++;return {type:"object"}}});
- const runtime=createAgentRuntime({runtimeStateService:{},sContext:{enabled:true,createPort}} as any);
+ const runtime=createAgentRuntime({sContext:{enabled:true,createPort}} as any);
  await expect(runtime.runSContext(input)).rejects.toThrow("MEMORY_CONTEXT_COUNTER_UNSUPPORTED");
  expect(touched).toBe(0);expect(createPort).not.toHaveBeenCalled();expect(f.captures).toBe(0);expect(f.counts).toHaveLength(0);expect(f.sends).toHaveLength(0);
 });

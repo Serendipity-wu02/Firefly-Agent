@@ -69,7 +69,7 @@ import { getEmbeddingProvider } from "../rag/embedding";
 import { toolRegistry } from "../orchestrator/tools/registry/tool-registry";
 import { pluginPromptRegistry } from "../../plugins/prompts";
 import type { PluginManager } from "../../plugins/manager";
-import { setLive2dWindowSender } from "../orchestrator/tools/built-in-tools";
+import { setLive2dWorkSignalSender } from "../orchestrator/live2d-work-signal";
 import { registerAllTools } from "../orchestrator/tools/registry/tool-registration";
 import { LspManager } from "../lsp/manager";
 import { initSandbox } from "../orchestrator/sandbox/sandbox-exec";
@@ -127,9 +127,7 @@ import { createLifecyclePublisher } from "../plugin-host/lifecycle-publisher";
 import { createPendingTurnLifecycle } from "../plugin-host/pending-turn-lifecycle";
 import { startPluginRuntime } from "../plugin-runtime";
 import { createAgentRuntime } from "../orchestrator/agent-runtime";
-import { createRuntimeStateService } from "../orchestrator/runtime-state-service";
 import { createProactiveLifecycle } from "../proactive/proactive-lifecycle";
-import { createCitaService } from "../services/cita/cita-service";
 import { createSocialContextService } from "../services/social-context/social-context-service";
 import { createGitService } from "../code-git/git-service";
 import { resolveGitExecutable, type ResolvedGitExecutable } from "../code-git/git-executable";
@@ -318,12 +316,6 @@ export function createDefaultApplicationDependencies(): ApplicationDependencies 
         return primaryProcess;
       },
       registerPrivilegedSchemes,
-      configureGpuSwitches: () => {
-        if (loadGeneralSettings().disableGpuElectron) {
-          app.commandLine.appendSwitch("disable-gpu");
-          app.commandLine.appendSwitch("enable-unsafe-swiftshader");
-        }
-      },
       ensureGpuSandboxAcl: () => ensureGpuSandboxAcl({
         isPackaged: app.isPackaged,
         exeDir: path.dirname(app.getPath("exe")),
@@ -392,16 +384,9 @@ export function createDefaultApplicationDependencies(): ApplicationDependencies 
       },
 
       createLowCostServices: () => {
-        const runtimeStateService = createRuntimeStateService();
-        runtimeStateService.onChange(() => {
-          broadcastToAuxWindows(IPC.RUNTIME_STATE_CHANGED, runtimeStateService.getState());
-          shell.windowManager.sendToPetWindow(IPC.RUNTIME_STATE_CHANGED, runtimeStateService.getState());
-        });
-
         const llmClient = createLlmClient();
 
         const embeddingIndexService = createEmbeddingIndexService();
-        const citaService = createCitaService({ llmClient });
         const socialContextService = createSocialContextService({ llmClient, enqueueLLMTask });
         const proactiveLifecycle = createProactiveLifecycle({ loadGeneralSettings, memoryHost:defaultMemory?.backgroundHost });
         // 主动聊天服务初始化是纯装配；触发器由 background 阶段启动
@@ -422,8 +407,8 @@ export function createDefaultApplicationDependencies(): ApplicationDependencies 
           asrLanguage: generalSettings.asrLanguage,
         });
 
-        // Live2D 桌宠窗口发送器
-        setLive2dWindowSender((channel, payload) => shell.windowManager.sendToPetWindow(channel, payload));
+        // Live2D 桌宠窗口“工作中”信号发送器（Agent 工具调用期间为 true）
+        setLive2dWorkSignalSender((working) => shell.windowManager.sendToPetWindow(IPC.LIVE2D_WORKING_CHANGED, working));
 
         // Git：服务对象预创建；仓库监听只在打开仓库后启动
         // 探测结果在进程内缓存：成功过一次就不再重复探测，避免启动高峰期
@@ -465,9 +450,7 @@ export function createDefaultApplicationDependencies(): ApplicationDependencies 
         });
 
         return {
-          runtimeState: runtimeStateService,
           llm: llmClient,
-          cita: citaService,
           social: socialContextService,
 
           embedding: embeddingIndexService,
@@ -519,9 +502,7 @@ export function createDefaultApplicationDependencies(): ApplicationDependencies 
       createRuntime: (services) => createAgentRuntime({
         ...(controlledMemory?{sContext:controlledMemory.sContext}:{}),
         ...(defaultMemory?{defaultMemory:defaultMemory}:{}),
-        runtimeStateService: services.runtimeState,
         llmClient: services.llm,
-        enqueueLLMTask,
         loadModelSettings,
         loadGeneralSettings,
         loadUserProfile,
@@ -529,10 +510,6 @@ export function createDefaultApplicationDependencies(): ApplicationDependencies 
         skillRegistry,
         getStickerEmbeddingIndex: () => services.embedding.getStickerEmbeddingIndex(),
         getEmbeddingProvider,
-        broadcastRuntimeStateChanged: () => {
-          broadcastToAuxWindows(IPC.RUNTIME_STATE_CHANGED, services.runtimeState.getState());
-        },
-        citaService: services.cita,
         socialContextScheduler: services.social.scheduler,
         chatsStore,
         socialAtomStore: services.social.store,
@@ -610,7 +587,6 @@ export function createDefaultApplicationDependencies(): ApplicationDependencies 
           saveGeneralSettings,
           getModelSettings: loadModelSettings,
           saveModelSettings:input=>{const saved=saveModelSettings(input);defaultMemory?.refreshModels();return saved},
-          runtimeStateService: services.runtimeState,
           proactiveLifecycle: services.proactive,
           reconcileUserMemoryIndex:defaultMemory?async()=>{}:reconcileUserMemoryIndex,
           embeddingIndexService: services.embedding,

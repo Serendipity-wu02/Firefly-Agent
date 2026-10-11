@@ -1,48 +1,90 @@
-// M policy state and imported documents are independent data sources.
+// 记忆设置页编排：概览、我的记忆、Obsidian 同步、导入知识四张卡片。
+import type { MemoryPanelState } from "../../../shared/memory-panel-contracts";
 import type { MemoryPanelApi, MemoryPanelPayload } from "../shared/types";
-import { createSmhPanel } from "./smh-panel";
+import { applyTranslations, t } from "../i18n";
 import { formatDateTime } from "../shared/format";
+import { createMemoryEntriesPanel } from "./entries-panel";
+import { initObsidianVaultUI, refreshObsidianVaultUI } from "./obsidian-vault-ui";
 
-let mounted: { root: HTMLElement; panel: ReturnType<typeof createSmhPanel> } | null = null;
+let entries: ReturnType<typeof createMemoryEntriesPanel> | null = null;
+let entriesRoot: HTMLElement | null = null;
+let translated = false;
 let importedDocs: MemoryPanelPayload["importedDocs"] = [];
+
 function api(): MemoryPanelApi | undefined {
   return (window as Window & { memoryPanel?: MemoryPanelApi }).memoryPanel;
 }
-function docsMessage(message: string): void {
-  const list = document.getElementById("memory-imported-list");
-  if (!list) return;
-  const note = document.createElement("p"); note.className = "memory-list__empty"; note.textContent = message; list.replaceChildren(note);
+function setText(id: string, text: string): void {
+  const node = document.getElementById(id);
+  if (node) node.textContent = text;
 }
+
+/** 概览只展示真实读取到的数据；来源覆盖仅在后端真正统计时出现。 */
+function renderOverview(state: MemoryPanelState | null): void {
+  if (!state) {
+    setText("memory-overview-service", t("settings.panel.memory.overview.serviceUnknown"));
+    setText("memory-overview-count", "—");
+    setText("memory-overview-pending", "—");
+    setText("memory-overview-updated", "—");
+    document.getElementById("memory-overview-coverage-row")?.classList.add("is-hidden");
+    return;
+  }
+  setText("memory-overview-service", state.backendStatus.available
+    ? t("settings.panel.memory.overview.serviceOk")
+    : t("settings.panel.memory.overview.serviceDown"));
+  setText("memory-overview-count", String(state.facts.length));
+  setText("memory-overview-pending", String(state.candidates.length));
+  const latest = state.facts.reduce((max, item) => Math.max(max, item.acceptedAt || 0, item.recordedAt || 0), 0);
+  setText("memory-overview-updated", latest ? formatDateTime(latest) : t("settings.panel.memory.overview.never"));
+  const coverage = state.coverage;
+  const measured = coverage.status === "measured";
+  document.getElementById("memory-overview-coverage-row")?.classList.toggle("is-hidden", !measured);
+  if (measured) {
+    setText("memory-overview-coverage", t("settings.panel.memory.overview.coverageValue", {
+      present: coverage.present ?? "—",
+      population: coverage.population ?? "—",
+      missing: coverage.missing ?? "—",
+      unknownDenied: coverage.unknownDenied ?? "—",
+    }));
+  }
+}
+
 async function loadImportedDocs(): Promise<void> {
   try {
     const payload = await api()?.getData();
-    if (!payload || !Array.isArray(payload.importedDocs)) { docsMessage("导入知识接口不可用"); return; }
+    if (!payload || !Array.isArray(payload.importedDocs)) { docsMessage(t("settings.panel.memory.imported.unavailable")); return; }
     importedDocs = payload.importedDocs;
     renderImportedDocs();
-  } catch { docsMessage("导入知识读取失败，请重试"); }
+  } catch { docsMessage(t("settings.panel.memory.imported.loadFailed")); }
 }
-export async function loadMemoryPanel(): Promise<void> {
-  const root = document.getElementById("memory-smh-panel");
-  if (root && mounted?.root !== root) {
-    const bridge = api();
-    mounted = { root, panel: createSmhPanel(root, typeof bridge?.getState === "function" ? bridge : undefined) };
-  }
-  await Promise.all([root ? mounted?.panel.load() : undefined, loadImportedDocs()]);
-}
-export function renderImportedDocs(): void {
+
+function docsMessage(message: string): void {
   const list = document.getElementById("memory-imported-list");
   if (!list) return;
-  if (!importedDocs.length) { docsMessage("暂无导入文档；在聊天窗口上传文件后会自动索引"); return; }
+  const note = document.createElement("p");
+  note.className = "memory-list__empty";
+  note.textContent = message;
+  list.replaceChildren(note);
+}
+
+function renderImportedDocs(): void {
+  const list = document.getElementById("memory-imported-list");
+  if (!list) return;
+  if (!importedDocs.length) { docsMessage(t("settings.panel.memory.imported.empty")); return; }
   list.replaceChildren();
   for (const item of importedDocs) {
     const article = document.createElement("article"); article.className = "memory-record memory-record--doc";
     const main = document.createElement("div"); main.className = "memory-record__main";
     const title = document.createElement("h3"); title.className = "memory-record__title"; title.textContent = item.fileName;
-    const body = document.createElement("p"); body.className = "memory-record__body"; body.textContent = `已索引 ${item.chunkCount} 个片段`;
-    const meta = document.createElement("p"); meta.className = "memory-record__meta"; meta.textContent = `最近导入：${formatDateTime(item.lastImportedAt)}`;
+    const body = document.createElement("p"); body.className = "memory-record__body";
+    body.textContent = t("settings.panel.memory.imported.indexed", { n: item.chunkCount });
+    const meta = document.createElement("p"); meta.className = "memory-record__meta";
+    meta.textContent = t("settings.panel.memory.imported.importedAt", { time: formatDateTime(item.lastImportedAt) });
     main.append(title, body, meta);
     const remove = document.createElement("button"); remove.type = "button"; remove.className = "memory-record__delete";
-    remove.dataset.importId = item.importId || ""; remove.dataset.fileName = item.fileName; remove.title = "删除此导入文档"; remove.setAttribute("aria-label", `删除 ${item.fileName}`);
+    remove.dataset.importId = item.importId || ""; remove.dataset.fileName = item.fileName;
+    remove.title = t("settings.panel.memory.imported.deleteTitle");
+    remove.setAttribute("aria-label", t("settings.panel.memory.imported.deleteAria", { name: item.fileName }));
     const icon = document.createElementNS("http://www.w3.org/2000/svg", "svg");
     for (const [name, value] of Object.entries({ width: "16", height: "16", viewBox: "0 0 48 48", fill: "none", "aria-hidden": "true" })) icon.setAttribute(name, value);
     for (const d of ["M8 15H40L37 44H11L8 15Z", "M20.002 25.0024V35.0026", "M28.0024 24.9995V34.9972", "M12 14.9999L28.3242 3L36 15"]) {
@@ -53,4 +95,21 @@ export function renderImportedDocs(): void {
     remove.append(icon);
     article.append(main, remove); list.append(article);
   }
+}
+
+export async function loadMemoryPanel(): Promise<void> {
+  const root = document.getElementById("memory-entries-body");
+  const page = document.getElementById("memory-panel");
+  if (page && !translated) {
+    // 静态文案跟随界面语言；订阅只需挂一次。
+    translated = true;
+    applyTranslations(page);
+  }
+  initObsidianVaultUI();
+  if (root && entriesRoot !== root) {
+    entriesRoot = root;
+    const bridge = api();
+    entries = createMemoryEntriesPanel(root, typeof bridge?.getState === "function" ? bridge : undefined, renderOverview);
+  }
+  await Promise.all([entries?.load(), loadImportedDocs(), refreshObsidianVaultUI()]);
 }

@@ -6,7 +6,6 @@ function makePreReadyDeps(calls: string[], overrides: Partial<PreReadyDependenci
     configureDocumentIndex: vi.fn(() => { calls.push("configure-document-index"); }),
     installSingleInstance: vi.fn(() => { calls.push("single-instance-lock"); return true; }),
     registerPrivilegedSchemes: vi.fn(() => { calls.push("register-schemes"); }),
-    configureGpuSwitches: vi.fn(() => { calls.push("gpu-switches"); }),
     ensureGpuSandboxAcl: vi.fn(() => { calls.push("gpu-acl"); }),
     activation: { request: vi.fn() },
     ...overrides,
@@ -21,7 +20,6 @@ describe("prepareBeforeReady", () => {
       "configure-document-index",
       "single-instance-lock",
       "register-schemes",
-      "gpu-switches",
       "gpu-acl",
     ]);
     expect(result.isPrimaryProcess).toBe(true);

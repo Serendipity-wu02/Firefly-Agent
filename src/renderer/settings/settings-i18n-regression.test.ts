@@ -3,6 +3,7 @@ import { fileURLToPath } from "node:url";
 import { JSDOM, VirtualConsole } from "jsdom";
 import { describe, expect, it } from "vitest";
 import { t } from "./i18n";
+import { getAppChannelCard } from "./channels/view-model";
 
 const html = fs.readFileSync(fileURLToPath(new URL("./index.html", import.meta.url)), "utf8");
 const css = fs.readFileSync(fileURLToPath(new URL("./settings.css", import.meta.url)), "utf8");
@@ -32,46 +33,6 @@ describe("settings i18n regressions", () => {
     ).toBe(false);
   });
 
-  it("keeps inline GPU copy inline inside the translated description", () => {
-    const dom = createSettingsDocument();
-    const style = dom.window.document.createElement("style");
-    style.textContent = css;
-    dom.window.document.head.append(style);
-
-    const description = dom.window.document.querySelector<HTMLElement>(
-      '[data-i18n="panel.general.disableGpu.desc"]',
-    );
-    const linkPrefix = dom.window.document.querySelector<HTMLElement>(
-      '[data-i18n="panel.general.disableGpu.descLink"]',
-    );
-    const restartNotice = dom.window.document.querySelector<HTMLElement>(
-      '[data-i18n="panel.general.disableGpu.notice"]',
-    );
-
-    expect(description).not.toBeNull();
-    expect(linkPrefix).not.toBeNull();
-    expect(restartNotice).not.toBeNull();
-    expect(dom.window.getComputedStyle(description!).display).toBe("inline");
-    expect(dom.window.getComputedStyle(linkPrefix!).display).toBe("inline");
-    expect(dom.window.getComputedStyle(restartNotice!).display).toBe("inline");
-  });
-
-  it("renders custom-style actions with dark, readable text on their light fill", () => {
-    const dom = createSettingsDocument();
-    const style = dom.window.document.createElement("style");
-    style.textContent = css;
-    dom.window.document.head.append(style);
-
-    // Both are ghost buttons on a light fill. White text there was unreadable until the pointer hovered it.
-    for (const id of ["custom-style-sampling-btn", "custom-style-prompt-btn"]) {
-      const button = dom.window.document.getElementById(id);
-      expect(button).not.toBeNull();
-      const label = button!.querySelector("span");
-      expect(label).not.toBeNull();
-      expect(dom.window.getComputedStyle(label!).color).toBe("var(--rb-text-strong)");
-    }
-  });
-
   it("keeps translated navigation labels out of the fixed-width icon slot", () => {
     const dom = createSettingsDocument();
     const style = dom.window.document.createElement("style");
@@ -85,6 +46,25 @@ describe("settings i18n regressions", () => {
     expect(label).not.toBeNull();
     expect(dom.window.getComputedStyle(label!).width).not.toBe("18px");
     expect(dom.window.getComputedStyle(label!).whiteSpace).toBe("nowrap");
+  });
+
+  it("labels the phone connection overview, the coming-soon app slot and the third-party group", () => {
+    expect(t("settings.panel.channels.appStatusComingSoon")).toBe("即将推出");
+    expect(t("settings.panel.channels.thirdPartyTitle")).toBe("其它渠道");
+    expect(t("settings.panel.channels.overviewCount", { running: 1, total: 4 })).toBe("已连接 1 / 4 个渠道");
+  });
+
+  it("resolves channels overview and app-slot copy to text rather than the raw key name", () => {
+    const overviewKey = "settings.panel.channels.overviewNone";
+    expect(t(overviewKey)).toBe("尚未连接任何渠道");
+    expect(t(overviewKey)).not.toBe(overviewKey);
+
+    const { statusKey } = getAppChannelCard();
+    expect(t(statusKey)).toBe("即将推出");
+    expect(t(statusKey)).not.toBe(statusKey);
+
+    const panelSource = fs.readFileSync(fileURLToPath(new URL("./channels/panel.ts", import.meta.url)), "utf8");
+    expect(panelSource).not.toMatch(/\bt\("panel\./);
   });
 
   it("interpolates the saved-profile count", () => {
@@ -112,8 +92,6 @@ describe("settings i18n regressions", () => {
     ],
     ["settings.api.testOk", { latency: 42, sample: "OK" }, "连接成功 42ms · OK"],
     ["settings.api.testFailed", { error: "超时" }, "连接失败：超时"],
-    ["settings.vision.testOk", { latency: 42, sample: "OK" }, "✅ 连接成功 42ms · OK"],
-    ["settings.vision.testFailed", { error: "超时" }, "❌ 超时"],
     [
       "settings.importDoc.deleteMessage",
       { fileName: "知识.md" },

@@ -47,3 +47,30 @@ describe("per-profile reasoning levels", () => {
     expect(settings.modelProfiles?.[0].reasoningLevels).toEqual({ efforts: [], allowOff: true });
   });
 });
+
+describe("OpenRouter profile", () => {
+  it("keeps the provider, Chat Completions transport, effort and declared levels through normalization", () => {
+    const settings = normalizeModelSettings({
+      schemaVersion: 2,
+      modelProfiles: [
+        profile("or", {
+          provider: "OpenRouter",
+          model: "openai/gpt-5.6",
+          baseUrl: "https://openrouter.ai/api/v1",
+          apiKey: "sk-or-v1-test",
+          explicitTransport: "openai",
+          reasoning: { mode: "on", effort: "max" },
+          reasoningLevels: { efforts: ["high", "max", "bogus"], allowOff: true },
+        }),
+      ],
+    });
+    expect(resolveModelSettingsProfile(settings, "or")).toMatchObject({
+      provider: "OpenRouter",
+      baseUrl: "https://openrouter.ai/api/v1",
+      model: "openai/gpt-5.6",
+      explicitTransport: "openai",
+      reasoning: { mode: "on", effort: "max" },
+      reasoningLevels: { efforts: ["high", "max"], allowOff: true },
+    });
+  });
+});

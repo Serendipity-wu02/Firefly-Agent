@@ -1,19 +1,56 @@
 import type { Live2DModel } from "pixi-live2d-display/cubism4";
-import type { Live2DTarget } from "../../shared/live2d-actions";
+import type { Live2DExpressionTarget } from "../../shared/live2d-actions";
 
-export const FIREFLY_DOUBLE_CLICK_TARGET = { kind: "expression", name: "expression2" } as const satisfies Live2DTarget;
+/** 两次点击被视为双击的最长间隔（毫秒）。 */
+const DOUBLE_CLICK_WINDOW_MS = 300;
 
 /**
- * Resolved description of a single hit area and the motion/expression it triggers.
- *
- * The model's HitAreas use a "group:motionName" trigger string. Some entries
- * point at real motion files, while others are expression-only pseudo motions,
- * so both paths are resolved here.
+ * Resolved hit area of the Live2D model. Only the name matters for the
+ * interaction rules: it selects which double-click expression table applies.
  */
 export interface HitAreaDef {
   name: string;
   id: string;
-  target: Live2DTarget;
+}
+
+interface WeightedExpression {
+  name: string;
+  weight: number;
+}
+
+/** 双击头部：expression2 占 75%，expression1 占 25%。 */
+const HEAD_DOUBLE_CLICK: readonly WeightedExpression[] = [
+  { name: "expression2", weight: 75 },
+  { name: "expression1", weight: 25 },
+];
+
+/** 双击身体：expression9 与 expression10 各 50%。 */
+const BODY_DOUBLE_CLICK: readonly WeightedExpression[] = [
+  { name: "expression9", weight: 50 },
+  { name: "expression10", weight: 50 },
+];
+
+function pickWeighted(entries: readonly WeightedExpression[], rand: () => number): string {
+  const total = entries.reduce((sum, entry) => sum + entry.weight, 0);
+  const roll = rand() * total;
+  let accumulated = 0;
+  for (const entry of entries) {
+    accumulated += entry.weight;
+    if (roll < accumulated) return entry.name;
+  }
+  return entries[entries.length - 1].name;
+}
+
+/**
+ * 按双击的命中区域选择临时表情。纯函数：随机源可注入，便于确定性单测。
+ * - Head：expression2（75%）或 expression1（25%）
+ * - Body：expression9 或 expression10（各 50%）
+ * - 其它区域：无动作，返回 undefined
+ */
+export function pickDoubleClickTarget(areaName: string, rand: () => number = Math.random): Live2DExpressionTarget | undefined {
+  const table = areaName === "Head" ? HEAD_DOUBLE_CLICK : areaName === "Body" ? BODY_DOUBLE_CLICK : null;
+  if (!table) return undefined;
+  return { kind: "expression", name: pickWeighted(table, rand) };
 }
 
 export interface InteractionOptions {
@@ -22,24 +59,32 @@ export interface InteractionOptions {
    * for the gesture to still count as a click.
    */
   clickThreshold?: number;
-  onTrigger?: (area: HitAreaDef) => void;
-  onMiss?: (area: HitAreaDef) => void;
-  playAction?: (target: Live2DTarget) => Promise<boolean>;
-  doubleClickTarget?: Live2DTarget;
+  /** 双击随机源，默认 Math.random。 */
+  random?: () => number;
+  /**
+   * 屏幕点 → 命中区域名。默认使用模型 HitAreas（model.hitTest）；桌宠窗口传入
+   * 自定义解析（Head 沿用 HitAreas，Body 只取可见网格，见 manager.hitTestRegions）。
+   */
+  resolveRegions?: (x: number, y: number) => string[];
+  onTrigger?: (area: HitAreaDef, target: Live2DExpressionTarget) => void;
+  onMiss?: (area: HitAreaDef, target: Live2DExpressionTarget) => void;
+  playAction?: (target: Live2DExpressionTarget) => Promise<boolean>;
 }
 
 /**
- * Maps pointer clicks on the Live2D canvas to model hit-area actions.
+ * Maps double-clicks on the Live2D canvas to expression playback. Single
+ * clicks do nothing.
  */
 export class InteractionController {
   private readonly canvas: HTMLCanvasElement;
   private readonly model: Live2DModel;
   private readonly hitAreaByName: Map<string, HitAreaDef>;
   private readonly clickThreshold: number;
-  private readonly onTrigger?: (area: HitAreaDef) => void;
-  private readonly onMiss?: (area: HitAreaDef) => void;
-  private readonly playAction?: (target: Live2DTarget) => Promise<boolean>;
-  private readonly doubleClickTarget?: Live2DTarget;
+  private readonly random: () => number;
+  private readonly resolveRegions: (x: number, y: number) => string[];
+  private readonly onTrigger?: (area: HitAreaDef, target: Live2DExpressionTarget) => void;
+  private readonly onMiss?: (area: HitAreaDef, target: Live2DExpressionTarget) => void;
+  private readonly playAction?: (target: Live2DExpressionTarget) => Promise<boolean>;
 
   private downHits: HitAreaDef[] = [];
   private downPointerId: number | null = null;
@@ -58,10 +103,11 @@ export class InteractionController {
     this.canvas = canvas;
     this.model = model;
     this.clickThreshold = options.clickThreshold ?? 5;
+    this.random = options.random ?? Math.random;
+    this.resolveRegions = options.resolveRegions ?? ((x, y) => this.model.hitTest(x, y));
     this.onTrigger = options.onTrigger;
     this.onMiss = options.onMiss;
     this.playAction = options.playAction;
-    this.doubleClickTarget = options.doubleClickTarget;
     this.hitAreaByName = new Map(hitAreaDefs.map((a) => [a.name, a]));
 
     canvas.addEventListener("pointerdown", this.handleDown);
@@ -86,27 +132,25 @@ export class InteractionController {
     const hits = this.downHits;
     this.downHits = [];
     if (dist > this.clickThreshold || this.resolveHits(e.clientX, e.clientY).every((area) => !hits.includes(area))) return;
-    if (!this.doubleClickTarget || hits.length === 0) {
-      void this.fire(hits);
-      return;
-    }
+    if (hits.length === 0) return;
+
     const pending = this.pendingClick;
-    if (pending && pending.hits.some((previous) => hits.some((current) => current.name === previous.name))
-      && Math.hypot(e.screenX - pending.screenX, e.screenY - pending.screenY) <= this.clickThreshold) {
-      clearTimeout(pending.timer);
-      this.pendingClick = null;
-      void this.fire([{ ...hits[0], target: this.doubleClickTarget }]);
-      return;
-    }
     if (pending) {
       clearTimeout(pending.timer);
       this.pendingClick = null;
-      void this.fire(pending.hits);
     }
+    const sameArea = pending
+      ? hits.find((current) => pending.hits.some((previous) => previous.name === current.name))
+      : undefined;
+    if (pending && sameArea && Math.hypot(e.screenX - pending.screenX, e.screenY - pending.screenY) <= this.clickThreshold) {
+      const target = pickDoubleClickTarget(sameArea.name, this.random);
+      if (target) void this.fire(sameArea, target);
+      return;
+    }
+    // 第一次点击：等待窗口内的第二次点击；超时则视为单击，不做任何动作。
     const timer = setTimeout(() => {
       this.pendingClick = null;
-      void this.fire(hits);
-    }, 300);
+    }, DOUBLE_CLICK_WINDOW_MS);
     this.pendingClick = { hits, screenX: e.screenX, screenY: e.screenY, timer };
   };
 
@@ -116,7 +160,7 @@ export class InteractionController {
   };
 
   private resolveHits(x: number, y: number): HitAreaDef[] {
-    const names = this.model.hitTest(x, y);
+    const names = this.resolveRegions(x, y);
     if (!names || names.length === 0) return [];
     const defs: HitAreaDef[] = [];
     for (const name of names) {
@@ -126,19 +170,12 @@ export class InteractionController {
     return defs;
   }
 
-  private async fire(hits: HitAreaDef[]): Promise<void> {
-    if (hits.length === 0 || this.playing) return;
+  private async fire(area: HitAreaDef, target: Live2DExpressionTarget): Promise<void> {
+    if (this.playing) return;
     this.playing = true;
-
     try {
-      for (let i = 0; i < hits.length; i++) {
-        const def = hits[i];
-        if (await this.playAction?.(def.target)) {
-          this.onTrigger?.(def);
-          return;
-        }
-        if (i === 0) this.onMiss?.(def);
-      }
+      if (await this.playAction?.(target)) this.onTrigger?.(area, target);
+      else this.onMiss?.(area, target);
     } finally {
       this.playing = false;
     }

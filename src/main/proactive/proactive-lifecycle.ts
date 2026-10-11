@@ -72,8 +72,6 @@ export function createProactiveLifecycle(options: ProactiveLifecycleOptions): Pr
     }
     const canon = loadPromptFile("canon_quotes.md");
     if (canon) parts.push(canon);
-    const style = loadPromptFile("styles/01_default.md");
-    if (style) parts.push(style);
     return parts.join("\n\n---\n\n");
   }
 
@@ -208,7 +206,6 @@ export function createProactiveLifecycle(options: ProactiveLifecycleOptions): Pr
         const channelResult = await sendProactiveChannelMessage({
           channel,
           text: input.text,
-          mobileMessageSegmentation: settings.mobileMessageSegmentation,
           manager: channelManager,
           canContinue: () => {
             if (options.loadGeneralSettings().proactiveDeliveryTarget !== channel) return false;

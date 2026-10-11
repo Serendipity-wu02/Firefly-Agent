@@ -73,11 +73,10 @@ describe("model catalog", () => {
       model: "glm-4.7",
       displayName: "GLM 官方",
       contextWindowTokens: 128000,
-      multimodal: true,
     });
 
     expect(updated).toHaveLength(1);
-    expect(updated?.[0]).toMatchObject({ apiKey: "sk-new", displayName: "GLM 官方", contextWindowTokens: 128000, multimodal: true });
+    expect(updated?.[0]).toMatchObject({ apiKey: "sk-new", displayName: "GLM 官方", contextWindowTokens: 128000 });
 
     expect(updateModelProfile(base, { id: "missing", provider: "GLM（智谱）", baseUrl: "", apiKey: "", model: "" })).toBeNull();
   });
@@ -140,14 +139,13 @@ describe("model catalog", () => {
     expect(cleared.modelProfiles).toHaveLength(0);
   });
 
-  it("resolves profile-scoped context window and multimodal with global fallback", () => {
+  it("resolves profile-scoped context window and infers multimodal from each profile's model", () => {
     const settings = normalizeModelSettings({
       provider: "GLM（智谱）",
       contextWindowTokens: 256000,
-      multimodal: false,
       modelProfiles: [
-        { id: "p-full", provider: "GLM（智谱）", baseUrl: "https://a.com", apiKey: "k", model: "m", contextWindowTokens: 128000, multimodal: true },
-        { id: "p-inherited", provider: "GLM（智谱）", baseUrl: "https://b.com", apiKey: "k2", model: "m2" },
+        { id: "p-full", provider: "GLM（智谱）", baseUrl: "https://a.com", apiKey: "k", model: "glm-5v-turbo", contextWindowTokens: 128000 },
+        { id: "p-inherited", provider: "GLM（智谱）", baseUrl: "https://b.com", apiKey: "k2", model: "glm-5.2" },
       ],
     });
 
@@ -159,12 +157,9 @@ describe("model catalog", () => {
     expect(inheritedProfile.contextWindowTokens).toBe(256000);
     expect(inheritedProfile.multimodal).toBe(false);
 
-    // 未持久化 multimodal → 默认 true（多模态模型用户开箱即直发图片，
-    // 判错有服务端 400 + caption 自动降级兜底）；显式 false 保留
-    const defaulted = normalizeModelSettings({ provider: "GLM（智谱）" });
-    expect(defaulted.multimodal).toBe(true);
-    const optedOut = normalizeModelSettings({ provider: "GLM（智谱）", multimodal: false });
-    expect(optedOut.multimodal).toBe(false);
+    // 旧存档里的 multimodal 字段不再决定能力：纯文本型号即使写了 true 也判为不支持图片
+    const stale = normalizeModelSettings({ provider: "GLM（智谱）", model: "glm-5.2", multimodal: true });
+    expect(stale.multimodal).toBe(false);
 
     // 档案展开 + 图片路由：顶层空壳 provider 不再把多模态主模型误判为"看不了图"
     const shellSettings = normalizeModelSettings({
@@ -177,8 +172,7 @@ describe("model catalog", () => {
         provider: "GLM（智谱）",
         baseUrl: "https://open.bigmodel.cn/api/paas/v4",
         apiKey: "sk-glm",
-        model: "glm-5.3-flash",
-        multimodal: true,
+        model: "glm-5v-turbo",
       }],
       defaultModelProfileId: "glm-default",
     });
@@ -187,40 +181,31 @@ describe("model catalog", () => {
       config: {
         baseUrl: "https://open.bigmodel.cn/api/paas/v4",
         apiKey: "sk-glm",
-        model: "glm-5.3-flash",
+        model: "glm-5v-turbo",
       },
     });
 
-    // multimodal=false 时仍走独立视觉模型配置（档案展开不吞掉全局 vision 字段）
-    const visionSettings = normalizeModelSettings({
+    // 纯文本型号：档案展开后拒绝看图，不再回退到全局视觉模型
+    const textSettings = normalizeModelSettings({
       provider: "MiniMax",
       modelProfiles: [{
         id: "text-model",
         provider: "MiniMax",
         apiKey: "sk-main",
-        model: "MiniMax-M3",
-        baseUrl: "https://api.minimax.chat/v1",
-        multimodal: false,
+        model: "MiniMax-M2.7",
+        baseUrl: "https://api.minimaxi.com/v1",
       }],
       defaultModelProfileId: "text-model",
-      vision: { baseUrl: "https://vi.example.com/v1", apiKey: "sk-v", model: "vi-model" },
     });
-    expect(resolveCaptionVisionConfig(resolveModelSettingsProfile(visionSettings))).toEqual({
-      ok: true,
-      config: {
-        baseUrl: "https://vi.example.com/v1",
-        apiKey: "sk-v",
-        model: "vi-model",
-      },
-    });
+    expect(resolveCaptionVisionConfig(resolveModelSettingsProfile(textSettings)).ok).toBe(false);
 
-    // 未传 id → 展开默认档案（第一个建档项 p-full），不再退回顶层镜像——
-    // 顶层镜像可能是全空的空壳，channel bot 等不带 profileId 的调用方曾因此拿到空 baseUrl
+    // 未传 id → 展开默认档案（第一个建档项 p-full），不再退回顶层镜像
     const defaultResolved = resolveModelSettingsProfile(settings, undefined);
     expect(defaultResolved.contextWindowTokens).toBe(128000);
     expect(defaultResolved.multimodal).toBe(true);
     expect(defaultResolved.baseUrl).toBe("https://a.com");
   });
+
 
   it("cleans invalid profile-scoped fields back to undefined", () => {
     const settings = normalizeModelSettings({
@@ -238,6 +223,6 @@ describe("model catalog", () => {
       ],
     });
     expect(settings.modelProfiles?.[0].contextWindowTokens).toBeUndefined();
-    expect(settings.modelProfiles?.[0].multimodal).toBeUndefined();
+    expect(settings.modelProfiles?.[0]).not.toHaveProperty("multimodal");
   });
 });

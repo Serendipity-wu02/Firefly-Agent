@@ -19,7 +19,7 @@ import {
 } from "./types";
 import { toResponseInputItems } from "openai/lib/responses/ResponseInputItems";
 import { authHeaderFor } from "./auth";
-import { resolveEffectiveReasoning, resolveReasoningCapability } from "../../../shared/reasoning";
+import { resolveReasoningCapability } from "../../../shared/reasoning";
 import { applyReasoningPreference } from "./reasoning";
 import { getTimeoutSettings } from "../../timeout-manager";
 import { resolveAutomaticToolChoicePolicy, resolveToolChoicePolicy } from "./tool-choice-policy";
@@ -260,13 +260,6 @@ export class ResponsesAdapter implements ChatVendorAdapter {
     delete scratch.thinking;
     delete scratch.enable_thinking;
     delete scratch.output_config;
-    // pro 模式（gpt-5.6 系列）：reasoning.mode="pro"，与 effort 正交。
-    // 仅 Responses 协议有此字段，openai transport 静默忽略 proMode。
-    const proMode = resolveEffectiveReasoning(
-      cfg.reasoning ?? { mode: "auto" },
-      reasoningCap,
-      getVendorRuntimeSettings().thinkingOverride,
-    ).proMode === true;
     // thinking on 且无显式 effort（M3 无 effort 档）→ effort:"minimal" 开启推理；
     // thinking off / auto → 不发字段，落 Responses 默认（MiniMax-M3 默认 effort:"none" 即关闭）。
     const resolvedEffort = typeof effort === "string"
@@ -274,11 +267,8 @@ export class ResponsesAdapter implements ChatVendorAdapter {
       : thinkingOn
         ? "minimal"
         : undefined;
-    if (resolvedEffort !== undefined || proMode) {
-      scratch.reasoning = {
-        ...(resolvedEffort !== undefined ? { effort: resolvedEffort } : {}),
-        ...(proMode ? { mode: "pro" } : {}),
-      };
+    if (resolvedEffort !== undefined) {
+      scratch.reasoning = { effort: resolvedEffort };
     }
     Object.assign(body, scratch);
 

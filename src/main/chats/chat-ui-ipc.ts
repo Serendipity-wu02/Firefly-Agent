@@ -217,8 +217,8 @@ export function registerChatUiIpc(deps: ChatUiIpcDependencies): void {
   });
 
   ipc.handle(IPC.CHAT_GET_IMAGE_SEND_STRATEGY, (_event, payload: unknown) => {
-    // 按会话解析：会话绑定的档案若声明了 multimodal 则优先于全局值；
-    // 无 sessionId / 会话未绑档案 / 档案未声明 → 回退全局（现行为）。
+    // 按会话解析：会话绑定的档案按其厂商 + 型号推断图片能力；
+    // 无 sessionId / 会话未绑档案 → 使用默认档案（现行为）。
     const sessionId = payload && typeof payload === "object"
       ? (payload as { sessionId?: unknown }).sessionId
       : undefined;
@@ -230,7 +230,7 @@ export function registerChatUiIpc(deps: ChatUiIpcDependencies): void {
       }
     }
     // 图片路由统一收口在 image-router；返回形状保持 { mode: "direct" | "caption" } 不变。
-    // reject（纯文本主模型 + 未配视觉模型）映射为 caption：UI 侧转述请求会拿到路由的
+    // reject（当前型号不支持图片）映射为 caption：UI 侧转述请求会拿到路由的
     // 人话错误并如实展示，而不是假装能直发。
     const imageRoute = resolveImageRoute("attachment", settings);
     return { mode: imageRoute.mode === "direct" ? "direct" as const : "caption" as const };

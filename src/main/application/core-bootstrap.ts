@@ -14,7 +14,6 @@ import type { WindowActivationBroker } from "./window-activation";
 import type { ShellResult } from "./shell-bootstrap";
 import type { RevealStartupWindowsOptions } from "../startup/startup-window-reveal";
 import type { AgentRuntime } from "../orchestrator/agent-runtime";
-import type { RuntimeStateService } from "../orchestrator/runtime-state-service";
 
 import type { EmbeddingIndexService } from "../services/embedding/embedding-index-service";
 import type { ProactiveLifecycle } from "../proactive/proactive-lifecycle";
@@ -24,7 +23,6 @@ import type { ScreenshotService } from "../screenshot/screenshot-lifecycle";
 import type { MusicBootstrap } from "../music/bootstrap";
 import type { AppUpdateService } from "../updater/app-update-service";
 import type { LlmClient } from "../services/llm/llm-client";
-import type { CitaService } from "../cita";
 import type { SocialContextService } from "../services/social-context/social-context-service";
 import type { ChannelsSubsystem } from "../channels/bootstrap";
 import type { SchedulerSubsystem } from "../scheduler/bootstrap";
@@ -33,9 +31,7 @@ import type { WindowManager } from "../windows/window-manager";
 import type { PluginManager } from "../../plugins/manager";
 
 export interface CoreServices {
-  runtimeState: RuntimeStateService;
   llm: LlmClient;
-  cita: CitaService;
   social: SocialContextService;
 
   embedding: EmbeddingIndexService;
@@ -123,7 +119,7 @@ export async function startCore(deps: CoreDependencies): Promise<CoreResult> {
     readiness.markDegraded({ capability: "skills", message: degradedMessage(error), at: Date.now(), error });
   }
 
-  // 低成本服务（runtimeState/embedding/proactive/git/lsp/screenshot/music/update）
+  // 低成本服务（embedding/proactive/git/lsp/screenshot/music/update）
   const services = deps.createLowCostServices();
 
   // SRT 沙箱：失败不阻塞启动（fallback 到直接 spawn）

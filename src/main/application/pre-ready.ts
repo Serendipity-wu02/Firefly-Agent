@@ -10,7 +10,6 @@ export interface PreReadyDependencies {
   configureDocumentIndex(): void;
   installSingleInstance(onSecondInstance: () => void): boolean;
   registerPrivilegedSchemes(): void;
-  configureGpuSwitches(): void;
   ensureGpuSandboxAcl(): void;
   /** 第二实例唤起统一形成 chat 激活请求，由激活代理决定何时打开窗口。 */
   activation: Pick<WindowActivationBroker, "request">;
@@ -31,7 +30,6 @@ export function prepareBeforeReady(deps: PreReadyDependencies): PreReadyResult {
   }
 
   deps.registerPrivilegedSchemes();
-  deps.configureGpuSwitches();
   deps.ensureGpuSandboxAcl();
   return { isPrimaryProcess: true };
 }

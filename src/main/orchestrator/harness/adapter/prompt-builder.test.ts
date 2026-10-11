@@ -16,13 +16,10 @@ describe("harness prompt builder", () => {
       soulSystemBaseContent: "persona",
       toolSystemContent: "tools",
       recoveryContext: "恢复证据",
-      responseContext: "响应引用",
     } as never);
 
     expect(layers.stablePrefix).not.toContain("RECOVERY_CONTEXT");
-    expect(layers.stablePrefix).not.toContain("RESPONSE_CONTEXT");
     expect(layers.runtimeContext).toContain("恢复证据");
-    expect(layers.runtimeContext).toContain("响应引用");
   });
 
   it("does not inject tool usage policy into chat mode", () => {

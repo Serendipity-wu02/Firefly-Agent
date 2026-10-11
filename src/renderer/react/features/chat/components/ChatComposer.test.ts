@@ -18,7 +18,6 @@ vi.mock("antd", () => ({
 
 vi.mock("./ModelEffortControl", () => ({ ModelEffortControl: () => null }));
 vi.mock("./DesktopAsrButton", () => ({ DesktopAsrButton: () => null }));
-vi.mock("./StyleControl", () => ({ StyleControl: () => null }));
 vi.mock("./PermissionControl", () => ({ PermissionControl: () => null }));
 vi.mock("../../../../../shared/renderer-base", () => ({ resolveAsset: (path: string) => path }));
 

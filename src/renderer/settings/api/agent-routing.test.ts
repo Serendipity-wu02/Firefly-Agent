@@ -28,7 +28,15 @@ it("renders twelve agents and saves only one selected identity through the bridg
   await loadAgentRoutingPanel(root, { getAgentRouting: async () => view, updateAgentRouting });
   expect(root.querySelectorAll('[data-routing-kind="agent"]')).toHaveLength(12);
   expect(root.querySelectorAll('[data-routing-kind="route"]')).toHaveLength(0);
-  expect(root.textContent).toContain("AGENT_MODEL_ROUTE_UNCONFIGURED");
+  // 每个角色都带一句简介，且来自共享定义而不是 description（后者是给模型看的职责说明）
+  const intros = [...root.querySelectorAll(".agent-routing-intro")].map(node => node.textContent);
+  expect(intros).toEqual(SPECIALIST_AGENTS.map(agent => agent.intro));
+  expect(SPECIALIST_AGENTS.every(agent => agent.intro.length > 0 && agent.intro !== agent.description)).toBe(true);
+  // 界面不再露出原始错误码；原始码保留在 title 里供悬停查看
+  expect(root.textContent).not.toContain("AGENT_MODEL_ROUTE_UNCONFIGURED");
+  const refused = root.querySelector<HTMLElement>('[data-routing-state="error"]')!;
+  expect(refused.textContent).toBe("未指定模型 · 将拒绝执行");
+  expect(refused.title).toBe("AGENT_MODEL_ROUTE_UNCONFIGURED");
   const select = root.querySelector<HTMLSelectElement>('[data-routing-id="review"]')!;
   select.value = "fixture-model";
   select.dispatchEvent(new Event("change"));
@@ -105,4 +113,34 @@ it("localizes routing states and source inspection in English", async () => {
     expect(root.querySelector('details summary')?.textContent).toBe("Configuration source");
     expect(root.querySelector('option')?.textContent).toBe("Role default configuration");
   } finally { setLocale("zh-CN"); }
+});
+
+it("shows the unconfigured route as a friendly refusal state instead of the raw error code", async () => {
+  const root = document.createElement("div");
+  const view: AgentRoutingView = { profiles: [], routes: [], agents: [{ ...SPECIALIST_AGENTS[0], error: "AGENT_MODEL_ROUTE_UNCONFIGURED" }] };
+  await loadAgentRoutingPanel(root, { getAgentRouting: async () => view });
+  const state = root.querySelector<HTMLElement>('[data-routing-state="error"]')!;
+  expect(state.textContent).toBe("未指定模型 · 将拒绝执行");
+  expect(state.title).toBe("AGENT_MODEL_ROUTE_UNCONFIGURED");
+  expect(root.textContent).not.toContain("AGENT_MODEL_ROUTE_UNCONFIGURED");
+});
+
+it("gives every role a round avatar: its portrait when one exists, an initial placeholder otherwise", async () => {
+  const root = document.createElement("div");
+  const view: AgentRoutingView = {
+    profiles: [],
+    routes: [],
+    agents: [...SPECIALIST_AGENTS, { ...SPECIALIST_AGENTS[0], id: "no-portrait", nickname: "无立绘" }],
+  };
+  await loadAgentRoutingPanel(root, { getAgentRouting: async () => view });
+  const avatars = [...root.querySelectorAll<HTMLElement>(".agent-routing-avatar")];
+  expect(avatars).toHaveLength(SPECIALIST_AGENTS.length + 1);
+  for (const avatar of avatars.slice(0, SPECIALIST_AGENTS.length)) {
+    expect(avatar.querySelector("img")).not.toBeNull();
+    expect(avatar.getAttribute("aria-hidden")).toBe("true");
+  }
+  const placeholder = avatars.at(-1)!;
+  expect(placeholder.querySelector("img")).toBeNull();
+  expect(placeholder.dataset.placeholder).toBe("true");
+  expect(placeholder.textContent).toBe("无");
 });

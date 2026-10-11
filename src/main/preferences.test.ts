@@ -3,7 +3,6 @@ import {
   normalizeChatSocialContextEnabled,
   normalizeProactiveChatMode,
   normalizeProactiveDeliveryTarget,
-  normalizeDefaultChatMode,
   normalizeSegmentedOutputMode,
 } from "../shared/preferences";
 
@@ -13,15 +12,6 @@ describe("preferences", () => {
     expect(normalizeChatSocialContextEnabled("true")).toBe(false);
     expect(normalizeChatSocialContextEnabled(false)).toBe(false);
     expect(normalizeChatSocialContextEnabled(true)).toBe(true);
-  });
-
-  it("defaults to chat and migrates legacy collab/talk values", () => {
-    expect(normalizeDefaultChatMode(undefined)).toBe("chat");
-    expect(normalizeDefaultChatMode("bad")).toBe("chat");
-    expect(normalizeDefaultChatMode("work")).toBe("work");
-    expect(normalizeDefaultChatMode("chat")).toBe("chat");
-    expect(normalizeDefaultChatMode("collab")).toBe("chat");
-    expect(normalizeDefaultChatMode("talk")).toBe("chat");
   });
 
   it("normalizes segmented output placeholder mode", () => {

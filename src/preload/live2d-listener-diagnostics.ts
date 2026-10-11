@@ -1,6 +1,6 @@
 import { IPC } from "../shared/ipc-channels";
 
-export const LIVE2D_IPC_DIAGNOSTIC_CHANNELS = [  IPC.LIVE2D_PLAY_ACTION,
+export const LIVE2D_IPC_DIAGNOSTIC_CHANNELS = [  IPC.LIVE2D_WORKING_CHANGED,
   IPC.PET_ZOOM,
   IPC.PET_VISIBILITY_CHANGED,
 ] as const;

@@ -48,18 +48,10 @@ function makeIncoming(
 }
 
 describe("channels/outgoing-composer", () => {
-  describe("文本分段", () => {
-    it("关闭移动端分段时保留为一个文本片段", () => {
-      expect(buildTextOutgoingParts("第一句。第二句？", "off")).toEqual([
+  describe("文本片段", () => {
+    it("回复文本整体保留为一个文本片段", () => {
+      expect(buildTextOutgoingParts("第一句。第二句？")).toEqual([
         { kind: "text", text: "第一句。第二句？" },
-      ]);
-    });
-
-    it("开启移动端分段时按句子拆分文本", () => {
-      expect(buildTextOutgoingParts("第一句。\n第二句？第三句！", "on")).toEqual([
-        { kind: "text", text: "第一句。" },
-        { kind: "text", text: "第二句？" },
-        { kind: "text", text: "第三句！" },
       ]);
     });
   });
@@ -231,7 +223,6 @@ describe("channels/outgoing-composer", () => {
       sticker: "OK",
       capability: makeCapability({ sticker: true }),
       settings: { stickerEnabled: true },
-      mobileMessageSegmentation: "off",
     });
 
     expect(prepared.message.parts).toEqual([
@@ -265,7 +256,6 @@ describe("channels/outgoing-composer", () => {
       sticker: "OK",
       capability: makeCapability({ audio: true, sticker: true }),
       settings: { stickerEnabled: true },
-      mobileMessageSegmentation: "off",
     });
 
     expect(prepared.message.parts.map((part) => part.kind)).toEqual([
@@ -289,7 +279,6 @@ describe("channels/outgoing-composer", () => {
       sticker: "OK",
       capability: makeCapability({ sticker: false }),
       settings: { stickerEnabled: true },
-      mobileMessageSegmentation: "off",
     });
 
     expect(prepared.message.parts).toEqual([{ kind: "text", text: "收到" }]);

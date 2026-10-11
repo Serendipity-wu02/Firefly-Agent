@@ -27,6 +27,7 @@ vi.mock("pixi.js", () => {
       destroy = vi.fn();
     },
     Renderer: class {},
+    Point: class { x: number; y: number; constructor(x = 0, y = 0) { this.x = x; this.y = y; } },
     utils: { TextureCache: { a: {}, b: {} } },
   };
 });
@@ -119,7 +120,8 @@ describe("Live2DManager.playAction", () => {
       const manager = new Live2DManager({ canvas: fakeCanvas, width: 100, height: 100, modelPath: "/models/firefly/Firefly.model3.json" });
       await manager.init();
       expect(manager.getHitAreaDefs()).toEqual([
-        { name: "Head", id: "ArtMesh23", target: { kind: "expression", name: "expression4" } },
+        { name: "Body", id: "ArtMesh154" },
+        { name: "Head", id: "ArtMesh23" },
       ]);
       expect(await manager.playAction({ kind: "motion", group: "Tap", motionName: "1" })).toBe(true);
       expect(model.motion).toHaveBeenCalledWith("Tap", 1, 2);
@@ -222,48 +224,136 @@ describe("Live2DManager.playAction", () => {
 });
 
 
-describe("Firefly table drawable visibility", () => {
-  async function load(ids: string[], opacities: number[]) {
-    vi.stubGlobal("window", {devicePixelRatio: 1, innerWidth: 400, innerHeight: 500});
-    vi.stubGlobal("fetch", vi.fn(async () => ({ok: true, json: async () => ({
-      HitAreas: [{Name: "Body", Id: "ArtMesh154"}, {Name: "Head", Id: "ArtMesh23"}],
-      FileReferences: {Expressions: [{Name: "expression3"}, {Name: "expression4"}]},
-    })})));
-    const coreModel = {
-      getDrawableIndex: (id: string) => ids.indexOf(id),
-      getDrawableOpacity(index: number) { return opacities[index]; },
+describe("Firefly hidden drawables and hit regions", () => {
+  type Spec = {
+    drawables: Array<{ id: string; opacity: number; triangle: number[] }>;
+    headHit?: boolean;
+  };
+
+  function makeFakeModel(spec: Spec) {
+    const core = {
+      getDrawableIndex: (id: string) => spec.drawables.findIndex((drawable) => drawable.id === id),
+      getDrawableOpacity: vi.fn((index: number) => spec.drawables[index].opacity),
+      getDrawableVertexIndices: () => new Uint16Array([0, 1, 2]),
     };
-    const original = coreModel.getDrawableOpacity;
-    const model = {anchor: {set: vi.fn()}, scale: {set: vi.fn()}, width: 400, height: 500,
+    const internal = {
+      coreModel: core,
+      motionManager: { definitions: {} },
+      getDrawableIDs: () => spec.drawables.map((drawable) => drawable.id),
+      getDrawableVertices: (index: number) => new Float32Array(spec.drawables[index].triangle),
+    };
+    const model = {
+      anchor: { set: vi.fn() }, scale: { set: vi.fn() }, width: 400, height: 500,
       destroy: vi.fn(), motion: vi.fn(), expression: vi.fn(),
-      internalModel: {coreModel, motionManager: {definitions: {}}}};
-    const {Live2DModel} = await import("pixi-live2d-display/cubism4");
-    vi.mocked(Live2DModel.from).mockReset().mockResolvedValue(model as never);
-    const {Live2DManager} = await import("./manager");
-    const manager = new Live2DManager({canvas: fakeCanvas, width: 400, height: 500, modelPath: "/x"});
-    await manager.init();
-    return {manager, coreModel, original, opacities};
+      hitTest: vi.fn(() => (spec.headHit ? ["Head"] : [])),
+      toModelPosition: vi.fn((point: { x: number; y: number }) => point),
+      internalModel: internal,
+    };
+    return { model, core, internal };
   }
 
-  it("hides exactly the three IDs independent of their indices and changing animation opacity", async () => {
-    const f = await load(["ArtMesh156", "ArtMesh154", "ArtMesh23", "ArtMesh153", "ArtMesh155"], [.7, .8, .6, .9, 1]);
-    try {
-      expect([0, 1, 2, 3, 4].map(i => f.coreModel.getDrawableOpacity(i))).toEqual([.7, 0, .6, 0, 0]);
-      f.opacities.fill(.4);
-      expect([0, 1, 2, 3, 4].map(i => f.coreModel.getDrawableOpacity(i))).toEqual([.4, 0, .4, 0, 0]);
-      expect(f.manager.getHitAreaDefs().map(a => a.id)).toEqual(["ArtMesh23"]);
-    } finally { f.manager.dispose(); vi.unstubAllGlobals(); }
+  async function loadFake(spec: Spec) {
+    vi.stubGlobal("window", { devicePixelRatio: 1, innerWidth: 400, innerHeight: 500 });
+    vi.stubGlobal("fetch", vi.fn(async () => ({ ok: true, json: async () => ({
+      HitAreas: [{ Name: "Body", Id: "ArtMesh154" }, { Name: "Head", Id: "ArtMesh23" }],
+      FileReferences: { Expressions: [] },
+    }) })));
+    const fake = makeFakeModel(spec);
+    const { Live2DModel } = await import("pixi-live2d-display/cubism4");
+    vi.mocked(Live2DModel.from).mockReset().mockResolvedValue(fake.model as never);
+    const { Live2DManager } = await import("./manager");
+    const manager = new Live2DManager({ canvas: fakeCanvas, width: 400, height: 500, modelPath: "/x" });
+    await manager.init();
+    return { manager, ...fake };
+  }
+
+  // 三角形 (0,0)-(10,0)-(0,10)：点 (2,2) 在内，(20,20) 在外。
+  const COVER = [0, 0, 10, 0, 0, 10];
+  const ALL_IDS = ["ArtMesh153", "ArtMesh154", "ArtMesh155", "ArtMesh156", "ArtMesh157", "ArtMesh23", "ArtMesh200"];
+  const single = (id: string, opacity = 1): Spec => ({
+    drawables: ALL_IDS.map((drawableId) => ({
+      id: drawableId,
+      opacity: 1,
+      triangle: drawableId === id ? COVER : [100, 100, 110, 100, 100, 110],
+    })).map((drawable) => (drawable.id === id ? { ...drawable, opacity } : drawable)),
   });
 
-  it("restores the instance method on disposal and installs independently on a new model", async () => {
-    const first = await load(["ArtMesh153", "ArtMesh156"], [.8, .6]);
-    first.manager.dispose();
-    expect(first.coreModel.getDrawableOpacity).toBe(first.original);
-    expect(first.coreModel.getDrawableOpacity(0)).toBe(.8);
-    const second = await load(["ArtMesh156", "ArtMesh153"], [.3, .9]);
+  it("hides the drink, cake plate and table by drawable index and keeps the chair and shadow visible", async () => {
+    const f = await loadFake(single("ArtMesh156"));
     try {
-      expect(second.coreModel.getDrawableOpacity(0)).toBe(.3);
-      expect(second.coreModel.getDrawableOpacity(1)).toBe(0);
-    } finally { second.manager.dispose(); vi.unstubAllGlobals(); }
+      const opacityOf = (id: string) => f.core.getDrawableOpacity(f.core.getDrawableIndex(id));
+      expect(opacityOf("ArtMesh153")).toBe(0);
+      expect(opacityOf("ArtMesh154")).toBe(0);
+      expect(opacityOf("ArtMesh155")).toBe(0);
+      expect(opacityOf("ArtMesh156")).toBe(1);
+      expect(opacityOf("ArtMesh157")).toBe(1);
+    } finally {
+      f.manager.dispose();
+      vi.unstubAllGlobals();
+    }
+  });
+
+  it("restores the original opacity accessor on dispose", async () => {
+    const f = await loadFake(single("ArtMesh200"));
+    const hookedAccessor = f.core.getDrawableOpacity;
+    f.manager.dispose();
+    expect(f.core.getDrawableOpacity).not.toBe(hookedAccessor);
+    expect(f.core.getDrawableOpacity(f.core.getDrawableIndex("ArtMesh153"))).toBe(1);
+    vi.unstubAllGlobals();
+  });
+
+  it("returns Head from the model hit area before considering Body", async () => {
+    const f = await loadFake({ ...single("ArtMesh200"), headHit: true });
+    try {
+      expect(f.manager.hitTestRegions(2, 2)).toEqual(["Head"]);
+    } finally {
+      f.manager.dispose();
+      vi.unstubAllGlobals();
+    }
+  });
+
+  it("hits Body on a visible mesh that is not scenery", async () => {
+    const f = await loadFake(single("ArtMesh200"));
+    try {
+      expect(f.manager.hitTestRegions(2, 2)).toEqual(["Body"]);
+      expect(f.manager.hitTestRegions(20, 20)).toEqual([]);
+    } finally {
+      f.manager.dispose();
+      vi.unstubAllGlobals();
+    }
+  });
+
+  it("does not hit Body on the chair or the foot shadow", async () => {
+    for (const id of ["ArtMesh156", "ArtMesh157"]) {
+      const f = await loadFake(single(id));
+      try {
+        expect(f.manager.hitTestRegions(2, 2), id).toEqual([]);
+      } finally {
+        f.manager.dispose();
+        vi.unstubAllGlobals();
+      }
+    }
+  });
+
+  it("does not hit the hidden drink, cake plate or table", async () => {
+    for (const id of ["ArtMesh153", "ArtMesh154", "ArtMesh155"]) {
+      const f = await loadFake(single(id));
+      try {
+        expect(f.manager.hitTestRegions(2, 2), id).toEqual([]);
+      } finally {
+        f.manager.dispose();
+        vi.unstubAllGlobals();
+      }
+    }
+  });
+
+  it("does not count the Head mesh as Body when the Head area was not hit", async () => {
+    const f = await loadFake(single("ArtMesh23"));
+    try {
+      expect(f.manager.hitTestRegions(2, 2)).toEqual([]);
+    } finally {
+      f.manager.dispose();
+      vi.unstubAllGlobals();
+    }
   });
 });

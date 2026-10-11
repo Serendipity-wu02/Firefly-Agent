@@ -20,8 +20,8 @@ describe("normalizeReasoningLevels", () => {
   });
 
   it("only honours explicit true for the flags", () => {
-    expect(normalizeReasoningLevels({ efforts: ["low"], allowOff: "yes", pro: 1 })).toEqual({ efforts: ["low"] });
-    expect(normalizeReasoningLevels({ efforts: ["low"], allowOff: true, pro: true })).toEqual({ efforts: ["low"], allowOff: true, pro: true });
+    expect(normalizeReasoningLevels({ efforts: ["low"], allowOff: "yes" })).toEqual({ efforts: ["low"] });
+    expect(normalizeReasoningLevels({ efforts: ["low"], allowOff: true, pro: true })).toEqual({ efforts: ["low"], allowOff: true });
   });
 });
 
@@ -36,7 +36,6 @@ describe("resolveReasoningCapability with a declared level set", () => {
     expect(cap.control).toBe("effort");
     expect(cap.supportedEfforts).toEqual(["low", "high"]);
     expect(cap.supportsDisable).toBe(false);
-    expect(cap.supportsProMode).toBe(false);
     expect(cap.requestStyle).toBe("openai-effort");
   });
 
@@ -76,10 +75,10 @@ describe("resolveReasoningCapability with a declared level set", () => {
     expect(resolveEffectiveReasoning({ mode: "on", effort: "low" }, cap)).toEqual({ mode: "on", effort: "low" });
   });
 
-  it("drops PRO unless the API declares it", () => {
+  it("never exposes PRO: effort is clamped to the declared levels only", () => {
     const base = resolveReasoningCapability("chatgpt", "gpt-6-astra");
-    expect(resolveEffectiveReasoning({ mode: "on", proMode: true }, base).proMode).toBe(true);
+    expect(resolveEffectiveReasoning({ mode: "on", effort: "max" }, base)).toEqual({ mode: "on", effort: "max" });
     const narrowed = resolveReasoningCapability("chatgpt", "gpt-6-astra", { efforts: ["low"] });
-    expect(resolveEffectiveReasoning({ mode: "on", proMode: true }, narrowed).proMode).toBeUndefined();
+    expect(resolveEffectiveReasoning({ mode: "on", effort: "max" }, narrowed)).toEqual({ mode: "on", effort: "low" });
   });
 });

@@ -131,6 +131,11 @@ html, body {
   overflow: hidden;
 }
 
+/* 界面基础字号来自外观设置（默认 16px，与原 body 字号一致）。 */
+body {
+  font-size: var(--cy-ui-font-size, 16px);
+}
+
 #firefly-react-root {
   width: 100%;
   height: 100%;

@@ -4,13 +4,10 @@ import type { UiTheme } from "../../shared/ui-theme";
 import type { UiFont } from "../../shared/ui-font";
 import type { UiIcon } from "../../shared/ui-icon";
 import type {
-  DefaultChatMode,
-  MobileMessageSegmentationMode,
   ProactiveChatMode,
   ProactiveDeliveryTarget,
   SegmentedOutputMode,
 } from "../../shared/preferences";
-import type { CustomStyleConfig, StyleId } from "../../shared/style-sampling";
 import type { ToolModeOverrides } from "../orchestrator/tools/registry/tool-registry";
 import type { SkillModeOverrides } from "../skills/types";
 import type { LspServerOverride } from "../lsp/types";
@@ -24,8 +21,6 @@ export interface GeneralSettings extends ChatAppearanceSettings {
   plugins: Record<string, boolean>;
   /** Harness 同时执行已明确安全工具的上限；1 表示完全串行。 */
   maxParallelToolCalls: number;
-  citaEnabled: boolean;
-  citaSemanticEngine: "remote";
   /** Chat 模式的轻量社交上下文；默认关闭，开启后每轮最多多一次异步抽取调用。 */
   chatSocialContextEnabled: boolean;
   petAlwaysOnTop: boolean;
@@ -36,29 +31,18 @@ export interface GeneralSettings extends ChatAppearanceSettings {
   petWindowX?: number;
   /** 桌宠窗口 Y 坐标，未保存时为 undefined */
   petWindowY?: number;
-  disableGpuElectron?: boolean;
   sidebarVisible: boolean;
   /** 提醒中心音效总开关：关闭后所有 toast 静音，弹窗行为不受影响。 */
   toastSoundEnabled: boolean;
   launchAtLogin: boolean;
-  language: "zh-CN";
+  /** 界面语言：中文或英文；聊天窗口在启动时读取。 */
+  language: "zh-CN" | "en";
   uiTheme: UiTheme;
   uiColors: UiColors;
-  windowCornerRadius: number;
-  /** 当前窗口圆角状态，由主窗口状态同步。 */
-  uiThemeRadius: boolean;
   uiFont: UiFont;
   uiIcon: UiIcon;
-  /** 聊天窗口打开时默认选中的模式。 */
-  defaultChatMode: DefaultChatMode;
-  /** 聊天窗口当前风格，启动时恢复；本轮请求仍以 renderer 显式 styleId 为准。 */
-  currentStyleId: StyleId;
-  /** 全局自定义风格采样配置。 */
-  customStyle: CustomStyleConfig;
   /** 聊天气泡分段输出偏好。 */
   segmentedOutputMode: SegmentedOutputMode;
-  /** 手机渠道文本消息分段发送偏好。 */
-  mobileMessageSegmentation: MobileMessageSegmentationMode;
   /** 主动聊天功能开关占位；当前不接实际逻辑。 */
   proactiveChatMode: ProactiveChatMode;
   /** 主动消息最终投递到本地、微信或飞书。 */

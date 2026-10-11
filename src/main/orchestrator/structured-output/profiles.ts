@@ -17,8 +17,6 @@ interface ProfileDefinition {
   requestHints?: Partial<StructuredOutputProfile["requestHints"]>;
 }
 
-const KIMI_SLOW_MODEL_PATTERN = /^(?:kimi-for-coding|kimi-(?:k3|k2\.7-code(?:-highspeed)?))(?:$|-)/i;
-
 const DEFINITIONS: readonly ProfileDefinition[] = [
   {
     id: "openai-structured-output",
@@ -45,15 +43,6 @@ const DEFINITIONS: readonly ProfileDefinition[] = [
     provider: "kimi",
     transport: "openai",
     modelPattern: /^(?:kimi-for-coding|kimi-(?:k3|k2\.(?:6|7-code(?:-highspeed)?)))(?:$|-)/i,
-    tier: "A",
-    mode: "provider_json_schema",
-    verification: "official",
-  },
-  {
-    id: "doubao-structured-output",
-    provider: "doubao",
-    transport: "openai",
-    modelPattern: /^doubao-seed(?:$|-)/i,
     tier: "A",
     mode: "provider_json_schema",
     verification: "official",
@@ -123,12 +112,6 @@ const DEFAULT_STAGE_REPAIR = {
 };
 
 const REPAIR: StructuredOutputProfile["repair"] = {
-  cita: {
-    maxAttempts: 2,
-    totalBudgetMs: 8_000,
-    perAttemptTimeoutMs: 4_000,
-    minimumRemainingBudgetMs: 500,
-  },
   task_router: DEFAULT_STAGE_REPAIR,
   planner: DEFAULT_STAGE_REPAIR,
   native_fc: DEFAULT_STAGE_REPAIR,
@@ -147,29 +130,6 @@ const A_STAGE_REPAIR = {
 };
 
 const A_REPAIR: StructuredOutputProfile["repair"] = {
-  cita: {
-    maxAttempts: 2,
-    totalBudgetMs: 20_000,
-    perAttemptTimeoutMs: 10_000,
-    minimumRemainingBudgetMs: 500,
-  },
-  task_router: A_STAGE_REPAIR,
-  planner: A_STAGE_REPAIR,
-  native_fc: A_STAGE_REPAIR,
-  memory: A_STAGE_REPAIR,
-  memory_judge: MEMORY_REPAIR,
-  memory_compress: MEMORY_REPAIR,
-  memory_reflect: MEMORY_REPAIR,
-  memory_resolve: MEMORY_REPAIR,
-};
-
-const KIMI_SLOW_REPAIR: StructuredOutputProfile["repair"] = {
-  cita: {
-    maxAttempts: 2,
-    totalBudgetMs: 40_000,
-    perAttemptTimeoutMs: 20_000,
-    minimumRemainingBudgetMs: 500,
-  },
   task_router: A_STAGE_REPAIR,
   planner: A_STAGE_REPAIR,
   native_fc: A_STAGE_REPAIR,
@@ -188,12 +148,6 @@ const B_STAGE_REPAIR = {
 };
 
 const B_REPAIR: StructuredOutputProfile["repair"] = {
-  cita: {
-    maxAttempts: 2,
-    totalBudgetMs: 16_000,
-    perAttemptTimeoutMs: 8_000,
-    minimumRemainingBudgetMs: 500,
-  },
   task_router: B_STAGE_REPAIR,
   planner: B_STAGE_REPAIR,
   native_fc: B_STAGE_REPAIR,
@@ -212,12 +166,6 @@ const MINIMAX_STAGE_REPAIR = {
 };
 
 const MINIMAX_REPAIR: StructuredOutputProfile["repair"] = {
-  cita: {
-    maxAttempts: 2,
-    totalBudgetMs: 10_000,
-    perAttemptTimeoutMs: 5_500,
-    minimumRemainingBudgetMs: 500,
-  },
   task_router: MINIMAX_STAGE_REPAIR,
   planner: MINIMAX_STAGE_REPAIR,
   native_fc: MINIMAX_STAGE_REPAIR,
@@ -228,19 +176,9 @@ const MINIMAX_REPAIR: StructuredOutputProfile["repair"] = {
   memory_resolve: MEMORY_REPAIR,
 };
 
-function repairFor(
-  definition: ProfileDefinition,
-  context: StructuredOutputProfileContext,
-): StructuredOutputProfile["repair"] {
+function repairFor(definition: ProfileDefinition): StructuredOutputProfile["repair"] {
   if (definition.tier === "M") return MINIMAX_REPAIR;
   if (definition.tier === "B") return B_REPAIR;
-  if (
-    definition.tier === "A"
-    && definition.provider === "kimi"
-    && KIMI_SLOW_MODEL_PATTERN.test(context.model)
-  ) {
-    return KIMI_SLOW_REPAIR;
-  }
   return definition.tier === "A" ? A_REPAIR : REPAIR;
 }
 
@@ -262,7 +200,7 @@ function materialize(
       reasoningSplit: definition.requestHints?.reasoningSplit ?? false,
     },
     reasoning: "disabled",
-    repair: repairFor(definition, context),
+    repair: repairFor(definition),
   };
 }
 

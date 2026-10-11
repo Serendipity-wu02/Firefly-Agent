@@ -1,7 +1,6 @@
 import * as fs from "node:fs";
 import * as path from "node:path";
 import { describe, expect, it } from "vitest";
-import { LIVE2D_ACTIONS, findAction } from "../shared/live2d-actions";
 
 const root = path.resolve(__dirname, "..", "..");
 
@@ -37,12 +36,6 @@ describe("Firefly character assets", () => {
     expect(read("src/renderer/main.ts")).toContain('models/firefly/Firefly.model3.json');
   });
 
-  it("exposes only targets that exist in the Firefly manifest", () => {
-    expect(findAction("打招呼")?.target).toEqual({ kind: "motion", group: "Tap", motionName: "1" });
-    expect(findAction("开心")?.target).toEqual({ kind: "expression", name: "expression4" });
-    expect(LIVE2D_ACTIONS.length).toBeGreaterThanOrEqual(10);
-  });
-
   it("uses Firefly identity in every effective mode prompt and the dynamic worldbook", () => {
     const promptFiles = [
       "prompts/soul.md",
@@ -75,9 +68,6 @@ describe("Firefly character assets", () => {
     for (const file of ["prompts/phone_identity.md", "prompts/phone_system.md", "prompts/phone_style.md"]) {
       expect(fs.existsSync(path.join(root, file)), file).toBe(false);
     }
-    for (const style of ["01_default.md", "02_lively.md", "03_healing.md", "04_focused.md", "05_sweet.md"]) {
-      expect(read(`prompts/styles/${style}`), style).not.toMatch(/人家|♪/);
-    }
 
     const worldbookDir = path.join(root, "prompts", "worldbook");
     for (const file of fs.readdirSync(worldbookDir).filter((name) => name.endsWith(".md"))) {
@@ -103,7 +93,6 @@ describe("Firefly character assets", () => {
       "src/renderer/react/features/chat/components/ModelModePanel.tsx",
       "src/renderer/react/features/chat/components/PluginModePanel.tsx",
       "src/renderer/react/features/chat/components/StatusFloat.tsx",
-      "src/renderer/react/features/chat/components/StyleControl.tsx",
       "src/renderer/react/features/chat/components/ToolModePanel.tsx",
       "src/renderer/react/components/ui/ModelModeButton.tsx",
       "src/renderer/react/components/ui/NewTaskButton.tsx",

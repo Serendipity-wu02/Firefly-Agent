@@ -72,11 +72,11 @@ import type { SocialAtom } from "../social-context/types";
 import { ExecutionLedgerStore, type ExecutionLedger } from "./execution-ledger";
 import { perf } from "../perf-trace";
 import { debugLog, flowLog } from "../agent-log";
-import type { ApprovedStyleSampling } from "./vendors/style-sampling";
 import { requestUserClarification } from "../user-choice";
 import type { ConversationMode } from "../../shared/chat-types";
 import type { FireflyRunTerminalResult } from "../../shared/run-terminal";
 import { executeToolDefinition } from "./tools/registry/tool-executor";
+import { createLive2dWorkRunTracker } from "./live2d-work-signal";
 
 const executionLedgers = new ExecutionLedgerStore();
 
@@ -122,15 +122,7 @@ export interface FireflyRunOptions {
   /** 原始消息（不含 system）。system 由 chat-loop / harness-adapter 按 promptLayers 组装，不随消息持久化。 */
   messages: ChatMessage[];
   conversationId?: string;
-  /** CITA 保留的用户原始 Query；旧调用方未传时从最后一条 user 消息读取。 */
-  originalQuery?: string;
-  /** CITA 生成的上下文化理解，供模型上下文拼装显式使用。 */
-  contextualizedQuery?: string;
-  /** 独立 CITA 证据块；原始 user 消息不会被替换。 */
-  citaContextBlock?: string;
-  /** CITA 本地校验后允许模型引用的不透明引用集合。 */
-  trustedRefs?: string[];
-  /** Chat 跳过 CITA/Native FC；默认 Work。 */
+  /** Chat 跳过工具编排；默认 Work。 */
   executionMode?: AgentExecutionMode;
   /** 原始 UI 模式（work / chat / code），供工具做模式隔离。 */
   conversationMode?: ConversationMode;
@@ -158,12 +150,8 @@ export interface FireflyRunOptions {
   /** Plan Mode 时注入的计划协议正文；可变，不参与稳定缓存前缀，
    *  在 harness runtimeParts 里拼，避免进/出 plan mode 打断 stablePrefix 缓存。 */
   planSkillContext?: string;
-  /** 只应用到 Soul 最终自然语言回复，禁止影响 CITA 与 Native FC。 */
-  soulSampling?: ApprovedStyleSampling;
-  /** 不带时间戳前缀的 messages，给 CITA 等决策层用。未传时回退到 messages。 */
+  /** 不带时间戳前缀的 messages（轨迹物化后的干净副本）。未传时回退到 messages。 */
   cleanMessages?: ChatMessage[];
-  /** [RESPONSE_CONTEXT] 文本，从 CITA 结果生成，给 Soul 动态追加。 */
-  responseContext?: string;
   /** 本地主进程生成的可信默认城市、桌面等运行环境信息。 */
   runtimeEnvironmentContext?: string;
   /** 上一次异常中断 Run 的只读 Todo/执行检查点；只用于帮助模型恢复方向。 */
@@ -419,6 +407,8 @@ export class FireflyAgent extends AbstractAgent {
     };
     const conversationId = runOptions.conversationId ?? "default";
     const abortController = new AbortController();
+    // 桌宠“工作中”信号：第一次工具调用开始计入，运行任意终态（finally）移除。
+    const workRun = createLive2dWorkRunTracker();
     // first-source-wins：谁先触发 abort，谁就是最终分类
     let abortSource: AbortSource | undefined;
     const markAbort = (source: AbortSource) => {
@@ -463,6 +453,7 @@ export class FireflyAgent extends AbstractAgent {
           adapterTimer.end();
 
           const onEvent = (event: AgentLoopEvent) => {
+            if (event.type === "tool_call_start") workRun.markToolStarted();
             if (cancelled) return;
             subscriber.next(toAguiEvent(event));
           };
@@ -479,7 +470,7 @@ export class FireflyAgent extends AbstractAgent {
             : (options.tools ?? toolRegistry.getEnabledTools()).filter((tool) => tool.enabled).length;
           flowLog("── 新请求 ─────────────────────────");
           flowLog(`1. 准备上下文：${executionMode === "chat" ? "Chat" : "Work"} 模式，模型 ${options.settings.model}，${enabledToolCount} 个工具可用`);
-          flowLog(`2. 理解用户请求：${executionMode === "chat" ? "Chat 模式无需工具上下文" : `完成，可信引用 ${(options.trustedRefs ?? []).length} 个`}`);
+          flowLog(`2. 理解用户请求：${executionMode === "chat" ? "Chat 模式无需工具上下文" : `完成`}`);
 
           let result: AgentLoopResult;
           if(runOptions.controlledResponses){
@@ -491,8 +482,7 @@ export class FireflyAgent extends AbstractAgent {
               adapter,
               messages: options.messages,
               soulSystemBaseContent: options.soulSystemBaseContent,
-              runtimeContext: [options.soulRuntimeContext, options.citaContextBlock, options.responseContext].filter(Boolean).join("\n\n---\n\n"),
-              soulSampling: options.soulSampling,
+              runtimeContext: options.soulRuntimeContext ?? "",
               timeoutMs: options.timeoutMs,
               imageCaptionFallback: options.imageCaptionFallback,
               onEvent,
@@ -520,6 +510,7 @@ export class FireflyAgent extends AbstractAgent {
               runOptions,
               abortController.signal,
               (baseEvent: BaseEvent) => {
+                if (baseEvent.type === EventType.TOOL_CALL_START) workRun.markToolStarted();
                 if (!cancelled) subscriber.next(baseEvent);
               },
             ));
@@ -604,6 +595,8 @@ export class FireflyAgent extends AbstractAgent {
             terminalEvent = undefined;
             terminalError = new Error(classification.userMessage);
           }
+          // 运行任意终态（成功 / 失败 / 取消）都在此移除“工作中”计数。
+          workRun.finish();
           finished = true;
           detachExternalAbort();
           if (!cancelled) {

@@ -110,7 +110,7 @@ export interface ChatRequest {
   frequencyPenalty?: number;
   repetitionPenalty?: number;
   stream?: boolean;
-  /** CITA only. Native FC keeps using real tools instead. */
+  /** Structured-output request for memory and social stages; Native FC keeps using real tools instead. */
   structuredOutput?: StructuredOutputRequest;
   /**
    * 非流式调用时的 max_tokens 上限（OpenAI wire: `max_tokens`；Anthropic wire 覆盖默认 4096）。
@@ -212,8 +212,6 @@ export interface ProviderCapability {
   thinkingField: ThinkingField;
   cacheStrategy: CacheStrategy;
   testStrategy: TestStrategy;
-  /** 是否支持视觉（图片）输入。非多模态模型禁止走 read_image。 */
-  supportsVision: boolean;
   /** Supported must-call wire policies; Adapter maps required to OpenAI required / Anthropic any. */
   toolChoiceModes?: ReadonlyArray<"named" | "required" | "auto" | "omit">;
   /**

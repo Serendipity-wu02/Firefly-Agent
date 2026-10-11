@@ -12,13 +12,12 @@ import type { HarnessEvent } from "./harness/types";
 import type { BaseEvent } from "@ag-ui/core";
 
 describe("Harness Todo working notebook policy", () => {
-  it("does not duplicate environment or CITA already owned by build options", () => {
+  it("does not duplicate environment already owned by build options", () => {
     const prompt = buildHarnessSystemPrompt({
-      soulSystemBaseContent: "[ENV]", toolSystemContent: "[CITA_CONTEXT]",
-      runtimeEnvironmentContext: "[ENV]", citaContextBlock: "[CITA_CONTEXT]",
+      soulSystemBaseContent: "[ENV]", toolSystemContent: "tools",
+      runtimeEnvironmentContext: "[ENV]",
     } as never);
     expect(prompt.split("[ENV]").length - 1).toBe(1);
-    expect(prompt.split("[CITA_CONTEXT]").length - 1).toBe(1);
   });
   it("places the soft Todo policy in every Harness system prompt", () => {
     const prompt = buildHarnessSystemPrompt({
@@ -69,18 +68,15 @@ describe("Harness Todo working notebook policy", () => {
 });
 
 describe("Harness recovery context", () => {
-  it("keeps recovery and response context outside the stable system prefix", () => {
+  it("keeps recovery context outside the stable system prefix", () => {
     const layers = buildHarnessPromptLayers({
       soulSystemBaseContent: "persona",
       toolSystemContent: "tools",
       recoveryContext: "上次停在检查取消链路",
-      responseContext: "本轮引用资料",
     } as never);
 
     expect(layers.stablePrefix).not.toContain("RECOVERY_CONTEXT");
-    expect(layers.stablePrefix).not.toContain("RESPONSE_CONTEXT");
     expect(layers.runtimeContext).toContain("上次停在检查取消链路");
-    expect(layers.runtimeContext).toContain("本轮引用资料");
   });
 
   it("injects interrupted Todo context as read-only evidence", () => {

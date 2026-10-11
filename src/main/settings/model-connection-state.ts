@@ -16,9 +16,8 @@ export function normalizeConnectionConfig(input: unknown): VendorConfig {
   if (raw.reasoning !== undefined) {
     const value = raw.reasoning as Record<string, unknown> | null;
     if (!value || typeof value !== "object" || Array.isArray(value) || !reasoning
-      || Object.keys(value).some((key) => !["mode", "effort", "proMode"].includes(key))
-      || (value.effort !== undefined && value.effort !== reasoning.effort)
-      || (value.proMode !== undefined && typeof value.proMode !== "boolean")) throw new Error("MODEL_CONNECTION_INVALID_CONFIG");
+      || Object.keys(value).some((key) => !["mode", "effort"].includes(key))
+      || (value.effort !== undefined && value.effort !== reasoning.effort)) throw new Error("MODEL_CONNECTION_INVALID_CONFIG");
   }
   const provider = (raw.provider as string).trim();
   return { provider, baseUrl: (raw.baseUrl as string).trim(), model: (raw.model as string).trim(), apiKey: (raw.apiKey as string).trim(),

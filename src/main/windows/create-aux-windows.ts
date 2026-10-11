@@ -115,7 +115,7 @@ export function dispatchOrQueueReactSession(sessionId: string): void {
 }
 
 /**
- * 创建/复用侧边状态面板窗口。
+ * 创建/复用侧边栏窗口。
  */
 export function createSidebarWindow(): void {
   // Compatibility stub: the standalone status window has been retired.

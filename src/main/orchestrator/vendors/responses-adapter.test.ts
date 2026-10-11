@@ -18,7 +18,6 @@ const capability: ProviderCapability = {
   thinkingField: null,
   cacheStrategy: "none",
   testStrategy: "text",
-  supportsVision: true,
 };
 
 const cfg: VendorConfig = {
@@ -435,43 +434,14 @@ describe("ResponsesAdapter — structuredOutput 与推理控制", () => {
     expect(body).not.toHaveProperty("output_config");
   });
 
-  test("proMode 翻译为 reasoning:{mode:'pro'}，effort 缺省填 defaultEffort（gpt-5.6）", () => {
+  test("旧 proMode 偏好不再下发 reasoning.mode，只保留 effort", () => {
     const chatgptCap: ProviderCapability = { ...capability, id: "chatgpt" };
     const { body } = makeBody([{ role: "user", content: "hi" }], {
       cap: chatgptCap,
-      config: { model: "gpt-5.6", reasoning: { mode: "on", proMode: true } },
+      config: { model: "gpt-5.6", reasoning: { mode: "on", effort: "high" } },
     });
-    expect(body.reasoning).toEqual({ effort: "medium", mode: "pro" });
-    expect(body).not.toHaveProperty("reasoning_effort");
-  });
-
-  test("proMode + 显式 effort 共存：reasoning:{effort, mode:'pro'}", () => {
-    const chatgptCap: ProviderCapability = { ...capability, id: "chatgpt" };
-    const { body } = makeBody([{ role: "user", content: "hi" }], {
-      cap: chatgptCap,
-      config: { model: "gpt-5.6-sol", reasoning: { mode: "on", effort: "high", proMode: true } },
-    });
-    expect(body.reasoning).toEqual({ effort: "high", mode: "pro" });
-  });
-
-  // GPT-6 Astra 官方迁移指南确认继续支持 pro mode（与 5.6 一致）
-  test("gpt-6-astra + proMode → reasoning:{effort, mode:'pro'}", () => {
-    const chatgptCap: ProviderCapability = { ...capability, id: "chatgpt" };
-    const { body } = makeBody([{ role: "user", content: "hi" }], {
-      cap: chatgptCap,
-      config: { model: "gpt-6-astra", reasoning: { mode: "on", effort: "max", proMode: true } },
-    });
-    expect(body.reasoning).toEqual({ effort: "max", mode: "pro" });
-    expect(body).not.toHaveProperty("reasoning_effort");
-  });
-
-  test("proMode 不被支持的模型（gpt-5.1）→ 不发 reasoning.mode", () => {
-    const chatgptCap: ProviderCapability = { ...capability, id: "chatgpt" };
-    const { body } = makeBody([{ role: "user", content: "hi" }], {
-      cap: chatgptCap,
-      config: { model: "gpt-5.1", reasoning: { mode: "on", effort: "low", proMode: true } },
-    });
-    expect(body.reasoning).toEqual({ effort: "low" });
+    expect(body.reasoning).toEqual({ effort: "high" });
+    expect(body.reasoning).not.toHaveProperty("mode");
   });
 
   // ── MiniMax-M3（anthropic-adaptive）：Responses 协议下 thinking → reasoning.effort 映射 ──

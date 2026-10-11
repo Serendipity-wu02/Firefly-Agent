@@ -101,8 +101,6 @@ test-output/
 output/
 scripts/test-action-gate-anthropic.mjs
 scripts/test-action-gate-contract.mjs
-scripts/test-cita-fc-compare.mjs
-scripts/test-cita-minimax.mjs
 .zcode/
 .worktrees/
 

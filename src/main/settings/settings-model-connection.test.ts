@@ -33,7 +33,7 @@ async function setup(profiles = [{ id: "p1", ...config }]) {
   dispose = registerSettingsIpc({
     ipc: { handle: (channel: string, callback: (...args: any[]) => any) => handlers.set(channel, callback), on: (channel: string, callback: (...args: any[]) => any) => events.set(channel, callback) },
     getModelSettings: model.loadModelSettings, saveModelSettings: model.saveModelSettings,
-    windowManager: { createSidebarWindow }, runtimeStateService: { getState: () => ({ tokens: 17 }) },
+    windowManager: { createSidebarWindow },
   } as never) as unknown as (() => void) | undefined;
   const trusted = { sender: contents, senderFrame: mainFrame };
   return { model, contents, window, trusted, handlers, events, createSidebarWindow,
@@ -141,15 +141,14 @@ it("ignores preview invalidation, preserves names, and does not broadcast after 
   dispose?.(); h.contents.send.mockClear(); h.model.saveModelSettings({ modelProfiles: [] });
   expect(h.contents.send).not.toHaveBeenCalled();
 });
-it("legacy status-open does nothing while token state remains available", async () => {
+it("legacy status-open does nothing", async () => {
   const h = await setup(); h.events.get(IPC.SETTINGS_OPEN_SIDEBAR)!();
   expect(h.createSidebarWindow).not.toHaveBeenCalled();
-  expect(h.handlers.get(IPC.RUNTIME_STATE_GET)!()).toEqual({ tokens: 17 });
 });
 it("accepts reordered reasoning fields and copies a normalized preference", async () => {
-  const saved = { ...config, reasoning: { mode: "on" as const, effort: "high" as const, proMode: true } };
+  const saved = { ...config, reasoning: { mode: "on" as const, effort: "high" as const } };
   const h = await setup([{ id: "p1", ...saved }] as never);
-  await h.test({ ...saved, reasoning: { proMode: true, effort: "high", mode: "on" } });
+  await h.test({ ...saved, reasoning: { effort: "high", mode: "on" } });
   expect(h.snapshot().profiles[0].state).toBe("connected");
 });
 it("failed settings writes cannot invalidate verified state", async () => {

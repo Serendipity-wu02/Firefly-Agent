@@ -9,9 +9,7 @@ import { startCore, type CoreDependencies, type CoreServices } from "./core-boot
 
 function makeServices(): CoreServices {
   return {
-    runtimeState: {} as never,
     llm: {} as never,
-    cita: {} as never,
     social: {} as never,    embedding: { scheduleStartupRefreshes: vi.fn() } as never,
     proactive: {} as never,
     git: { dispose: vi.fn() } as never,

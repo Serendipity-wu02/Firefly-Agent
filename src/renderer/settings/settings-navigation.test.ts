@@ -61,7 +61,7 @@ describe("settings category navigation", () => {
 });
 
 
-it("retains all fourteen existing first-level settings destinations", () => {
+it("retains the twelve first-level settings destinations once Token usage and scheduled tasks left the navigation", () => {
   document.body.innerHTML = html;
-  expect([...document.querySelectorAll<HTMLButtonElement>('.nav-item')].map(button => button.dataset.section)).toEqual(["general", "appearance", "preferences", "api", "api-advanced", "asr", "firefly", "memory", "user", "tasks", "plugins", "channels", "tokens", "disclaimer"]);
+  expect([...document.querySelectorAll<HTMLButtonElement>('.nav-item')].map(button => button.dataset.section)).toEqual(["general", "appearance", "preferences", "api", "api-advanced", "asr", "firefly", "memory", "user", "plugins", "channels", "disclaimer"]);
 });

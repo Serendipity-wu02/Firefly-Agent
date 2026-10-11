@@ -111,7 +111,7 @@ export const IPC = {
   SETTINGS_AGENT_ROUTING_UPDATE: "settings:agent-routing:update",
   SETTINGS_TEST_CONNECTION: "settings:test-connection",
   SETTINGS_FETCH_MODELS: "settings:fetch-models",
-  SETTINGS_TEST_VISION: "settings:test-vision",
+  SETTINGS_RESOLVE_INPUT_MODALITIES: "settings:resolve-input-modalities",
   SETTINGS_GET_GENERAL: "settings:get-general",
   SETTINGS_SAVE_GENERAL: "settings:save-general",
   SETTINGS_GET_TIMEOUT_SETTINGS: "settings:get-timeout-settings",
@@ -120,10 +120,6 @@ export const IPC = {
   UI_COLORS_CHANGED: "ui-colors:changed",
   UI_THEME_GET: "ui-theme:get",
   UI_THEME_CHANGED: "ui-theme:changed",
-  UI_THEME_RADIUS_GET: "ui-theme-radius:get",
-  UI_THEME_RADIUS_CHANGED: "ui-theme-radius:changed",
-  UI_WINDOW_CORNER_RADIUS_GET: "ui-window-corner-radius:get",
-  UI_WINDOW_CORNER_RADIUS_CHANGED: "ui-window-corner-radius:changed",
   UI_FONT_GET: "ui-font:get",
   UI_FONT_CHANGED: "ui-font:changed",
   CHAT_TYPOGRAPHY_CHANGED: "chat-typography:changed",
@@ -135,13 +131,9 @@ export const IPC = {
   SETTINGS_SET_PET_ALWAYS_ON_TOP: "settings:set-pet-always-on-top",
   SETTINGS_SET_PET_VISIBLE: "settings:set-pet-visible",
   SETTINGS_SET_PET_ZOOM: "settings:set-pet-zoom",
-  // debugging
-  SETTINGS_OPEN_CHROME_GPU: "settings:open-chrome-gpu",
   // main → pet window：推送当前 zoom 因子，渲染进程据此重算 scale
   PET_ZOOM: "pet:zoom",
-  SETTINGS_PREVIEW_RUNTIME_SYNC: "settings:preview-runtime-sync",
   SETTINGS_OPEN_STICKER_MANAGER: "settings:open-sticker-manager",
-  SETTINGS_OPEN_CUSTOM_STYLE_PROMPT: "settings:open-custom-style-prompt",
 
   // chat sessions (multi-conversation history, persisted to userData/firefly-chats/)
   CHATS_LIST: "chats:list",
@@ -236,12 +228,7 @@ export const IPC = {
   MODEL_CONNECTION_CHANGED: "model-connection:changed",
   MODEL_CONFIG_CHANGED: "model-config:changed",
 
-  // runtime state updates (status / feeling / expression)
-  RUNTIME_STATE_GET: "runtime-state:get",
-  RUNTIME_STATE_CHANGED: "runtime-state:changed",
-
-  LIVE2D_PLAY_ACTION: "live2d:play-action",        // 主进程 → 桌宠窗口：执行动作（motion 或 expression）
-  LIVE2D_ACTION_RECEIPT: "live2d:action-receipt",
+  LIVE2D_WORKING_CHANGED: "live2d:working-changed", // 主进程 → 桌宠窗口：Agent 是否处于工作中（boolean）
   LIVE2D_GET_MAIN_DIAGNOSTICS: "live2d:get-main-diagnostics",
   // embedding model status
   EMBEDDING_SET_MODEL: "embedding:set-model",

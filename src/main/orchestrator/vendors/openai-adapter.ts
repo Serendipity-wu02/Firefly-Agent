@@ -1,4 +1,4 @@
-// OpenAI 兼容 transport —— 覆盖 豆包 / DeepSeek / GLM / Kimi / Qwen / ChatGPT
+// OpenAI 兼容 transport —— 覆盖 DeepSeek / GLM / Kimi / Qwen / ChatGPT / OpenRouter
 // 请求体协议：POST {baseUrl}/chat/completions，messages + tools[].type=function
 import {
   ChatMessage, ChatRequest, ChatResponse, ChatVendorAdapter,
@@ -194,6 +194,7 @@ export class OpenAICompatAdapter implements ChatVendorAdapter {
           tool_calls?: Array<{ id: string; type: string; function: { name: string; arguments: string } }>;
           reasoning_content?: string;
           thinking?: string;
+          reasoning?: string;
           refusal?: string | null;
         };
         finish_reason?: string;
@@ -203,7 +204,9 @@ export class OpenAICompatAdapter implements ChatVendorAdapter {
     const choice = data.choices?.[0];
     const msg = choice?.message;
     const text = msg?.content ?? "";
-    const thinking = msg?.reasoning_content || msg?.thinking || undefined;
+    // OpenRouter 非流式把推理放在 message.reasoning（字符串）；流式在 delta.reasoning_details，由 sdk-stream normalizer 读取。
+    const reasoningText = typeof msg?.reasoning === "string" ? msg.reasoning : undefined;
+    const thinking = msg?.reasoning_content || msg?.thinking || reasoningText || undefined;
     const refusal = msg?.refusal || undefined;
 
     const toolCalls: ToolCall[] = (msg?.tool_calls ?? []).map(tc => ({

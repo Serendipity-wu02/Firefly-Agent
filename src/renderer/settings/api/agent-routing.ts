@@ -1,5 +1,9 @@
 import type { AgentRoutingView, AgentRoutingUpdate } from "../../../shared/specialist-agents";
 import { t } from "../i18n";
+import { getCharacterAvatar } from "../../react/character-avatars";
+
+/** 主进程 agent-model-routing 在路由未配置时抛出的错误码（逻辑判断用，不直接展示）。 */
+const UNCONFIGURED_ROUTE_ERROR = "AGENT_MODEL_ROUTE_UNCONFIGURED";
 
 interface RoutingBridge {
   getAgentRouting?: () => Promise<AgentRoutingView>;
@@ -23,7 +27,24 @@ export async function loadAgentRoutingPanel(root: HTMLElement, bridge: RoutingBr
     root.append(status);
     for (const agent of view.agents) {
       const label = document.createElement("label");
-      label.className = "field field--full agent-routing-row";
+      label.className = "agent-routing-row";
+      const avatar = document.createElement("span");
+      avatar.className = "agent-routing-avatar";
+      avatar.setAttribute("aria-hidden", "true");
+      const portrait = getCharacterAvatar(agent.nickname);
+      if (portrait) {
+        const img = document.createElement("img");
+        img.src = portrait;
+        img.alt = "";
+        img.width = 40;
+        img.height = 40;
+        img.draggable = false;
+        avatar.append(img);
+      } else {
+        // 没有对应立绘的角色：圆形底色 + 首字占位。
+        avatar.dataset.placeholder = "true";
+        avatar.textContent = agent.nickname.charAt(0);
+      }
       const identity = document.createElement("span");
       identity.className = "agent-routing-identity";
       const title = document.createElement("strong");
@@ -31,8 +52,17 @@ export async function loadAgentRoutingPanel(root: HTMLElement, bridge: RoutingBr
       const state = document.createElement("span");
       state.dataset.routingState = agent.error ? "error" : agent.overrideProfileId ? "independent" : "inherited";
       state.id = `routing-state-${agent.id}`;
-      state.textContent = agent.error ?? t(`settings.agentRouting.${state.dataset.routingState}`);
-      identity.append(title, state);
+      if (agent.error) {
+        // 原始错误码只用于逻辑判断与悬停提示；界面展示友好文案。
+        state.textContent = agent.error === UNCONFIGURED_ROUTE_ERROR ? t("settings.agentRouting.unconfiguredRefused") : agent.error;
+        state.title = agent.error;
+      } else {
+        state.textContent = t(`settings.agentRouting.${state.dataset.routingState}`);
+      }
+      const intro = document.createElement("span");
+      intro.className = "agent-routing-intro";
+      intro.textContent = agent.intro ?? "";
+      identity.append(title, ...(agent.intro ? [intro] : []), state);
       const select = document.createElement("select");
       select.dataset.routingKind = "agent";
       select.dataset.routingId = agent.id;
@@ -89,7 +119,7 @@ export async function loadAgentRoutingPanel(root: HTMLElement, bridge: RoutingBr
           root.setAttribute("aria-busy", "false");
         }
       });
-      label.append(identity, select, source);
+      label.append(avatar, identity, select, source);
       root.append(label);
       if (restoreFocus && agent.id === savedId && !root.closest('[hidden], .is-hidden, [inert]')) select.focus();
     }

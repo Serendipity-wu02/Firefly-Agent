@@ -12,7 +12,6 @@
 /** 执行阶段（统一定义，旧节点名做映射） */
 export type RunPhase =
   | "context"
-  | "cita"
   | "router"
   | "create_plan"
   | "native_fc"

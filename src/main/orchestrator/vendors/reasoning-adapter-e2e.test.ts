@@ -18,7 +18,6 @@ function makeCap(overrides: Partial<ProviderCapability> & { id: ProviderCapabili
     thinkingField: overrides.transport === "anthropic" ? "thinking" : "reasoning_content",
     cacheStrategy: overrides.transport === "anthropic" ? "cache_control" : "auto",
     testStrategy: "text",
-    supportsVision: false,
     ...overrides,
   };
 }
@@ -234,18 +233,6 @@ describe("MiMo 端到端", () => {
     const cap = makeCap({ id: "mimo", transport: "anthropic" });
     const body = buildAnthropic(cap, "mimo-v2.5-pro", { mode: "on" });
     expect((body.thinking as Record<string, unknown>).type).toBe("enabled");
-  });
-});
-
-// ── 豆包 ──────────────────────────────────────────────
-describe("豆包 端到端", () => {
-  const cap = makeCap({ id: "doubao", transport: "openai" });
-
-  test("#22 doubao-seed-2-1 + on → thinking.type=enabled", () => {
-    const body = buildOpenAI(cap, "doubao-seed-2-1-pro-260628", { mode: "on" });
-    expect("reasoning_effort" in body).toBe(false);
-    expect(body.thinking).toEqual({ type: "enabled" });
-    expect("enable_thinking" in body).toBe(false);
   });
 });
 

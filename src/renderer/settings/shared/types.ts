@@ -8,22 +8,27 @@ import type { UiColors } from "../../../shared/ui-colors";
 
 import type { ApiTransport } from "../../../shared/api-endpoint";
 import type { ReasoningLevelsConfig, ReasoningPreference } from "../../../shared/reasoning";
+import type { InputModality, InputModalityResolution, InputModalitySource } from "../../../shared/input-modalities";
 import type { ChatAppearanceSettings } from "../../../shared/chat-appearance";
 import type { UiTheme } from "../../../shared/ui-theme";
 import type { UiFont } from "../../../shared/ui-font";
 import type { UiIcon } from "../../../shared/ui-icon";
 import type {
-  DefaultChatMode,
-  MobileMessageSegmentationMode,
   ProactiveChatMode,
   ProactiveDeliveryTarget,
   SegmentedOutputMode,
 } from "../../../shared/preferences";
 import type { QqListenAuthRequirement } from "../../../shared/qq-listen";
-import type { CustomStyleConfig } from "../../../shared/style-sampling";
 import type { CustomEndpointMode } from "../custom-endpoint-state";
 import type { TimeoutSettings } from "../../../shared/timeout-types";
 import type { AgentRoutingView, AgentRoutingUpdate } from "../../../shared/specialist-agents";
+
+/** 厂商接口返回的一个型号；inputModalities 缺省 = 厂商没说（未知）。 */
+export interface FetchedModel {
+  id: string;
+  name?: string;
+  inputModalities?: InputModality[];
+}
 
 export interface ProviderProfile {
   baseUrl: string;
@@ -56,22 +61,13 @@ export interface ModelSettings {
   reasoning?: ReasoningPreference;
   // 按厂商缓存：切回该厂商时，从这里恢复 baseUrl / model / apiKey
   perProvider?: Record<string, ProviderProfile>;
-  runtimeSync: "off" | "local" | "llm";
   stickerEnabled: boolean;
   stickerSize: "small" | "standard" | "large";
   stickerSimilarityThreshold: number;
   /** 整个聊天请求的超时（秒）。30-1800，默认 300。 */
   chatRequestTimeoutSec: number;
-  /** CITA 结构化输出重试总预算（秒）。4-30，默认 8。 */
-  citaRepairBudgetSec: number;
-  vision?: {
-    baseUrl: string;
-    apiKey: string;
-    model: string;
-  };
   /** Embedding 维度（可选，仅 cloud 模式）。留空 = 自动探测。 */
   embeddingDimensions?: number;
-  multimodal: boolean;
   thinkingOverride?: -1 | 0 | 1;
   /** 禁用 max_tokens 注入。仅对自定义端点生效（与主进程 model-settings.ts 对齐）。 */
   disableMaxToken?: boolean;
@@ -93,15 +89,9 @@ export interface ModelPreset {
   iconUrl: string;
   // 厂商官网链接，显示在预设下拉框旁边，方便用户直接跳转注册/查看文档。
   websiteUrl?: string;
-  // 视觉模型的 OpenAI 兼容 baseUrl。主模型与视觉模型入口不同时使用。
-  visionBaseUrl?: string;
   // 标记为 true 时，该项在 <select> 里显示但不可选；
   // 用于"已列出但 vendor adapter 还没接好"的情况，避免用户选到后调用直接报错。
   disabled?: boolean;
-  // 独立视觉模型的默认值（applyPreset 在没有保存值时使用）。
-  defaultVisionModel?: string;
-  // 独立视觉模型的候选列表（用于视觉模型输入框的 datalist）。
-  visionModels?: string[];
   // 自定义端点的云端/本地变体共用一张可见卡片，但分别持久化配置。
   customEndpointMode?: CustomEndpointMode;
   hiddenInPresetList?: boolean;
@@ -115,33 +105,28 @@ export interface GeneralSettings extends ChatAppearanceSettings {
   asrAliyunAccessKeySecret?: string;
   asrLanguage?: "zh" | "en" | "auto";
   maxParallelToolCalls: number;
-  citaEnabled: boolean;
-  citaSemanticEngine: "remote" | "local";
   chatSocialContextEnabled: boolean;
   petAlwaysOnTop: boolean;
   petVisible: boolean;
   petZoom: number;
-  disableGpuElectron?: boolean;
   sidebarVisible: boolean;
   /** 提醒中心音效总开关：关闭后所有 toast 静音 */
   toastSoundEnabled: boolean;
   launchAtLogin: boolean;
-  language: "zh-CN";
+  language: "zh-CN" | "en";
   uiTheme: UiTheme;
   uiColors: UiColors;
-  windowCornerRadius: number;
-  uiThemeRadius: boolean;
   uiFont: UiFont;
   uiIcon: UiIcon;
-  defaultChatMode: DefaultChatMode;
-  currentStyleId?: string;
-  customStyle: CustomStyleConfig;
   segmentedOutputMode: SegmentedOutputMode;
-  mobileMessageSegmentation: MobileMessageSegmentationMode;
   proactiveChatMode: ProactiveChatMode;
   proactiveDeliveryTarget: ProactiveDeliveryTarget;
-  /** 聊天段落间距（em）。目前仅设置窗口 UI 使用，主进程归一化尚未持久化该字段。 */
-  chatParaSpacing?: number;
+  /** 外观排版（与 Main 的 ChatAppearanceSettings 一致）：行高、段间距（em）、界面 / 内容 / 代码字号（px）。 */
+  chatLineHeight: number;
+  chatParaSpacing: number;
+  uiFontSize: number;
+  chatFontSize: number;
+  codeFontSize: number;
   screenshotHotkey?: string;
   // 与 Main 的 getGeneral/saveGeneral 配置字段保持一致。
   weatherSource: "open-meteo" | "amap";
@@ -171,38 +156,13 @@ export interface UserApi {
   onAvatarChanged: (callback: () => void) => () => void;
 }
 
+/** 记忆设置页只读取导入知识；SMH 记忆的条目与状态走 MemoryPolicyPanelApi。 */
 export interface MemoryPanelPayload {
-  l0: {
-    preferredName: string;
-    occupation: string;
-    longTermInterests: string;
-    language: string;
-    permanentNote: string;
-  };
-  l1: {
-    recentGoals: string;
-    recentPreferences: string;
-    currentProject: string;
-  };
-  l2: Array<{
-    id: string;
-    content: string;
-    triggerText: string;
-    status: "active" | "aging" | "archived";
-    weight: number;
-    createdAt: number;
-  }>;
   importedDocs: Array<{
     importId: string | null;
     fileName: string;
     chunkCount: number;
     lastImportedAt: number;
-  }>;
-  reflections: Array<{
-    id: string;
-    title: string;
-    body: string;
-    meta: string;
   }>;
 }
 
@@ -215,8 +175,6 @@ export interface ObsidianVaultConfig {
 export interface MemoryPanelApi extends MemoryPolicyPanelApi {
   getData: () => Promise<MemoryPanelPayload>;
   deleteImportedDoc: (importId: string, fileName?: string) => Promise<{ ok: boolean; deleted: number }>;
-  saveL0: (patch: Record<string, unknown>) => Promise<{ ok: boolean }>;
-  saveL1: (patch: Record<string, unknown>) => Promise<{ ok: boolean }>;
   exportToObsidianVault: () => Promise<{
     ok: boolean;
     outputPath?: string;
@@ -246,13 +204,12 @@ export interface SettingsApi {
   getAgentRouting?: () => Promise<AgentRoutingView>;
   updateAgentRouting?: (input: AgentRoutingUpdate) => Promise<AgentRoutingView>;
   saveConfig: (config: Partial<ModelSettings>) => Promise<ModelSettings>;
-  listModelProfiles?: () => Promise<{ profiles: Array<{ id: string; provider: string; displayName?: string; baseUrl: string; model: string; apiKey: string; explicitTransport?: ApiTransport; reasoning?: ReasoningPreference; reasoningLevels?: ReasoningLevelsConfig; contextWindowTokens?: number; multimodal?: boolean }>; defaultModelProfileId?: string }>;
-  saveModelProfile?: (profile: { id?: string; provider: string; displayName?: string; baseUrl: string; model: string; apiKey: string; explicitTransport?: ApiTransport; reasoning?: ReasoningPreference; reasoningLevels?: ReasoningLevelsConfig; contextWindowTokens?: number; multimodal?: boolean }) => Promise<{ added: boolean; profiles: unknown[]; defaultModelProfileId?: string }>;
+  listModelProfiles?: () => Promise<{ profiles: Array<{ id: string; provider: string; displayName?: string; baseUrl: string; model: string; apiKey: string; explicitTransport?: ApiTransport; reasoning?: ReasoningPreference; reasoningLevels?: ReasoningLevelsConfig; contextWindowTokens?: number; inputModalities?: InputModality[]; inputModalitiesSource?: InputModalitySource; multimodal?: boolean; multimodalSource?: InputModalityResolution["source"] }>; defaultModelProfileId?: string }>;
+  saveModelProfile?: (profile: { id?: string; provider: string; displayName?: string; baseUrl: string; model: string; apiKey: string; explicitTransport?: ApiTransport; reasoning?: ReasoningPreference; reasoningLevels?: ReasoningLevelsConfig; contextWindowTokens?: number; inputModalities?: InputModality[]; inputModalitiesSource?: InputModalitySource }) => Promise<{ added: boolean; profiles: unknown[]; defaultModelProfileId?: string }>;
   deleteModelProfile?: (id: string) => Promise<unknown>;
   setDefaultModelProfile?: (id: string) => Promise<unknown>;
   getGeneral: () => Promise<GeneralSettings>;
   saveGeneral: (config: Partial<GeneralSettings>) => Promise<GeneralSettings>;
-  openCustomStylePrompt?: () => Promise<{ ok: boolean; filePath?: string; error?: string }>;
   getTimeoutSettings: () => Promise<TimeoutSettings>;
   saveTimeoutSettings: (config: Partial<TimeoutSettings>) => Promise<TimeoutSettings>;
   pickUiFont: () => Promise<string | null>;
@@ -260,11 +217,9 @@ export interface SettingsApi {
   resetUiFont: () => Promise<UiFont>;
   openSidebar: () => void;
   closeSidebar: () => void;
-  openChromeGpu: () => void;
   setPetAlwaysOnTop: (value: boolean) => void;
   setPetVisible: (value: boolean) => void;
   setPetZoom: (value: number) => void;
-  previewRuntimeSync: (value: "off" | "local" | "llm") => void;
   openStickerManager: () => Promise<{ ok: boolean; error?: string }>;
   stickerPickFile?: () => Promise<string | null>;
   stickerAdd?: (payload: { sourcePath: string; id: string; description: string; phrases: string[] }) => Promise<unknown>;
@@ -312,9 +267,10 @@ export interface SettingsApi {
   onPlanStateChanged?: (
     callback: (payload: { conversationId: string; state: string }) => void,
   ) => (() => void) | void;
-  fetchModels?: (input: { provider: string; baseUrl: string; apiKey: string; explicitTransport?: ApiTransport }) => Promise<{ ok: true; models: Array<{ id: string; name?: string }> } | { ok: false; error: string }>;
+  fetchModels?: (input: { provider: string; baseUrl: string; apiKey: string; explicitTransport?: ApiTransport }) => Promise<{ ok: true; models: FetchedModel[] } | { ok: false; error: string }>;
+  /** 输入类型的生效结果（主进程 resolveInputModalities，编辑器按草稿实时显示）。 */
+  resolveInputModalities?: (input: { provider: string; model: string; inputModalities?: InputModality[]; inputModalitiesSource?: InputModalitySource }) => Promise<InputModalityResolution>;
   testConnection?: (config: { provider: string; baseUrl: string; model: string; apiKey: string; explicitTransport?: ApiTransport; reasoning?: ReasoningPreference }) => Promise<{ ok: boolean; latency: number; sample?: string; error?: string }>;
-  testVision?: (config: { baseUrl: string; apiKey: string; model: string }) => Promise<{ ok: boolean; latency: number; sample?: string; error?: string }>;
   // main → settings：要求切到指定标签（窗口已打开时由 main 发这个事件）
   onSwitchSection?: (callback: (section: string) => void) => (() => void) | void;
   channelsGetConfig: () => Promise<any>;

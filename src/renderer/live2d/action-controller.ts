@@ -1,16 +1,20 @@
-import type { Live2DModel } from "pixi-live2d-display/cubism4";
-import type { Live2DActionReceipt, Live2DTarget } from "../../shared/live2d-actions";
+import type { Live2DExpressionTarget } from "../../shared/live2d-actions";
 import type { Live2DManager } from "./manager";
 import type { FireflyExpressionState } from "./expression-state";
 
+/**
+ * 播放双击触发的临时表情。播放期间拒绝新的请求；表情结束后恢复到当前基础表情。
+ */
 export class FireflyActionController {
-  private readonly manager: Pick<Live2DManager, "getModel" | "hasAction" | "playAction">;
+  private readonly manager: Pick<Live2DManager, "hasAction" | "playAction">;
   private readonly expressions: Pick<FireflyExpressionState, "trigger" | "suspend" | "resume">;
   private busy = false;
-  private timer: number | null = null;
   private disposed = false;
 
-  constructor(manager: Pick<Live2DManager, "getModel" | "hasAction" | "playAction">, expressions: Pick<FireflyExpressionState, "trigger" | "suspend" | "resume">) {
+  constructor(
+    manager: Pick<Live2DManager, "hasAction" | "playAction">,
+    expressions: Pick<FireflyExpressionState, "trigger" | "suspend" | "resume">,
+  ) {
     this.manager = manager;
     this.expressions = expressions;
   }
@@ -19,21 +23,10 @@ export class FireflyActionController {
     return this.busy;
   }
 
-  async play(target: Live2DTarget, durationMs: number, report?: (receipt: Omit<Live2DActionReceipt, "requestId">) => void): Promise<boolean> {
-    if (this.disposed || this.busy) {
-      report?.({ stage: "failed", reason: this.disposed ? "model_unavailable" : "playback_refused" });
-      return false;
-    }
-    const model = this.manager.getModel();
-    if (!model) {
-      report?.({ stage: "failed", reason: "model_unavailable" });
-      return false;
-    }
-    report?.({ stage: "model_loaded" });
-    if (!this.manager.hasAction(target)) {
-      report?.({ stage: "failed", reason: "resource_unavailable" });
-      return false;
-    }
+  /** 返回表情是否已确认开始播放。 */
+  async play(target: Live2DExpressionTarget, durationMs: number): Promise<boolean> {
+    if (this.disposed || this.busy) return false;
+    if (!this.manager.hasAction(target)) return false;
     this.busy = true;
     this.expressions.suspend();
     const started = await this.manager.playAction(target);
@@ -41,50 +34,16 @@ export class FireflyActionController {
     if (!started) {
       await this.expressions.resume();
       this.busy = false;
-      report?.({ stage: "failed", reason: "playback_refused" });
       return false;
     }
-    report?.({ stage: "started" });
-    if (target.kind === "expression") {
-      this.expressions.trigger(durationMs, (restored) => {
-        this.busy = false;
-        report?.(restored ? { stage: "completed" } : { stage: "failed", reason: "reset_failed" });
-      });
-      return true;
-    }
-    if (target.group === "Idle" && target.motionName === "0") {
-      await this.expressions.resume();
+    this.expressions.trigger(durationMs, () => {
       this.busy = false;
-      return true;
-    }
-    this.timer = window.setTimeout(() => {
-      this.timer = null;
-      void this.finishMotion(model, report);
-    }, durationMs);
+    });
     return true;
-  }
-
-  private async finishMotion(model: Live2DModel, report?: (receipt: Omit<Live2DActionReceipt, "requestId">) => void): Promise<void> {
-    if (this.disposed) return;
-    try {
-      model.internalModel.motionManager.stopAllMotions();
-      const idleStarted = await this.manager.playAction({ kind: "motion", group: "Idle", motionName: "0" });
-      const expressionRestored = await this.expressions.resume();
-      if (!this.disposed) report?.(idleStarted && expressionRestored
-        ? { stage: "completed" }
-        : { stage: "failed", reason: "reset_failed" });
-    } catch (error) {
-      console.warn("[Firefly] motion finish failed", error);
-      if (!this.disposed) report?.({ stage: "failed", reason: "playback_refused" });
-    } finally {
-      this.busy = false;
-    }
   }
 
   dispose(): void {
     this.disposed = true;
-    if (this.timer !== null) window.clearTimeout(this.timer);
-    this.timer = null;
     this.busy = false;
   }
 }

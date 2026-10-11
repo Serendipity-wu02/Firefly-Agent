@@ -56,7 +56,6 @@ export function computeReasoningDropdown(
   model: string,
   saved: ReasoningPreference | undefined,
   thinkingOverride?: -1 | 0 | 1,
-  transport?: "openai" | "anthropic" | "responses",
   levels?: ReasoningLevelsConfig,
 ): ReasoningDropdownView {
   // levels 是接入的 API 档案里声明的档位；没声明才按型号名查规则表。
@@ -120,7 +119,7 @@ export function computeReasoningDropdown(
           label: "跟随动态路由",
           preference: { mode: "auto" },
           disabled: true,
-          hint: "由火山动态路由决定",
+          hint: "由服务端动态路由决定",
         },
       ],
     };
@@ -171,14 +170,6 @@ export function computeReasoningDropdown(
   for (const e of efforts) {
     items.push({ label: EFFORT_LABEL[e], preference: { mode: "on", effort: e } });
   }
-  // PRO 档（gpt-5.6 系列）：reasoning.mode="pro"，仅 Responses 协议存在该字段
-  if (cap.supportsProMode && transport === "responses") {
-    items.push({
-      label: "PRO",
-      preference: { mode: "on", proMode: true },
-      hint: "最高智能档，延迟更高（Responses API reasoning.mode=pro）",
-    });
-  }
   return {
     disabled: false,
     statusText: statusTextFor(effective),
@@ -190,7 +181,6 @@ export function computeReasoningDropdown(
 function statusTextFor(effective: ReasoningPreference): string {
   if (effective.mode === "auto") return "跟随模型";
   if (effective.mode === "off") return "关闭";
-  if (effective.proMode) return "PRO";
   if (effective.effort) return EFFORT_LABEL[effective.effort];
   return "开启";
 }

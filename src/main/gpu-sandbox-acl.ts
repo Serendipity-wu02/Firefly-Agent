@@ -8,7 +8,7 @@
 // 自愈：启动时（app ready 前，GPU 进程尚未 spawn）给 exe 目录补一条
 // `*S-1-15-2-2:(OI)(CI)(RX)`。社区实测补这一条即可恢复，无需清理孤儿 SID。
 // 成功后写哨兵文件，后续启动直接跳过；失败（无写 ACL 权限等）静默放过，
-// 不阻塞启动——用户仍可用 disableGpuElectron 兜底。
+// 不阻塞启动；失败后下次启动重试。
 
 import * as fs from "fs";
 import * as path from "path";
@@ -90,7 +90,7 @@ export function ensureGpuSandboxAcl(options: GpuAclHealOptions): GpuAclHealStatu
     return "granted";
   } catch (err) {
     // 无管理员权限写不了 ACL 等场景：静默放过，下个启动周期重试。
-    logger.warn("[GpuAclHeal] 补权限失败（下次启动重试；可用设置里的软渲染模式兜底）:", err instanceof Error ? err.message : String(err));
+    logger.warn("[GpuAclHeal] 补权限失败（下次启动重试）:", err instanceof Error ? err.message : String(err));
     return "failed";
   }
 }
