@@ -2,7 +2,7 @@ import { describe, expect, it, vi } from "vitest";
 import { createLive2dWorkApi, type Live2dWorkIpcRenderer } from "../preload/live2d-work-api";
 import { IPC } from "../shared/ipc-channels";
 
-function fakeIpcRenderer() {
+function fakeIpcRenderer(snapshot: unknown = false) {
   const listeners = new Map<string, Set<(event: unknown, working: unknown) => void>>();
   const ipc: Live2dWorkIpcRenderer = {
     on: vi.fn((channel, listener) => {
@@ -13,6 +13,7 @@ function fakeIpcRenderer() {
     removeListener: vi.fn((channel, listener) => {
       listeners.get(channel)?.delete(listener);
     }),
+    invoke: vi.fn(async () => snapshot),
   };
   const emit = (channel: string, payload: unknown) => {
     for (const listener of listeners.get(channel) ?? []) listener({}, payload);
@@ -21,6 +22,21 @@ function fakeIpcRenderer() {
 }
 
 describe("Live2D work preload API", () => {
+  it("reads the current working state as an initial snapshot", async () => {
+    const working = fakeIpcRenderer(true);
+    expect(await createLive2dWorkApi(working.ipc).getWorking()).toBe(true);
+    expect(working.ipc.invoke).toHaveBeenCalledWith(IPC.LIVE2D_GET_WORKING);
+    expect(await createLive2dWorkApi(fakeIpcRenderer(false).ipc).getWorking()).toBe(false);
+    // 非 boolean 的返回不当作“在工作”
+    expect(await createLive2dWorkApi(fakeIpcRenderer("yes").ipc).getWorking()).toBe(false);
+  });
+
+  it("treats a failed snapshot read as not working", async () => {
+    const { ipc } = fakeIpcRenderer();
+    ipc.invoke = vi.fn(async () => { throw new Error("no handler"); });
+    expect(await createLive2dWorkApi(ipc).getWorking()).toBe(false);
+  });
+
   it("subscribes to the working-changed channel and forwards boolean state", () => {
     const { ipc, emit } = fakeIpcRenderer();
     const api = createLive2dWorkApi(ipc);

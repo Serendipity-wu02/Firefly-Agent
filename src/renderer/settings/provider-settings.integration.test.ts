@@ -595,3 +595,20 @@ it("records a vendor-declared input type when a fetched model is picked, and dro
   expect(saveProfile.mock.calls.at(-1)?.[0]).toMatchObject({ model: "hand-typed-z" });
   expect(saveProfile.mock.calls.at(-1)?.[0].inputModalities).toBeUndefined();
 });
+
+it("also records the vendor-declared input type when a fetched model id is chosen through the native datalist", async () => {
+  window.settings!.fetchModels = vi.fn(async (): Promise<{ ok: true; models: FetchedModel[] }> => ({
+    ok: true,
+    models: [{ id: "vendor-vision-x", inputModalities: ["text", "image"] }, { id: "vendor-text-y", inputModalities: ["text"] }],
+  }));
+  openExisting();
+  element<HTMLButtonElement>("fetch-models-btn").click();
+  await vi.waitFor(() => expect(document.querySelectorAll("#fetch-models-list [data-model-id]")).toHaveLength(2));
+  // 不点自定义选择器：直接把输入框设成列表里的 id，等同于在原生 datalist 里选中
+  const model = element<HTMLInputElement>("model-input");
+  model.value = "vendor-vision-x";
+  model.dispatchEvent(new Event("input", { bubbles: true }));
+  submitProfile();
+  await vi.waitFor(() => expect(saveProfile).toHaveBeenCalledTimes(1));
+  expect(saveProfile.mock.calls.at(-1)?.[0]).toMatchObject({ model: "vendor-vision-x", inputModalities: ["text", "image"], inputModalitiesSource: "vendor-api" });
+});

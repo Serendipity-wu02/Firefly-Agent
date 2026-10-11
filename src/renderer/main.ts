@@ -39,6 +39,7 @@ declare global {
 
     live2dWork?: {
       onChanged: (callback: (working: boolean) => void) => () => void;
+      getWorking?: () => Promise<boolean>;
     };
   }
 }
@@ -169,6 +170,12 @@ workOff = trackSubscription("live2dWork:onChanged", window.live2dWork?.onChanged
   workingNow = working === true;
   void expressionReset?.setBase(currentBaseExpression());
 }) ?? (() => {}));
+// 初始快照：桌宠晚于“true”事件加载或重载时，补上当前是否处于工作中。
+// 订阅已先挂好，快照之后到达的跳变事件仍会覆盖它。
+void window.live2dWork?.getWorking?.().then((working) => {
+  workingNow = working === true;
+  void expressionReset?.setBase(currentBaseExpression());
+}).catch(() => { /* 读取失败按不在工作处理 */ });
 
 manager.init();
 

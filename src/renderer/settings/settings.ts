@@ -1230,8 +1230,12 @@ const modelPicker = fetchModelsPicker && fetchModelsSearch && fetchModelsList &&
   : undefined;
 closeFetchedModelPicker = () => modelPicker?.close();
 modelInput.addEventListener("input", () => {
-  modelPicker?.syncCurrent(modelInput.value.trim());
+  const typed = modelInput.value.trim();
+  modelPicker?.syncCurrent(typed);
   inputModalities.modelChanged();
+  // 原生 datalist 选中（或手填成了列表里的 id）不会经过自定义选择器；
+  // 只要这个 id 是刚拉取到的厂商模型，就按厂商返回的模态记录，避免图片能力被静默丢掉。
+  if (fetchedInputModalities.has(typed)) inputModalities.picked(typed, fetchedInputModalities.get(typed));
 });
 function fetchModelsErrorText(error: string): string {
   const status = /^HTTP_(\d+)$/.exec(error)?.[1];

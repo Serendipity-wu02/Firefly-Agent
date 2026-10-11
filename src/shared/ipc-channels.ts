@@ -229,6 +229,7 @@ export const IPC = {
   MODEL_CONFIG_CHANGED: "model-config:changed",
 
   LIVE2D_WORKING_CHANGED: "live2d:working-changed", // 主进程 → 桌宠窗口：Agent 是否处于工作中（boolean）
+  LIVE2D_GET_WORKING: "live2d:get-working", // 桌宠窗口 → 主进程：读取当前是否处于工作中（桌宠晚于“true”事件加载 / 重载时用它补上初始状态）
   LIVE2D_GET_MAIN_DIAGNOSTICS: "live2d:get-main-diagnostics",
   // embedding model status
   EMBEDDING_SET_MODEL: "embedding:set-model",

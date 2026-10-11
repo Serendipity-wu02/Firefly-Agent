@@ -15,6 +15,7 @@ import {
 import { resolveVendorRuntimeSettings } from "../orchestrator/vendors/runtime-settings";
 import { resolveTransport } from "../orchestrator/vendors/transport-detector";
 import { getSession } from "./chats-store";
+import { getActiveLive2dWorkRunCount } from "../orchestrator/live2d-work-signal";
 import { describePendingAttachment } from "../rag/file-ingest";
 import { processDocumentIndexRequest } from "../rag/document-index-ipc";
 import {
@@ -55,6 +56,9 @@ export function registerChatUiIpc(deps: ChatUiIpcDependencies): void {
   ipc.handle(IPC.LIVE2D_GET_MAIN_DIAGNOSTICS, () => ({
     window: live2dWindowLifecycle.getDiagnostics(),
   }));
+
+  // 桌宠只会收到“工作中”的跳变事件；窗口晚于 true 事件加载或重载时，用这个快照补上当前状态。
+  ipc.handle(IPC.LIVE2D_GET_WORKING, () => getActiveLive2dWorkRunCount() > 0);
 
   ipc.on(IPC.CHAT_MINIMIZE, (event) => {
     BrowserWindow.fromWebContents(event.sender)?.minimize();
