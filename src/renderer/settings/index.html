@@ -10,6 +10,7 @@
   <link rel="stylesheet" href="./settings.css" />
   <link rel="stylesheet" href="../ui/theme.css" />
   <link rel="stylesheet" href="./settings-layout.css" />
+  <link rel="stylesheet" href="./settings-system.css" />
 </head>
 <body>
   <div class="settings-shell">
@@ -629,8 +630,8 @@
             </div>
           </div>
 
+          <h2 class="settings-group-title" data-i18n="panel.general.groups.desktop">桌面与提醒</h2>
           <div class="settings-list">
-            <h2 class="settings-group-title" data-i18n="panel.general.groups.desktop">桌面与提醒</h2>
             <div class="setting-row">
               <div>
                 <strong><span data-i18n="panel.general.toastSound.title">提醒音效</span></strong>
@@ -639,7 +640,10 @@
               <span class="switch"><input id="toast-sound-enabled" type="checkbox" checked /><span class="switch__track"><span class="switch__thumb"></span></span></span>
             </div>
 
-            <h2 class="settings-group-title" data-i18n="panel.general.groups.system">系统</h2>
+          </div>
+
+          <h2 class="settings-group-title" data-i18n="panel.general.groups.system">系统</h2>
+          <div class="settings-list">
             <label class="setting-row">
               <div>
                 <strong><span data-i18n="panel.general.launchAtLogin.title">开机自启</span></strong>

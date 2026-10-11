@@ -1,0 +1,224 @@
+/* 设置面板统一设计层（最后加载）。
+ *
+ * 之前各页风格不一：有的是平铺的发丝线行（通用 / 偏好 / 运行 / 外观），有的是卡片（流萤 / 记忆 / 工具 / 手机），
+ * ASR 页干脆没有样式。这里把它们收成同一套语言：
+ *   页面   = 标题 + 一串卡片，卡片间距固定
+ *   卡片   = 圆角 14、1px 柔和边、卡片底色；内部行用发丝线分隔
+ *   一行   = 左边“标题 + 说明”，右边一个控件
+ *   控件   = 开关 / 分段选择 / 输入框，在所有页面长得一样
+ * 只用已有的 --rb-* 令牌，所以浅色、深色和自定义配色都会跟着走。
+ */
+
+.settings-shell {
+  --sys-radius: 14px;
+  --sys-pad-x: 20px;
+  --sys-row-pad: 16px;
+  --sys-gap: 20px;
+}
+
+/* ── 页面节奏 ─────────────────────────────────────────── */
+.panel-heading { margin-bottom: 28px; }
+.panel-heading h1 { font-weight: 600; }
+.panel-heading p { margin-top: 8px; }
+.form-actions { margin-top: var(--sys-gap); }
+
+/* ── 卡片：设置列表 ───────────────────────────────────── */
+.settings-list {
+  display: block;
+  margin: 0 0 var(--sys-gap);
+  padding: 0 var(--sys-pad-x);
+  border: 1px solid var(--rb-border-soft);
+  border-radius: var(--sys-radius);
+  background: var(--rb-card-bg);
+}
+.settings-list > :is(.setting-row, .field) { border-top: 1px solid var(--rb-border-soft); }
+.settings-list > :is(.setting-row, .field):first-child { border-top: 0; }
+.settings-list > .setting-row { border-bottom: 0; padding: var(--sys-row-pad) 0; min-height: 64px; }
+.settings-list .setting-row:last-child { border-bottom: 0; }
+
+/* 通用页：分组标题放在卡片外面，卡片之间留出呼吸 */
+.settings-group-title {
+  margin: 32px 0 12px;
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: .02em;
+  color: var(--rb-text-muted);
+}
+.settings-group-title:first-child { margin-top: 0; }
+
+/* 卡片里直接放字段（运行设置）：标题、输入、说明各自成段，段间不再粘在一起 */
+.settings-list > .field { padding: 18px 0; gap: 8px; }
+.settings-list > .field > span:first-child { color: var(--rb-text-strong); font-size: 14px; font-weight: 500; }
+.settings-list > .field .field-hint,
+.settings-list > .field .form-hint { margin: 0; color: var(--rb-text-muted); font-size: 12.5px; line-height: 1.6; }
+
+/* ── 行里的说明文字 ───────────────────────────────────── */
+.setting-row strong { margin-bottom: 2px; }
+.setting-row > div > span { color: var(--rb-text-muted); }
+
+/* ── 分段选择：偏好 / 通用语言 / 其他页共用 ──────────────── */
+.option-blocks,
+.language-options {
+  display: grid;
+  grid-auto-flow: column;
+  grid-auto-columns: minmax(0, 1fr);
+  grid-template-columns: none;
+  align-items: stretch;
+  gap: 2px;
+  width: 100%;
+  min-width: 0;
+  max-width: none;
+  padding: 3px;
+  border-radius: 11px;
+  background: var(--rb-bg-2);
+}
+/* 行右侧的控件：按内容收紧、靠右 */
+#preferences-form .setting-row .option-blocks,
+.setting-row .option-blocks,
+.setting-row .language-options {
+  display: inline-flex;
+  flex-wrap: nowrap;
+  width: auto;
+  margin-left: auto;
+  justify-content: flex-start;
+}
+#preferences-form .setting-row .option-blocks > :first-child:nth-last-child(2),
+#preferences-form .setting-row .option-blocks > :last-child:nth-child(2) { grid-column: auto; }
+.option-block,
+.language-option,
+#preferences-form .setting-row .option-blocks > .option-block {
+  flex: 0 0 auto;
+  min-width: 56px;
+  padding: 7px 14px;
+  border: 0;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--rb-text-muted);
+  font-size: 13px;
+  font-weight: 500;
+  line-height: 1.4;
+  white-space: nowrap;
+  box-shadow: none;
+}
+.option-block:not(:disabled):not(.is-active):hover,
+.language-option:not(:disabled):not(.is-active):hover { background: var(--rb-hover-light); color: var(--rb-text-strong); border: 0; }
+.option-block.is-active,
+.language-option.is-active,
+#preferences-form .setting-row .option-blocks > .option-block.is-active {
+  background: var(--rb-pink-500);
+  color: var(--rb-text-on-pink);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, .14);
+}
+/* 被锁定的当前值仍要看得出“选中了谁” */
+.option-block:disabled,
+.language-option:disabled { opacity: .5; }
+.option-block.is-active:disabled,
+.language-option.is-active:disabled,
+#preferences-form .setting-row .option-blocks > .option-block.is-active:disabled { opacity: .78; }
+
+/* ── 输入控件在设置页里统一高度和边框 ────────────────────── */
+.settings-shell :is(.field, .settings-list, .panel-body, .channels-card) :is(input:not([type=checkbox]):not([type=radio]):not([type=range]):not([type=color]), select, textarea) {
+  box-sizing: border-box;
+  border: 1px solid var(--rb-input-border);
+  border-radius: 10px;
+  background: var(--rb-input-bg);
+  color: var(--rb-input-text, var(--rb-text-strong));
+  box-shadow: none;
+  font: inherit;
+  font-size: 14px;
+}
+.settings-shell :is(.field, .settings-list, .panel-body, .channels-card) :is(input:not([type=checkbox]):not([type=radio]):not([type=range]):not([type=color]), select):not(textarea) { min-height: 40px; padding: 8px 12px; }
+.settings-shell :is(.field, .settings-list, .panel-body, .channels-card) :is(input, select, textarea):focus {
+  outline: none;
+  border-color: var(--rb-pink-500);
+  box-shadow: 0 0 0 3px rgba(var(--rb-accent-rgb), .14);
+}
+.settings-shell :is(.field, .panel-body) :is(input, select, textarea):disabled { opacity: .6; cursor: not-allowed; }
+
+/* 超时这类“输入框 + 重置”一行 */
+.timeout-row { display: flex; align-items: center; gap: 8px; }
+.timeout-row > input { flex: 1 1 auto; min-width: 0; }
+.timeout-reset, .base-url-reset {
+  flex: none;
+  width: 40px;
+  height: 40px;
+  border: 1px solid var(--rb-input-border);
+  border-radius: 10px;
+  background: var(--rb-card-bg);
+  color: var(--rb-text-muted);
+  cursor: pointer;
+}
+.timeout-reset:hover, .base-url-reset:hover { background: var(--rb-hover-light); color: var(--rb-text-strong); }
+
+/* ── ASR 页：原来没有任何样式 ────────────────────────────── */
+#desktop-asr-form .panel-body {
+  display: grid;
+  gap: 8px;
+  padding: 20px var(--sys-pad-x);
+  border: 1px solid var(--rb-border-soft);
+  border-radius: var(--sys-radius);
+  background: var(--rb-card-bg);
+}
+#desktop-asr-form .field-label { margin-top: 10px; color: var(--rb-text-strong); font-size: 14px; font-weight: 500; }
+#desktop-asr-form .field-label:first-child { margin-top: 0; }
+#desktop-asr-form fieldset { display: grid; gap: 8px; margin: 8px 0 0; padding: 14px 16px 16px; border: 1px solid var(--rb-border-soft); border-radius: 12px; background: var(--rb-bg-1); }
+#desktop-asr-form fieldset[hidden] { display: none; }
+#desktop-asr-form legend { padding: 0 6px; color: var(--rb-text-strong); font-size: 13px; font-weight: 600; }
+#desktop-asr-form .field-hint { margin: 0; color: var(--rb-text-muted); font-size: 12.5px; line-height: 1.6; }
+#desktop-asr-form input,
+#desktop-asr-form select {
+  box-sizing: border-box;
+  width: 100%;
+  min-height: 40px;
+  padding: 8px 12px;
+  border: 1px solid var(--rb-input-border);
+  border-radius: 10px;
+  background: var(--rb-input-bg);
+  color: var(--rb-input-text, var(--rb-text-strong));
+  font: inherit;
+  font-size: 14px;
+}
+#desktop-asr-form :is(input, select):focus { outline: none; border-color: var(--rb-pink-500); box-shadow: 0 0 0 3px rgba(var(--rb-accent-rgb), .14); }
+#desktop-asr-form .primary-button {
+  justify-self: end;
+  margin-top: 12px;
+  padding: 9px 18px;
+  border: 1px solid var(--rb-pink-500);
+  border-radius: 10px;
+  background: var(--rb-pink-500);
+  color: var(--rb-text-on-pink);
+  font: inherit;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+}
+#desktop-asr-form .primary-button:hover:not(:disabled) { background: var(--rb-accent-hover); border-color: var(--rb-accent-hover); }
+#desktop-asr-form .primary-button:disabled { opacity: .5; cursor: not-allowed; }
+#desktop-asr-form [role="status"] { margin: 0; min-height: 0; color: var(--rb-text-muted); font-size: 13px; }
+#desktop-asr-form [role="status"]:empty { display: none; }
+
+/* ── 外观页：把带缺口的 fieldset 变成普通卡片 ──────────────── */
+.ui-color-controls { border-radius: var(--sys-radius); padding: 4px var(--sys-pad-x) 16px; background: var(--rb-card-bg); }
+.ui-color-controls legend { float: left; width: 100%; margin: 0; padding: 16px 0 0; font-size: 14px; }
+.ui-color-controls legend + * { clear: both; margin-top: 10px; }
+.ui-color-controls > p { margin: 6px 0 12px; }
+.appearance-section { margin-bottom: var(--sys-gap); }
+.appearance-section__heading h2, .appearance-section > h2 { font-size: 15px; font-weight: 600; }
+.appearance-option, .appearance-placeholder, .appearance-font-control { border-radius: var(--sys-radius); }
+
+/* ── 其他卡片统一圆角，和上面的卡片对齐 ───────────────────── */
+.channels-card, .channels-log, .memory-card { border-radius: var(--sys-radius); }
+
+/* ── 手机页：标题放回第一位，消息日志是次要入口 ──────────────── */
+#channels-panel:not(.is-hidden) { display: flex; flex-direction: column; }
+#channels-panel > h1 { order: -3; margin: 0; font-size: 26px; font-weight: 600; line-height: 1.25; letter-spacing: -.02em; }
+#channels-panel > h1 svg { display: none; }
+#channels-panel > .panel-hint { order: -2; margin: 8px 0 24px; color: var(--rb-text-muted); font-size: 14px; line-height: 1.7; }
+#channels-panel > .channels-log { order: 99; margin-top: var(--sys-gap); }
+
+/* 手机页：它自己有 form-row / form-input，这里只对齐尺寸、边框和间距 */
+.channels-card__body .form-row { margin-top: 14px; }
+.channels-card__body .form-input { min-height: 40px; padding: 8px 12px; border-radius: 10px; font-size: 14px; }
+.channels-card__body .form-input--wide { width: 100%; max-width: none; }
+.channels-card__body .form-input-with-action .btn-reveal { width: 40px; height: 40px; border-radius: 10px; }
+.channels-card__actions { margin-top: 16px; gap: 8px; }
