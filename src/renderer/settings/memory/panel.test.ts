@@ -19,7 +19,6 @@ const fact = { factId: "fact-1", revision: 1, subjectKey: "preference", assertio
   sourceRef: { sourceId: "source-1", revision: 1 }, recordedAt: 2000, acceptedAt: 2500, supersededAt: null, activationReason: "policyAccepted", policyVersion: "test",
   provenance: { candidateId: null, evidenceId: null, activationSourceRef: { sourceId: "source-1", revision: 1 } } };
 const text = (id: string) => document.getElementById(id)?.textContent ?? "";
-const retiredObsidian = { ok: false, code: "MEMORY_LEGACY_RETIRED" };
 
 async function mountPage(): Promise<() => Promise<void>> {
   vi.resetModules();
@@ -35,7 +34,6 @@ describe("memory settings page", () => {
     installApi({
       getState: async () => memoryState({ facts: [fact], candidates: [{ candidateId: "c-1", revision: 1, attribute: "a", value: null, assertion: "候选", reason: "needs-review", sourceRef: { sourceId: "s", revision: 1 } }] }),
       getData: async () => ({ importedDocs: [] }),
-      getVaultConfig: async () => retiredObsidian,
     });
     await load();
     expect(text("memory-overview-service")).toBe("正常");
@@ -49,7 +47,6 @@ describe("memory settings page", () => {
     installApi({
       getState: async () => memoryState({ coverage: { ...memoryState().coverage, status: "measured", reason: undefined, population: 3, present: 2, missing: 1, unknownDenied: 0 } }),
       getData: async () => ({ importedDocs: [] }),
-      getVaultConfig: async () => retiredObsidian,
     });
     await load();
     expect(document.getElementById("memory-overview-coverage-row")?.classList.contains("is-hidden")).toBe(false);
@@ -60,44 +57,17 @@ describe("memory settings page", () => {
     installApi({
       getState: async () => { throw new Error("/private/account secret"); },
       getData: async () => ({ importedDocs: [] }),
-      getVaultConfig: async () => retiredObsidian,
     });
     await load();
     expect(text("memory-overview-service")).toContain("读取失败");
     expect(text("memory-overview-service")).not.toMatch(/private|secret/);
     expect(text("memory-entries-body")).toContain("记忆读取失败");
   });
-  it("disables Obsidian controls and explains it when the current memory version retires them", async () => {
-    const load = await mountPage();
-    installApi({
-      getState: async () => memoryState(),
-      getData: async () => ({ importedDocs: [] }),
-      getVaultConfig: async () => retiredObsidian,
-    });
-    await load();
-    expect((document.getElementById("obsidian-vault-bind-btn") as HTMLButtonElement).disabled).toBe(true);
-    expect((document.getElementById("obsidian-vault-export-btn") as HTMLButtonElement).disabled).toBe(true);
-    expect(text("obsidian-vault-hint")).toContain("暂不支持");
-  });
-  it("shows the bound vault path and enables sync when Obsidian is available", async () => {
-    const load = await mountPage();
-    installApi({
-      getState: async () => memoryState(),
-      getData: async () => ({ importedDocs: [] }),
-      getVaultConfig: async () => ({ vaultPath: "D:/vault", autoSync: true, lastSyncAt: 0 }),
-    });
-    await load();
-    expect(text("obsidian-vault-path")).toContain("D:/vault");
-    expect(document.getElementById("obsidian-vault-bound")?.classList.contains("is-hidden")).toBe(false);
-    expect((document.getElementById("obsidian-vault-sync-btn") as HTMLButtonElement).disabled).toBe(false);
-    expect((document.getElementById("obsidian-vault-auto-sync") as HTMLInputElement).checked).toBe(true);
-  });
   it("renders imported documents as text and keeps a per-document delete control", async () => {
     const load = await mountPage();
     installApi({
       getState: async () => memoryState(),
       getData: async () => ({ importedDocs: [{ importId: "doc-1", fileName: "<img src=x>.txt", chunkCount: 2, lastImportedAt: 1000 }] }),
-      getVaultConfig: async () => retiredObsidian,
     });
     await load();
     const docs = document.getElementById("memory-imported-list")!;
@@ -111,10 +81,9 @@ describe("memory settings page", () => {
     installApi({
       getState: async () => { calls.push("state"); throw new Error("private-token"); },
       getData: async () => { calls.push("documents"); return { importedDocs: [{ importId: "doc-1", fileName: "a.txt", chunkCount: 1, lastImportedAt: 1000 }] }; },
-      getVaultConfig: async () => { calls.push("vault"); return retiredObsidian; },
     });
     await load();
-    expect(calls.sort()).toEqual(["documents", "state", "vault"]);
+    expect(calls.sort()).toEqual(["documents", "state"]);
     expect(document.getElementById("memory-imported-list")?.querySelector("[data-import-id=doc-1]")).not.toBeNull();
   });
 });

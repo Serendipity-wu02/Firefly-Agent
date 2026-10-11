@@ -1,10 +1,9 @@
-// 记忆设置页编排：概览、我的记忆、Obsidian 同步、导入知识四张卡片。
+// 记忆设置页编排：概览、我的记忆、导入知识三张卡片。
 import type { MemoryPanelState } from "../../../shared/memory-panel-contracts";
 import type { MemoryPanelApi, MemoryPanelPayload } from "../shared/types";
 import { applyTranslations, t } from "../i18n";
 import { formatDateTime } from "../shared/format";
 import { createMemoryEntriesPanel } from "./entries-panel";
-import { initObsidianVaultUI, refreshObsidianVaultUI } from "./obsidian-vault-ui";
 
 let entries: ReturnType<typeof createMemoryEntriesPanel> | null = null;
 let entriesRoot: HTMLElement | null = null;
@@ -105,11 +104,10 @@ export async function loadMemoryPanel(): Promise<void> {
     translated = true;
     applyTranslations(page);
   }
-  initObsidianVaultUI();
   if (root && entriesRoot !== root) {
     entriesRoot = root;
     const bridge = api();
     entries = createMemoryEntriesPanel(root, typeof bridge?.getState === "function" ? bridge : undefined, renderOverview);
   }
-  await Promise.all([entries?.load(), loadImportedDocs(), refreshObsidianVaultUI()]);
+  await Promise.all([entries?.load(), loadImportedDocs()]);
 }

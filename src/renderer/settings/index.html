@@ -777,46 +777,6 @@
               <div id="memory-entries-body" class="memory-entries"></div>
             </section>
 
-            <!-- Obsidian 同步 -->
-            <section class="settings-list memory-section" id="memory-obsidian" aria-labelledby="memory-obsidian-title">
-              <header class="memory-section__head">
-                <h2 id="memory-obsidian-title"><span data-i18n="settings.panel.memory.obsidian.title">Obsidian 同步</span></h2>
-                <p><span data-i18n="settings.panel.memory.obsidian.desc">把记忆写成 .md 文件，放进一个文件夹。用 Obsidian 打开该文件夹，即可通过双链查看关系。</span></p>
-              </header>
-              <div class="setting-row" id="obsidian-vault-unbound">
-                <div>
-                  <strong><span data-i18n="settings.panel.memory.obsidian.unbound">还没有绑定文件夹</span></strong>
-                  <span data-i18n="settings.panel.memory.obsidian.unboundHint">选择一个文件夹后，记忆会同步成 .md 文件。</span>
-                </div>
-                <button type="button" class="save-btn save-btn--ghost" id="obsidian-vault-bind-btn"><span data-i18n="settings.panel.memory.obsidian.bindButton">绑定文件夹</span></button>
-              </div>
-              <div class="setting-row is-hidden" id="obsidian-vault-bound">
-                <div>
-                  <strong><span data-i18n="settings.panel.memory.obsidian.bound">已绑定文件夹</span></strong>
-                  <span id="obsidian-vault-path"></span>
-                </div>
-                <div class="memory-section__actions">
-                  <button type="button" class="save-btn save-btn--ghost" id="obsidian-vault-sync-btn"><span data-i18n="settings.panel.memory.obsidian.syncButton">立即同步</span></button>
-                  <button type="button" class="save-btn save-btn--ghost" id="obsidian-vault-unbind-btn"><span data-i18n="settings.panel.memory.obsidian.unbindButton">解绑</span></button>
-                </div>
-              </div>
-              <label class="setting-row">
-                <div>
-                  <strong><span data-i18n="settings.panel.memory.obsidian.autoSync">自动同步</span></strong>
-                  <span data-i18n="settings.panel.memory.obsidian.autoSyncHint">记忆变化后 2 秒自动写入</span>
-                </div>
-                <input type="checkbox" id="obsidian-vault-auto-sync" />
-              </label>
-              <div class="setting-row">
-                <div>
-                  <strong><span data-i18n="settings.panel.memory.obsidian.exportButton">导出一次</span></strong>
-                  <span data-i18n="settings.panel.memory.obsidian.exportHint">导出到任意文件夹，不会绑定它。</span>
-                </div>
-                <button type="button" class="save-btn save-btn--ghost" id="obsidian-vault-export-btn"><span data-i18n="settings.panel.memory.obsidian.exportButton">导出一次</span></button>
-              </div>
-              <p class="memory-section__hint" id="obsidian-vault-hint" role="status" aria-live="polite"></p>
-            </section>
-
             <!-- 导入知识 -->
             <section class="settings-list memory-section" id="memory-imported" aria-labelledby="memory-imported-title">
               <header class="memory-section__head">
