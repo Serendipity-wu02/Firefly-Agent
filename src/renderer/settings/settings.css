@@ -2459,28 +2459,6 @@ body {
 }
 
 /* ── 档案列表（API 设置页） ─────────────────────────────── */
-.profile-list-section {
-  margin: 6px 0 16px;
-}
-
-.profile-list-heading {
-  display: flex;
-  align-items: baseline;
-  justify-content: space-between;
-  gap: 12px;
-  margin-bottom: 10px;
-}
-.profile-list-heading h2 {
-  margin: 0;
-  font-size: 14px;
-  font-weight: 600;
-  color: var(--rb-text-strong);
-}
-.profile-list-heading p {
-  margin: 2px 0 0;
-  font-size: 11.5px;
-  color: var(--rb-text-default);
-}
 .profile-list-count {
   flex-shrink: 0;
   font-size: 11px;

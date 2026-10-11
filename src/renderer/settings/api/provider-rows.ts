@@ -27,6 +27,7 @@ export function renderProviderRows(root: HTMLElement, profiles: readonly SavedPr
     copy.type = "button";
     copy.dataset.profileAction = "edit";
     copy.setAttribute("aria-controls", "profile-editor");
+    copy.setAttribute("aria-expanded", String(profile.id === editingId));
     copy.setAttribute("aria-label", `${t("settings.providerUi.edit")} ${profile.displayName || profile.model}`);
     if (profile.id === editingId) copy.setAttribute("aria-current", "true");
     copy.className = "provider-row__copy";

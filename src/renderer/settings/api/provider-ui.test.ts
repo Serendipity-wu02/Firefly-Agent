@@ -175,6 +175,18 @@ it("styles profiles as a single column of 16px cards with a dashed add button", 
   expect(css).toMatch(/#api-form \.provider-row\s*\{[^}]*border-radius:\s*var\(--api-card-radius\)/);
   expect(css).toMatch(/#api-form \.provider-add\s*\{[^}]*border:\s*1px dashed/);
   expect(css).not.toMatch(/model-settings-(workspace|sidebar|detail)/);
+  // 旧的左右分栏工作区样式已移除，不应再留在通用样式表里。
+  for (const file of ["settings-layout.css", "settings.css"]) {
+    const legacy = fs.readFileSync(path.resolve("src/renderer/settings", file), "utf8");
+    expect(legacy, file).not.toMatch(/model-settings-(workspace|sidebar|detail)|provider-list__tools|provider-editor-empty|provider-editor__toolbar|profile-list-(section|heading)/);
+  }
+});
+
+it("marks the card whose editor is open as expanded", () => {
+  const root = document.createElement("div");
+  renderProviderRows(root, [profile("first"), profile("second")], "first", "second");
+  expect(root.querySelector('[data-profile-id="second"] [data-profile-action="edit"]')?.getAttribute("aria-expanded")).toBe("true");
+  expect(root.querySelector('[data-profile-id="first"] [data-profile-action="edit"]')?.getAttribute("aria-expanded")).toBe("false");
 });
 
 it("lets protocol labels wrap inside the narrower editor column", () => {

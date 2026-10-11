@@ -792,12 +792,18 @@ function applyEditingStateUI(): void {
   document.getElementById("add-profile-btn")!.hidden = apiState.editorOpen && !apiState.editingProfileId;
   document.querySelector<HTMLElement>(".provider-tabs")!.hidden = Boolean(apiState.editingProfileId);
   applyProviderEditorLayout(apiForm, getCustomEndpointMode(apiState.activeProvider) ? "custom" : "preset", Boolean(apiState.editingProfileId));
+  syncCustomEndpointControlsVisibility();
   mountProfileEditor(apiForm, apiState.editorOpen ? apiState.editingProfileId : undefined);
   placeSaveStatus(apiForm, apiState.editorOpen);
 }
 
+/** 云端/本地切换与接入说明只在“添加自定义 API”时出现；已保存的卡片里切模式等于换了一份新草稿，会让人困惑。 */
+function syncCustomEndpointControlsVisibility(): void {
+  customEndpointControls.hidden = !getCustomEndpointMode(apiState.activeProvider) || Boolean(apiState.editingProfileId);
+}
+
 /** 载入档案到编辑表单。 */
-function editProfile(profile: SavedProfileLite, globalMultimodal: boolean, focusEditor = true): void {
+function editProfile(profile: SavedProfileLite, globalMultimodal: boolean): void {
   const visionSnapshot = snapshotVisionInputs();
   apiState.editorOpen = true;
   apiState.editingProfileId = profile.id;
@@ -821,7 +827,7 @@ function editProfile(profile: SavedProfileLite, globalMultimodal: boolean, focus
   profileDraftBaseline = profileDraftSnapshot();
   updateProfileDraftState();
   setSaveStatus(t("settings.profile.editing", { name: profile.displayName || profile.model }));
-  if (focusEditor) (getCustomEndpointMode(profile.provider) ? displayNameInput : apiKeyInput).focus();
+  (getCustomEndpointMode(profile.provider) ? displayNameInput : apiKeyInput).focus();
 }
 
 /** 开始新建草稿：preset 预填 URL/模型/协议，清空 Key 与昵称。 */
@@ -912,7 +918,7 @@ function updateEndpointPreview(): void {
 
 function applyCustomEndpointUI(preset: ModelPreset): void {
   const mode = getCustomEndpointMode(preset.providerName);
-  customEndpointControls.hidden = mode === null;
+  customEndpointControls.hidden = mode === null || Boolean(apiState.editingProfileId);
   customEndpointOverrides.hidden = mode === null;
   transportSelect.disabled = false;
 
@@ -1067,16 +1073,11 @@ async function loadConfig(): Promise<void> {
     toggleDisableThinking.checked = cfg.thinkingOverride === -1;
     toggleDisableMaxToken.checked = !!cfg.disableMaxToken;
 
-    // 在右侧展示默认档案；没有档案时保留新建入口与空态。
+    // 所有卡片默认折叠（默认档案只带“默认”标记），点“编辑”才展开；
+    // 表单里的全局项（超时 / 视觉模型等）已由上面的 applyPreset 和各自面板按已存配置填好。
     await reloadProfiles();
     if (!isCurrentProfilePanel()) return;
-    const defaultProfile = apiState.profiles.find((p) => p.id === apiState.defaultProfileId) ?? apiState.profiles[0];
-    if (defaultProfile) {
-      editProfile(defaultProfile, cfg.multimodal, false);
-    } else {
-      contextWindowInput.value = String(cfg.contextWindowTokens ?? 256000);
-      applyEditingStateUI();
-    }
+    if (apiState.profiles.length === 0) contextWindowInput.value = String(cfg.contextWindowTokens ?? 256000);
 
     applyEditingStateUI();
     setSaveStatus(t("settings.status.waiting"));
@@ -1935,8 +1936,9 @@ profileList?.addEventListener("click", (e) => {
   if (button?.dataset.profileAction === "delete") {
     requestDeleteProfile(profile.id);
   } else if (apiState.editorOpen && apiState.editingProfileId === profile.id) {
+    // 再点已展开的卡片 = 折叠（草稿有改动时先确认）。
     profileEditorReturnProfileId = profile.id;
-    (getCustomEndpointMode(profile.provider) ? displayNameInput : apiKeyInput).focus();
+    closeProfileEditor();
   } else {
     changeProfileEditor(() => {
       profileEditorReturnProfileId = profile.id;
@@ -1954,17 +1956,12 @@ async function deleteProfile(profileId: string): Promise<void> {
     await window.settings?.deleteModelProfile?.(profileId);
     setSaveStatus(t("settings.profile.deleted", { name }), "is-ok");
     await reloadProfiles();
-    // 仅删除当前编辑项时更新编辑表单，其余草稿保留。
+    // 仅删除当前编辑项时收起编辑器（不再自动展开别的卡片），其余草稿保留。
     if (apiState.editingProfileId === profileId) {
-      const next = apiState.profiles.find((p) => p.id === apiState.defaultProfileId) ?? apiState.profiles[0];
-      if (next && apiState.editorOpen) {
-        editProfile(next, multimodalToggle.checked, false);
-      } else {
-        apiState.editingProfileId = undefined;
-        apiState.editingReasoning = undefined;
-        apiState.editorOpen = false;
-        applyEditingStateUI();
-      }
+      apiState.editingProfileId = undefined;
+      apiState.editingReasoning = undefined;
+      apiState.editorOpen = false;
+      applyEditingStateUI();
     }
     const editButtons = Array.from(profileList.querySelectorAll<HTMLButtonElement>('[data-profile-action="edit"]'));
     (editButtons[Math.min(Math.max(rowIndex, 0), editButtons.length - 1)] ?? document.getElementById("add-profile-btn"))?.focus();
@@ -1994,16 +1991,19 @@ function addProfile(): void {
   });
 }
 document.getElementById("add-profile-btn")?.addEventListener("click", addProfile);
-document.getElementById("close-profile-editor")?.addEventListener("click", () => {
+/** 折叠编辑器（“取消”按钮与再点已展开的卡片共用）；焦点回到打开它的卡片。 */
+function closeProfileEditor(): void {
   changeProfileEditor(() => {
+    const originId = profileEditorReturnProfileId ?? apiState.editingProfileId;
     apiState.editorOpen = false;
     applyEditingStateUI();
     renderProfileList();
     const origin = Array.from(profileList.querySelectorAll<HTMLButtonElement>('[data-profile-action="edit"]'))
-      .find(button => button.closest<HTMLElement>('[data-profile-id]')?.dataset.profileId === profileEditorReturnProfileId);
+      .find(button => button.closest<HTMLElement>('[data-profile-id]')?.dataset.profileId === originId);
     (origin ?? document.getElementById("add-profile-btn"))?.focus();
   });
-});
+}
+document.getElementById("close-profile-editor")?.addEventListener("click", closeProfileEditor);
 const providerTabs = Array.from(document.querySelectorAll<HTMLButtonElement>("[data-provider-tab]"));
 function selectProviderTab(button: HTMLButtonElement, focusTab = false): void {
   const custom = button.dataset.providerTab === "custom";
