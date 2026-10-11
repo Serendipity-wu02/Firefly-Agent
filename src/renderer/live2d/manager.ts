@@ -5,9 +5,11 @@ import { type Live2DTarget } from "../../shared/live2d-actions";
 import { buildMotionIndexMap } from "./model-manifest";
 import {
   NON_BODY_DRAWABLE_IDS,
+  canvasToModelPoint,
   installHiddenDrawableGuard,
   pointInTriangle,
   resolveFireflyHitRegions,
+  type CanvasModelSpace,
   type FireflyCoreModel,
   type HitRegionDrawable,
 } from "./model-regions";
@@ -228,41 +230,39 @@ export class Live2DManager {
 
   /**
    * 屏幕点（与 pointer 事件同坐标系）命中的区域名：["Head"]、["Body"] 或 []。
-   * Head 沿用模型 HitAreas；Body 为任意可见、且不在 NON_BODY_DRAWABLE_IDS 中的网格。
-   * 被隐藏的饮料/蛋糕盘/桌子不可见（opacity 为 0），椅子与影子在排除集合中，因此都不会触发身体。
+   * 先找点击处可见、非场景的角色网格（ArtMesh23 等脸部网格也算角色网格）；没有命中返回 []。
+   * 有命中后按点击点的模型坐标 y 划分：y >= HEAD_MIN_Y 为 Head，否则为 Body。
    */
   hitTestRegions(x: number, y: number): string[] {
     const model = this.model;
     if (!model) return [];
-    if (model.hitTest(x, y).includes("Head")) return ["Head"];
     const internal = model.internalModel;
     const core = internal.coreModel as unknown as FireflyCoreModel;
+    const local = new PIXI.Point(x, y);
+    model.toModelPosition(local, local);
+    const point = canvasToModelPoint(local.x, local.y, internal as unknown as CanvasModelSpace);
     const drawables: HitRegionDrawable[] = internal.getDrawableIDs().map((id, index) => ({
       index,
       id,
       opacity: core.getDrawableOpacity(index),
     }));
-    const local = new PIXI.Point(x, y);
-    model.toModelPosition(local, local);
     return resolveFireflyHitRegions({
-      headHit: false,
       drawables,
       excludedDrawableIds: NON_BODY_DRAWABLE_IDS,
-      isPointInDrawable: (index) => this.drawableContainsPoint(index, local.x, local.y),
+      isPointInDrawable: (index) => this.drawableContainsPoint(core, index, point.x, point.y),
+      pointModelY: point.y,
     });
   }
 
-  /** 点是否落在某个网格的任一三角形内（点与网格同为模型画布坐标）。 */
-  private drawableContainsPoint(index: number, px: number, py: number): boolean {
-    const internal = this.model?.internalModel;
-    if (!internal) return false;
-    const vertices = internal.getDrawableVertices(index);
-    const triangles = (internal.coreModel as unknown as FireflyCoreModel).getDrawableVertexIndices(index);
+  /** 模型单位的点是否落在某个网格的任一三角形内。顶点取自 core 的模型单位坐标。 */
+  private drawableContainsPoint(core: FireflyCoreModel, index: number, mx: number, my: number): boolean {
+    const vertices = core.getDrawableVertices(index);
+    const triangles = core.getDrawableVertexIndices(index);
     for (let t = 0; t + 2 < triangles.length; t += 3) {
       const a = triangles[t] * 2;
       const b = triangles[t + 1] * 2;
       const c = triangles[t + 2] * 2;
-      if (pointInTriangle(px, py, vertices[a], vertices[a + 1], vertices[b], vertices[b + 1], vertices[c], vertices[c + 1])) {
+      if (pointInTriangle(mx, my, vertices[a], vertices[a + 1], vertices[b], vertices[b + 1], vertices[c], vertices[c + 1])) {
         return true;
       }
     }

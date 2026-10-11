@@ -1,5 +1,6 @@
 import { describe, expect, it, vi } from "vitest";
 import { readFileSync } from "node:fs";
+import { HEAD_MIN_Y } from "./model-regions";
 
 /**
  * Mock pixi-live2d-display before importing manager.ts so we don't have to
@@ -225,27 +226,34 @@ describe("Live2DManager.playAction", () => {
 
 
 describe("Firefly hidden drawables and hit regions", () => {
+  // 假模型：pixelsPerUnit=1、originalWidth/Height=0，于是画布点 (px, py) 对应模型点 (px, -py)（模型单位 y 向上）。
+  // 覆盖方块是模型单位里的 [-10,10]×[-10,10]，用两个三角形组成，上下半区都能点中。
   type Spec = {
-    drawables: Array<{ id: string; opacity: number; triangle: number[] }>;
-    headHit?: boolean;
+    drawables: Array<{ id: string; opacity: number; covers: boolean }>;
   };
+  const COVER_VERTICES = [-10, -10, 10, -10, -10, 10, 10, 10];
+  const AWAY_VERTICES = [100, 100, 110, 100, 100, 110, 110, 110];
+  const QUAD_INDICES = [0, 1, 2, 2, 1, 3];
 
   function makeFakeModel(spec: Spec) {
     const core = {
       getDrawableIndex: (id: string) => spec.drawables.findIndex((drawable) => drawable.id === id),
       getDrawableOpacity: vi.fn((index: number) => spec.drawables[index].opacity),
-      getDrawableVertexIndices: () => new Uint16Array([0, 1, 2]),
+      getDrawableVertices: (index: number) => new Float32Array(spec.drawables[index].covers ? COVER_VERTICES : AWAY_VERTICES),
+      getDrawableVertexIndices: () => new Uint16Array(QUAD_INDICES),
     };
     const internal = {
       coreModel: core,
       motionManager: { definitions: {} },
+      pixelsPerUnit: 1,
+      originalWidth: 0,
+      originalHeight: 0,
       getDrawableIDs: () => spec.drawables.map((drawable) => drawable.id),
-      getDrawableVertices: (index: number) => new Float32Array(spec.drawables[index].triangle),
     };
     const model = {
       anchor: { set: vi.fn() }, scale: { set: vi.fn() }, width: 400, height: 500,
       destroy: vi.fn(), motion: vi.fn(), expression: vi.fn(),
-      hitTest: vi.fn(() => (spec.headHit ? ["Head"] : [])),
+      hitTest: vi.fn(() => []),
       toModelPosition: vi.fn((point: { x: number; y: number }) => point),
       internalModel: internal,
     };
@@ -267,30 +275,37 @@ describe("Firefly hidden drawables and hit regions", () => {
     return { manager, ...fake };
   }
 
-  // 三角形 (0,0)-(10,0)-(0,10)：点 (2,2) 在内，(20,20) 在外。
-  const COVER = [0, 0, 10, 0, 0, 10];
   const ALL_IDS = ["ArtMesh153", "ArtMesh154", "ArtMesh155", "ArtMesh156", "ArtMesh157", "ArtMesh23", "ArtMesh200"];
+  /** 只有 id 这一个网格覆盖点击区域，其它网格都在远处。 */
   const single = (id: string, opacity = 1): Spec => ({
     drawables: ALL_IDS.map((drawableId) => ({
       id: drawableId,
-      opacity: 1,
-      triangle: drawableId === id ? COVER : [100, 100, 110, 100, 100, 110],
-    })).map((drawable) => (drawable.id === id ? { ...drawable, opacity } : drawable)),
+      opacity: drawableId === id ? opacity : 1,
+      covers: drawableId === id,
+    })),
   });
+  /** 模型单位的点 (x, y) 对应的画布点。 */
+  const atModelY = (y: number) => [0, -y] as const;
+
+  async function withModel(spec: Spec, run: (f: Awaited<ReturnType<typeof loadFake>>) => void | Promise<void>) {
+    const f = await loadFake(spec);
+    try {
+      await run(f);
+    } finally {
+      f.manager.dispose();
+      vi.unstubAllGlobals();
+    }
+  }
 
   it("hides the drink, cake plate and table by drawable index and keeps the chair and shadow visible", async () => {
-    const f = await loadFake(single("ArtMesh156"));
-    try {
+    await withModel(single("ArtMesh156"), (f) => {
       const opacityOf = (id: string) => f.core.getDrawableOpacity(f.core.getDrawableIndex(id));
       expect(opacityOf("ArtMesh153")).toBe(0);
       expect(opacityOf("ArtMesh154")).toBe(0);
       expect(opacityOf("ArtMesh155")).toBe(0);
       expect(opacityOf("ArtMesh156")).toBe(1);
       expect(opacityOf("ArtMesh157")).toBe(1);
-    } finally {
-      f.manager.dispose();
-      vi.unstubAllGlobals();
-    }
+    });
   });
 
   it("restores the original opacity accessor on dispose", async () => {
@@ -302,58 +317,56 @@ describe("Firefly hidden drawables and hit regions", () => {
     vi.unstubAllGlobals();
   });
 
-  it("returns Head from the model hit area before considering Body", async () => {
-    const f = await loadFake({ ...single("ArtMesh200"), headHit: true });
-    try {
-      expect(f.manager.hitTestRegions(2, 2)).toEqual(["Head"]);
-    } finally {
-      f.manager.dispose();
-      vi.unstubAllGlobals();
-    }
+  it("splits Head and Body by the clicked model height on any visible character mesh", async () => {
+    await withModel(single("ArtMesh200"), (f) => {
+      expect(f.manager.hitTestRegions(...atModelY(0.2))).toEqual(["Head"]);
+      expect(f.manager.hitTestRegions(...atModelY(0))).toEqual(["Head"]);
+      expect(f.manager.hitTestRegions(...atModelY(-0.3))).toEqual(["Body"]);
+      expect(f.manager.hitTestRegions(...atModelY(-0.43))).toEqual(["Body"]);
+    });
   });
 
-  it("hits Body on a visible mesh that is not scenery", async () => {
-    const f = await loadFake(single("ArtMesh200"));
-    try {
-      expect(f.manager.hitTestRegions(2, 2)).toEqual(["Body"]);
-      expect(f.manager.hitTestRegions(20, 20)).toEqual([]);
-    } finally {
-      f.manager.dispose();
-      vi.unstubAllGlobals();
-    }
+  it("treats a click exactly on the head boundary as Head", async () => {
+    await withModel(single("ArtMesh200"), (f) => {
+      expect(f.manager.hitTestRegions(...atModelY(HEAD_MIN_Y))).toEqual(["Head"]);
+      expect(f.manager.hitTestRegions(...atModelY(HEAD_MIN_Y - 0.001))).toEqual(["Body"]);
+    });
   });
 
-  it("does not hit Body on the chair or the foot shadow", async () => {
+  it("counts the small ArtMesh23 head-area mesh as an ordinary character mesh", async () => {
+    await withModel(single("ArtMesh23"), (f) => {
+      expect(f.manager.hitTestRegions(...atModelY(0.2))).toEqual(["Head"]);
+      expect(f.manager.hitTestRegions(...atModelY(-0.3))).toEqual(["Body"]);
+    });
+  });
+
+  it("returns nothing for a point that no character mesh covers", async () => {
+    await withModel(single("ArtMesh200"), (f) => {
+      expect(f.manager.hitTestRegions(500, 500)).toEqual([]);
+    });
+  });
+
+  it("does not hit Head or Body on the chair or the foot shadow", async () => {
     for (const id of ["ArtMesh156", "ArtMesh157"]) {
-      const f = await loadFake(single(id));
-      try {
-        expect(f.manager.hitTestRegions(2, 2), id).toEqual([]);
-      } finally {
-        f.manager.dispose();
-        vi.unstubAllGlobals();
-      }
+      await withModel(single(id), (f) => {
+        expect(f.manager.hitTestRegions(...atModelY(0.2)), id).toEqual([]);
+        expect(f.manager.hitTestRegions(...atModelY(-0.3)), id).toEqual([]);
+      });
     }
   });
 
   it("does not hit the hidden drink, cake plate or table", async () => {
     for (const id of ["ArtMesh153", "ArtMesh154", "ArtMesh155"]) {
-      const f = await loadFake(single(id));
-      try {
-        expect(f.manager.hitTestRegions(2, 2), id).toEqual([]);
-      } finally {
-        f.manager.dispose();
-        vi.unstubAllGlobals();
-      }
+      await withModel(single(id), (f) => {
+        expect(f.manager.hitTestRegions(...atModelY(0.2)), id).toEqual([]);
+        expect(f.manager.hitTestRegions(...atModelY(-0.3)), id).toEqual([]);
+      });
     }
   });
 
-  it("does not count the Head mesh as Body when the Head area was not hit", async () => {
-    const f = await loadFake(single("ArtMesh23"));
-    try {
-      expect(f.manager.hitTestRegions(2, 2)).toEqual([]);
-    } finally {
-      f.manager.dispose();
-      vi.unstubAllGlobals();
-    }
+  it("ignores a mesh that is fully transparent", async () => {
+    await withModel(single("ArtMesh200", 0), (f) => {
+      expect(f.manager.hitTestRegions(...atModelY(0.2))).toEqual([]);
+    });
   });
 });

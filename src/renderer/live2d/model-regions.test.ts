@@ -1,7 +1,9 @@
 import { describe, expect, it, vi } from "vitest";
 import {
+  HEAD_MIN_Y,
   HIDDEN_DRAWABLE_IDS,
   NON_BODY_DRAWABLE_IDS,
+  canvasToModelPoint,
   installHiddenDrawableGuard,
   pointInTriangle,
   resolveFireflyHitRegions,
@@ -59,10 +61,26 @@ describe("installHiddenDrawableGuard", () => {
 });
 
 describe("NON_BODY_DRAWABLE_IDS", () => {
-  it("lists the Head mesh, the hidden scenery, the chair and the foot shadow", () => {
+  it("lists only the hidden scenery, the chair and the foot shadow (ArtMesh23 is a character mesh)", () => {
     expect([...NON_BODY_DRAWABLE_IDS].sort()).toEqual([
-      "ArtMesh153", "ArtMesh154", "ArtMesh155", "ArtMesh156", "ArtMesh157", "ArtMesh23",
+      "ArtMesh153", "ArtMesh154", "ArtMesh155", "ArtMesh156", "ArtMesh157",
     ]);
+    expect(NON_BODY_DRAWABLE_IDS.has("ArtMesh23")).toBe(false);
+  });
+});
+
+describe("HEAD_MIN_Y", () => {
+  it("is the documented -0.06 model-unit boundary", () => {
+    expect(HEAD_MIN_Y).toBe(-0.06);
+  });
+});
+
+describe("canvasToModelPoint", () => {
+  it("inverts the library's forward transform px = x*ppu + W/2, py = -y*ppu + H/2", () => {
+    const space = { pixelsPerUnit: 100, originalWidth: 400, originalHeight: 500 };
+    // 模型点 (0.25, -0.5) 经库的正变换得到画布点 (225, 300)。
+    expect(canvasToModelPoint(225, 300, space)).toEqual({ x: 0.25, y: -0.5 });
+    expect(canvasToModelPoint(200, 250, space)).toEqual({ x: 0, y: 0 });
   });
 });
 
@@ -86,62 +104,65 @@ describe("resolveFireflyHitRegions", () => {
     opacity: 1,
     ...overrides,
   });
-
-  it("returns Head when the Head area is hit, even if Body is also under the pointer", () => {
-    expect(resolveFireflyHitRegions({
-      headHit: true,
-      drawables: [drawable({ id: "ArtMesh200", index: 1 })],
-      excludedDrawableIds: NON_BODY_DRAWABLE_IDS,
-      isPointInDrawable: COVER,
-    })).toEqual(["Head"]);
+  const resolve = (
+    entries: Array<Partial<HitRegionDrawable> & { id: string }>,
+    pointModelY: number,
+    hits: (index: number) => boolean = COVER,
+  ) => resolveFireflyHitRegions({
+    drawables: entries.map((entry, index) => drawable({ index, ...entry })),
+    excludedDrawableIds: NON_BODY_DRAWABLE_IDS,
+    isPointInDrawable: hits,
+    pointModelY,
   });
 
-  it("returns Body for a visible mesh that is not excluded", () => {
+  it("returns Head for face meshes above the boundary (eye, cheek, bangs and ArtMesh23)", () => {
+    expect(resolve([{ id: "ArtMesh40" }], 0.12)).toEqual(["Head"]);
+    expect(resolve([{ id: "ArtMesh50" }], 0.02)).toEqual(["Head"]);
+    expect(resolve([{ id: "ArtMesh60" }], 0.35)).toEqual(["Head"]);
+    expect(resolve([{ id: "ArtMesh23" }], 0.1)).toEqual(["Head"]);
+  });
+
+  it("returns Head when any visible character mesh is hit above the boundary", () => {
+    expect(resolve([
+      { id: "ArtMesh40", opacity: 0 },
+      { id: "ArtMesh50" },
+    ], 0.1, (index) => index === 1)).toEqual(["Head"]);
+  });
+
+  it("returns Body for chest, hand, leg and clothing meshes below the boundary", () => {
+    expect(resolve([{ id: "ArtMesh90" }], -0.2)).toEqual(["Body"]);
+    expect(resolve([{ id: "ArtMesh100" }], -0.45)).toEqual(["Body"]);
+    expect(resolve([{ id: "ArtMesh110" }], -0.8)).toEqual(["Body"]);
+    expect(resolve([{ id: "ArtMesh23" }], -0.2)).toEqual(["Body"]);
+  });
+
+  it("returns nothing for the chair, the foot shadow and the hidden desk items", () => {
+    for (const id of ["ArtMesh156", "ArtMesh157", "ArtMesh153", "ArtMesh154", "ArtMesh155"]) {
+      expect(resolve([{ id }], -0.5), id).toEqual([]);
+      expect(resolve([{ id }], 0.2), id).toEqual([]);
+    }
+  });
+
+  it("returns nothing for hidden (opacity zero) character meshes", () => {
+    expect(resolve([{ id: "ArtMesh90", opacity: 0 }], -0.2)).toEqual([]);
+  });
+
+  it("treats the boundary value as Head and anything just below it as Body", () => {
+    expect(resolve([{ id: "ArtMesh70" }], HEAD_MIN_Y)).toEqual(["Head"]);
+    expect(resolve([{ id: "ArtMesh70" }], HEAD_MIN_Y - 0.0001)).toEqual(["Body"]);
+  });
+
+  it("uses an injected boundary when provided", () => {
     expect(resolveFireflyHitRegions({
-      headHit: false,
-      drawables: [drawable({ id: "ArtMesh200", index: 1 })],
+      drawables: [drawable({ id: "ArtMesh70" })],
       excludedDrawableIds: NON_BODY_DRAWABLE_IDS,
-      isPointInDrawable: (index) => index === 1,
+      isPointInDrawable: COVER,
+      pointModelY: 0,
+      headMinY: 0.5,
     })).toEqual(["Body"]);
   });
 
-  it("does not count the chair or the foot shadow as Body", () => {
-    for (const id of ["ArtMesh156", "ArtMesh157"]) {
-      expect(resolveFireflyHitRegions({
-        headHit: false,
-        drawables: [drawable({ id })],
-        excludedDrawableIds: NON_BODY_DRAWABLE_IDS,
-        isPointInDrawable: COVER,
-      }), id).toEqual([]);
-    }
-  });
-
-  it("does not count hidden scenery (opacity zero) as Body", () => {
-    for (const id of ["ArtMesh153", "ArtMesh154", "ArtMesh155"]) {
-      expect(resolveFireflyHitRegions({
-        headHit: false,
-        drawables: [drawable({ id, opacity: 0 })],
-        excludedDrawableIds: new Set<string>(),
-        isPointInDrawable: COVER,
-      }), id).toEqual([]);
-    }
-  });
-
-  it("does not count the Head mesh as Body when Head was not hit", () => {
-    expect(resolveFireflyHitRegions({
-      headHit: false,
-      drawables: [drawable({ id: "ArtMesh23" })],
-      excludedDrawableIds: NON_BODY_DRAWABLE_IDS,
-      isPointInDrawable: COVER,
-    })).toEqual([]);
-  });
-
   it("returns nothing when no candidate mesh contains the point", () => {
-    expect(resolveFireflyHitRegions({
-      headHit: false,
-      drawables: [drawable({ id: "ArtMesh200", index: 0 })],
-      excludedDrawableIds: NON_BODY_DRAWABLE_IDS,
-      isPointInDrawable: () => false,
-    })).toEqual([]);
+    expect(resolve([{ id: "ArtMesh90" }], -0.2, () => false)).toEqual([]);
   });
 });
