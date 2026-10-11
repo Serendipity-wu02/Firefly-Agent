@@ -31,6 +31,17 @@ describe("resolveToolChoicePolicy", () => {
     })).toEqual({ kind: "auto" });
   });
 
+  test("judges thinking with the profile's declared levels, the same capability the request body uses", () => {
+    const base = { providerId: "custom", model: "my-proxy-model", transport: "openai" as const, requestedToolName: "music_search" };
+    // 没声明档位：未知型号的 off 被当成 auto（服务端可能默认思考）→ 降级为 auto
+    expect(resolveToolChoicePolicy({ ...base, reasoning: { mode: "off" } })).toEqual({ kind: "auto" });
+    // 档案声明了可关闭：off 真的发出去了 → 不再降级，可以点名工具
+    expect(resolveToolChoicePolicy({ ...base, reasoning: { mode: "off" }, reasoningLevels: { efforts: ["low", "high"], allowOff: true } }))
+      .toEqual({ kind: "named", name: "music_search" });
+    expect(resolveAutomaticToolChoicePolicy({ providerId: "deepseek", model: "my-proxy-model", transport: "openai", reasoning: { mode: "off" }, reasoningLevels: { efforts: [], allowOff: true } }))
+      .toBe("auto");
+  });
+
   test("supports required/any as a transport-neutral policy result", () => {
     expect(resolveToolChoicePolicy({
       providerId: "required-only", model: "m", transport: "openai",

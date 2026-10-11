@@ -167,6 +167,9 @@ function applyToggleOff(result: Record<string, unknown>, cap: ReasoningCapabilit
       result.thinking = { type: "disabled" };
       break;
     case "openai-effort":
+      // 档案声明了无档位 + 可关闭的 OpenAI 写法：关 = reasoning_effort "none"，开 = 服务端默认
+      if (cap.supportsDisable) result.reasoning_effort = "none";
+      break;
     case "none":
       // 理论上不存在
       break;

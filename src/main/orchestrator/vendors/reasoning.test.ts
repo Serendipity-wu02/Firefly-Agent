@@ -339,3 +339,18 @@ describe("applyReasoningPreference — 已有字段合并", () => {
     expect(result.thinking).toEqual({ type: "adaptive" });
   });
 });
+describe("applyReasoningPreference — 档案声明的无档位开关（OpenAI 写法）", () => {
+  const declaredToggleCap: ReasoningCapability = {
+    control: "toggle",
+    requestStyle: "openai-effort",
+    supportsDisable: true,
+  };
+
+  test("关 发出 reasoning_effort none，开 保持服务端默认，两边请求体不同", () => {
+    const off = applyReasoningPreference({ model: "x" }, { mode: "off" }, declaredToggleCap, ctx);
+    const on = applyReasoningPreference({ model: "x" }, { mode: "on" }, declaredToggleCap, ctx);
+    expect(off.reasoning_effort).toBe("none");
+    expect(on.reasoning_effort).toBeUndefined();
+    expect(off).not.toEqual(on);
+  });
+});

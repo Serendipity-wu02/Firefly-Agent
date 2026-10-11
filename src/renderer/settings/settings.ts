@@ -627,7 +627,13 @@ function findPreset(providerName: string): ModelPreset {
  * 填充模型名输入框 + datalist 联想建议。
  * 模式按钮已删除——只有一个输入框，可手填，按方向键也能从厂商预设里选。
  */
+// 表单每次被填成另一个档案 / 厂商，就作废还在路上的“获取模型列表”，并收起上一个档案的候选列表。
+let fetchModelsGeneration = 0;
+let closeFetchedModelPicker: () => void = () => {};
 function fillModelOptions(preset: ModelPreset, preferredModel?: string): void {
+  fetchModelsGeneration += 1;
+  closeFetchedModelPicker();
+  if (fetchModelsStatus) { fetchModelsStatus.textContent = ""; fetchModelsStatus.classList.remove("is-error", "is-ok"); }
   // datalist 联想建议
   modelInputSuggestions.replaceChildren();
   for (const model of preset.mainModels) {
@@ -1447,6 +1453,7 @@ const modelPicker = fetchModelsPicker && fetchModelsSearch && fetchModelsList &&
     modelInput.dispatchEvent(new Event("input", { bubbles: true }));
   })
   : undefined;
+closeFetchedModelPicker = () => modelPicker?.close();
 modelInput.addEventListener("input", () => modelPicker?.syncCurrent(modelInput.value.trim()));
 function fetchModelsErrorText(error: string): string {
   const status = /^HTTP_(\d+)$/.exec(error)?.[1];
@@ -1468,6 +1475,7 @@ fetchModelsBtn?.addEventListener("click", async () => {
   show(t("settings.panel.api.field.model.fetch.loading"));
   modelPicker?.close();
   fetchModelsBtn.disabled = true;
+  const generation = fetchModelsGeneration;
   try {
     const result = await settings.fetchModels?.({
       provider: apiState.activeProvider,
@@ -1475,6 +1483,8 @@ fetchModelsBtn?.addEventListener("click", async () => {
       apiKey: getApiKeyForRequest(),
       explicitTransport: transportSelect.value as ApiTransport,
     });
+    // 等待期间切到了别的档案：结果属于上一个档案，丢掉，不要写进现在这个档案的候选里
+    if (generation !== fetchModelsGeneration) return;
     if (!result) { show(fetchModelsErrorText("NETWORK"), "is-error"); return; }
     if (!result.ok) { show(fetchModelsErrorText(result.error), "is-error"); return; }
     modelInputSuggestions.replaceChildren();
@@ -1487,7 +1497,7 @@ fetchModelsBtn?.addEventListener("click", async () => {
     modelPicker?.open(result.models, modelInput.value.trim());
     show(t("settings.panel.api.field.model.fetch.done", { count: result.models.length }), "is-ok");
   } catch {
-    show(fetchModelsErrorText("NETWORK"), "is-error");
+    if (generation === fetchModelsGeneration) show(fetchModelsErrorText("NETWORK"), "is-error");
   } finally {
     fetchModelsBtn.disabled = false;
   }

@@ -64,6 +64,12 @@ describe("resolveReasoningCapability with a declared level set", () => {
     expect(cap.defaultEffort).toBeUndefined();
   });
 
+  it("an effort-less OpenAI-style API without 'can turn off' exposes no control, since both sides would send the same body", () => {
+    expect(resolveReasoningCapability("custom", "m", { efforts: [] }).control).toBe("none");
+    expect(resolveReasoningCapability("custom", "m", { efforts: [] }, "anthropic-adaptive").control).toBe("toggle");
+    expect(resolveReasoningCapability("custom", "m", { efforts: [], allowOff: true }).control).toBe("toggle");
+  });
+
   it("clamps a saved effort the API does not declare to the declared default", () => {
     const cap = resolveReasoningCapability("chatgpt", "gpt-6-astra", { efforts: ["low", "medium"] });
     expect(resolveEffectiveReasoning({ mode: "on", effort: "max" }, cap)).toEqual({ mode: "on", effort: "medium" });

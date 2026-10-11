@@ -488,11 +488,15 @@ function applyReasoningLevels(
 ): ReasoningCapability {
   const efforts = levels.efforts;
   const hasEfforts = efforts.length > 0;
+  const requestStyle = base.requestStyle === "none" ? fallbackStyle : base.requestStyle;
+  // 没有档位的开/关，在 openai-effort 写法里只有“关”有对应的线上字段（reasoning_effort: "none"）；
+  // “开”就是服务端默认。没声明可关闭时开关两边请求体完全一样，等于没有可控项，所以不暴露开关。
+  const toggleHasWireField = requestStyle !== "openai-effort" || levels.allowOff === true;
   return {
     ...base,
-    control: hasEfforts ? "effort" : "toggle",
+    control: hasEfforts ? "effort" : toggleHasWireField ? "toggle" : "none",
     // 规则表不认识这个型号时 requestStyle 是 none，请求里什么都不会发；按协议补一个通用写法。
-    requestStyle: base.requestStyle === "none" ? fallbackStyle : base.requestStyle,
+    requestStyle,
     supportedEfforts: hasEfforts ? efforts : undefined,
     defaultEffort: hasEfforts ? pickDefaultEffort(efforts, base.defaultEffort) : undefined,
     autoEffort: base.autoEffort && efforts.includes(base.autoEffort) ? base.autoEffort : undefined,

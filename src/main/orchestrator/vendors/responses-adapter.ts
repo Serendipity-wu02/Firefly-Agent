@@ -217,6 +217,7 @@ export class ResponsesAdapter implements ChatVendorAdapter {
           model: cfg.model,
           transport: this.transport,
           reasoning: cfg.reasoning ?? { mode: "auto" },
+          reasoningLevels: cfg.reasoningLevels,
           requestedToolName: req.toolChoiceIntent.toolName,
           supportedModes: this.capability.toolChoiceModes,
         });
@@ -228,6 +229,7 @@ export class ResponsesAdapter implements ChatVendorAdapter {
         model: cfg.model,
         transport: this.transport,
         reasoning: cfg.reasoning ?? { mode: "auto" },
+        reasoningLevels: cfg.reasoningLevels,
         supportedModes: this.capability.toolChoiceModes,
       }) === "auto") {
         body.tool_choice = "auto";
