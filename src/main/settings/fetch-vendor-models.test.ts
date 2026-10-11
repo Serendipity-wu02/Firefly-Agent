@@ -12,9 +12,9 @@ describe("resolveModelsUrl", () => {
   });
 
   it("uses /v1/models for Anthropic and does not double the version segment", () => {
-    expect(resolveModelsUrl("https://api.anthropic.com", "anthropic")).toBe("https://api.anthropic.com/v1/models");
-    expect(resolveModelsUrl("https://api.example.test/anthropic/v1", "anthropic")).toBe("https://api.example.test/anthropic/v1/models");
-    expect(resolveModelsUrl("https://api.example.test/anthropic/v1/messages", "anthropic")).toBe("https://api.example.test/anthropic/v1/models");
+    expect(resolveModelsUrl("https://api.anthropic.com", "anthropic")).toBe("https://api.anthropic.com/v1/models?limit=1000");
+    expect(resolveModelsUrl("https://api.example.test/anthropic/v1", "anthropic")).toBe("https://api.example.test/anthropic/v1/models?limit=1000");
+    expect(resolveModelsUrl("https://api.example.test/anthropic/v1/messages", "anthropic")).toBe("https://api.example.test/anthropic/v1/models?limit=1000");
   });
 });
 
@@ -29,6 +29,21 @@ describe("parseModelList", () => {
     expect(parseModelList(["x", "y"])).toEqual([{ id: "x" }, { id: "y" }]);
     expect(parseModelList(null)).toEqual([]);
     expect(parseModelList({ data: "nope" })).toEqual([]);
+  });
+});
+
+describe("parseModelList with a models map", () => {
+  it("uses the property key as the request id and ignores non-object entries", () => {
+    expect(parseModelList({ models: { "alias-1": { id: "canonical-1", name: "Alias One" }, "alias-2": { display_name: "Two" }, count: 2, status: "ok", list: [1] } }))
+      .toEqual([{ id: "alias-1", name: "Alias One" }, { id: "alias-2", name: "Two" }]);
+  });
+
+  it("prefers the standard data array when both shapes are present", () => {
+    expect(parseModelList({ data: [{ id: "d" }], models: { m: {} } })).toEqual([{ id: "d" }]);
+  });
+
+  it("falls back to the nested id when the key is blank", () => {
+    expect(parseModelList({ models: { " ": { id: "inner" } } })).toEqual([{ id: "inner" }]);
   });
 });
 
@@ -54,7 +69,7 @@ describe("fetchVendorModels", () => {
     expect(result).toEqual({ ok: true, models: [{ id: "claude-x", name: "Claude X" }] });
     const headers = fetchImpl.mock.calls[0][1]?.headers as Record<string, string>;
     expect(headers["anthropic-version"]).toBeTruthy();
-    expect(fetchImpl.mock.calls[0][0]).toBe("https://api.example.test/anthropic/v1/models");
+    expect(fetchImpl.mock.calls[0][0]).toBe("https://api.example.test/anthropic/v1/models?limit=1000");
   });
 
   it("reports what went wrong without touching the network when the profile is incomplete", async () => {
@@ -71,5 +86,21 @@ describe("fetchVendorModels", () => {
     expect(await fetchVendorModels(base, { fetchImpl: (() => json({ data: [] })) as unknown as typeof fetch })).toEqual({ ok: false, error: "BAD_RESPONSE" });
     const abort = Object.assign(new Error("aborted"), { name: "AbortError" });
     expect(await fetchVendorModels(base, { fetchImpl: (() => Promise.reject(abort)) as unknown as typeof fetch })).toEqual({ ok: false, error: "TIMEOUT" });
+  });
+
+  it("refuses a reply larger than the ceiling, whether declared or only discovered while reading", async () => {
+    const base = { provider: "p", baseUrl: "https://x.test/v1", apiKey: "k" };
+    const declared = () => Promise.resolve(new Response("{}", { headers: { "content-length": String(5 * 1024 * 1024) } }));
+    expect(await fetchVendorModels(base, { fetchImpl: declared as unknown as typeof fetch })).toEqual({ ok: false, error: "BAD_RESPONSE" });
+    const chunk = new Uint8Array(1024 * 1024);
+    const streamed = () => Promise.resolve(new Response(new ReadableStream({
+      start(controller) { for (let i = 0; i < 5; i++) controller.enqueue(chunk); controller.close(); },
+    })));
+    expect(await fetchVendorModels(base, { fetchImpl: streamed as unknown as typeof fetch })).toEqual({ ok: false, error: "BAD_RESPONSE" });
+  });
+
+  it("reports non-JSON bodies as a bad response", async () => {
+    const html = () => Promise.resolve(new Response("<html></html>", { status: 200 }));
+    expect(await fetchVendorModels({ provider: "p", baseUrl: "https://x.test/v1", apiKey: "k" }, { fetchImpl: html as unknown as typeof fetch })).toEqual({ ok: false, error: "BAD_RESPONSE" });
   });
 });

@@ -72,7 +72,8 @@ import { formatDateTime, escapeHtml } from "./shared/format";
 import { parsePositiveIntOrThrow, parseCommandLine } from "./shared/parse";
 import { apiState, type SavedProfileLite } from "./api/state";
 import { bindReasoningLevels, readReasoningLevels, writeReasoningLevels } from "./api/reasoning-levels";
-import { apiForm, apiRuntimeForm, presetCards, profileList, profileListCount, profileEditorTitle, deleteProfileBtn, presetWebsiteLink, displayNameInput, baseUrlInput, baseUrlResetBtn, modelInput, modelInputSuggestions, contextWindowInput, apiKeyInput, apiKeyLabel, apiKeyHint, testConnectionBtn, transportSelect, transportHint, endpointPreview, customEndpointControls, customEndpointOverrides, customEndpointSummary, customEndpointGuideBtn, workFlowAdaptBtn, apiNoteText, multimodalToggle, fetchModelsBtn, fetchModelsStatus, embeddingDimensionsInput, toggleEnableThinking, toggleDisableThinking, toggleDisableMaxToken } from "./api/dom";
+import { createModelPicker } from "./api/model-picker";
+import { apiForm, apiRuntimeForm, presetCards, profileList, profileListCount, profileEditorTitle, deleteProfileBtn, presetWebsiteLink, displayNameInput, baseUrlInput, baseUrlResetBtn, modelInput, modelInputSuggestions, contextWindowInput, apiKeyInput, apiKeyLabel, apiKeyHint, testConnectionBtn, transportSelect, transportHint, endpointPreview, customEndpointControls, customEndpointOverrides, customEndpointSummary, customEndpointGuideBtn, workFlowAdaptBtn, apiNoteText, multimodalToggle, fetchModelsBtn, fetchModelsStatus, fetchModelsPicker, fetchModelsSearch, fetchModelsList, fetchModelsEmpty, embeddingDimensionsInput, toggleEnableThinking, toggleDisableThinking, toggleDisableMaxToken } from "./api/dom";
 import { visionBaseUrlInput, visionApiKeyInput, visionModelInput, visionFieldsWrap, testVisionBtn, visionTestStatus } from "./vision/dom";
 import { appearanceForm, appearanceSaveStatus, runtimeSyncSelect, runtimeSyncNote, windowCornerRadiusInput, windowCornerRadiusVal, petAlwaysOnTopInput, petVisibleInput, petZoomInput, petZoomVal, chatLineHeightInput, chatLineHeightVal, chatParaSpacingInput, chatParaSpacingVal, launchAtLoginInput, uiFontCurrent, uiFontImportButton, uiFontResetButton, uiIconSelect, uiThemeSelect, screenshotHotkeyInput, openChromeGpu, disableGpuInput, toastSoundEnabledInput } from "./appearance/dom";
 import { generalForm, generalSaveStatus, languageSelect, defaultChatModeSelect, segmentedOutputSelect, mobileMessageSegmentationSelect, proactiveChatSelect, proactiveDeliveryRow, proactiveDeliverySelect, chatSocialContextEnabledInput, citaEnabledInput, citaEngineSelect, customStyleSamplingBtn, customStylePromptBtn } from "./general/dom";
@@ -1440,6 +1441,13 @@ multimodalToggle.addEventListener("change", () => {
 bindReasoningLevels();
 
 // ── 从厂商获取模型列表：型号由接入的厂商决定，预设只是拉不到时的兜底建议 ──
+const modelPicker = fetchModelsPicker && fetchModelsSearch && fetchModelsList && fetchModelsEmpty
+  ? createModelPicker({ root: fetchModelsPicker, search: fetchModelsSearch, list: fetchModelsList, empty: fetchModelsEmpty }, (id) => {
+    modelInput.value = id;
+    modelInput.dispatchEvent(new Event("input", { bubbles: true }));
+  })
+  : undefined;
+modelInput.addEventListener("input", () => modelPicker?.syncCurrent(modelInput.value.trim()));
 function fetchModelsErrorText(error: string): string {
   const status = /^HTTP_(\d+)$/.exec(error)?.[1];
   if (status === "401" || status === "403") return t("settings.panel.api.field.model.fetch.unauthorized", { status });
@@ -1458,6 +1466,7 @@ fetchModelsBtn?.addEventListener("click", async () => {
     if (tone) fetchModelsStatus.classList.add(tone);
   };
   show(t("settings.panel.api.field.model.fetch.loading"));
+  modelPicker?.close();
   fetchModelsBtn.disabled = true;
   try {
     const result = await settings.fetchModels?.({
@@ -1475,6 +1484,7 @@ fetchModelsBtn?.addEventListener("click", async () => {
       if (model.name) option.label = model.name;
       modelInputSuggestions.appendChild(option);
     }
+    modelPicker?.open(result.models, modelInput.value.trim());
     show(t("settings.panel.api.field.model.fetch.done", { count: result.models.length }), "is-ok");
   } catch {
     show(fetchModelsErrorText("NETWORK"), "is-error");

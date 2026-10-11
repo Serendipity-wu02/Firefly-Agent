@@ -204,6 +204,11 @@
                 <button type="button" class="save-btn save-btn--ghost model-fetch-btn" id="fetch-models-btn"><span data-i18n="panel.api.field.model.fetch.button">从厂商获取模型列表</span></button>
                 <span class="form-hint" id="fetch-models-status" role="status" aria-live="polite"></span>
               </span>
+              <span class="model-picker" id="fetch-models-picker" hidden>
+                <input type="search" class="model-picker__search" id="fetch-models-search" autocomplete="off" placeholder="搜索型号" aria-label="搜索型号" data-i18n-placeholder="panel.api.field.model.fetch.search" data-i18n-aria-label="panel.api.field.model.fetch.search" />
+                <span class="model-picker__list" id="fetch-models-list" role="listbox"></span>
+                <span class="model-picker__empty form-hint" id="fetch-models-empty" hidden data-i18n="panel.api.field.model.fetch.noMatch">没有匹配的型号</span>
+              </span>
             </label>
 
             <label class="field" data-provider-field="advanced">

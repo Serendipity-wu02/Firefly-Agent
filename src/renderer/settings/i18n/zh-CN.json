@@ -202,7 +202,9 @@
             "fetch": {
               "button": "从厂商获取模型列表",
               "loading": "正在向厂商获取…",
-              "done": "已从厂商获取 {{count}} 个型号，点输入框选择。",
+              "done": "已从厂商获取 {{count}} 个型号，点下面的列表选择。",
+              "search": "搜索型号",
+              "noMatch": "没有匹配的型号",
               "needKey": "先填好 API Key 和 Base URL。",
               "unauthorized": "厂商拒绝了这个 Key（{{status}}），请检查 Key 和权限。",
               "notFound": "这个地址没有提供模型列表接口，请手填型号。",

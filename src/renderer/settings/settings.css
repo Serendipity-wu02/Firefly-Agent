@@ -4864,8 +4864,9 @@ button:disabled, .save-btn:disabled, .ghost-btn:disabled { cursor: not-allowed; 
 }
 .reasoning-levels__chip:hover input:not(:disabled) + span { border-color: rgb(var(--rb-accent-rgb)); }
 .reasoning-levels__chip input:checked + span {
-  border-color: rgb(var(--rb-accent-rgb)); background: rgba(var(--rb-accent-rgb), 0.12); color: rgb(var(--rb-accent-rgb)); font-weight: 600;
+  border-color: rgb(var(--rb-accent-rgb)); background: rgb(var(--rb-accent-rgb)); color: #fff; font-weight: 600;
 }
+.reasoning-levels.is-locked .reasoning-levels__chip input:checked + span { opacity: .55; }
 .reasoning-levels__chip input:focus-visible + span { outline: 2px solid rgb(var(--rb-accent-rgb)); outline-offset: 2px; }
 .reasoning-levels__chip input:disabled,
 .reasoning-levels.is-locked .reasoning-levels__chip { cursor: not-allowed; }
@@ -4876,3 +4877,17 @@ button:disabled, .save-btn:disabled, .ghost-btn:disabled { cursor: not-allowed; 
 .model-fetch-btn { padding: 6px 12px; font-size: 13px; }
 #fetch-models-status.is-error { color: var(--rb-danger, #c0392b); }
 #fetch-models-status.is-ok { color: var(--rb-success, #3f8f5e); }
+
+/* 型号候选列表：搜索框 + 可滚动的单列清单，当前值高亮。 */
+.model-picker { display: flex; flex-direction: column; gap: 6px; margin-top: 8px; padding: 8px; border: 1px solid var(--rb-border-soft); border-radius: 10px; background: var(--rb-bg-elevated); }
+.model-picker[hidden], .model-picker__empty[hidden] { display: none; }
+.model-picker__search { width: 100%; box-sizing: border-box; padding: 7px 10px; font-size: 13px; }
+.model-picker__list { display: flex; flex-direction: column; gap: 2px; max-height: 220px; overflow-y: auto; scrollbar-width: thin; scrollbar-color: var(--rb-border-strong) transparent; }
+.model-picker__item { display: flex; align-items: baseline; gap: 12px; width: 100%; padding: 6px 10px; border: 0; border-radius: 7px; background: transparent; color: inherit; font: inherit; font-size: 13px; text-align: left; cursor: pointer; transition: background-color .12s ease; }
+.model-picker__item:hover { background: var(--rb-hover-light); }
+.model-picker__item:focus-visible { outline: 2px solid rgb(var(--rb-accent-rgb)); outline-offset: -2px; }
+.model-picker__item.is-current { background: rgba(var(--rb-accent-rgb), 0.14); font-weight: 600; }
+.model-picker__item.is-current::after { content: "✓"; flex: none; color: rgb(var(--rb-accent-rgb)); }
+.model-picker__id { flex: 1 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-family: ui-monospace, SFMono-Regular, Consolas, monospace; }
+.model-picker__name { flex: none; max-width: 45%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--rb-text-muted); font-size: 12px; font-weight: 400; }
+.model-picker__empty { padding: 6px 10px; }
