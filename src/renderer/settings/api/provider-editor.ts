@@ -3,7 +3,7 @@ export function applyProviderEditorLayout(root: HTMLElement, kind: "preset" | "c
   const primary = root.querySelector<HTMLElement>("#provider-primary-fields");
   const advanced = root.querySelector<HTMLElement>("#provider-advanced-fields");
   if (!primary || !advanced) return;
-  const fields = ["display-name", "api-key", "base-url", "transport-select", "model-input", "context-window-input", "multimodal-toggle"]
+  const fields = ["display-name", "api-key", "base-url", "transport-select", "model-input", "context-window-input", "multimodal-toggle", "reasoning-levels-auto"]
     .map(id => root.querySelector<HTMLElement>(`#${id}`)?.closest<HTMLElement>("[data-provider-field]"))
     .filter((field): field is HTMLElement => Boolean(field));
   for (const field of fields) {

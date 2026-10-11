@@ -217,6 +217,8 @@ export interface ModelSettingsLite {
   explicitTransport?: "openai" | "anthropic" | "responses";
   /** 顶层 reasoning 镜像（来自 perProvider[currentProvider].reasoning）。adapter 直接读。 */
   reasoning?: import("../../shared/reasoning").ReasoningPreference;
+  /** 档案声明的推理档位镜像；adapter 直接读。 */
+  reasoningLevels?: import("../../shared/reasoning").ReasoningLevelsConfig;
   runtimeSync?: string;
   stickerEnabled?: boolean;
   stickerSimilarityThreshold?: number;
@@ -969,6 +971,7 @@ export async function buildAgentRunOptions(
         apiKey: settings.apiKey,
         explicitTransport: settings.explicitTransport,
         reasoning: settings.reasoning,
+        reasoningLevels: settings.reasoningLevels,
         contextWindowTokens: settings.contextWindowTokens ?? 256000,
       },
       maxParallelToolCalls: typeof generalSettings.maxParallelToolCalls === "number"

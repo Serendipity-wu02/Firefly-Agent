@@ -71,7 +71,8 @@ import { modalState } from "./shared/modal-state";
 import { formatDateTime, escapeHtml } from "./shared/format";
 import { parsePositiveIntOrThrow, parseCommandLine } from "./shared/parse";
 import { apiState, type SavedProfileLite } from "./api/state";
-import { apiForm, apiRuntimeForm, presetCards, profileList, profileListCount, profileEditorTitle, deleteProfileBtn, presetWebsiteLink, displayNameInput, baseUrlInput, baseUrlResetBtn, modelInput, modelInputSuggestions, contextWindowInput, apiKeyInput, apiKeyLabel, apiKeyHint, testConnectionBtn, transportSelect, transportHint, endpointPreview, customEndpointControls, customEndpointOverrides, customEndpointSummary, customEndpointGuideBtn, workFlowAdaptBtn, apiNoteText, multimodalToggle, embeddingDimensionsInput, toggleEnableThinking, toggleDisableThinking, toggleDisableMaxToken } from "./api/dom";
+import { bindReasoningLevels, readReasoningLevels, writeReasoningLevels } from "./api/reasoning-levels";
+import { apiForm, apiRuntimeForm, presetCards, profileList, profileListCount, profileEditorTitle, deleteProfileBtn, presetWebsiteLink, displayNameInput, baseUrlInput, baseUrlResetBtn, modelInput, modelInputSuggestions, contextWindowInput, apiKeyInput, apiKeyLabel, apiKeyHint, testConnectionBtn, transportSelect, transportHint, endpointPreview, customEndpointControls, customEndpointOverrides, customEndpointSummary, customEndpointGuideBtn, workFlowAdaptBtn, apiNoteText, multimodalToggle, fetchModelsBtn, fetchModelsStatus, embeddingDimensionsInput, toggleEnableThinking, toggleDisableThinking, toggleDisableMaxToken } from "./api/dom";
 import { visionBaseUrlInput, visionApiKeyInput, visionModelInput, visionFieldsWrap, testVisionBtn, visionTestStatus } from "./vision/dom";
 import { appearanceForm, appearanceSaveStatus, runtimeSyncSelect, runtimeSyncNote, windowCornerRadiusInput, windowCornerRadiusVal, petAlwaysOnTopInput, petVisibleInput, petZoomInput, petZoomVal, chatLineHeightInput, chatLineHeightVal, chatParaSpacingInput, chatParaSpacingVal, launchAtLoginInput, uiFontCurrent, uiFontImportButton, uiFontResetButton, uiIconSelect, uiThemeSelect, screenshotHotkeyInput, openChromeGpu, disableGpuInput, toastSoundEnabledInput } from "./appearance/dom";
 import { generalForm, generalSaveStatus, languageSelect, defaultChatModeSelect, segmentedOutputSelect, mobileMessageSegmentationSelect, proactiveChatSelect, proactiveDeliveryRow, proactiveDeliverySelect, chatSocialContextEnabledInput, citaEnabledInput, citaEngineSelect, customStyleSamplingBtn, customStylePromptBtn } from "./general/dom";
@@ -660,6 +661,7 @@ function profileDraftSnapshot(): string {
     apiState.activeProvider, displayNameInput.value, baseUrlInput.value,
     modelInput.value, apiKeyInput.value, transportSelect.value,
     contextWindowInput.value, multimodalToggle.checked,
+    readReasoningLevels() ?? null,
   ]);
 }
 
@@ -800,6 +802,7 @@ function editProfile(profile: SavedProfileLite, globalMultimodal: boolean, focus
   // 档案级字段：未定义 = 老档案，回退全局值显示
   contextWindowInput.value = profile.contextWindowTokens ? String(profile.contextWindowTokens) : "";
   multimodalToggle.checked = profile.multimodal ?? globalMultimodal;
+  writeReasoningLevels(profile.reasoningLevels);
   applyMultimodalUI();
   applyEditingStateUI();
   renderProfileList();
@@ -821,6 +824,7 @@ function startNewDraft(providerName: string): void {
   contextWindowInput.value = "";
   // 新建草稿默认开多模态；applyPreset 已不再按厂商门控
   multimodalToggle.checked = true;
+  writeReasoningLevels(undefined);
   applyMultimodalUI();
   applyEditingStateUI();
   renderProfileList();
@@ -1433,6 +1437,51 @@ multimodalToggle.addEventListener("change", () => {
   applyMultimodalUI();
   setSaveStatus(t("settings.status.dirty"));
 });
+bindReasoningLevels();
+
+// ── 从厂商获取模型列表：型号由接入的厂商决定，预设只是拉不到时的兜底建议 ──
+function fetchModelsErrorText(error: string): string {
+  const status = /^HTTP_(\d+)$/.exec(error)?.[1];
+  if (status === "401" || status === "403") return t("settings.panel.api.field.model.fetch.unauthorized", { status });
+  if (status === "404") return t("settings.panel.api.field.model.fetch.notFound");
+  if (status) return t("settings.panel.api.field.model.fetch.http", { status });
+  if (error === "MISSING_API_KEY" || error === "MISSING_BASE_URL") return t("settings.panel.api.field.model.fetch.needKey");
+  if (error === "TIMEOUT") return t("settings.panel.api.field.model.fetch.timeout");
+  if (error === "BAD_RESPONSE") return t("settings.panel.api.field.model.fetch.empty");
+  return t("settings.panel.api.field.model.fetch.network");
+}
+fetchModelsBtn?.addEventListener("click", async () => {
+  if (!fetchModelsBtn || !fetchModelsStatus) return;
+  const show = (text: string, tone: "" | "is-error" | "is-ok" = "") => {
+    fetchModelsStatus.textContent = text;
+    fetchModelsStatus.classList.remove("is-error", "is-ok");
+    if (tone) fetchModelsStatus.classList.add(tone);
+  };
+  show(t("settings.panel.api.field.model.fetch.loading"));
+  fetchModelsBtn.disabled = true;
+  try {
+    const result = await settings.fetchModels?.({
+      provider: apiState.activeProvider,
+      baseUrl: baseUrlInput.value.trim(),
+      apiKey: getApiKeyForRequest(),
+      explicitTransport: transportSelect.value as ApiTransport,
+    });
+    if (!result) { show(fetchModelsErrorText("NETWORK"), "is-error"); return; }
+    if (!result.ok) { show(fetchModelsErrorText(result.error), "is-error"); return; }
+    modelInputSuggestions.replaceChildren();
+    for (const model of result.models) {
+      const option = document.createElement("option");
+      option.value = model.id;
+      if (model.name) option.label = model.name;
+      modelInputSuggestions.appendChild(option);
+    }
+    show(t("settings.panel.api.field.model.fetch.done", { count: result.models.length }), "is-ok");
+  } catch {
+    show(fetchModelsErrorText("NETWORK"), "is-error");
+  } finally {
+    fetchModelsBtn.disabled = false;
+  }
+});
 
 // Base URL 重置按钮：一键复原厂商默认 baseUrl
 baseUrlResetBtn.addEventListener("click", () => {
@@ -1589,6 +1638,8 @@ apiForm.addEventListener("submit", async (e) => {
       apiKey: getApiKeyForRequest(),
       explicitTransport: transportSelect.value as ApiTransport,
       reasoning: apiState.editingReasoning,
+      // 没声明（自动）= undefined：保存时清掉旧声明，回到按型号名判断。
+      reasoningLevels: readReasoningLevels(),
       contextWindowTokens: Math.max(4096, parseInt(contextWindowInput.value, 10) || 256000),
       multimodal: multimodalToggle.checked,
     };
@@ -1625,6 +1676,7 @@ apiForm.addEventListener("submit", async (e) => {
           applyPreset(saved.provider, saved.model, apiKeyInput.value, saved.baseUrl, saved.displayName,
             saved.explicitTransport, snapshotVisionInputs(), saved.multimodal);
           contextWindowInput.value = saved.contextWindowTokens ? String(saved.contextWindowTokens) : "";
+          writeReasoningLevels(saved.reasoningLevels);
           apiState.editingReasoning = saved.reasoning;
         }
         profileDraftBaseline = profileDraftSnapshot();

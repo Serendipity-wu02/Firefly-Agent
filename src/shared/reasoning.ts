@@ -365,7 +365,14 @@ export const MODEL_REASONING_RULES: readonly ModelReasoningRule[] = [
 export function resolveReasoningCapability(
   providerId: string,
   model: string,
+  levels?: ReasoningLevelsConfig,
+  fallbackStyle: Exclude<ReasoningRequestStyle, "none"> = "openai-effort",
 ): ReasoningCapability {
+  const matched = matchReasoningRule(providerId, model);
+  return levels ? applyReasoningLevels(matched, levels, fallbackStyle) : matched;
+}
+
+function matchReasoningRule(providerId: string, model: string): ReasoningCapability {
   // 第一轮：同厂商精确规则（表尾通配兜底不算命中，留给第二轮）
   for (const rule of MODEL_REASONING_RULES) {
     if (rule.providerId === providerId && rule.modelPattern.test(model)
@@ -436,6 +443,62 @@ export function resolveEffectiveReasoning(
   const proMode = capability.supportsProMode === true && pref.proMode === true;
 
   return { mode, ...(effort !== undefined ? { effort } : {}), ...(proMode ? { proMode: true } : {}) };
+}
+
+// ── 档案级档位声明：由用户接入的 API 决定，优先于上面的型号规则表 ──
+
+/**
+ * 某个 API 档案实际支持的推理档位。型号规则表只能按名字猜，自定义地址、代理、
+ * 新型号都对不上；档案里写明了就以档案为准，没写（undefined）才回退规则表。
+ */
+export interface ReasoningLevelsConfig {
+  /** 支持的 effort 档位（可为空：该 API 只有开/关）。 */
+  efforts: ReasoningEffort[];
+  /** 是否允许显式关闭思考。 */
+  allowOff?: boolean;
+  /** 是否支持 Responses 的 PRO 档。 */
+  pro?: boolean;
+}
+
+const EFFORT_ORDER: readonly ReasoningEffort[] = ["minimal", "low", "medium", "high", "xhigh", "max"];
+
+/** 非对象 → undefined（= 没声明，回退规则表）；档位去重并按强弱排序，未知档位丢弃。 */
+export function normalizeReasoningLevels(input: unknown): ReasoningLevelsConfig | undefined {
+  if (!input || typeof input !== "object") return undefined;
+  const raw = input as { efforts?: unknown; allowOff?: unknown; pro?: unknown };
+  const wanted = new Set(Array.isArray(raw.efforts) ? raw.efforts : []);
+  const efforts = EFFORT_ORDER.filter((effort) => wanted.has(effort));
+  return {
+    efforts: [...efforts],
+    ...(raw.allowOff === true ? { allowOff: true } : {}),
+    ...(raw.pro === true ? { pro: true } : {}),
+  };
+}
+
+function pickDefaultEffort(efforts: readonly ReasoningEffort[], preferred: ReasoningEffort | undefined): ReasoningEffort | undefined {
+  if (preferred && efforts.includes(preferred)) return preferred;
+  for (const candidate of ["medium", "high"] as const) if (efforts.includes(candidate)) return candidate;
+  return efforts[Math.floor(efforts.length / 2)];
+}
+
+function applyReasoningLevels(
+  base: ReasoningCapability,
+  levels: ReasoningLevelsConfig,
+  fallbackStyle: Exclude<ReasoningRequestStyle, "none">,
+): ReasoningCapability {
+  const efforts = levels.efforts;
+  const hasEfforts = efforts.length > 0;
+  return {
+    ...base,
+    control: hasEfforts ? "effort" : "toggle",
+    // 规则表不认识这个型号时 requestStyle 是 none，请求里什么都不会发；按协议补一个通用写法。
+    requestStyle: base.requestStyle === "none" ? fallbackStyle : base.requestStyle,
+    supportedEfforts: hasEfforts ? efforts : undefined,
+    defaultEffort: hasEfforts ? pickDefaultEffort(efforts, base.defaultEffort) : undefined,
+    autoEffort: base.autoEffort && efforts.includes(base.autoEffort) ? base.autoEffort : undefined,
+    supportsDisable: levels.allowOff === true,
+    supportsProMode: levels.pro === true,
+  };
 }
 
 // ── normalize 白名单（用户修订 #4：白名单，不 trim）──

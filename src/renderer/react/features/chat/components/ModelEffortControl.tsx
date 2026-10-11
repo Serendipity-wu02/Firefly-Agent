@@ -2,7 +2,7 @@ import { Popover, Slider } from "antd";
 import { useEffect, useState } from "react";
 import { useTranslation } from "../../../i18n";
 import { computeReasoningDropdown, type ReasoningDropdownView } from "../../../../lib/reasoning-dropdown";
-import type { ReasoningPreference } from "../../../../../shared/reasoning";
+import type { ReasoningLevelsConfig, ReasoningPreference } from "../../../../../shared/reasoning";
 
 interface ModelProfile { id: string; provider: string; displayName?: string; model: string; }
 interface ModelCatalogApi {
@@ -16,6 +16,8 @@ interface ReasoningState {
   preference?: ReasoningPreference;
   thinkingOverride?: -1 | 0 | 1;
   transport?: "openai" | "anthropic" | "responses";
+  /** Levels the connected API declared in its profile; absent = fall back to the model-name table. */
+  reasoningLevels?: ReasoningLevelsConfig;
   /** The profile the main process actually resolved (session binding, pending welcome pick, default); echoed back on write. */
   modelProfileId?: string | null;
 }
@@ -93,7 +95,7 @@ export function ModelEffortControl({ sessionId, activeProfileId, onSelectModelPr
       const state = await api.getReasoningState({ sessionId, modelProfileId: activeProfileId });
       setProviderKey(state.providerKey);
       setResolvedProfileId(state.modelProfileId ?? null);
-      setView(computeReasoningDropdown(state.providerId, state.model, state.preference, state.thinkingOverride, state.transport));
+      setView(computeReasoningDropdown(state.providerId, state.model, state.preference, state.thinkingOverride, state.transport, state.reasoningLevels));
     } catch {
       setView(undefined);
     }

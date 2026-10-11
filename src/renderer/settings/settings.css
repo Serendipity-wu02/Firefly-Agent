@@ -4850,3 +4850,29 @@ button:disabled, .save-btn:disabled, .ghost-btn:disabled { cursor: not-allowed; 
 .token-stat__value { color: var(--rb-text-strong); }
 .token-stat__icon, .token-hero__label svg, .token-empty__icon, .memory-list__empty > span { display: inline-flex; color: var(--rb-text-muted); }
 .token-empty__icon, .memory-list__empty > span { color: var(--rb-text-faint); opacity: 1; }
+
+/* 推理强度档位：自动开关下面一排可勾选的档位小标签；自动时整排置灰不可点。 */
+.reasoning-levels-field { display: grid; gap: 8px; }
+.reasoning-levels { display: flex; flex-wrap: wrap; gap: 8px; }
+.reasoning-levels.is-locked { opacity: 0.45; }
+.reasoning-levels__chip { position: relative; display: inline-flex; cursor: pointer; }
+.reasoning-levels__chip input { position: absolute; inset: 0; margin: 0; opacity: 0; cursor: pointer; }
+.reasoning-levels__chip span {
+  padding: 5px 12px; border: 1px solid var(--rb-border-soft); border-radius: 999px;
+  background: transparent; color: var(--rb-text-muted); font-size: 13px; line-height: 1.3;
+  transition: background-color .15s ease, border-color .15s ease, color .15s ease;
+}
+.reasoning-levels__chip:hover input:not(:disabled) + span { border-color: rgb(var(--rb-accent-rgb)); }
+.reasoning-levels__chip input:checked + span {
+  border-color: rgb(var(--rb-accent-rgb)); background: rgba(var(--rb-accent-rgb), 0.12); color: rgb(var(--rb-accent-rgb)); font-weight: 600;
+}
+.reasoning-levels__chip input:focus-visible + span { outline: 2px solid rgb(var(--rb-accent-rgb)); outline-offset: 2px; }
+.reasoning-levels__chip input:disabled,
+.reasoning-levels.is-locked .reasoning-levels__chip { cursor: not-allowed; }
+.reasoning-levels__chip--flag span { border-style: dashed; }
+
+/* 模型名下面的"从厂商获取模型列表"：按钮 + 一行结果提示。 */
+.model-fetch-row { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px; margin-top: 8px; }
+.model-fetch-btn { padding: 6px 12px; font-size: 13px; }
+#fetch-models-status.is-error { color: var(--rb-danger, #c0392b); }
+#fetch-models-status.is-ok { color: var(--rb-success, #3f8f5e); }

@@ -248,7 +248,7 @@ export class AnthropicAdapter implements ChatVendorAdapter {
       };
     }
     // 推理控制：按 (providerId, model) 解析 capability，调用 applyReasoningPreference 转换 body。
-    const reasoningCap = resolveReasoningCapability(this.capability.id, cfg.model);
+    const reasoningCap = resolveReasoningCapability(this.capability.id, cfg.model, cfg.reasoningLevels, "anthropic-adaptive");
     const finalBody = applyReasoningPreference(
       body,
       cfg.reasoning ?? { mode: "auto" },

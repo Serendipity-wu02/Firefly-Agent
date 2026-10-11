@@ -87,6 +87,8 @@ export interface AgentLoopSettings {
   apiKey: string;
   explicitTransport?: "openai" | "anthropic" | "responses";
   reasoning?: import("../../shared/reasoning").ReasoningPreference;
+  /** 档案声明的推理档位；缺省按型号规则表。 */
+  reasoningLevels?: import("../../shared/reasoning").ReasoningLevelsConfig;
   /** 用户设置的模型上下文窗口（Token）。用于非 code 模式的对话压缩触发阈值。 */
   contextWindowTokens: number;
 }

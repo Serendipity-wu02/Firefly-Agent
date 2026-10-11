@@ -2,7 +2,7 @@
 // 从 settings.ts 顶层 let 抽离，收进单一对象。
 
 import type { ApiTransport } from "../../../shared/api-endpoint";
-import type { ReasoningPreference } from "../../../shared/reasoning";
+import type { ReasoningLevelsConfig, ReasoningPreference } from "../../../shared/reasoning";
 import type { CustomEndpointMode } from "../custom-endpoint-state";
 
 /** 档案卡上需要展示/编辑的最小字段集（来自 listModelProfiles）。 */
@@ -15,6 +15,7 @@ export interface SavedProfileLite {
   apiKey: string;
   explicitTransport?: ApiTransport;
   reasoning?: ReasoningPreference;
+  reasoningLevels?: ReasoningLevelsConfig;
   contextWindowTokens?: number;
   multimodal?: boolean;
 }

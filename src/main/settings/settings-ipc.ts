@@ -22,6 +22,7 @@ import type { EmbeddingIndexService } from "../services/embedding/embedding-inde
 import { initReranker, getRerankerInstallStatus } from "../rag/reranker";
 import { switchEmbeddingModel } from "../rag";
 import { testVendorConnection } from "../orchestrator/vendors/test-connection";
+import { fetchVendorModels, type FetchModelsInput } from "./fetch-vendor-models";
 import type { VendorConfig } from "../orchestrator/vendors";
 import { normalizeModelSettings, getPublicModelConfig, listSavedModelProfiles, saveModelProfile, setDefaultModelProfile, saveModelSettings } from "./model-settings";
 import { getAgentRoutingView, updateAgentRouting } from "./agent-model-routing";
@@ -258,7 +259,8 @@ export function registerSettingsIpc(deps: SettingsIpcDependencies): () => void {
     assertModelSettingsReadable();
     return getModelConnectionSnapshot();
   });
-  ipc.handle(IPC.SETTINGS_TEST_CONNECTION, async (event: IpcMainInvokeEvent, cfg: VendorConfig) => {
+  // 带着档案里的 API Key 去访问外部地址的调用，只允许设置窗口的主 frame 发起。
+  const assertSettingsSender = (event: IpcMainInvokeEvent): void => {
     const win = settingsWindow;
     if (!win || win.isDestroyed() || win.webContents.isDestroyed() || event.sender !== win.webContents || !event.senderFrame || event.senderFrame !== event.sender.mainFrame) {
       throw new Error("MODEL_CONNECTION_FORBIDDEN");
@@ -267,7 +269,21 @@ export function registerSettingsIpc(deps: SettingsIpcDependencies): () => void {
     let actual: string;
     try { const url = new URL(event.senderFrame.url); url.hash = ""; actual = url.href; } catch { throw new Error("MODEL_CONNECTION_FORBIDDEN"); }
     if (actual !== expected) throw new Error("MODEL_CONNECTION_FORBIDDEN");
+  };
+  ipc.handle(IPC.SETTINGS_TEST_CONNECTION, async (event: IpcMainInvokeEvent, cfg: VendorConfig) => {
+    assertSettingsSender(event);
     return testModelConnection(cfg, testVendorConnection);
+  });
+  // 设置页"获取模型列表"：向用户接入的厂商拉取它实际提供的型号，只返回 id/展示名，不回传 Key。
+  ipc.handle(IPC.SETTINGS_FETCH_MODELS, async (event: IpcMainInvokeEvent, input: FetchModelsInput) => {
+    assertSettingsSender(event);
+    if (!input || typeof input !== "object") return { ok: false, error: "MISSING_BASE_URL" };
+    return fetchVendorModels({
+      provider: typeof input.provider === "string" ? input.provider : "",
+      baseUrl: typeof input.baseUrl === "string" ? input.baseUrl : "",
+      apiKey: typeof input.apiKey === "string" ? input.apiKey : "",
+      explicitTransport: input.explicitTransport === "openai" || input.explicitTransport === "anthropic" || input.explicitTransport === "responses" ? input.explicitTransport : undefined,
+    });
   });
 
   /**

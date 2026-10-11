@@ -6,7 +6,7 @@ import path from "node:path";
 import { randomUUID } from "node:crypto";
 import type { RuntimeProfile } from "../runtime-profile";
 import { DEFAULT_CONTEXT_WINDOW_TOKENS } from "../orchestrator/model-config";
-import { foldReasoning, normalizeReasoningPreference, type ReasoningPreference } from "../../shared/reasoning";
+import { foldReasoning, normalizeReasoningLevels, normalizeReasoningPreference, type ReasoningLevelsConfig, type ReasoningPreference } from "../../shared/reasoning";
 import type { StickerSize } from "../../shared/sticker-types";
 import { getSettingsPath } from "../settings-store";
 import { logger, LogTag } from "../logger";
@@ -34,6 +34,11 @@ export interface ProviderProfile {
    * 实际请求时由 resolveEffectiveReasoning 决定 effective config。
    */
   reasoning?: ReasoningPreference;
+  /**
+   * 这个 API 实际支持的推理档位（用户在 API 设置里声明）。未定义 = 没声明，
+   * 按型号名回退到 shared/reasoning 的规则表；声明了就以这里为准。
+   */
+  reasoningLevels?: ReasoningLevelsConfig;
   /**
    * 上下文窗口（Token）。档案级字段；未定义 = 回退顶层 ModelSettings.contextWindowTokens。
    * 未设置时回退顶层配置。
@@ -66,6 +71,8 @@ export interface ModelSettings {
    * 保存的是用户 preference（不覆盖）；effective config 由 capability 决定。
    */
   reasoning?: ReasoningPreference;
+  /** 当前模型档案声明的推理档位镜像；见 ProviderProfile.reasoningLevels。 */
+  reasoningLevels?: ReasoningLevelsConfig;
   // 按厂商缓存：currentProvider 之外的厂商配置也保留在这里，切回来时回填。
   // 真值（source of truth）是 perProvider；顶层 baseUrl/model/apiKey 是当前厂商那一份的展开镜像，
   // Main 读取当前档案的顶层镜像。
@@ -171,6 +178,7 @@ function normalizeProviderProfile(
     displayName: typeof input?.displayName === "string" && input?.displayName.trim() ? input.displayName.trim() : undefined,
     explicitTransport,
     reasoning: normalizeReasoningPreference((input as { reasoning?: unknown })?.reasoning),
+    reasoningLevels: normalizeReasoningLevels((input as { reasoningLevels?: unknown })?.reasoningLevels),
     // 非法值 → undefined（回退全局）；下限 4096，与 UI 输入框 min 一致
     contextWindowTokens: typeof rawContextWindow === "number" && Number.isFinite(rawContextWindow) && rawContextWindow >= 4096
       ? Math.round(rawContextWindow)
@@ -239,6 +247,7 @@ export function normalizeModelSettings(input: Partial<ModelSettings> | null | un
     apiKey: profile.apiKey,
     explicitTransport: profile.explicitTransport,
     reasoning: profile.reasoning,  // 顶层镜像：与 explicitTransport 同源（perProvider[currentProvider].reasoning）
+    reasoningLevels: profile.reasoningLevels,
     perProvider,
     modelProfiles,
     defaultModelProfileId: typeof input?.defaultModelProfileId === "string" ? input.defaultModelProfileId : modelProfiles[0]?.id,
@@ -307,6 +316,7 @@ export function resolveModelSettingsProfile(settings: ModelSettings, id?: string
     apiKey: profile.apiKey,
     explicitTransport: profile.explicitTransport,
     reasoning: profile.reasoning,
+    reasoningLevels: profile.reasoningLevels,
     // 档案级字段覆盖镜像；未定义时回退全局值（老档案 = 现行为）
     contextWindowTokens: profile.contextWindowTokens ?? settings.contextWindowTokens,
     multimodal: profile.multimodal ?? settings.multimodal,
@@ -478,6 +488,7 @@ export function saveModelSettings(settings: Partial<ModelSettings>): ModelSettin
       : incomingProfile.displayName,
     explicitTransport: incomingExplicitTransport,
     reasoning: foldedReasoning,
+    reasoningLevels: incomingProfile.reasoningLevels,
   };
 
   merged.provider = currentProvider;

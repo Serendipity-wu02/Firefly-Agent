@@ -110,6 +110,7 @@ export const IPC = {
   SETTINGS_AGENT_ROUTING_GET: "settings:agent-routing:get",
   SETTINGS_AGENT_ROUTING_UPDATE: "settings:agent-routing:update",
   SETTINGS_TEST_CONNECTION: "settings:test-connection",
+  SETTINGS_FETCH_MODELS: "settings:fetch-models",
   SETTINGS_TEST_VISION: "settings:test-vision",
   SETTINGS_GET_GENERAL: "settings:get-general",
   SETTINGS_SAVE_GENERAL: "settings:save-general",

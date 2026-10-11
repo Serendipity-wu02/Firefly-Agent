@@ -200,6 +200,10 @@
               <span><span data-i18n="panel.api.field.model.label">模型名</span></span>
               <input id="model-input" type="text" placeholder="选厂商后自动填入，可手填覆盖" autocomplete="off" list="model-input-suggestions" data-i18n-placeholder="panel.api.field.model.placeholder" />
               <datalist id="model-input-suggestions"></datalist>
+              <span class="model-fetch-row">
+                <button type="button" class="save-btn save-btn--ghost model-fetch-btn" id="fetch-models-btn"><span data-i18n="panel.api.field.model.fetch.button">从厂商获取模型列表</span></button>
+                <span class="form-hint" id="fetch-models-status" role="status" aria-live="polite"></span>
+              </span>
             </label>
 
             <label class="field" data-provider-field="advanced">
@@ -215,6 +219,26 @@
               </div>
               <span class="switch"><input id="multimodal-toggle" type="checkbox" title="多模态" data-i18n-title="panel.api.field.model.multimodal.toggleTitle" /><span class="switch__track"><span class="switch__thumb"></span></span></span>
             </label>
+
+            <div class="field field--full reasoning-levels-field" data-provider-field="advanced">
+              <label class="setting-row">
+                <div>
+                  <strong><span data-i18n="panel.api.field.model.reasoningLevels.title">推理强度档位</span></strong>
+                  <span><span data-i18n="panel.api.field.model.reasoningLevels.desc">默认按型号名判断。自定义地址、代理或新型号请关闭"自动"，勾选这个 API 实际支持的档位。</span></span>
+                </div>
+                <span class="switch"><input id="reasoning-levels-auto" type="checkbox" checked title="自动" data-i18n-title="panel.api.field.model.reasoningLevels.autoTitle" /><span class="switch__track"><span class="switch__thumb"></span></span></span>
+              </label>
+              <div class="reasoning-levels" id="reasoning-levels-options" role="group" aria-label="推理强度档位" data-i18n-aria-label="panel.api.field.model.reasoningLevels.group">
+                <label class="reasoning-levels__chip"><input type="checkbox" data-effort="low" /><span>low</span></label>
+                <label class="reasoning-levels__chip"><input type="checkbox" data-effort="medium" /><span>medium</span></label>
+                <label class="reasoning-levels__chip"><input type="checkbox" data-effort="high" /><span>high</span></label>
+                <label class="reasoning-levels__chip"><input type="checkbox" data-effort="xhigh" /><span>xhigh</span></label>
+                <label class="reasoning-levels__chip"><input type="checkbox" data-effort="max" /><span>max</span></label>
+                <label class="reasoning-levels__chip reasoning-levels__chip--flag"><input type="checkbox" id="reasoning-levels-off" /><span data-i18n="panel.api.field.model.reasoningLevels.off">可关闭</span></label>
+                <label class="reasoning-levels__chip reasoning-levels__chip--flag"><input type="checkbox" id="reasoning-levels-pro" /><span data-i18n="panel.api.field.model.reasoningLevels.pro">PRO（Responses）</span></label>
+              </div>
+              <span class="form-hint"><span data-i18n="panel.api.field.model.reasoningLevels.hint">一个档位都不勾，表示这个 API 只有"开 / 关"。输入框右下角的强度滑块会只显示这里勾选的档位。</span></span>
+            </div>
           </div>
 
           <details class="provider-details" id="provider-advanced">

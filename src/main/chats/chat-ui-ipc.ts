@@ -107,6 +107,8 @@ export function registerChatUiIpc(deps: ChatUiIpcDependencies): void {
       providerId: cap.id,
       model: settings.model,
       preference: settings.reasoning,
+      // 档案里声明的档位；没声明时渲染端按型号规则表回退。
+      reasoningLevels: settings.reasoningLevels,
       thinkingOverride: resolveVendorRuntimeSettings(settings).thinkingOverride,
       // PRO 档（reasoning.mode="pro"）仅 Responses 协议存在，UI 据此决定是否显示
       transport: resolveTransport({

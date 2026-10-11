@@ -18,6 +18,7 @@ import {
   resolveEffectiveReasoning,
   resolveReasoningCapability,
   type ReasoningEffort,
+  type ReasoningLevelsConfig,
   type ReasoningPreference,
 } from "../../shared/reasoning";
 
@@ -40,13 +41,14 @@ export interface ReasoningDropdownView {
   items: ReasoningDropdownItem[];
 }
 
+// 档位直接显示 API 里的原始名称，和厂商文档、请求体里的 reasoning_effort 对得上。
 const EFFORT_LABEL: Record<ReasoningEffort, string> = {
-  minimal: "最低",
-  low: "低",
-  medium: "中",
-  high: "高",
-  xhigh: "极高",
-  max: "最强",
+  minimal: "minimal",
+  low: "low",
+  medium: "medium",
+  high: "high",
+  xhigh: "xhigh",
+  max: "max",
 };
 
 export function computeReasoningDropdown(
@@ -55,8 +57,10 @@ export function computeReasoningDropdown(
   saved: ReasoningPreference | undefined,
   thinkingOverride?: -1 | 0 | 1,
   transport?: "openai" | "anthropic" | "responses",
+  levels?: ReasoningLevelsConfig,
 ): ReasoningDropdownView {
-  const cap = resolveReasoningCapability(providerId, model);
+  // levels 是接入的 API 档案里声明的档位；没声明才按型号名查规则表。
+  const cap = resolveReasoningCapability(providerId, model, levels);
   // 用户修正 #2：必须用 resolveEffectiveReasoning，不能 saved ?? auto
   const effective = resolveEffectiveReasoning(saved, cap, thinkingOverride);
 
