@@ -16,7 +16,7 @@ function createWindowsFileSymlink(target: string, link: string): void {
   const output = execFileSync(path.join(process.env.SystemRoot, "System32/WindowsPowerShell/v1.0/powershell.exe"), [
     "-NoLogo", "-NoProfile", "-NonInteractive", "-File", path.join(__dirname, "file-symlink-probe.ps1"),
     "-TargetFile", target, "-LinkFile", link,
-  ], { encoding: "utf8", windowsHide: true, timeout: 10000 });
+  ], { encoding: "utf8", windowsHide: true, timeout: 30000 });
   const result = JSON.parse(output);
   if (!result || typeof result.win32Code !== "number" || !Number.isSafeInteger(result.win32Code) || result.win32Code < 0) {
     throw new Error("Invalid native file-symlink probe result");
