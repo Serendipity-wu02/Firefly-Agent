@@ -20,10 +20,11 @@ describe("renderer theme bootstrap", () => {
     expect(html).toMatch(/<html\b[^>]*\bdata-ui-theme="pearl-white"/);
     const stylesheets = [...html.matchAll(/<link\b[^>]*rel="stylesheet"[^>]*href="([^"]+)"[^>]*>/g)];
     if (entry === "settings/index.html") {
-      expect(stylesheets.slice(-3).map(match => match[1])).toEqual([
+      expect(stylesheets.slice(-4).map(match => match[1])).toEqual([
         "../ui/theme.css",
         "./settings-layout.css",
         "./settings-system.css",
+        "./settings-api.css",
       ]);
     } else {
       expect(stylesheets.at(-1)?.[1]).toMatch(/ui\/theme\.css$/);

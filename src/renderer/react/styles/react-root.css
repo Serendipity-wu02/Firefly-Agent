@@ -1,5 +1,7 @@
 /* ===== 设计变量 ===== */
 :root {
+  /* 对话区阅读宽度：随窗口自动调节——窗口窄时占满，窗口宽时占七成，封顶 1100px；消息列表、输入框、交互面板共用 */
+  --cy-reading-width: clamp(560px, 72%, 1100px);
   --cy-app-titlebar-height: 50px;
   --cy-workspace-header-height: 48px;
   --cy-workspace-gutter: 8px;

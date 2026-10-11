@@ -9,7 +9,7 @@
 
 .cy-message-list .ant-bubble-list {
   min-height: 100%;
-  max-width: 770px;
+  max-width: var(--cy-reading-width);
   margin-inline: auto;
 }
 
@@ -958,7 +958,7 @@
 }
 
 .cy-message-markdown-fallback {
-  max-width: min(760px, 100%);
+  max-width: min(var(--cy-reading-width), 100%);
   margin: 0;
   overflow: auto;
   padding: 10px 12px;

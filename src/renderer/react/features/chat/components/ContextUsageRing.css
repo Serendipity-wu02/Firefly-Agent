@@ -228,3 +228,21 @@
   font: 11px/1.4 var(--rb-font-sans, sans-serif);
   color: var(--cy-text-muted);
 }
+
+/* ── 版面整理：固定宽度、小人行做成提示条、数字列对齐 ── */
+.cy-context-usage-popover .ant-popover-inner { padding: 14px 14px 12px; border-radius: 16px; }
+.cy-context-usage-menu { gap: 12px; width: 288px; min-width: 0; max-width: none; }
+.cy-context-usage-menu__header { gap: 12px; }
+.cy-context-usage-menu__header span { font-variant-numeric: tabular-nums; }
+.cy-context-usage-menu__progress { height: 6px; border-radius: 3px; }
+.cy-context-usage-menu__progress span { border-radius: 3px; }
+
+.cy-context-usage-menu__mood { gap: 10px; padding: 8px 10px; border-radius: 12px; background: var(--cy-bg-subtle); }
+.cy-context-usage-menu__mood-figure { width: 40px; height: 40px; border-radius: 10px; overflow: hidden; color: transparent; font-size: 0; }
+.cy-context-usage-menu__mood span { min-width: 0; flex: 1; overflow-wrap: anywhere; }
+
+.cy-context-usage-menu__rows { gap: 2px; padding: 0; }
+.cy-context-usage-menu__rows li { display: grid; grid-template-columns: 8px minmax(0, 1fr) auto 38px; align-items: center; column-gap: 10px; padding: 5px 2px; border-radius: 8px; }
+.cy-context-usage-menu__rows li:hover { background: var(--cy-bg-subtle); }
+.cy-context-usage-menu__tokens { min-width: 0; }
+.cy-context-usage-menu__footnote { padding-top: 8px; border-top: 1px solid var(--cy-border); }

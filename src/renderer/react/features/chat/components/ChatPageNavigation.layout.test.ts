@@ -313,24 +313,26 @@ describe("workspace navigation layout", () => {
     expect(changedAvatar).toBeUndefined();
     expect(changedProfile).toBeUndefined();
   });
-  it("keeps the mode tabs in the title bar while plugins are open", () => {
+  it("puts the mode menu at the top of the sidebar and keeps it usable while plugins are open", async () => {
     render({ activePanel: "plugin" });
-    const tabs = [...host.querySelectorAll<HTMLButtonElement>('.cy-page-titlebar [role="tab"]')];
-    expect(tabs.map(tab => tab.textContent)).toEqual(["Work", "Chat", "Code"]);
-    expect(tabs.map(tab => tab.getAttribute("aria-selected"))).toEqual(["false", "true", "false"]);
-    expect(host.querySelector(".cy-page-sidebar")?.querySelector('[role="tablist"]')).toBeNull();
-    act(() => tabs[2].click());
+    expect(host.querySelector(".cy-page-titlebar .cy-mode-menu__trigger")).toBeNull();
+    expect(host.querySelector(".cy-page-titlebar [role=\"tablist\"]")).toBeNull();
+    const trigger = host.querySelector<HTMLButtonElement>(".cy-page-sidebar .cy-page-mode .cy-mode-menu__trigger")!;
+    expect(trigger.textContent).toBe("Chat");
+    await act(async () => trigger.click());
+    await act(async () => { await new Promise(resolve => setTimeout(resolve, 0)); });
+    const options = [...document.querySelectorAll<HTMLButtonElement>('[role="menuitemradio"]')];
+    expect(options.map(option => option.getAttribute("aria-checked"))).toEqual(["false", "true", "false"]);
+    await act(async () => options[2].click());
     expect(props.onModeChange).toHaveBeenCalledExactlyOnceWith("code");
     expect(props.onTogglePanel).not.toHaveBeenCalled();
   });
-  it("moves between the mode tabs with the arrow keys", () => {
-    render();
-    const tabs = [...host.querySelectorAll<HTMLButtonElement>('[role="tab"]')];
-    act(() => { tabs[1].focus(); tabs[1].dispatchEvent(new KeyboardEvent("keydown", { key: "ArrowRight", bubbles: true, cancelable: true })); });
-    expect(props.onModeChange).toHaveBeenLastCalledWith("code");
-    expect(document.activeElement).toBe(tabs[2]);
-    act(() => tabs[2].dispatchEvent(new KeyboardEvent("keydown", { key: "ArrowRight", bubbles: true, cancelable: true })));
-    expect(props.onModeChange).toHaveBeenLastCalledWith("work");
+  it("keeps a mode switch in the title bar while the sidebar is folded", () => {
+    render({ collapsed: true, mode: "work" });
+    const trigger = host.querySelector<HTMLButtonElement>(".cy-page-titlebar .cy-mode-menu__trigger")!;
+    expect(trigger.textContent).toBe("Work");
+    expect(trigger.classList.contains("is-compact")).toBe(true);
+    expect(host.querySelector(".cy-page-sidebar .cy-mode-menu__trigger")).toBeNull();
   });
   it("opens the session switcher from the search row and selects by keyboard", async () => {
     const sessions = [

@@ -1,6 +1,6 @@
 .cy-composer-stack {
   display: flex;
-  width: min(100%, 770px);
+  width: min(100%, var(--cy-reading-width));
   flex-direction: column;
   transition: transform 240ms ease, width 320ms ease;
 }
@@ -10,7 +10,7 @@
 }
 
 .cy-composer-stack.is-docked {
-  width: min(100%, 770px);
+  width: min(100%, var(--cy-reading-width));
 }
 
 .cy-composer-welcome {
@@ -643,3 +643,7 @@
 .cy-composer__project-strip .cy-composer__terminal-folder-icon { stroke-width: 3.4; }
 .cy-composer__project-strip .cy-composer__footer-button > svg:last-child { width: 12px; height: 12px; }
 
+/* 输入框上下留白收紧：空输入框不再占一大块高度，多行时仍随内容增高 */
+.cy-composer .ant-sender-content { min-height: 76px; padding: 12px 16px 6px; row-gap: 0; }
+.cy-composer .ant-sender-input { min-height: 40px; }
+.cy-composer__footer { padding: 0 12px 8px; }

@@ -4,7 +4,7 @@ import { Ellipsis, Search } from "lucide-react";
 import { useTranslation } from "../../../i18n";
 import type { ChatSessionMeta, ConversationMode } from "../../../../../shared/chat-types";
 import type { TodoState } from "../../../../../shared/todo-types";
-import { ModeTabs } from "../../../components/ui/ModeTabs";
+import { ModeMenu } from "../../../components/ui/ModeMenu";
 import { ModelModeButton } from "../../../components/ui/ModelModeButton";
 import { NewTaskButton } from "../../../components/ui/NewTaskButton";
 import { PluginModeButton } from "../../../components/ui/PluginModeButton";
@@ -169,9 +169,8 @@ export const ChatPageNavigation = React.memo(function ChatPageNavigation({
             <img className="cy-page-role-avatar" src={resolveAsset("avatars/firefly-avatar.png")} alt="Firefly" draggable={false} />
             <ModelConnectionIndicator activeProfileId={activeModelProfileId} onOpenSettings={onOpenApiSettings ?? onOpenSettings} />
           </div>
-        </div>
-        <div className="cy-page-top-center">
-          <ModeTabs value={mode} onChange={onModeChange} />
+          {/* 侧栏折叠时顶部那一行不可见，模式入口改放在头像旁，保证随时能切换。 */}
+          {collapsed && <ModeMenu variant="compact" value={mode} onChange={onModeChange} />}
         </div>
         <div className="cy-page-windows">
           <WindowControls onMinimize={onMinimize} onMaximize={onMaximize} onClose={onCloseWindow} />
@@ -180,6 +179,11 @@ export const ChatPageNavigation = React.memo(function ChatPageNavigation({
       {collapsed && <nav ref={edgeRef} onPointerEnter={enter} onPointerLeave={leave} className="cy-page-edge" aria-label={t("ui.navigation")} />}
       <aside ref={contextRef} onPointerEnter={enter} onPointerLeave={leave} id="firefly-context-sidebar" className={`cy-page-sidebar ${collapsed ? "is-floating" : ""} ${peeking ? "is-peeking" : ""}`} style={{ width: sidebar.width }} inert={hidden} aria-hidden={hidden} aria-label={t("ui.contextSidebar")}>
         {collapsed && <span className="cy-sidebar-hover-corridor" aria-hidden="true" />}
+        {!collapsed && (
+          <div className="cy-page-mode">
+            <ModeMenu value={mode} onChange={onModeChange} />
+          </div>
+        )}
         <div className="cy-page-newtask">
           <NewTaskButton label={mode === "chat" ? undefined : t("ui.newTaskButton")} onClick={onNewTask} />
           <button type="button" className="cy-side-action cy-side-action--search" onClick={() => setSearchOpen(true)} aria-label={t("sidebar.searchAction")} aria-keyshortcuts="Control+K">

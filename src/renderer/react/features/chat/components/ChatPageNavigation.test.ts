@@ -6,8 +6,8 @@ import { describe, expect, it, vi } from "vitest";
 vi.mock("../../../components/ui/SidebarToggle", () => ({
   SidebarToggle: ({ collapsed }: { collapsed: boolean }) => createElement("span", null, `sidebar-toggle:${collapsed}`),
 }));
-vi.mock("../../../components/ui/ModeTabs", () => ({
-  ModeTabs: () => createElement("span", null, "mode-tabs"),
+vi.mock("../../../components/ui/ModeMenu", () => ({
+  ModeMenu: ({ variant = "sidebar" }: { variant?: string }) => createElement("span", null, `mode-menu:${variant}`),
 }));
 vi.mock("../../../components/ui/ToolModeButton", () => ({
   ToolModeButton: ({ active }: { active: boolean }) => createElement("span", null, `tool-button:${active}`),
@@ -58,7 +58,8 @@ describe("ChatPageNavigation", () => {
       onOpenSettings: () => undefined,
     }));
 
-    expect(html).toContain("mode-tabs");
+    expect(html).toContain("mode-menu:sidebar");
+    expect(html).not.toContain("mode-menu:compact");
     expect(html).toContain("更多");
     expect(html).toContain("conversation-sidebar:loading");
   });
@@ -88,7 +89,34 @@ describe("ChatPageNavigation", () => {
 
     expect(html).toContain("plugin-button:true");
     expect(html).toContain("cy-page-titlebar");
-    expect(html).toContain("mode-tabs");
+    expect(html).toContain("mode-menu:sidebar");
     expect(html).toContain("conversation-sidebar:error");
+  });
+
+  it("moves the mode menu next to the avatar while the sidebar is collapsed", () => {
+    const html = renderToStaticMarkup(createElement(ChatPageNavigation, {
+      collapsed: true,
+      activePanel: null,
+      mode: "work",
+      sessions: [],
+      sessionListStatus: "ready",
+      activeSessionId: undefined,
+      onToggleCollapsed: () => undefined,
+      onModeChange: () => undefined,
+      onNewTask: () => undefined,
+      onTogglePanel: () => undefined,
+      onSelectSession: () => undefined,
+      onOpenProject: () => undefined,
+      onRenameSession: () => undefined,
+      onDeleteSession: () => undefined,
+      onTogglePinSession: () => undefined,
+      onMinimize: () => undefined,
+      onMaximize: () => undefined,
+      onCloseWindow: () => undefined,
+      onOpenSettings: () => undefined,
+    }));
+
+    expect(html).toContain("mode-menu:compact");
+    expect(html).not.toContain("mode-menu:sidebar");
   });
 });

@@ -93,7 +93,12 @@
       "delete": "Delete",
       "incomplete": "Incomplete configuration",
       "missingKey": "Missing API Key",
-      "configured": "Configured · Connection not tested"
+      "configured": "Configured · Connection not tested",
+      "sectionConnection": "Connection",
+      "sectionModel": "Model",
+      "connectionMore": "Custom settings",
+      "cancel": "Cancel",
+      "tagCustom": "Custom"
     },
     "profile": {
       "badge": { "default": "Default" },

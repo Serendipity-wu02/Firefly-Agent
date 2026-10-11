@@ -144,10 +144,36 @@ const modalIsOpen = () => document.getElementById("cy-modal-overlay")?.classList
 const submitProfile = () => element<HTMLFormElement>("api-form").dispatchEvent(new Event("submit", { bubbles: true, cancelable: true }));
 const profileButton = () => document.querySelector<HTMLButtonElement>('[data-profile-id="existing"] [data-profile-action="edit"]')!;
 
-it("opens the saved default in the right editor and exposes the selected profile to assistive technology", () => {
+it("opens the saved default inline in its own card and exposes the selected profile to assistive technology", () => {
   expect(element("profile-editor").hidden).toBe(false);
   expect(profileButton().getAttribute("aria-current")).toBe("true");
-  expect(element("profile-editor-empty").hidden).toBe(true);
+  expect(element("profile-editor").parentElement).toBe(document.querySelector('[data-profile-id="existing"]'));
+  expect(element<HTMLButtonElement>("add-profile-btn").hidden).toBe(false);
+  expect(element("save-status").parentElement).toBe(element("provider-status-slot"));
+});
+
+it("expands a new draft under the list in place of the add button, then moves into the new card once saved", async () => {
+  element<HTMLButtonElement>("add-profile-btn").click();
+  expect(element("profile-editor").parentElement).toBe(element("provider-editor-slot"));
+  expect(element<HTMLButtonElement>("add-profile-btn").hidden).toBe(true);
+  expect(document.querySelector('[data-profile-id="existing"] #profile-editor')).toBeNull();
+  element<HTMLInputElement>("api-key").value = "inline-new-key";
+  submitProfile();
+  await vi.waitFor(() => expect(element("save-status").classList.contains("is-ok")).toBe(true));
+  expect(element("profile-editor").parentElement).toBe(document.querySelector('[data-profile-id="new-profile"]'));
+  expect(element<HTMLButtonElement>("add-profile-btn").hidden).toBe(false);
+  expect(element<HTMLInputElement>("api-key").value).toBe("inline-new-key");
+});
+
+it("moves the editor between cards when another profile is chosen", async () => {
+  element<HTMLButtonElement>("add-profile-btn").click();
+  element<HTMLInputElement>("api-key").value = "second-key";
+  submitProfile();
+  await vi.waitFor(() => expect(document.querySelectorAll(".provider-row")).toHaveLength(2));
+  await vi.waitFor(() => expect(element("profile-draft-state").dataset.state).toBe("saved"));
+  profileButton().click();
+  expect(element("profile-editor").parentElement).toBe(document.querySelector('[data-profile-id="existing"]'));
+  expect(element<HTMLInputElement>("api-key").value).toBe("fixture-key");
 });
 
 it("keeps a changed profile when discard is canceled and starts a clean draft only after confirmation", async () => {
@@ -270,7 +296,8 @@ it("preserves the draft across settings categories and asks before closing its e
   expect(modalIsOpen()).toBe(true);
   element<HTMLButtonElement>("cy-modal-confirm").click();
   await vi.waitFor(() => expect(element("profile-editor").hidden).toBe(true));
-  expect(element("profile-editor-empty").hidden).toBe(false);
+  expect(element("profile-editor").parentElement).toBe(element("provider-editor-slot"));
+  expect(element("save-status").parentElement).toBe(element("provider-status-top"));
   expect(document.activeElement).toBe(profileButton());
 });
 

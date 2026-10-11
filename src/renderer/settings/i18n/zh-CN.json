@@ -92,7 +92,12 @@
       "delete": "删除",
       "incomplete": "配置不完整",
       "missingKey": "缺少 API Key",
-      "configured": "已配置 · 未验证连接"
+      "configured": "已配置 · 未验证连接",
+      "sectionConnection": "连接",
+      "sectionModel": "模型",
+      "connectionMore": "自定义设置",
+      "cancel": "取消",
+      "tagCustom": "自定义"
     },
     "nav": {
       "ariaLabel": "设置导航",
@@ -899,7 +904,7 @@
     },
     "profile": {
       "count": "{{count}} 个档案",
-      "empty": "还没有档案。选下方厂商预设新建一个，保存后会出现在这里。",
+      "empty": "还没有档案。点下方“添加模型提供商”新建一个，保存后会出现在这里。",
       "loading": "正在读取档案…",
       "readFailed": "档案读取失败，原文件已保留。请检查文件或读取权限。",
       "badge": {

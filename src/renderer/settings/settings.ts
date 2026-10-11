@@ -3,7 +3,7 @@ import type {} from "../global";
 import { bindUiColorControls } from "./appearance/colors";
 import { DEFAULT_UI_COLORS } from "../../shared/ui-colors";
 import { renderProviderRows } from "./api/provider-rows";
-import { applyProviderEditorLayout } from "./api/provider-editor";
+import { applyProviderEditorLayout, mountProfileEditor, placeSaveStatus, renderKeepingProfileEditor } from "./api/provider-editor";
 import { bindSettingsNavigation, resolveSettingsSection, updateSettingsNavigation } from "./shared/navigation";
 /* 标记！AI写的超大技术债，延期重构*/
 import "../ui/base.css";
@@ -682,7 +682,7 @@ function updateProfileDraftState(): void {
   const editor = document.getElementById("profile-editor");
   editor?.setAttribute("aria-busy", String(profileSavePending));
   if (profileSavePending) {
-    apiForm.querySelectorAll<HTMLButtonElement>('button[type="submit"], #close-profile-editor, #delete-profile-btn, #add-profile-btn, #empty-add-profile-btn, [data-profile-action], [data-provider-tab], .preset-card, [data-custom-endpoint-mode]').forEach(button => {
+    apiForm.querySelectorAll<HTMLButtonElement>('button[type="submit"], #close-profile-editor, #delete-profile-btn, #add-profile-btn, [data-profile-action], [data-provider-tab], .preset-card, [data-custom-endpoint-mode]').forEach(button => {
       if (!profilePendingButtons.has(button)) profilePendingButtons.set(button, button.disabled);
       button.disabled = true;
     });
@@ -732,26 +732,28 @@ function restoreVisionInputs(snapshot: { baseUrl: string; apiKey: string; model:
   visionModelInput.value = snapshot.model;
 }
 
-/** 已配置模型列表：紧凑行与独立编辑/删除操作。 */
+/** 已配置模型列表：每个档案一张卡片，编辑器内联在选中的卡片里。 */
 function renderProfileList(): void {
   if (!profileList) return;
-  profileList.replaceChildren();
   const count = apiState.profiles.length;
   profileListCount.textContent = count ? t("settings.profile.count", { count }) : "";
-
-  if (count === 0) {
-    const empty = document.createElement("div");
-    empty.className = "profile-list__empty";
-    empty.textContent = t(apiState.profilesLoadState === "loading"
-      ? "settings.profile.loading"
-      : apiState.profilesLoadState === "error"
-        ? "settings.profile.readFailed"
-        : "settings.profile.empty");
-    profileList.appendChild(empty);
-    return;
-  }
-
-  renderProviderRows(profileList, apiState.profiles, apiState.defaultProfileId, apiState.editorOpen ? apiState.editingProfileId : undefined);
+  const editingId = apiState.editorOpen ? apiState.editingProfileId : undefined;
+  // 编辑器挂在选中的卡片里：重绘前先让出，重绘后挂回（草稿与焦点原样保留）。
+  renderKeepingProfileEditor(apiForm, editingId, () => {
+    if (count === 0) {
+      profileList.replaceChildren();
+      const empty = document.createElement("div");
+      empty.className = "profile-list__empty";
+      empty.textContent = t(apiState.profilesLoadState === "loading"
+        ? "settings.profile.loading"
+        : apiState.profilesLoadState === "error"
+          ? "settings.profile.readFailed"
+          : "settings.profile.empty");
+      profileList.appendChild(empty);
+      return;
+    }
+    renderProviderRows(profileList, apiState.profiles, apiState.defaultProfileId, editingId);
+  });
 }
 
 /** 从 main 拉取档案列表并渲染。 */
@@ -786,9 +788,12 @@ function applyEditingStateUI(): void {
   profileEditorTitle.textContent = apiState.editingProfileId ? t("settings.profile.editorTitle.edit") : t("settings.profile.editorTitle.new");
   deleteProfileBtn.hidden = !apiState.editingProfileId;
   document.getElementById("profile-editor")!.hidden = !apiState.editorOpen;
-  document.getElementById("profile-editor-empty")!.hidden = apiState.editorOpen;
+  // 新建草稿展开时，“添加模型提供商”让位给草稿本身。
+  document.getElementById("add-profile-btn")!.hidden = apiState.editorOpen && !apiState.editingProfileId;
   document.querySelector<HTMLElement>(".provider-tabs")!.hidden = Boolean(apiState.editingProfileId);
-  applyProviderEditorLayout(apiForm, getCustomEndpointMode(apiState.activeProvider) ? "custom" : "preset");
+  applyProviderEditorLayout(apiForm, getCustomEndpointMode(apiState.activeProvider) ? "custom" : "preset", Boolean(apiState.editingProfileId));
+  mountProfileEditor(apiForm, apiState.editorOpen ? apiState.editingProfileId : undefined);
+  placeSaveStatus(apiForm, apiState.editorOpen);
 }
 
 /** 载入档案到编辑表单。 */
@@ -1022,7 +1027,7 @@ export function applyPreset(
   }
 
   apiState.activeProvider = preset.providerName;
-  applyProviderEditorLayout(apiForm, customMode ? "custom" : "preset");
+  applyProviderEditorLayout(apiForm, customMode ? "custom" : "preset", Boolean(apiState.editingProfileId));
   applyMultimodalUI();
 }
 
@@ -1989,7 +1994,6 @@ function addProfile(): void {
   });
 }
 document.getElementById("add-profile-btn")?.addEventListener("click", addProfile);
-document.getElementById("empty-add-profile-btn")?.addEventListener("click", addProfile);
 document.getElementById("close-profile-editor")?.addEventListener("click", () => {
   changeProfileEditor(() => {
     apiState.editorOpen = false;
