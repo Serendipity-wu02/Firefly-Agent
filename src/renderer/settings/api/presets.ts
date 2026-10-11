@@ -6,7 +6,7 @@ import type { ModelPreset } from "../shared/types";
 import { CUSTOM_ENDPOINT_PROVIDERS } from "../custom-endpoint-state";
 
 export const MODEL_PRESETS: ModelPreset[] = [
-  // 当前已适配 9 家：MiniMax / DeepSeek / 豆包 / 智谱 GLM / Kimi / Qwen / ChatGPT / Claude / MiMo
+  // 当前已适配 9 家：MiniMax / DeepSeek / 智谱 GLM / Kimi / Qwen / ChatGPT / Claude / MiMo / OpenRouter（聚合网关）
   // 顺序按使用频率 + 适配优先级；未在此清单内的厂商已硬删，需要时再补回。
   {
     providerName: "MiniMax（稀宇科技）",
@@ -17,8 +17,6 @@ export const MODEL_PRESETS: ModelPreset[] = [
     mainModels: ["MiniMax-M3", "MiniMax-M2.7", "MiniMax-M2.5"],
     iconUrl: "../icons/providers/minimax.svg",
     websiteUrl: "https://platform.minimaxi.com/",
-    // 主模型默认走 Anthropic SDK；视觉继续走 OpenAI 兼容入口。
-    visionBaseUrl: "https://api.minimaxi.com/v1",
   },
   {
     // DeepSeek：v1 vendor adapter 不为它做协议层强制，仅作为 OpenAI 兼容厂商列出。
@@ -35,20 +33,6 @@ export const MODEL_PRESETS: ModelPreset[] = [
     mainModels: ["deepseek-flash", "deepseek-v4-pro"],
     iconUrl: "../icons/providers/deepseek.svg",
     websiteUrl: "https://platform.deepseek.com/",
-  },
-  {
-    providerName: "豆包（火山方舟）",
-    shortName: "豆包",
-    baseUrl: "https://ark.cn-beijing.volces.com/api/v3",
-    transport: "openai",
-    mainModels: [
-      "doubao-seed-2-1-pro-260628",
-      "doubao-seed-2-0-pro-260215",
-      "doubao-seed-2-0-lite-260428",
-      "doubao-seed-2-0-mini-260428",
-    ],
-    iconUrl: "../icons/providers/volcengine.svg",
-    websiteUrl: "https://www.volcengine.com/product/ark",
   },
   {
     providerName: "GLM（智谱）",
@@ -109,11 +93,17 @@ export const MODEL_PRESETS: ModelPreset[] = [
     mainModels: ["mimo-v2.5-pro"],
     iconUrl: "../icons/providers/xiaomimimo.svg",
     websiteUrl: "https://mimo.mi.com/",
-    visionBaseUrl: "https://api.xiaomimimo.com/v1",
-    // 主模型 mimo-v2.5-pro 不适合做视觉（视觉模型是 mimo-v2.5）；
-    // 多模态开关默认全开，仅在此预填独立视觉模型候选，用户自行决定。
-    defaultVisionModel: "mimo-v2.5",
-    visionModels: ["mimo-v2.5"],
+  },
+  {
+    // OpenRouter：聚合多家模型的 OpenAI 兼容网关。型号数百个，不在此预置型号 id，由“获取模型列表”拉取后选择。
+    // 暂无官方图标资源，先用通用占位图标（不引入第三方图标）。
+    providerName: "OpenRouter",
+    shortName: "OpenRouter",
+    baseUrl: "https://openrouter.ai/api/v1",
+    transport: "openai",
+    mainModels: [],
+    iconUrl: "../icons/providers/custom-endpoint.svg",
+    websiteUrl: "https://openrouter.ai/",
   },
   {
     providerName: CUSTOM_ENDPOINT_PROVIDERS.cloud,

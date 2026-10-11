@@ -1,4 +1,3 @@
-import { BrowserWindow } from "electron";
 import { IPC } from "../../shared/ipc-channels";
 import { createIpcScope, type IpcScope } from "../application/ipc-scope";
 import { clearUsage, getUsageReport } from "../token-usage-store";
@@ -7,8 +6,6 @@ import {
   settingsWindow,
 } from "./window-state";
 import type { WindowManager } from "./window-manager";
-import { acceptLive2DActionReceipt } from "../orchestrator/tools/builtin-tools/play-live2d-action";
-import type { Live2DActionReceipt } from "../../shared/live2d-actions";
 
 export interface WindowSystemIpcDependencies {
   get windowManager(): WindowManager | null;
@@ -95,24 +92,12 @@ export function registerWindowSystemIpc(deps: WindowSystemIpcDependencies): void
     return true;
   });
 
-  ipc.on(IPC.SETTINGS_OPEN_CHROME_GPU, async () => {
-    const win = new BrowserWindow({ width: 1024, height: 768 });
-    win.loadURL("chrome://gpu");
-    win.show();
-  });
-
   // Token 用量查询 IPC（临时挂靠，后续归到统计模块）
   ipc.handle(IPC.TOKEN_USAGE_GET, (_event, days: number) => {
     return getUsageReport(Math.max(1, Math.min(90, Number(days) || 7)));
   });
   ipc.handle(IPC.TOKEN_USAGE_CLEAR, () => {
     clearUsage();
-  });
-
-  ipc.on(IPC.LIVE2D_ACTION_RECEIPT, (event, receipt: Live2DActionReceipt) => {
-    if (!deps.windowManager?.isPetWindowSender(event.sender.id)) return;
-    if (!receipt || typeof receipt.requestId !== "string") return;
-    acceptLive2DActionReceipt(receipt);
   });
 
   // 退出是应用级请求而非窗口操作：deps.quit() 最终走 app.quit()，

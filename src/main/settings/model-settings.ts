@@ -11,6 +11,8 @@ import type { StickerSize } from "../../shared/sticker-types";
 import { getSettingsPath } from "../settings-store";
 import { logger, LogTag } from "../logger";
 import { getCapabilityOrOpenAI } from "../orchestrator/vendors/capabilities";
+import { resolveInputModalities } from "../orchestrator/vendors/multimodal";
+import { normalizeDeclaredInputModalities, type InputModality, type InputModalitySource } from "../../shared/input-modalities";
 import { addModelProfile, resolveDefaultModelProfile, updateModelProfile, type SavedModelProfile } from "./model-catalog";
 import { normalizeAgentModelProfiles } from "./agent-model-routing";
 
@@ -45,10 +47,12 @@ export interface ProviderProfile {
    */
   contextWindowTokens?: number;
   /**
-   * 主模型是否多模态。档案级字段；未定义 = 回退顶层 ModelSettings.multimodal。
-   * true 时图片直发主模型（direct），false 走独立视觉模型转述（caption）。
+   * 显式声明的输入模态（图片 / 仅文本）。未定义 = 未声明，按内置目录 → 仅文本回落（见 resolveInputModalities）。
+   * 同一档案只存一份：用户覆盖写入时替换厂商接口记录。
    */
-  multimodal?: boolean;
+  inputModalities?: InputModality[];
+  /** inputModalities 的来源：vendor-api（厂商接口记录）或 user（用户手动覆盖），仅用于界面说明来源。 */
+  inputModalitiesSource?: InputModalitySource;
 }
 
 export interface ModelSettings {
@@ -82,14 +86,11 @@ export interface ModelSettings {
   defaultModelProfileId?: string;
   agentModelProfiles?: Record<string, string>;
   specialistModelProfiles?: Record<string, string>;
-  runtimeSync: "off" | "local" | "llm";
   stickerEnabled: boolean;
   stickerSize: StickerSize;
   stickerSimilarityThreshold: number;
   /** 整个聊天请求的总超时（秒）。30-1800，默认 300。 */
   chatRequestTimeoutSec: number;
-  /** CITA 结构化输出重试总预算（秒）。4-30，默认 8。 */
-  citaRepairBudgetSec: number;
   rerankerMode: "standard" | "none";
   embeddingModel: "bgem3";
   /**
@@ -97,21 +98,18 @@ export interface ModelSettings {
    * 留空 = 首次请求自动探测；填写 = 作为严格声明并与实际响应校验。
    */
   embeddingDimensions?: number;
-  // 视觉模型配置（可选）。undefined 或未启用 = 不支持看图，read_image 诚实拒绝。
-  vision?: VisionModelConfig;
-  /** 主模型是否多模态。true 时图片直发主模型（direct），vision 配置保留但忽略。 */
+  /**
+   * 当前主模型是否能直发图片：由 resolveInputModalities 依据当前厂商的显式声明 / 内置目录得出，不是独立开关。
+   * 写盘时同步刷新；读取旧存档里的同名字段会被忽略。
+   */
   multimodal: boolean;
+  /** 当前厂商的输入模态声明镜像（真值在 perProvider[provider]）；见 ProviderProfile.inputModalities。 */
+  inputModalities?: InputModality[];
+  inputModalitiesSource?: InputModalitySource;
   thinkingOverride?: -1 | 0 | 1;
   disableMaxToken?: boolean;
   /** 上下文窗口大小（Token）。默认 256000，来自 DEFAULT_CONTEXT_WINDOW_TOKENS。唯一定义点。 */
   contextWindowTokens: number;
-}
-
-/** 视觉模型配置（独立视觉模型，非多模态直发场景）。全空 = 未启用。 */
-export interface VisionModelConfig {
-  baseUrl: string;
-  apiKey: string;
-  model: string;
 }
 
 /** 当前配置文件 schema 版本。 */
@@ -142,15 +140,13 @@ const DEFAULT_MODEL_SETTINGS: ModelSettings = {
   apiKey: "",
   explicitTransport: "anthropic",
   perProvider: {},
-  runtimeSync: "off",
   stickerEnabled: false,
   stickerSize: "standard",
   stickerSimilarityThreshold: 0.55,
   chatRequestTimeoutSec: 300,
-  citaRepairBudgetSec: 8,
   rerankerMode: "standard",
   embeddingModel: "bgem3",
-  multimodal: true,
+  multimodal: resolveInputModalities({ provider: "MiniMax（稀宇科技）", model: "MiniMax-M3" }).image,
   contextWindowTokens: DEFAULT_CONTEXT_WINDOW_TOKENS,
 };
 
@@ -183,22 +179,9 @@ function normalizeProviderProfile(
     contextWindowTokens: typeof rawContextWindow === "number" && Number.isFinite(rawContextWindow) && rawContextWindow >= 4096
       ? Math.round(rawContextWindow)
       : undefined,
-    // 仅接受显式 true/false；undefined/其他值 → undefined（回退全局）
-    multimodal: (input as { multimodal?: unknown })?.multimodal === true || (input as { multimodal?: unknown })?.multimodal === false
-      ? (input as { multimodal: boolean }).multimodal
-      : undefined,
+    // 输入模态声明：非法 → 不写入（回退内置目录）；见 normalizeDeclaredInputModalities
+    ...normalizeDeclaredInputModalities(input?.inputModalities, input?.inputModalitiesSource),
   };
-}
-
-/** 清洗视觉模型配置。三字段全空 = 未启用，返回 undefined。 */
-function normalizeVisionConfig(input: Partial<VisionModelConfig> | undefined): VisionModelConfig | undefined {
-  if (!input || typeof input !== "object") return undefined;
-  const baseUrl = typeof input.baseUrl === "string" ? input.baseUrl.trim() : "";
-  const apiKey = typeof input.apiKey === "string" ? input.apiKey.trim() : "";
-  const model = typeof input.model === "string" ? input.model.trim() : "";
-  // 三项全空 = 未启用
-  if (!baseUrl && !apiKey && !model) return undefined;
-  return { baseUrl, apiKey, model };
 }
 
 export function normalizeModelSettings(input: Partial<ModelSettings> | null | undefined): ModelSettings {
@@ -230,7 +213,13 @@ export function normalizeModelSettings(input: Partial<ModelSettings> | null | un
   // 顶层镜像：用 perProvider[provider] 展开
   const profile = perProvider[provider];
 
-  const multimodal = input?.multimodal !== false;
+  // 图片能力：显式声明 > 内置目录 > 仅文本，唯一入口是 resolveInputModalities；旧存档里的 multimodal / vision 字段直接忽略。
+  const multimodal = resolveInputModalities({
+    provider,
+    model: profile.model,
+    declared: profile.inputModalities,
+    declaredSource: profile.inputModalitiesSource,
+  }).image;
 
   const modelProfiles: SavedModelProfile[] = Array.isArray(input?.modelProfiles)
     ? input.modelProfiles.filter((item): item is SavedModelProfile => Boolean(item && typeof item === "object" && typeof item.id === "string" && typeof item.provider === "string"))
@@ -248,12 +237,13 @@ export function normalizeModelSettings(input: Partial<ModelSettings> | null | un
     explicitTransport: profile.explicitTransport,
     reasoning: profile.reasoning,  // 顶层镜像：与 explicitTransport 同源（perProvider[currentProvider].reasoning）
     reasoningLevels: profile.reasoningLevels,
+    inputModalities: profile.inputModalities,
+    inputModalitiesSource: profile.inputModalitiesSource,
     perProvider,
     modelProfiles,
     defaultModelProfileId: typeof input?.defaultModelProfileId === "string" ? input.defaultModelProfileId : modelProfiles[0]?.id,
     agentModelProfiles: normalizeAgentModelProfiles(input?.agentModelProfiles),
     specialistModelProfiles: normalizeAgentModelProfiles(input?.specialistModelProfiles),
-    runtimeSync: input?.runtimeSync === "llm" ? "llm" : input?.runtimeSync === "local" ? "local" : "off",
     stickerEnabled: input?.stickerEnabled === true,
     stickerSize: input?.stickerSize === "small" || input?.stickerSize === "large" ? input.stickerSize : "standard",
     stickerSimilarityThreshold: typeof input?.stickerSimilarityThreshold === "number"
@@ -263,9 +253,6 @@ export function normalizeModelSettings(input: Partial<ModelSettings> | null | un
       && Number.isFinite(input.chatRequestTimeoutSec)
       ? Math.max(30, Math.min(1800, Math.round(input.chatRequestTimeoutSec)))
       : 300,
-    citaRepairBudgetSec: typeof input?.citaRepairBudgetSec === "number" && Number.isFinite(input.citaRepairBudgetSec)
-      ? Math.max(4, Math.min(30, Math.round(input.citaRepairBudgetSec)))
-      : 8,
     rerankerMode: input?.rerankerMode === "none" ? "none" : "standard",
     embeddingModel: "bgem3",
     embeddingDimensions: typeof input?.embeddingDimensions === "number"
@@ -273,7 +260,6 @@ export function normalizeModelSettings(input: Partial<ModelSettings> | null | un
       && input.embeddingDimensions > 0
       ? Math.round(input.embeddingDimensions)
       : undefined,
-    vision: normalizeVisionConfig(input?.vision),
     multimodal,
     thinkingOverride: input?.thinkingOverride,
     disableMaxToken: input?.disableMaxToken,
@@ -319,7 +305,15 @@ export function resolveModelSettingsProfile(settings: ModelSettings, id?: string
     reasoningLevels: profile.reasoningLevels,
     // 档案级字段覆盖镜像；未定义时回退全局值（老档案 = 现行为）
     contextWindowTokens: profile.contextWindowTokens ?? settings.contextWindowTokens,
-    multimodal: profile.multimodal ?? settings.multimodal,
+    // 输入模态以档案为准（不回落到顶层镜像，镜像只属于当前厂商的那一份）
+    inputModalities: profile.inputModalities,
+    inputModalitiesSource: profile.inputModalitiesSource,
+    multimodal: resolveInputModalities({
+      provider: profile.provider,
+      model: profile.model,
+      declared: profile.inputModalities,
+      declaredSource: profile.inputModalitiesSource,
+    }).image,
   };
 }
 
@@ -349,7 +343,13 @@ export function setDefaultModelProfile(id: string): ModelSettings {
   const existing = loadModelSettings();
   const profile = listSavedModelProfiles(existing).find((item) => item.id === id);
   if (!profile) throw new Error("模型不存在");
-  return saveModelSettings({ ...profile, defaultModelProfileId: id });
+  // 输入模态显式传入（即便未声明也传 undefined），让顶层镜像随默认档案一起更新，不残留上一个档案的声明
+  return saveModelSettings({
+    ...profile,
+    inputModalities: profile.inputModalities,
+    inputModalitiesSource: profile.inputModalitiesSource,
+    defaultModelProfileId: id,
+  });
 }
 
 let modelSettingsCache: ModelSettings | null = null;
@@ -430,6 +430,20 @@ export function loadModelSettings(): ModelSettings {
 }
 
 /**
+ * 输入模态的折叠：payload 带了 inputModalities 键（哪怕值为 undefined = 清除声明）才覆盖；
+ * 没带这个键时保留当前厂商镜像，避免无关的保存（如全局选项）把声明抹掉。
+ */
+function foldInputModalities(
+  settings: Partial<ModelSettings>,
+  incoming: ProviderProfile,
+): Pick<ProviderProfile, "inputModalities" | "inputModalitiesSource"> {
+  if (!Object.prototype.hasOwnProperty.call(settings, "inputModalities")) {
+    return { inputModalities: incoming.inputModalities, inputModalitiesSource: incoming.inputModalitiesSource };
+  }
+  return normalizeDeclaredInputModalities(settings.inputModalities, settings.inputModalitiesSource);
+}
+
+/**
  * 保存逻辑：
  *   - 渲染端通过顶层 baseUrl/model/apiKey 写入当前模型视图。
  *   - 写盘前先把"顶层那三件套"折叠回 perProvider[provider]，保证真值落到字典里。
@@ -489,6 +503,7 @@ export function saveModelSettings(settings: Partial<ModelSettings>): ModelSettin
     explicitTransport: incomingExplicitTransport,
     reasoning: foldedReasoning,
     reasoningLevels: incomingProfile.reasoningLevels,
+    ...foldInputModalities(settings, incomingProfile),
   };
 
   merged.provider = currentProvider;
@@ -508,12 +523,12 @@ export function saveModelSettings(settings: Partial<ModelSettings>): ModelSettin
 const PROVIDER_SHORT_NAMES: Record<string, string> = {
   "MiniMax（稀宇科技）": "MiniMax",
   "DeepSeek（深度求索）": "DeepSeek",
-  "豆包（火山方舟）": "豆包",
   "GLM（智谱）": "GLM",
   "Kimi（月之暗面）": "Kimi",
   "Qwen（通义千问）": "Qwen",
   "ChatGPT（OpenAI）": "ChatGPT",
   "Claude（Anthropic）": "Claude",
+  "OpenRouter": "OpenRouter",
 };
 
 export function getPublicModelConfig(settings = loadModelSettings()): PublicModelConfig {
@@ -524,7 +539,6 @@ export function getPublicModelConfig(settings = loadModelSettings()): PublicMode
     shortName: PROVIDER_SHORT_NAMES[settings.provider] ?? settings.provider,
     model: settings.model,
     connected: modelConnections.isConnected(getDefaultModelProfile(settings)),
-    runtimeSync: settings.runtimeSync,
     stickerSize: settings.stickerSize,
     rerankerMode: settings.rerankerMode,
   };

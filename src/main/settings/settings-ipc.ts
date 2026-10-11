@@ -10,14 +10,12 @@ import { createIpcScope, type IpcScope } from "../application/ipc-scope";
 import { DEFAULT_UI_FONT, isSupportedFontFileName } from "../../shared/ui-font";
 import type { GeneralSettings } from "./general-settings";
 import type { TimeoutSettings } from "../../shared/timeout-types";
-import { ensureCustomStylePrompt } from "../style-prompt";
 import type { WindowManager } from "../windows/window-manager";
 import {
   reactChatWindow,
   sidebarWindow,
   settingsWindow,
 } from "../windows/window-state";
-import type { RuntimeStateService } from "../orchestrator/runtime-state-service";
 import type { EmbeddingIndexService } from "../services/embedding/embedding-index-service";
 import { initReranker, getRerankerInstallStatus } from "../rag/reranker";
 import { switchEmbeddingModel } from "../rag";
@@ -28,6 +26,8 @@ import { normalizeModelSettings, getPublicModelConfig, listSavedModelProfiles, s
 import { getAgentRoutingView, updateAgentRouting } from "./agent-model-routing";
 import type { ModelSettings } from "./model-settings";
 import { assertModelSettingsReadable } from "./model-settings";
+import { resolveInputModalities } from "../orchestrator/vendors/multimodal";
+import { normalizeDeclaredInputModalities } from "../../shared/input-modalities";
 import { assertGeneralSettingsReadable } from "./settings-facade";
 import { getTimeoutSettings, saveTimeoutSettings } from "../timeout-manager";
 import type { syncVolcanoSearchMcp } from "./general-settings-lifecycle";
@@ -39,7 +39,6 @@ export interface SettingsIpcDependencies {
   saveGeneralSettings: (settings: Partial<GeneralSettings>) => GeneralSettings;
   getModelSettings: () => ModelSettings;
   saveModelSettings: (settings: Partial<ModelSettings>) => ModelSettings;
-  runtimeStateService: RuntimeStateService;
   proactiveLifecycle: { getProactiveChatService: () => { invalidate: () => void } | null };
   reconcileUserMemoryIndex: () => Promise<void>;
   embeddingIndexService: EmbeddingIndexService;
@@ -59,8 +58,18 @@ function getCustomFontDisplayName(filePath: string): string {
   );
 }
 
-const VISION_TEST_IMAGE_BASE64 =
-  "iVBORw0KGgoAAAANSUhEUgAAACAAAAAgCAIAAAD8GO2jAAAAJ0lEQVR42u3NsQkAAAjAsP7/tF7hIASyp6lTCQQCgUAgEAgEgi/BAjLD/C5w/SM9AAAAAElFTkSuQmCC";
+/** 档案列表对外视图：图片能力由显式声明 / 内置目录判定（不存进档案），这里补上结果与依据供 UI 展示。 */
+function listProfileViews(settings: ModelSettings) {
+  return listSavedModelProfiles(settings).map((profile) => {
+    const judged = resolveInputModalities({
+      provider: profile.provider,
+      model: profile.model,
+      declared: profile.inputModalities,
+      declaredSource: profile.inputModalitiesSource,
+    });
+    return { ...profile, multimodal: judged.image, multimodalSource: judged.source };
+  });
+}
 
 export function registerSettingsIpc(deps: SettingsIpcDependencies): () => void {
   const ipc = deps.ipc ?? createIpcScope();
@@ -69,7 +78,6 @@ export function registerSettingsIpc(deps: SettingsIpcDependencies): () => void {
     saveGeneralSettings,
     getModelSettings,
     saveModelSettings,
-    runtimeStateService,
     proactiveLifecycle,
     reconcileUserMemoryIndex,
     embeddingIndexService,
@@ -92,10 +100,6 @@ export function registerSettingsIpc(deps: SettingsIpcDependencies): () => void {
     broadcastToAuxWindows(IPC.MODEL_CONFIG_CHANGED, getPublicModelConfig(settings));
   }
 
-  function broadcastRuntimeStateChanged(): void {
-    broadcastToAuxWindows(IPC.RUNTIME_STATE_CHANGED, runtimeStateService.getState());
-  }
-
   ipc.handle(IPC.SETTINGS_GET_CONFIG, () => {
     assertModelSettingsReadable();
     return getModelSettings();
@@ -103,7 +107,7 @@ export function registerSettingsIpc(deps: SettingsIpcDependencies): () => void {
   ipc.handle(IPC.SETTINGS_MODEL_PROFILES_LIST, () => {
     assertModelSettingsReadable();
     const settings = getModelSettings();
-    return { profiles: listSavedModelProfiles(settings), defaultModelProfileId: settings.defaultModelProfileId };
+    return { profiles: listProfileViews(settings), defaultModelProfileId: settings.defaultModelProfileId };
   });
   ipc.handle(IPC.SETTINGS_AGENT_ROUTING_GET, () => {
     assertModelSettingsReadable();
@@ -119,7 +123,7 @@ export function registerSettingsIpc(deps: SettingsIpcDependencies): () => void {
     if (saved.added && saved.settings.defaultModelProfileId === saved.settings.modelProfiles?.at(-1)?.id) {
       broadcastModelConfigChanged(saved.settings);
     }
-    return { added: saved.added, profiles: listSavedModelProfiles(saved.settings), defaultModelProfileId: saved.settings.defaultModelProfileId };
+    return { added: saved.added, profiles: listProfileViews(saved.settings), defaultModelProfileId: saved.settings.defaultModelProfileId };
   });
   ipc.handle(IPC.SETTINGS_MODEL_PROFILE_DELETE, (_event, id: unknown) => {
     if (typeof id !== "string") return null;
@@ -128,13 +132,13 @@ export function registerSettingsIpc(deps: SettingsIpcDependencies): () => void {
     const defaultModelProfileId = settings.defaultModelProfileId === id ? profiles[0]?.id : settings.defaultModelProfileId;
     const saved = saveModelSettings({ modelProfiles: profiles, defaultModelProfileId });
     broadcastModelConfigChanged(saved);
-    return { profiles: listSavedModelProfiles(saved), defaultModelProfileId: saved.defaultModelProfileId };
+    return { profiles: listProfileViews(saved), defaultModelProfileId: saved.defaultModelProfileId };
   });
   ipc.handle(IPC.SETTINGS_MODEL_PROFILE_SET_DEFAULT, (_event, id: unknown) => {
     if (typeof id !== "string") return null;
     const saved = setDefaultModelProfile(id);
     broadcastModelConfigChanged(saved);
-    return { profiles: listSavedModelProfiles(saved), defaultModelProfileId: saved.defaultModelProfileId };
+    return { profiles: listProfileViews(saved), defaultModelProfileId: saved.defaultModelProfileId };
   });
 
   ipc.handle(IPC.SETTINGS_GET_GENERAL, () => {
@@ -151,10 +155,6 @@ export function registerSettingsIpc(deps: SettingsIpcDependencies): () => void {
   ipc.handle(IPC.UI_COLORS_GET, () => getGeneralSettings().uiColors);
 
   ipc.handle(IPC.UI_THEME_GET, () => getGeneralSettings().uiTheme);
-
-  ipc.handle(IPC.UI_THEME_RADIUS_GET, () => getGeneralSettings().uiThemeRadius);
-
-  ipc.handle(IPC.UI_WINDOW_CORNER_RADIUS_GET, () => getGeneralSettings().windowCornerRadius);
 
   ipc.handle(IPC.UI_FONT_GET, () => getGeneralSettings().uiFont);
 
@@ -210,12 +210,6 @@ export function registerSettingsIpc(deps: SettingsIpcDependencies): () => void {
     return saved;
   });
 
-  ipc.handle(IPC.SETTINGS_OPEN_CUSTOM_STYLE_PROMPT, async () => {
-    const filePath = ensureCustomStylePrompt();
-    await shell.showItemInFolder(filePath);
-    return { ok: true, filePath };
-  });
-
   ipc.on(IPC.SETTINGS_OPEN_SIDEBAR, () => {
     // Retired standalone status window: legacy messages are harmless.
   });
@@ -242,8 +236,6 @@ export function registerSettingsIpc(deps: SettingsIpcDependencies): () => void {
     assertModelSettingsReadable();
     return getPublicModelConfig();
   });
-
-  ipc.handle(IPC.RUNTIME_STATE_GET, () => runtimeStateService.getState());
 
   ipc.handle(IPC.SETTINGS_SAVE_CONFIG, (_event, settings: Partial<ModelSettings>) => {
     const saved = saveModelSettings(settings);
@@ -285,36 +277,18 @@ export function registerSettingsIpc(deps: SettingsIpcDependencies): () => void {
       explicitTransport: input.explicitTransport === "openai" || input.explicitTransport === "anthropic" || input.explicitTransport === "responses" ? input.explicitTransport : undefined,
     });
   });
-
-  /**
-   * 测试视觉模型连通性。
-   * 用一张 32x32 纯红 PNG（约 100 字节 base64）做测试图——纯色位图所有视觉模型都能识别，
-   * 比 SVG 兼容性好（SVG 是矢量，部分模型不支持）。
-   * 32x32 是折中：足够小保持 payload 轻，又满足千问等厂商对图片长宽 > 10 像素的限制。
-   * 验连通性（HTTP 2xx + 有内容返回）而非对答案——模型可能只说"一张红色图片"也算成功。
-   */
-  ipc.handle(
-    IPC.SETTINGS_TEST_VISION,
-    async (_event, cfg: { baseUrl: string; apiKey: string; model: string }) => {
-      const start = Date.now();
-      console.log("[Firefly] test vision: model=" + cfg.model + " url=" + cfg.baseUrl);
-      try {
-        const { captionImage } = await import("../orchestrator/vision-captioner");
-        const result = await captionImage(
-          { base64: VISION_TEST_IMAGE_BASE64, mime: "image/png" },
-          "这张图是什么颜色？用一个词回答。",
-          { baseUrl: cfg.baseUrl, apiKey: cfg.apiKey, model: cfg.model },
-        );
-        const latency = Date.now() - start;
-        if (result.startsWith("[错误")) {
-          return { ok: false, latency, error: result };
-        }
-        return { ok: true, latency, sample: result.slice(0, 80) };
-      } catch (e) {
-        return { ok: false, latency: Date.now() - start, error: e instanceof Error ? e.message : String(e) };
-      }
-    },
-  );
+  // 输入类型的“当前生效结果”：编辑器按草稿实时显示，与档案列表共用同一判定入口 resolveInputModalities。
+  ipc.handle(IPC.SETTINGS_RESOLVE_INPUT_MODALITIES, (event: IpcMainInvokeEvent, input: unknown) => {
+    assertSettingsSender(event);
+    const raw = input && typeof input === "object" ? input as Record<string, unknown> : {};
+    const declared = normalizeDeclaredInputModalities(raw.inputModalities, raw.inputModalitiesSource);
+    return resolveInputModalities({
+      provider: typeof raw.provider === "string" ? raw.provider : "",
+      model: typeof raw.model === "string" ? raw.model : "",
+      declared: declared.inputModalities,
+      declaredSource: declared.inputModalitiesSource,
+    });
+  });
 
   ipc.handle(IPC.EMBEDDING_SET_MODEL, async (_event, modelKey: string) => {
     console.log("[Firefly] embedding model switch requested:", modelKey);
@@ -362,13 +336,5 @@ export function registerSettingsIpc(deps: SettingsIpcDependencies): () => void {
     }
   });
 
-  ipc.on(IPC.SETTINGS_PREVIEW_RUNTIME_SYNC, (_event, value: "off" | "local" | "llm") => {
-    const current = getModelSettings();
-    const preview = normalizeModelSettings({
-      ...current,
-      runtimeSync: value === "llm" ? "llm" : value === "local" ? "local" : "off",
-    });
-    broadcastModelConfigChanged(preview);
-  });
   return unsubscribeConnections;
 }

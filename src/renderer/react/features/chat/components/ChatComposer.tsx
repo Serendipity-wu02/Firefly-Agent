@@ -6,8 +6,8 @@ import { useTranslation } from "../../../i18n";
 import { resolveAsset } from "../../../../../shared/renderer-base";
 import type { ContextUsageSnapshot } from "../../../../../shared/context-usage";
 import { ContextUsageRing } from "./ContextUsageRing";
+import { TokenUsageBar } from "./TokenUsageBar";
 import "./ModelEffortControl.css";
-import { StyleControl } from "./StyleControl";
 import { PermissionControl } from "./PermissionControl";
 import { PlanModeToggle } from "./PlanModeToggle";
 import { ModelEffortControl } from "./ModelEffortControl";
@@ -270,7 +270,6 @@ export function ChatComposer({
   const supportsWorkFiles = ["work", "code"].includes(mode);
   const supportsPermission = supportsWorkFiles;
   const supportsPlanToggle = mode === "code";
-  const supportsStyle = mode === "chat";
   const supportsStickers = mode !== "code";
   const requiresWorkspace = supportsWorkFiles;
   const placeholder = mode === "chat"
@@ -457,7 +456,6 @@ export function ChatComposer({
             {supportsPlanToggle && conversationId && (
               <PlanModeToggle conversationId={conversationId} workspaceRoot={workspaceRoot} />
             )}
-            {supportsStyle && <StyleControl />}
           </div>
         }
         />
@@ -470,6 +468,7 @@ export function ChatComposer({
           </div>
         )}
       </div>
+      <TokenUsageBar busy={modelBusy} />
     </div>
   );
 }

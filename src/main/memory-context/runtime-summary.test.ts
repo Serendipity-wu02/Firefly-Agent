@@ -159,7 +159,7 @@ it("production runtime default capture keeps one estimated summary across two co
  const modes=createMemorySessionModes();modes.bind("session-a","persistent");
  const authority=createMemoryRunAuthority({actors:f.actorAuthority,sessionModes:modes,resolveProfile:()=>({id:"saved-profile",revision:1}),resolveEntry:()=>({revision:1}),canRead:()=>true});
  const config:VendorConfig={provider:"OpenRouter",baseUrl:"https://openrouter.ai/api/v1",model:"openai/gpt-6-luna",apiKey:"synthetic-secret",explicitTransport:"openai"};
- const capability:ProviderCapability={id:"openrouter",displayName:"OpenRouter",baseUrl:config.baseUrl,transport:"openai",authStyle:"bearer",defaultModel:config.model,supportsTools:true,supportsThinking:true,thinkingField:"reasoning_content",cacheStrategy:"none",testStrategy:"text+tool",supportsVision:true};
+ const capability:ProviderCapability={id:"openrouter",displayName:"OpenRouter",baseUrl:config.baseUrl,transport:"openai",authStyle:"bearer",defaultModel:config.model,supportsTools:true,supportsThinking:true,thinkingField:"reasoning_content",cacheStrategy:"none",testStrategy:"text+tool"};
  const adapter=new OpenAICompatAdapter("openrouter",capability),baseCounter=resolveMemoryCounter(config,1),sent:string[]=[],events:string[]=[],counted:string[]=[];
  const counter={capability:baseCounter.capability,count:async(...args:Parameters<typeof baseCounter.count>)=>{counted.push(JSON.stringify(args[0].body));return baseCounter.count(...args)}};
  vi.stubGlobal("fetch",async(source:RequestInfo|URL,init?:RequestInit)=>{

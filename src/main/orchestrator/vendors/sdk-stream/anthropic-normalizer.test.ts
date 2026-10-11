@@ -16,7 +16,6 @@ const capability: ProviderCapability = {
   thinkingField: "thinking",
   cacheStrategy: "cache_control",
   testStrategy: "text",
-  supportsVision: true,
 };
 
 describe("AnthropicEventNormalizer", () => {

@@ -16,7 +16,6 @@ import type {
 } from "./vendors/types";
 import { streamChatWithSdk } from "./vendors/sdk-stream/runtime";
 import type { UnifiedStreamDelta } from "./vendors/sdk-stream/types";
-import type { ApprovedStyleSampling } from "./vendors/style-sampling";
 import { getTimeoutSettings } from "../timeout-manager";
 import { compressConversation } from "./context-manager";
 import { buildContextUsageSnapshot } from "./context-usage";
@@ -33,7 +32,6 @@ export interface ChatLoopOptions {
   soulSystemBaseContent: string;
   /** 每次请求才注入的本轮上下文，不能写回对话历史或稳定前缀。 */
   runtimeContext?: string;
-  soulSampling?: ApprovedStyleSampling;
   timeoutMs: number;
   imageCaptionFallback?: () => Promise<ChatMessage[]>;
   onEvent?: (event: AgentLoopEvent) => void;
@@ -170,7 +168,6 @@ export async function runChatLoop(options: ChatLoopOptions): Promise<AgentLoopRe
       mode: options.mode,
     }, reqMessages),
     stream,
-    ...(options.soulSampling ?? {}),
   });
 
   const invokeNonStreaming = async (messages: ChatMessage[]): Promise<ChatResponse> => {

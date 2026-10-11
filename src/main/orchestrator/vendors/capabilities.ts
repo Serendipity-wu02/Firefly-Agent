@@ -19,8 +19,6 @@ export const PROVIDER_CAPABILITIES = [
     thinkingField: "thinking",
     cacheStrategy: "cache_control",
     testStrategy: "text",
-    // M3 原生多模态（image_url / video_url）
-    supportsVision: true,
     // 视觉仍走 OpenAI 兼容入口。
     visionBaseUrl: "https://api.minimaxi.com/v1",
     // 三协议全支持（协议矩阵 2026-08-21）
@@ -39,26 +37,7 @@ export const PROVIDER_CAPABILITIES = [
     thinkingField: "reasoning_content",
     cacheStrategy: "auto",
     testStrategy: "text",
-    // V4.1 Flash（2026-09-10）原生多模态视觉理解；v4-pro 不支持视觉但官方已宣布
-    // 2026-09-14 起全部路由到 V4.1 Flash
-    supportsVision: true,
     // 三格式原生全支持（官方文档）
-    supportedTransports: ["openai", "anthropic", "responses"],
-  },
-  {
-    id: "doubao",
-    displayName: "豆包（火山方舟）",
-    transport: "openai",
-    baseUrl: "https://ark.cn-beijing.volces.com/api/v3",
-    authStyle: "bearer",
-    defaultModel: "doubao-seed-2-1-pro-260628",
-    supportsTools: true,
-    supportsThinking: true,
-    thinkingField: "reasoning_content",
-    cacheStrategy: "none",
-    testStrategy: "text",
-    supportsVision: true,
-    // 火山方舟三格式全兼容（官方文档）
     supportedTransports: ["openai", "anthropic", "responses"],
   },
   {
@@ -73,8 +52,6 @@ export const PROVIDER_CAPABILITIES = [
     thinkingField: "reasoning_content",
     cacheStrategy: "auto",
     testStrategy: "text",
-    // 视觉版是 glm-5v-turbo，默认 glm-5.2 不支持
-    supportsVision: false,
     // OpenAI 兼容 + Anthropic 兼容（协议矩阵 2026-08-21，用户确认）
     supportedTransports: ["openai", "anthropic"],
   },
@@ -91,8 +68,6 @@ export const PROVIDER_CAPABILITIES = [
     thinkingField: "thinking",
     cacheStrategy: "prompt_cache_key",
     testStrategy: "text",
-    // k2.7-code 支持 image_url / video_url content block
-    supportsVision: true,
     // 官方仅兼容 Chat Completions（协议矩阵 2026-08-21）
     supportedTransports: ["openai"],
   },
@@ -108,8 +83,6 @@ export const PROVIDER_CAPABILITIES = [
     thinkingField: "reasoning_content",
     cacheStrategy: "auto",
     testStrategy: "text",
-    // 视觉版是 qwen-vl 系列，默认 qwen-max 不支持
-    supportsVision: false,
     // 官方 OpenAI 兼容；Responses 由阿里云百炼中转（协议矩阵 2026-08-21）
     supportedTransports: ["openai", "responses"],
   },
@@ -127,8 +100,6 @@ export const PROVIDER_CAPABILITIES = [
     thinkingField: "reasoning_content",
     cacheStrategy: "auto",
     testStrategy: "text",
-    // model 由用户填，保守 false；门控会按 supportsVision 拦截
-    supportsVision: false,
     // 双协议：Chat Completions + Responses（Responses 为官方主推）
     supportedTransports: ["openai", "responses"],
     // 端点级标记：仅 OpenAI 官方端点支持 encrypted reasoning 回放
@@ -146,8 +117,6 @@ export const PROVIDER_CAPABILITIES = [
     thinkingField: "thinking",
     cacheStrategy: "cache_control",
     testStrategy: "text",
-    // Claude 支持多模态 image content block
-    supportsVision: true,
     // 自家协议 only
     supportedTransports: ["anthropic"],
   },
@@ -165,11 +134,30 @@ export const PROVIDER_CAPABILITIES = [
     thinkingField: "reasoning_content",
     cacheStrategy: "auto",
     testStrategy: "text",
-    supportsVision: true,
     // 结构上独立：用户切主入口到 /anthropic 时视觉仍由 visionBaseUrl 决定
     visionBaseUrl: "https://api.xiaomimimo.com/v1",
     // 三格式原生全支持（协议矩阵 2026-08-21）
     supportedTransports: ["openai", "anthropic", "responses"],
+  },
+  {
+    id: "openrouter",
+    displayName: "OpenRouter",
+    // OpenAI Chat Completions 兼容；显式 transport 为 openai，不走 Responses。
+    transport: "openai",
+    baseUrl: "https://openrouter.ai/api/v1",
+    authStyle: "bearer",
+    // 聚合网关没有默认型号：型号由“获取模型列表”拉取后选择，不预置。
+    defaultModel: "",
+    supportsTools: true,
+    // 推理统一下发为请求体 reasoning.effort（规则见 shared/reasoning.ts 的 openrouter 条目）；是否真正思考取决于所选型号。
+    supportsThinking: true,
+    // 思考文本：流式在 delta.reasoning_details（sdk-stream 同时读取 delta.reasoning），非流式在 message.reasoning。
+    thinkingField: "reasoning_details",
+    // 缓存由底层型号各自决定；本地不下发 cache_control / prompt_cache_key。
+    cacheStrategy: "auto",
+    testStrategy: "text",
+    // 只登记 Chat Completions；Responses 与 Anthropic 入口不在此条目内。
+    supportedTransports: ["openai"],
   },
 ] satisfies readonly ProviderCapability[];
 
@@ -193,6 +181,5 @@ export function getCapabilityOrOpenAI(provider: string): ProviderCapability {
     thinkingField: null,
     cacheStrategy: "none",
     testStrategy: "text",
-    supportsVision: false,
   };
 }

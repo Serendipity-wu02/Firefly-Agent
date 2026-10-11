@@ -20,7 +20,14 @@ import {
   channelsQqBotSaveBtn, channelsQqBotTestBtn, channelsQqBotFeedbackEl,
   channelsContextSourceEl, channelsContextTargetEl, channelsContextBindBtn,
   channelsContextBindingsListEl, channelsContextFeedbackEl,
+  channelsOverviewSummaryEl, channelsAppStatusEl, channelsAppPairBtn,
+  channelsWechatCardEl, channelsFeishuCardEl, channelsQqCardEl, channelsQqBotCardEl,
 } from "./dom";
+import {
+  CHANNEL_CARD_IDS, type ChannelCardId, type ChannelStatusMap,
+  getAppChannelCard, pickInitiallyExpandedChannel, summarizeChannelOverview,
+} from "./view-model";
+import { t } from "../i18n";
 import { proactiveDeliverySelect } from "../general/dom";
 import { normalizeProactiveDeliveryTarget } from "../../../shared/preferences";
 import { isProactiveDeliveryTargetSelectable } from "../../../shared/proactive-delivery";
@@ -50,6 +57,47 @@ function renderChannelStatus(el: HTMLElement | null, phase: string, message?: st
     else dot.classList.add("channels-status__dot--offline");
   }
   if (text) text.textContent = message ?? (phase === "running" ? "运行中" : phase === "starting" ? "启动中" : phase === "config_missing" ? "配置缺失" : phase === "error" ? "错误" : "未启用");
+}
+
+/** 概览卡片：一句话说明已连接几个渠道 */
+function renderOverview(statuses: ChannelStatusMap): void {
+  if (!channelsOverviewSummaryEl) return;
+  const { running, total } = summarizeChannelOverview(statuses);
+  channelsOverviewSummaryEl.textContent = running === 0
+    ? t("settings.panel.channels.overviewNone")
+    : t("settings.panel.channels.overviewCount", { running, total });
+}
+
+/** 渠道卡片的展开由 <details open> 决定；这里只负责写入，不改变用户已有的手动展开状态 */
+const channelCardEls: Record<ChannelCardId, HTMLElement | null> = {
+  wechat: channelsWechatCardEl,
+  feishu: channelsFeishuCardEl,
+  qq: channelsQqCardEl,
+  qqbot: channelsQqBotCardEl,
+};
+
+function setChannelCardOpen(id: ChannelCardId, open: boolean): void {
+  const el = channelCardEls[id];
+  if (!el) return;
+  if (open) el.setAttribute("open", "");
+  else el.removeAttribute("open");
+}
+
+/** 初次加载时只展开一张「已连接或正在配对」的卡片 */
+function expandInitialChannelCard(statuses: ChannelStatusMap): void {
+  const target = pickInitiallyExpandedChannel(statuses);
+  for (const id of CHANNEL_CARD_IDS) setChannelCardOpen(id, id === target);
+}
+
+/** Firefly 手机 App 接入位：目前恒为「即将推出」，按钮保持禁用 */
+function applyAppChannelCard(): void {
+  const view = getAppChannelCard();
+  if (channelsAppStatusEl) {
+    channelsAppStatusEl.dataset.status = view.status;
+    channelsAppStatusEl.setAttribute("data-i18n", view.statusKey);
+    channelsAppStatusEl.textContent = t(view.statusKey);
+  }
+  if (channelsAppPairBtn) channelsAppPairBtn.disabled = view.pairDisabled;
 }
 
 function setFeishuFeedback(kind: "info" | "ok" | "err", msg: string): void {
@@ -261,6 +309,7 @@ export async function loadChannelsPanel(): Promise<void> {
     return;
   }
   channelsState.initialized = true;
+  applyAppChannelCard();
   // 必须在 try 之外声明：同函数内的保存处理器位于 try 之外，却要读它。
   // 原先是 try 块内的 let，导致「需要补 token」这条路径抛 ReferenceError
   // （该路径此前没有任何测试覆盖，所以一直没暴露）。
@@ -319,6 +368,8 @@ export async function loadChannelsPanel(): Promise<void> {
     renderQqDetail(status.qq);
     renderChannelStatus(channelsQqBotStatusEl, status.qqbot?.phase ?? "offline", status.qqbot?.message);
     renderQqBotDetail(status.qqbot);
+    renderOverview(status);
+    expandInitialChannelCard(status);
     // 拉一次消息日志
     void refreshChannelsLog();
     void refreshContextBindings();
@@ -392,6 +443,7 @@ export async function loadChannelsPanel(): Promise<void> {
     renderQqDetail(s.qq);
     renderChannelStatus(channelsQqBotStatusEl, s.qqbot?.phase ?? "offline", s.qqbot?.message);
     renderQqBotDetail(s.qqbot);
+    renderOverview(s);
   });
 
   // ===== 飞书交互（长连接版） =====
@@ -449,6 +501,8 @@ export async function loadChannelsPanel(): Promise<void> {
   const channelsWechatQrBackdrop = document.getElementById("channels-wechat-qr-backdrop");
 
   function showWechatQr(dataUrl: string): void {
+    // 二维码弹层位于微信卡片内部：卡片收起时弹层不可见，所以扫码时必须先展开
+    setChannelCardOpen("wechat", true);
     if (channelsWechatQrImgEl) {
       channelsWechatQrImgEl.src = dataUrl;
       channelsWechatQrImgEl.classList.remove("is-empty");

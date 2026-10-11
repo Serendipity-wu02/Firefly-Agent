@@ -581,7 +581,7 @@ describe("agui-bridge sticker event ordering", () => {
     if (!handler) throw new Error("AGUI_RUN handler was not registered");
     await handler(
       { sender },
-      { messages: [{ role: "user", content: "累了" }], sessionId: "chat-sticker", styleId: "default" },
+      { messages: [{ role: "user", content: "累了" }], sessionId: "chat-sticker" },
     );
     await new Promise((resolve) => setTimeout(resolve, 0));
 
@@ -589,7 +589,7 @@ describe("agui-bridge sticker event ordering", () => {
     expect(eventTypes).toEqual(["RUN_STARTED", "firefly.sticker", "RUN_FINISHED"]);
   });
 
-  it("uses the Chat session mode while preserving renderer styleId", async () => {
+  it("uses the Chat session mode for the run", async () => {
     vi.resetModules();
     mocks.handlers.clear();
     mocks.getSession.mockReturnValue({ id: "chat-style", mode: "chat" });
@@ -618,13 +618,11 @@ describe("agui-bridge sticker event ordering", () => {
       {
         messages: [{ role: "user", content: "hi" }],
         sessionId: "chat-style",
-        styleId: "lively",
         executionMode: "work",
       },
     );
 
     expect(buildOptions).toHaveBeenCalledWith(expect.objectContaining({
-      styleId: "lively",
       executionMode: "chat",
     }));
   });

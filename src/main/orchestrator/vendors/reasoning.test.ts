@@ -354,3 +354,76 @@ describe("applyReasoningPreference — 档案声明的无档位开关（OpenAI �
     expect(off).not.toEqual(on);
   });
 });
+
+// ── OpenRouter 统一写法：reasoning: { effort }，不是顶层 reasoning_effort ──
+
+const openRouterEffortCap: ReasoningCapability = {
+  control: "effort",
+  supportedEfforts: ["low", "medium", "high", "max"],
+  defaultEffort: "medium",
+  requestStyle: "openrouter-reasoning",
+  supportsDisable: true,
+};
+
+describe("applyReasoningPreference — openrouter-reasoning（reasoning.effort 写法）", () => {
+  test("on + 档位 → reasoning: { effort }，不写 reasoning_effort", () => {
+    const out = applyReasoningPreference({}, { mode: "on", effort: "high" }, openRouterEffortCap, ctx);
+    expect(out).toEqual({ reasoning: { effort: "high" } });
+    expect(out).not.toHaveProperty("reasoning_effort");
+  });
+
+  test("on + max（内部最高档）→ 线上 xhigh（OpenRouter 线上没有同名 max 映射）", () => {
+    expect(applyReasoningPreference({}, { mode: "on", effort: "max" }, openRouterEffortCap, ctx))
+      .toEqual({ reasoning: { effort: "xhigh" } });
+  });
+
+  test("on 无档位 → 退回 defaultEffort（medium）", () => {
+    expect(applyReasoningPreference({}, { mode: "on" }, openRouterEffortCap, ctx))
+      .toEqual({ reasoning: { effort: "medium" } });
+  });
+
+  test("off + supportsDisable=true → reasoning: { effort: 'none' }", () => {
+    expect(applyReasoningPreference({}, { mode: "off" }, openRouterEffortCap, ctx))
+      .toEqual({ reasoning: { effort: "none" } });
+  });
+
+  test("off + supportsDisable=false → 折叠为 on，不发 none", () => {
+    const cap: ReasoningCapability = { ...openRouterEffortCap, supportsDisable: false };
+    expect(applyReasoningPreference({}, { mode: "off" }, cap, ctx))
+      .toEqual({ reasoning: { effort: "medium" } });
+  });
+
+  test("auto → 不增加任何字段", () => {
+    expect(applyReasoningPreference({}, { mode: "auto" }, openRouterEffortCap, ctx)).toEqual({});
+  });
+
+  test("保留入参其它字段，且不修改入参", () => {
+    const body = { model: "openai/gpt-5.6", messages: [] as unknown[] };
+    const out = applyReasoningPreference(body, { mode: "on", effort: "low" }, openRouterEffortCap, ctx);
+    expect(out).toEqual({ model: "openai/gpt-5.6", messages: [], reasoning: { effort: "low" } });
+    expect(body).toEqual({ model: "openai/gpt-5.6", messages: [] });
+  });
+
+  test("toggle（档案只声明可关闭）：开 → 不发字段；关 → reasoning: { effort: 'none' }", () => {
+    const cap: ReasoningCapability = { control: "toggle", requestStyle: "openrouter-reasoning", supportsDisable: true };
+    expect(applyReasoningPreference({}, { mode: "on" }, cap, ctx)).toEqual({});
+    expect(applyReasoningPreference({}, { mode: "off" }, cap, ctx)).toEqual({ reasoning: { effort: "none" } });
+  });
+
+  test("toggle-effort + openrouter-reasoning：开带档位，关 → effort none", () => {
+    const cap: ReasoningCapability = {
+      control: "toggle-effort",
+      supportedEfforts: ["low", "high"],
+      defaultEffort: "high",
+      requestStyle: "openrouter-reasoning",
+      supportsDisable: true,
+    };
+    expect(applyReasoningPreference({}, { mode: "on", effort: "low" }, cap, ctx)).toEqual({ reasoning: { effort: "low" } });
+    expect(applyReasoningPreference({}, { mode: "off" }, cap, ctx)).toEqual({ reasoning: { effort: "none" } });
+  });
+
+  test("fixed-on + openrouter-reasoning → 不注入任何字段", () => {
+    const cap: ReasoningCapability = { control: "fixed-on", requestStyle: "openrouter-reasoning", supportsDisable: false };
+    expect(applyReasoningPreference({}, { mode: "on" }, cap, ctx)).toEqual({});
+  });
+});

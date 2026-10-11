@@ -197,10 +197,7 @@ export function installFakeBridges(options: FakeBridgeOptions): FakeBridgeRuntim
 
   // ── 其余桥：最小可用桩（harness 不触发这些交互路径，挂载期调用需安全返回） ──
   const fakeChat = {
-    getGeneralSettings: async () => ({
-
-      currentStyleId: undefined,
-    }),
+    getGeneralSettings: async () => ({}),
     getEnabledStickers: async () => [],
     // 附件预览与图片标记在 harness 中不触发，但保留安全空实现防止调用崩溃
     getImagePreview: async () => ({ ok: false }),

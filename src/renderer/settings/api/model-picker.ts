@@ -1,8 +1,12 @@
 // 从厂商拉到型号后的候选列表：可搜索，点一项填进"模型名"。
 // 厂商的型号数量从几个到几百个不等（网关、OpenRouter），datalist 只能靠方向键翻，所以单独做一个列表。
+import type { InputModality } from "../../../shared/input-modalities";
+
 export interface PickerModel {
   id: string;
   name?: string;
+  /** 厂商声明的输入模态；picker 本身不展示，选中时由设置页读取（见 input-modalities.ts）。 */
+  inputModalities?: readonly InputModality[];
 }
 
 /** 按 id 和展示名做不区分大小写的包含匹配；空查询返回全部。 */

@@ -16,3 +16,12 @@ describe("ModelModePanel", () => {
     expect(source).not.toContain('`/icons/providers/${key}.svg`');
   });
 });
+
+describe("ModelModePanel — OpenRouter 登记", () => {
+  it("gives OpenRouter a sort slot, a provider label and the generic placeholder icon", () => {
+    const source = fs.readFileSync(path.join(__dirname, "ModelModePanel.tsx"), "utf8");
+    expect(source).toContain('"OpenRouter",');
+    expect(source).toContain('openrouter: "OpenRouter",');
+    expect(source).toContain('if (normalized.includes("openrouter")) return "custom-endpoint";');
+  });
+});

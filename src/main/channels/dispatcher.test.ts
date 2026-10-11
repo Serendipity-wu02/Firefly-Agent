@@ -108,7 +108,6 @@ describe("channels/dispatcher", () => {
         stickerEnabled: true,
         mirrorToDesktop: true,
       } as ChannelsSettings)),
-      loadGeneralSettings: options.loadGeneralSettings ?? (() => ({})),
       observeExternalChat: options.observeExternalChat,
       broadcastChat: options.broadcastChat,
     });
@@ -592,7 +591,6 @@ it("passes the exact manager ingress through dispatch and never reads bound desk
     composer: { compose: async () => ({ message: { channel: "qq", targetId: "chat", parts: [{ kind: "text", text: "reply" }] }, assistantText: "reply", transientFiles: [] }), cleanupTransientFiles: async () => {} },
     delivery: { send: async () => ({ ok: true }) } as unknown as DispatcherDeps["delivery"],
     loadSettings: () => ({ rateLimitPerUser: 10, rateLimitPerChannel: 100, mirrorToDesktop: false }) as ChannelsSettings,
-    loadGeneralSettings: () => ({}),
   });
   manager.setDispatcher((message, ingress) => dispatcher.handleIncoming(message, ingress)); await manager.startOne("qq");
   const message: IncomingMessage = { channel: "qq", chatId: "chat", senderId: "sender", text: "hello", at: new Date() };

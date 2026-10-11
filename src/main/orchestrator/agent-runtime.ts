@@ -18,7 +18,6 @@ import { resolveCaptionVisionConfig } from "./image-router";
 import { getTimeoutSettings } from "../timeout-manager";
 import { resolveModelSettingsProfile, getDefaultModelProfile } from "../settings/model-settings";
 import { normalizeChatMessages } from "../chat-api-utils";
-import { parseObserverFeeling } from "../chat-stream-utils";
 import { captionImageSafe, IMAGE_CAPTION_PROMPT } from "../chat/image-caption";
 import { buildEnvironmentContext } from "./environment";
 import { buildToneInjection } from "./tone-injector";
@@ -33,9 +32,7 @@ import {
   buildAutoInjectedSoulContext,
   skillRegistry,
 } from "../skills";
-import { feelingToExpression } from "../runtime-state";
 import { resolveSlashActivation } from "../skills/slash-activation";
-import type { CitaService } from "../cita";
 import type { SocialAtom, SocialExtractionInput } from "../social-context/types";
 import type { ToolDefinition, ToolModeOverrides } from "./tools/registry/tool-registry";
 import type { ConversationMode } from "../../shared/chat-types";
@@ -44,7 +41,6 @@ import {
   onAgentRunFinished,
   type BuildOptionsDeps,
   type OnRunFinishedDeps,
-  type ModelSettingsLite,
 } from "./build-options";
 import { buildModelContext } from "./conversation-transcript-context";
 import { getConversationTranscriptStore } from "./conversation-transcript-store";
@@ -55,14 +51,10 @@ import type { ToolFinishedInput } from "../plugin-host/lifecycle-publisher";
 import {
   buildToolSystemPrompt,
   buildSoulSystemBasePrompt,
-  readStylePrompt,
-  resolveSoulSamplingForStyle,
-  loadSoulFeelingContext,
 } from "./system-prompt-builder";
 import { buildModePrompt } from "./mode-prompt-profile";
 import { resolveRunCapabilities } from "./run-capabilities";
 import { loadStickerSettings } from "./sticker-settings";
-import type { RuntimeStateService } from "./runtime-state-service";
 import type { LlmClient } from "../services/llm/llm-client";
 import type {
   PluginTurnCompletedEvent,
@@ -70,20 +62,12 @@ import type {
   PluginPromptMode,
 } from "../../plugins/types";
 
-type EnqueueLLMTask = <T>(
-  label: string,
-  task: () => Promise<T>,
-  options?: { log?: boolean; retryRateLimit?: boolean },
-) => Promise<T>;
-
 export interface AgentRuntimeDeps {
   /** Main composition only. Run identity and sink are finalized before invocation. */
   defaultMemory?:{openRun:(input:FireflyRunOptions)=>Promise<MainMemoryRun>;prepareBackgroundRun?:BackgroundMemoryHost["prepareBackgroundRun"]};
   /** Main-only opt-in injection. No product registration or initialization by default. */
   sContext?: {enabled?:boolean;isControlledSession?:(conversationId:string)=>boolean;createPort:(scope?:Readonly<{conversationId:string}>)=>MainSRuntimePort|Promise<MainSRuntimePort>;streamRequest?:(options:FireflyRunOptions)=>ChatRequest};
-  runtimeStateService: RuntimeStateService;
   llmClient: LlmClient;
-  enqueueLLMTask: EnqueueLLMTask;
   loadModelSettings: () => ModelSettings;
   loadGeneralSettings: () => GeneralSettings;
   loadUserProfile: () => UserProfile;
@@ -94,8 +78,6 @@ export interface AgentRuntimeDeps {
   skillRegistry: typeof skillRegistry;
   getStickerEmbeddingIndex: () => unknown;
   getEmbeddingProvider: () => unknown;
-  broadcastRuntimeStateChanged: () => void;
-  citaService: CitaService;
   socialContextScheduler: { schedule: (input: SocialExtractionInput) => void };
   chatsStore: { getWorkspaceBinding: (conversationId: string) => { workspaceRoot: string; displayName: string; boundAt: number } | undefined };
   socialAtomStore: { listActive: (conversationId: string, now: number) => SocialAtom[] };
@@ -125,7 +107,6 @@ export interface AgentRuntime {
 }
 
 export function createAgentRuntime(rawDeps: AgentRuntimeDeps): AgentRuntime {
-  const runtimeStateService = rawDeps.runtimeStateService;
   const backgroundMemory:BackgroundMemoryHost|undefined=rawDeps.defaultMemory?.prepareBackgroundRun?{prepareBackgroundRun:input=>rawDeps.defaultMemory!.prepareBackgroundRun!(input)}:undefined;
   const legacyPersonalTools=new Set(["user_memory","read_memory","write_memory","recall_history"]);
   const toolRegistry=rawDeps.defaultMemory?{
@@ -184,64 +165,6 @@ export function createAgentRuntime(rawDeps: AgentRuntimeDeps): AgentRuntime {
     return port.run(snapshot);
   }
 
-  async function observeRuntimeState(
-    settings: ModelSettingsLite,
-    _recentMessages: ReadonlyArray<{ role: "system" | "user" | "assistant"; content: string }>,
-    _latestUserText: string,
-    chatContent: string,
-    profileSelection: "conversation" | "default",
-  ): Promise<void> {
-    let serviceUrlValid = false;
-    try {
-      const url = new URL(settings.baseUrl);
-      serviceUrlValid = url.protocol === "http:" || url.protocol === "https:";
-    } catch {
-      serviceUrlValid = false;
-    }
-    if (!settings.model.trim() || !serviceUrlValid) {
-      console.warn("[Firefly] mood observation unavailable: selected model profile has no valid model or service URL");
-      return;
-    }
-    const recentDialogue = [{ role: "assistant" as const, content: chatContent }];
-    console.info("[Firefly] mood observation request", { profileSelection, transport: settings.explicitTransport ?? "unspecified" });
-
-    await rawDeps.enqueueLLMTask(
-      "心情观察器",
-      async () => {
-        const observerContent = await rawDeps.llmClient.chat(
-          settings as ModelSettings,
-          [
-            {
-              role: "system",
-              content:
-                "你是一个情绪分析器。以下是流萤的人格设定：\n\n" +
-                loadSoulFeelingContext() +
-                "\n\n根据以上人格设定和以下对话，判断流萤当前的心情状态。可选心情值（只能选其中一个）：平静 / 开心 / 温柔 / 激动 / 撒娇 / 担心 / 难过 / 感动 / 害羞。只返回 JSON，不要任何多余文字：{\"feeling\": \"心情值\"}。判断规则：以最后一轮对话为主，之前几轮为辅；判断的是流萤的心情，不是用户的心情；无法判断时返回 平静。",
-            },
-            {
-              role: "user",
-              content: JSON.stringify({ recentDialogue }),
-            },
-          ],
-          undefined,
-          30000,
-          "心情观察器",
-          false,
-        );
-        const feeling = parseObserverFeeling(observerContent);
-        if (feeling) {
-          runtimeStateService.smoothFeeling(feeling);
-          console.info("[Firefly] mood observation applied");
-        } else {
-          console.warn("[Firefly] mood observation returned no recognized feeling");
-        }
-      },
-      { log: false },
-    ).catch((err) => {
-      console.warn("[Firefly] observe runtime failed; keeping current feeling:", err);
-    });
-  }
-
   function buildBuildOptionsDeps(): BuildOptionsDeps {
     return {
       loadModelSettings: (modelProfileId?: string) => resolveModelSettingsProfile(rawDeps.loadModelSettings(), modelProfileId),
@@ -280,8 +203,6 @@ export function createAgentRuntime(rawDeps: AgentRuntimeDeps): AgentRuntime {
         toolRegistry,
         skillRegistry: rawDeps.skillRegistry,
       }),
-      readStylePrompt,
-      resolveSoulSampling: resolveSoulSamplingForStyle,
       toolRegistry: {
         getEnabled: () => toolRegistry.getEnabledTools() as unknown[],
         getEnabledToolsForMode: (mode: ConversationMode, overrides?: ToolModeOverrides) =>
@@ -297,7 +218,6 @@ export function createAgentRuntime(rawDeps: AgentRuntimeDeps): AgentRuntime {
         if (!vision.ok) return { ok: false, error: vision.error };
         return captionImageSafe(filePath, IMAGE_CAPTION_PROMPT, vision.config);
       },
-      prepareCitaTurn: (input) => rawDeps.citaService.prepareTurn(input),
       buildChatSocialContext: async ({ conversationId, query }) => {
         const now = Date.now();
         const active = rawDeps.socialAtomStore.listActive(conversationId, now);
@@ -327,12 +247,6 @@ export function createAgentRuntime(rawDeps: AgentRuntimeDeps): AgentRuntime {
       scheduleMemoryWrite,
       ...(rawDeps.defaultMemory?{personalMemoryMode:"smh" as const}:{}),
       scheduleSocialAtomExtraction: (input) => rawDeps.socialContextScheduler.schedule(input),
-      inferRuntimeState: ((userText, reply, flag) =>
-        runtimeStateService.inferFromText(userText, reply, flag)) as OnRunFinishedDeps["inferRuntimeState"],
-      runtimeState: runtimeStateService.getState(),
-      feelingToExpression,
-      setRuntimeState: ((next) =>
-        runtimeStateService.setStateWithoutNotify(next as any)) as OnRunFinishedDeps["setRuntimeState"],
       stickerEmbeddingIndex: rawDeps.getStickerEmbeddingIndex(),
       getEmbeddingProvider: (() => rawDeps.getEmbeddingProvider() as unknown) as OnRunFinishedDeps["getEmbeddingProvider"],
       matchSticker: ((text, provider, index, threshold) =>
@@ -340,9 +254,6 @@ export function createAgentRuntime(rawDeps: AgentRuntimeDeps): AgentRuntime {
           id: string;
         } | null | undefined>) as OnRunFinishedDeps["matchSticker"],
       loadStickerSettings,
-      broadcastRuntimeStateChanged: rawDeps.broadcastRuntimeStateChanged,
-      observeRuntimeState: ((settings, history, userText, reply) =>
-        observeRuntimeState(settings as ModelSettingsLite, history as any, userText, reply, modelProfileId ? "conversation" : "default")) as OnRunFinishedDeps["observeRuntimeState"],
       recordRelationshipTurn,
     };
   }
@@ -379,13 +290,11 @@ export function createAgentRuntime(rawDeps: AgentRuntimeDeps): AgentRuntime {
         buildOptionsDeps.materializeAttachmentDocument=createAttachmentDocumentMaterializer();
         buildOptionsDeps.buildRelationshipContext=async()=>"";
         buildOptionsDeps.buildChatSocialContext=undefined;
-        buildOptionsDeps.prepareCitaTurn=undefined;
       }
       if(controlled){
         buildOptionsDeps.buildAlwaysOnContext=async()=>"";
         buildOptionsDeps.buildRelationshipContext=async()=>"";
         buildOptionsDeps.buildChatSocialContext=async()=>({contextBlock:"",retrievedAtoms:[]});
-        buildOptionsDeps.prepareCitaTurn=undefined;
       }
       const { options, latestUserText } = await buildAgentRunOptions(input, buildOptionsDeps);
       const next:FireflyRunOptions={...options,onToolFinished,...(backgroundMemory?{backgroundMemory}:{}),...(rawDeps.defaultMemory?{openMemoryRun:(current:FireflyRunOptions)=>rawDeps.defaultMemory!.openRun(current)}:{})};
@@ -454,7 +363,7 @@ export function createAgentRuntime(rawDeps: AgentRuntimeDeps): AgentRuntime {
         : rawDeps.skillRegistry.getEnabledForMode(mode, generalSettings.skillModeOverrides);
       const systemContent = [
         buildModePrompt(mode),
-        buildEnvironmentContext({ provider: settings.provider, model: settings.model }, profile),
+        buildEnvironmentContext({ provider: settings.provider, model: settings.model, multimodal: settings.multimodal }, profile),
         buildSkillCatalog(scheduledSkills),
         await (rawDeps.defaultMemory?buildWorldbookContext:buildAlwaysOnContext)(task.prompt, messages),
         await rawDeps.buildPluginPromptContext({

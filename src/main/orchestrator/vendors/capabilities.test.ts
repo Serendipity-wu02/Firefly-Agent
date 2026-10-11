@@ -27,16 +27,6 @@ describe("PROVIDER_CAPABILITIES — schema smoke", () => {
     expect(mimo?.displayName).toBe("MiMo（小米）");
   });
 
-  test("豆包替换火山 AgentPlan，使用官方方舟 Chat Completions 入口", () => {
-    expect(getCapability("豆包（火山方舟）")).toMatchObject({
-      id: "doubao",
-      transport: "openai",
-      baseUrl: "https://ark.cn-beijing.volces.com/api/v3",
-      defaultModel: "doubao-seed-2-1-pro-260628",
-    });
-    expect(getCapability("火山 AgentPlan（火山引擎）")).toBeUndefined();
-    expect(PROVIDER_CAPABILITIES.some((capability) => capability.id === "volcengine")).toBe(false);
-  });
 });
 
 describe("PROVIDER_CAPABILITIES — 已知条目存在性回归", () => {
@@ -84,12 +74,11 @@ describe("PROVIDER_CAPABILITIES — 已知条目存在性回归", () => {
     expect(JSON.parse(request.body)).toMatchObject({ stream: true });
   });
 
-  test("9 家 provider 的 displayName 都在表中", () => {
+  test("8 家 provider 的 displayName 都在表中", () => {
     const names = new Set(PROVIDER_CAPABILITIES.map((c) => c.displayName));
     for (const expected of [
       "MiniMax（稀宇科技）",
       "DeepSeek（深度求索）",
-      "豆包（火山方舟）",
       "GLM（智谱）",
       "Kimi（月之暗面）",
       "Qwen（通义千问）",
@@ -99,5 +88,38 @@ describe("PROVIDER_CAPABILITIES — 已知条目存在性回归", () => {
     ]) {
       expect(names.has(expected), `missing displayName: ${expected}`).toBe(true);
     }
+  });
+});
+
+describe("PROVIDER_CAPABILITIES — OpenRouter 聚合网关", () => {
+  test("OpenRouter 条目：OpenAI Chat Completions 显式协议、Bearer 鉴权、不预置型号", () => {
+    expect(getCapability("OpenRouter")).toMatchObject({
+      id: "openrouter",
+      displayName: "OpenRouter",
+      transport: "openai",
+      baseUrl: "https://openrouter.ai/api/v1",
+      authStyle: "bearer",
+      defaultModel: "",
+      supportedTransports: ["openai"],
+    });
+  });
+
+  test("OpenRouter 默认配置生成 Chat Completions 请求（URL 与 Bearer），不走 Responses 或 x-api-key", () => {
+    const cfg = {
+      provider: "OpenRouter",
+      baseUrl: "https://openrouter.ai/api/v1",
+      model: "openai/gpt-5.6",
+      apiKey: "sk-or-v1-test",
+      explicitTransport: "openai" as const,
+    };
+    const adapter = getAdapterForConfig(cfg);
+    const request = adapter.buildStreamRequest(
+      { model: cfg.model, messages: [{ role: "user", content: "ping" }], stream: true },
+      cfg,
+    );
+    expect(adapter.transport).toBe("openai");
+    expect(request.url).toBe("https://openrouter.ai/api/v1/chat/completions");
+    expect(request.headers.Authorization).toBe("Bearer sk-or-v1-test");
+    expect(request.headers["x-api-key"]).toBeUndefined();
   });
 });

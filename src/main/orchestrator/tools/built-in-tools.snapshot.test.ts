@@ -5,17 +5,14 @@
 //   3) run_shell 的纯拒绝路径 JSON 协议与 currentUserTimezone 的回退行为。
 // 全部断言基于"拆分前"的现状生成，拆分过程中任何行为漂移都会让门禁变红。
 
-import { describe, expect, it, vi } from "vitest";
+import { describe, expect, it } from "vitest";
 import { toolRegistry } from "./registry/tool-registry";
 import {
   currentUserTimezone,
   setUserTimezoneConfig,
-  setLive2dWindowSender,
 } from "./built-in-tools";
-import { acceptLive2DActionReceipt } from "./builtin-tools/play-live2d-action";
-import type { Live2DActionRequest } from "../../../shared/live2d-actions";
 
-/** built-in-tools 注册的 10 个工具 id，严格按 built-in-tools.ts 的注册先后排序。
+/** built-in-tools 注册的 9 个工具 id，严格按 built-in-tools.ts 的注册先后排序。
  *  registry 插入顺序 = 工具目录 prompt 顺序，拆分时 facade 的 import 顺序必须保持它。 */
 const BUILT_IN_TOOL_IDS = [
   "fetch_url",
@@ -27,27 +24,9 @@ const BUILT_IN_TOOL_IDS = [
   "install_mcp_server",
   "weather",
   "web_search",
-  "play_live2d_action",
 ] as const;
 
 describe("built-in-tools 注册快照", () => {
-  it("uses the pet sender installed after tool registration", async () => {
-    const send = vi.fn((_channel: string, payload?: unknown) => {
-      const request = payload as Live2DActionRequest;
-      acceptLive2DActionReceipt({ requestId: request.requestId, stage: "model_loaded" });
-      acceptLive2DActionReceipt({ requestId: request.requestId, stage: "started" });
-      acceptLive2DActionReceipt({ requestId: request.requestId, stage: "completed" });
-      return true;
-    });
-    setLive2dWindowSender(send);
-    try {
-      const result = await toolRegistry.getById("play_live2d_action")!.execute({ name: "开心" });
-      expect(JSON.parse(result)).toMatchObject({ ok: true, stage: "started" });
-      expect(send).toHaveBeenCalledOnce();
-    } finally {
-      setLive2dWindowSender(() => false);
-    }
-  });
   it("按原注册顺序插入 registry（工具目录 prompt 顺序契约）", () => {
     const allIds = toolRegistry.getAllTools().map((t) => t.id);
     // 只取 built-in-tools 这 7 个 id 的相对顺序做断言，对 registry 里其它模块的

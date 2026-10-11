@@ -1,7 +1,6 @@
 import type { Transport } from "../vendors/types";
 
 export type StructuredOutputStage =
-  | "cita"
   | "task_router"
   | "planner"
   | "native_fc"

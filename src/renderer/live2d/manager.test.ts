@@ -1,5 +1,6 @@
 import { describe, expect, it, vi } from "vitest";
 import { readFileSync } from "node:fs";
+import { HEAD_MIN_Y } from "./model-regions";
 
 /**
  * Mock pixi-live2d-display before importing manager.ts so we don't have to
@@ -27,6 +28,7 @@ vi.mock("pixi.js", () => {
       destroy = vi.fn();
     },
     Renderer: class {},
+    Point: class { x: number; y: number; constructor(x = 0, y = 0) { this.x = x; this.y = y; } },
     utils: { TextureCache: { a: {}, b: {} } },
   };
 });
@@ -119,7 +121,8 @@ describe("Live2DManager.playAction", () => {
       const manager = new Live2DManager({ canvas: fakeCanvas, width: 100, height: 100, modelPath: "/models/firefly/Firefly.model3.json" });
       await manager.init();
       expect(manager.getHitAreaDefs()).toEqual([
-        { name: "Head", id: "ArtMesh23", target: { kind: "expression", name: "expression4" } },
+        { name: "Body", id: "ArtMesh154" },
+        { name: "Head", id: "ArtMesh23" },
       ]);
       expect(await manager.playAction({ kind: "motion", group: "Tap", motionName: "1" })).toBe(true);
       expect(model.motion).toHaveBeenCalledWith("Tap", 1, 2);
@@ -222,48 +225,148 @@ describe("Live2DManager.playAction", () => {
 });
 
 
-describe("Firefly table drawable visibility", () => {
-  async function load(ids: string[], opacities: number[]) {
-    vi.stubGlobal("window", {devicePixelRatio: 1, innerWidth: 400, innerHeight: 500});
-    vi.stubGlobal("fetch", vi.fn(async () => ({ok: true, json: async () => ({
-      HitAreas: [{Name: "Body", Id: "ArtMesh154"}, {Name: "Head", Id: "ArtMesh23"}],
-      FileReferences: {Expressions: [{Name: "expression3"}, {Name: "expression4"}]},
-    })})));
-    const coreModel = {
-      getDrawableIndex: (id: string) => ids.indexOf(id),
-      getDrawableOpacity(index: number) { return opacities[index]; },
+describe("Firefly hidden drawables and hit regions", () => {
+  // 假模型：pixelsPerUnit=1、originalWidth/Height=0，于是画布点 (px, py) 对应模型点 (px, -py)（模型单位 y 向上）。
+  // 覆盖方块是模型单位里的 [-10,10]×[-10,10]，用两个三角形组成，上下半区都能点中。
+  type Spec = {
+    drawables: Array<{ id: string; opacity: number; covers: boolean }>;
+  };
+  const COVER_VERTICES = [-10, -10, 10, -10, -10, 10, 10, 10];
+  const AWAY_VERTICES = [100, 100, 110, 100, 100, 110, 110, 110];
+  const QUAD_INDICES = [0, 1, 2, 2, 1, 3];
+
+  function makeFakeModel(spec: Spec) {
+    const core = {
+      getDrawableIndex: (id: string) => spec.drawables.findIndex((drawable) => drawable.id === id),
+      getDrawableOpacity: vi.fn((index: number) => spec.drawables[index].opacity),
+      getDrawableVertices: (index: number) => new Float32Array(spec.drawables[index].covers ? COVER_VERTICES : AWAY_VERTICES),
+      getDrawableVertexIndices: () => new Uint16Array(QUAD_INDICES),
     };
-    const original = coreModel.getDrawableOpacity;
-    const model = {anchor: {set: vi.fn()}, scale: {set: vi.fn()}, width: 400, height: 500,
+    const internal = {
+      coreModel: core,
+      motionManager: { definitions: {} },
+      pixelsPerUnit: 1,
+      originalWidth: 0,
+      originalHeight: 0,
+      getDrawableIDs: () => spec.drawables.map((drawable) => drawable.id),
+    };
+    const model = {
+      anchor: { set: vi.fn() }, scale: { set: vi.fn() }, width: 400, height: 500,
       destroy: vi.fn(), motion: vi.fn(), expression: vi.fn(),
-      internalModel: {coreModel, motionManager: {definitions: {}}}};
-    const {Live2DModel} = await import("pixi-live2d-display/cubism4");
-    vi.mocked(Live2DModel.from).mockReset().mockResolvedValue(model as never);
-    const {Live2DManager} = await import("./manager");
-    const manager = new Live2DManager({canvas: fakeCanvas, width: 400, height: 500, modelPath: "/x"});
-    await manager.init();
-    return {manager, coreModel, original, opacities};
+      hitTest: vi.fn(() => []),
+      toModelPosition: vi.fn((point: { x: number; y: number }) => point),
+      internalModel: internal,
+    };
+    return { model, core, internal };
   }
 
-  it("hides exactly the three IDs independent of their indices and changing animation opacity", async () => {
-    const f = await load(["ArtMesh156", "ArtMesh154", "ArtMesh23", "ArtMesh153", "ArtMesh155"], [.7, .8, .6, .9, 1]);
+  async function loadFake(spec: Spec) {
+    vi.stubGlobal("window", { devicePixelRatio: 1, innerWidth: 400, innerHeight: 500 });
+    vi.stubGlobal("fetch", vi.fn(async () => ({ ok: true, json: async () => ({
+      HitAreas: [{ Name: "Body", Id: "ArtMesh154" }, { Name: "Head", Id: "ArtMesh23" }],
+      FileReferences: { Expressions: [] },
+    }) })));
+    const fake = makeFakeModel(spec);
+    const { Live2DModel } = await import("pixi-live2d-display/cubism4");
+    vi.mocked(Live2DModel.from).mockReset().mockResolvedValue(fake.model as never);
+    const { Live2DManager } = await import("./manager");
+    const manager = new Live2DManager({ canvas: fakeCanvas, width: 400, height: 500, modelPath: "/x" });
+    await manager.init();
+    return { manager, ...fake };
+  }
+
+  const ALL_IDS = ["ArtMesh153", "ArtMesh154", "ArtMesh155", "ArtMesh156", "ArtMesh157", "ArtMesh23", "ArtMesh200"];
+  /** 只有 id 这一个网格覆盖点击区域，其它网格都在远处。 */
+  const single = (id: string, opacity = 1): Spec => ({
+    drawables: ALL_IDS.map((drawableId) => ({
+      id: drawableId,
+      opacity: drawableId === id ? opacity : 1,
+      covers: drawableId === id,
+    })),
+  });
+  /** 模型单位的点 (x, y) 对应的画布点。 */
+  const atModelY = (y: number) => [0, -y] as const;
+
+  async function withModel(spec: Spec, run: (f: Awaited<ReturnType<typeof loadFake>>) => void | Promise<void>) {
+    const f = await loadFake(spec);
     try {
-      expect([0, 1, 2, 3, 4].map(i => f.coreModel.getDrawableOpacity(i))).toEqual([.7, 0, .6, 0, 0]);
-      f.opacities.fill(.4);
-      expect([0, 1, 2, 3, 4].map(i => f.coreModel.getDrawableOpacity(i))).toEqual([.4, 0, .4, 0, 0]);
-      expect(f.manager.getHitAreaDefs().map(a => a.id)).toEqual(["ArtMesh23"]);
-    } finally { f.manager.dispose(); vi.unstubAllGlobals(); }
+      await run(f);
+    } finally {
+      f.manager.dispose();
+      vi.unstubAllGlobals();
+    }
+  }
+
+  it("hides the drink, cake plate and table by drawable index and keeps the chair and shadow visible", async () => {
+    await withModel(single("ArtMesh156"), (f) => {
+      const opacityOf = (id: string) => f.core.getDrawableOpacity(f.core.getDrawableIndex(id));
+      expect(opacityOf("ArtMesh153")).toBe(0);
+      expect(opacityOf("ArtMesh154")).toBe(0);
+      expect(opacityOf("ArtMesh155")).toBe(0);
+      expect(opacityOf("ArtMesh156")).toBe(1);
+      expect(opacityOf("ArtMesh157")).toBe(1);
+    });
   });
 
-  it("restores the instance method on disposal and installs independently on a new model", async () => {
-    const first = await load(["ArtMesh153", "ArtMesh156"], [.8, .6]);
-    first.manager.dispose();
-    expect(first.coreModel.getDrawableOpacity).toBe(first.original);
-    expect(first.coreModel.getDrawableOpacity(0)).toBe(.8);
-    const second = await load(["ArtMesh156", "ArtMesh153"], [.3, .9]);
-    try {
-      expect(second.coreModel.getDrawableOpacity(0)).toBe(.3);
-      expect(second.coreModel.getDrawableOpacity(1)).toBe(0);
-    } finally { second.manager.dispose(); vi.unstubAllGlobals(); }
+  it("restores the original opacity accessor on dispose", async () => {
+    const f = await loadFake(single("ArtMesh200"));
+    const hookedAccessor = f.core.getDrawableOpacity;
+    f.manager.dispose();
+    expect(f.core.getDrawableOpacity).not.toBe(hookedAccessor);
+    expect(f.core.getDrawableOpacity(f.core.getDrawableIndex("ArtMesh153"))).toBe(1);
+    vi.unstubAllGlobals();
+  });
+
+  it("splits Head and Body by the clicked model height on any visible character mesh", async () => {
+    await withModel(single("ArtMesh200"), (f) => {
+      expect(f.manager.hitTestRegions(...atModelY(0.2))).toEqual(["Head"]);
+      expect(f.manager.hitTestRegions(...atModelY(0))).toEqual(["Head"]);
+      expect(f.manager.hitTestRegions(...atModelY(-0.3))).toEqual(["Body"]);
+      expect(f.manager.hitTestRegions(...atModelY(-0.43))).toEqual(["Body"]);
+    });
+  });
+
+  it("treats a click exactly on the head boundary as Head", async () => {
+    await withModel(single("ArtMesh200"), (f) => {
+      expect(f.manager.hitTestRegions(...atModelY(HEAD_MIN_Y))).toEqual(["Head"]);
+      expect(f.manager.hitTestRegions(...atModelY(HEAD_MIN_Y - 0.001))).toEqual(["Body"]);
+    });
+  });
+
+  it("counts the small ArtMesh23 head-area mesh as an ordinary character mesh", async () => {
+    await withModel(single("ArtMesh23"), (f) => {
+      expect(f.manager.hitTestRegions(...atModelY(0.2))).toEqual(["Head"]);
+      expect(f.manager.hitTestRegions(...atModelY(-0.3))).toEqual(["Body"]);
+    });
+  });
+
+  it("returns nothing for a point that no character mesh covers", async () => {
+    await withModel(single("ArtMesh200"), (f) => {
+      expect(f.manager.hitTestRegions(500, 500)).toEqual([]);
+    });
+  });
+
+  it("does not hit Head or Body on the chair or the foot shadow", async () => {
+    for (const id of ["ArtMesh156", "ArtMesh157"]) {
+      await withModel(single(id), (f) => {
+        expect(f.manager.hitTestRegions(...atModelY(0.2)), id).toEqual([]);
+        expect(f.manager.hitTestRegions(...atModelY(-0.3)), id).toEqual([]);
+      });
+    }
+  });
+
+  it("does not hit the hidden drink, cake plate or table", async () => {
+    for (const id of ["ArtMesh153", "ArtMesh154", "ArtMesh155"]) {
+      await withModel(single(id), (f) => {
+        expect(f.manager.hitTestRegions(...atModelY(0.2)), id).toEqual([]);
+        expect(f.manager.hitTestRegions(...atModelY(-0.3)), id).toEqual([]);
+      });
+    }
+  });
+
+  it("ignores a mesh that is fully transparent", async () => {
+    await withModel(single("ArtMesh200", 0), (f) => {
+      expect(f.manager.hitTestRegions(...atModelY(0.2))).toEqual([]);
+    });
   });
 });

@@ -23,13 +23,7 @@
 .provider-tabs > button { padding: 9px 12px; border: 0; border-radius: 12px; background: transparent; color: var(--rb-text-muted); font: inherit; font-size: 13px; cursor: pointer; }
 .provider-tabs > button[aria-selected="true"] { color: var(--rb-pink-500); background: var(--rb-border-faint); font-weight: 600; }
 #preset-cards { grid-template-columns: repeat(auto-fit, minmax(100px, 1fr)); }
-#agent-routing-panel { display: grid; gap: 12px; }
-#agent-routing-panel .field { display: grid; grid-template-columns: minmax(0, 1fr) minmax(180px, 42%); gap: 12px; align-items: center; font-size: 12px; }
-#agent-routing-panel .field > span { overflow-wrap: anywhere; }
 #agent-routing-panel select { min-width: 0; width: 100%; }
-@media (max-width: 780px) {
-  #agent-routing-panel .field { grid-template-columns: minmax(0, 1fr); }
-}
 .settings-shell {
   box-sizing: border-box;
   grid-template-columns: 208px minmax(0, 1fr);
@@ -162,10 +156,10 @@
   .settings-content { padding: 24px; }
   .settings-titlebar { padding-left: 24px; }
   .setting-row { gap: 16px; }
-  .setting-row:has(> :is(.option-blocks, .language-options, .settings-actions-inline, input[type="range"])) {
+  .setting-row:has(> :is(.option-blocks, .language-options, input[type="range"])) {
     flex-wrap: wrap;
   }
-  .setting-row:has(> :is(.option-blocks, .language-options, .settings-actions-inline, input[type="range"])) > div:first-child {
+  .setting-row:has(> :is(.option-blocks, .language-options, input[type="range"])) > div:first-child {
     flex-basis: 100%;
   }
   #preferences-form .setting-row .option-blocks { max-width: 100%; margin-left: 0; justify-content: flex-start; }
@@ -188,10 +182,6 @@
 .ui-color-controls { border: 1px solid var(--rb-border-soft); border-radius: 12px; padding: 18px; margin: 20px 0; min-width: 0; }
 .ui-color-controls legend { padding: 0 8px; font-weight: 600; }
 .ui-color-controls p { color: var(--rb-text-muted); font-size: 12px; line-height: 1.6; }
-.ui-color-row { display: grid; grid-template-columns: minmax(70px, 1fr) 44px minmax(100px, 150px); align-items: center; gap: 12px; margin: 12px 0; }
-.ui-color-row input[type=color] { width: 44px; height: 32px; padding: 2px; border: 1px solid var(--rb-border-soft); background: var(--rb-input-bg); cursor: pointer; }
-.ui-color-row input[type=text] { width: 100%; min-width: 0; box-sizing: border-box; padding: 7px; background: var(--rb-input-bg); color: var(--rb-input-text); border: 1px solid var(--rb-input-border); border-radius: 6px; }
-.ui-color-row input[aria-invalid=true] { outline: 2px solid #c42b1c; }
 #ui-colors-reset { color: #171717; background: #fff; border: 1px solid #999; padding: 7px 12px; border-radius: 6px; cursor: pointer; }
 
 @media (max-width: 760px) {
@@ -226,7 +216,6 @@
 .settings-shell .save-status { color: var(--rb-text-muted); line-height: 1.6; }
 .settings-shell .save-status.is-ok { color: var(--rb-text-default); }
 .settings-shell .save-status.is-error { color: #c42b1c; }
-.ui-color-row { grid-template-columns: minmax(0, 1fr) 44px minmax(80px, 150px); }
 #ui-colors-reset { color: var(--rb-text-default); background: var(--rb-bg-elevated); border-color: var(--rb-border-soft); }
 
 @media (max-width: 560px) {
@@ -242,9 +231,6 @@
   .provider-tabs { flex-wrap: wrap; }
   .provider-tabs > button { padding-inline: 8px; }
   .ui-color-controls { padding: 12px; }
-  .ui-color-row { grid-template-columns: 36px minmax(0, 1fr); gap: 8px; }
-  .ui-color-row > label { grid-column: 1 / -1; }
-  .ui-color-row input[type="color"] { width: 36px; }
   .setting-row { flex-wrap: wrap; }
   .setting-row > div:first-child { flex-basis: 100%; }
   .setting-row .language-options { justify-content: flex-start; }

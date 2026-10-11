@@ -3,6 +3,7 @@
 import type { ApiTransport } from "../../shared/api-endpoint";
 import { authHeaderFor } from "../orchestrator/vendors/auth";
 import { getCapabilityOrOpenAI } from "../orchestrator/vendors/capabilities";
+import type { InputModality } from "../../shared/input-modalities";
 
 export interface FetchModelsInput {
   provider: string;
@@ -15,6 +16,8 @@ export interface VendorModel {
   id: string;
   /** 厂商给出的展示名（如 Anthropic 的 display_name），没有就缺省。 */
   name?: string;
+  /** 厂商声明的输入模态。缺省 = 厂商没说（未知），不等于“仅文本”。 */
+  inputModalities?: InputModality[];
 }
 
 export type FetchModelsResult =
@@ -39,6 +42,47 @@ const textOf = (...candidates: unknown[]): string => {
   for (const candidate of candidates) if (typeof candidate === "string" && candidate.trim()) return candidate.trim();
   return "";
 };
+
+const asRecord = (value: unknown): Record<string, unknown> | undefined =>
+  value && typeof value === "object" && !Array.isArray(value) ? value as Record<string, unknown> : undefined;
+
+/** 把厂商给的模态标记收敛成 text / image（容忍大小写与首尾空白）；一个都不认得返回 undefined。 */
+function modalitiesFromTokens(tokens: unknown): InputModality[] | undefined {
+  if (!Array.isArray(tokens)) return undefined;
+  const wanted = new Set(tokens.map((token) => (typeof token === "string" ? token.trim().toLowerCase() : "")));
+  const found = (["text", "image"] as const).filter((modality) => wanted.has(modality));
+  return found.length > 0 ? [...found] : undefined;
+}
+
+/**
+ * 读单个模型条目的输入模态，按可信度从高到低：显式列表 > OpenRouter 旧式 modality 字符串 > 布尔能力位。
+ * 形状（都有单测夹具）：OpenRouter architecture.input_modalities / architecture.modality；
+ * Anthropic capabilities.image_input.supported；通用 input_modalities / modalities（数组或 {input:[...]}）；
+ * capabilities.vision（Mistral 等）、supports_vision、vision。认不出任何模态信息返回 undefined（= 未知）。
+ */
+function parseInputModalities(entry: Record<string, unknown>): InputModality[] | undefined {
+  const architecture = asRecord(entry.architecture);
+  const capabilities = asRecord(entry.capabilities);
+  const { modalities } = entry;
+  const lists = [
+    architecture?.input_modalities,
+    entry.input_modalities,
+    Array.isArray(modalities) ? modalities : asRecord(modalities)?.input,
+  ];
+  for (const list of lists) {
+    const found = modalitiesFromTokens(list);
+    if (found) return found;
+  }
+  if (typeof architecture?.modality === "string") {
+    const found = modalitiesFromTokens(architecture.modality.split("->")[0].split("+"));
+    if (found) return found;
+  }
+  const flags = [asRecord(capabilities?.image_input)?.supported, capabilities?.vision, entry.supports_vision, entry.vision];
+  for (const flag of flags) {
+    if (typeof flag === "boolean") return flag ? ["text", "image"] : ["text"];
+  }
+  return undefined;
+}
 
 /**
  * 读一份模型清单。标准的 { data: [...] }（OpenAI / Anthropic）优先；
@@ -65,7 +109,12 @@ export function parseModelList(body: unknown): VendorModel[] {
     if (!id || seen.has(id)) continue;
     seen.add(id);
     const display = textOf(entry?.display_name, entry?.displayName, entry?.name);
-    models.push(display && display !== id ? { id, name: display } : { id });
+    const inputModalities = entry ? parseInputModalities(entry) : undefined;
+    models.push({
+      id,
+      ...(display && display !== id ? { name: display } : {}),
+      ...(inputModalities ? { inputModalities } : {}),
+    });
     if (models.length >= MAX_MODELS) break;
   }
   return models;

@@ -13,6 +13,13 @@ it("persists user edits, rejects invalid hex, and resets defaults", async () => 
  hex.value='url(bad)';hex.dispatchEvent(new Event('change'));await controls.settled();expect(save).toHaveBeenCalledTimes(1);expect(hex.getAttribute('aria-invalid')).toBe('true');
  root.querySelector<HTMLButtonElement>('#ui-colors-reset')!.click();await controls.settled();expect(save).toHaveBeenLastCalledWith(expect.objectContaining({enabled:false})); controls.dispose();
 });
+it("mirrors the swatch picker into its hex pill and saves the picked value on change", async()=>{
+ const root=fixture();const save=vi.fn(async()=>{});const controls=bindUiColorControls(root,save);controls.load({enabled:true,accent:'#123456'});
+ const picker=root.querySelector<HTMLInputElement>('#ui-color-accent')!;const hex=root.querySelector<HTMLInputElement>('#ui-color-accent-hex')!;
+ picker.value='#abcdef';picker.dispatchEvent(new Event('input'));expect(hex.value).toBe('#abcdef');expect(save).not.toHaveBeenCalled();
+ picker.dispatchEvent(new Event('change'));await controls.settled();
+ expect(save).toHaveBeenLastCalledWith(expect.objectContaining({enabled:true,accent:'#abcdef'}));controls.dispose();
+});
 it("serializes rapid edits and shows save failure instead of claiming success", async()=>{
  const root=fixture();let release!:()=>void;
  const save=vi.fn().mockImplementationOnce(()=>new Promise<void>(r=>{release=r})).mockRejectedValueOnce(new Error('disk full'));

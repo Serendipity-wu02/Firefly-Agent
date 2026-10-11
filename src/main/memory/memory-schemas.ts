@@ -97,7 +97,7 @@ export function isValidSourceQuote(value: unknown): value is string {
 }
 
 // ── 用于 provider_json_schema 的 JSON Schema ──
-// A 档模型（GPT/Claude/Kimi/Doubao）会收到这些 schema，严格约束输出结构。
+// A 档模型（GPT/Claude/Kimi）会收到这些 schema，严格约束输出结构。
 
 export const MEMORY_JUDGE_JSON_SCHEMA: Record<string, unknown> = {
   type: "object",

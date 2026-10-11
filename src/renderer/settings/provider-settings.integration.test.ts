@@ -5,7 +5,7 @@ import { beforeEach, expect, it, vi } from "vitest";
 import { DEFAULT_TIMEOUT_SETTINGS } from "../../shared/timeout-types";
 import { SPECIALIST_AGENTS } from "../../shared/specialist-agents";
 import { CUSTOM_ENDPOINT_PROVIDERS } from "./custom-endpoint-state";
-import type { SettingsApi } from "./shared/types";
+import type { FetchedModel, SettingsApi } from "./shared/types";
 import type { SavedProfileLite } from "./api/state";
 
 const html = fs.readFileSync(path.resolve("src/renderer/settings/index.html"), "utf8");
@@ -21,7 +21,7 @@ beforeEach(async () => {
   document.body.innerHTML = html;
   element("save-status").textContent = "fixture initializing";
   profiles = [{ id: "existing", provider: "DeepSeek（深度求索）", displayName: "Existing", model: "old-manual-model", baseUrl: "https://example.invalid/v1", apiKey: "fixture-key", explicitTransport: "responses", multimodal: true }];
-  general = { sidebarVisible: false, toastSoundEnabled: true, currentStyleId: "default", language: "zh-CN" };
+  general = { sidebarVisible: false, toastSoundEnabled: true, launchAtLogin: true, language: "zh-CN" };
   saveGeneral = vi.fn(async patch => { general = { ...general, ...patch }; return general; });
   saveProfile = vi.fn(async profile => {
     const id = profile.id || "new-profile";
@@ -31,7 +31,7 @@ beforeEach(async () => {
   });
   deleteProfile = vi.fn(async id => { profiles = profiles.filter(item => item.id !== id); return { profiles }; });
   window.settings = {
-    getConfig: async () => ({ ...profiles[0], mode: "auto", runtimeSync: "off", stickerEnabled: false, multimodal: true }),
+    getConfig: async () => ({ ...profiles[0], mode: "auto", stickerEnabled: false }),
     getGeneral: async () => general,
     saveGeneral,
     saveConfig: async config => config,
@@ -132,13 +132,59 @@ it("focuses a remaining row after deleting another configuration", async () => {
   expect(document.activeElement).toBe(document.querySelector('[data-profile-id="new-profile"] [data-profile-action="edit"]'));
 });
 
-it("saves visible General settings without resetting the persisted hidden sidebar value", async () => {
+it("saves the language choice immediately without resetting the persisted hidden sidebar value", async () => {
   expect(element("sidebar-visible")).toBeNull();
-  element<HTMLInputElement>("toast-sound-enabled").checked = false;
-  element<HTMLFormElement>("general-form").dispatchEvent(new Event("submit", { bubbles: true, cancelable: true }));
-  await vi.waitFor(() => expect(element("general-save-status").classList.contains("is-ok")).toBe(true));
+  document.querySelector<HTMLButtonElement>('#language-select .language-option[data-lang="en"]')!.click();
+  await vi.waitFor(() => expect(saveGeneral).toHaveBeenLastCalledWith({ language: "en" }));
   expect(saveGeneral.mock.calls.at(-1)?.[0]).not.toHaveProperty("sidebarVisible");
   expect(general.sidebarVisible).toBe(false);
+});
+
+it("places the desktop card between the language and about cards with both switches", () => {
+  const form = element("general-form");
+  const toast = element<HTMLInputElement>("toast-sound-enabled");
+  const launch = element<HTMLInputElement>("launch-at-login");
+  expect(form.querySelector(".settings-group-title")?.textContent).toBe("桌面与系统");
+  expect(toast.type).toBe("checkbox");
+  expect(toast.closest("label")?.textContent).toContain("提醒音效");
+  expect(launch.closest("label")?.textContent).toContain("开机自启");
+  const language = element("language-select");
+  const about = form.querySelector(".setting-row--about")!;
+  expect(language.compareDocumentPosition(toast) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+  expect(launch.compareDocumentPosition(about) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+});
+
+it("loads both desktop switches from the saved general settings", async () => {
+  await vi.waitFor(() => expect(element<HTMLInputElement>("launch-at-login").checked).toBe(true));
+  expect(element<HTMLInputElement>("toast-sound-enabled").checked).toBe(true);
+});
+
+it("saves each desktop switch immediately as its own patch", async () => {
+  await vi.waitFor(() => expect(element<HTMLInputElement>("launch-at-login").checked).toBe(true));
+  const toast = element<HTMLInputElement>("toast-sound-enabled");
+  const launch = element<HTMLInputElement>("launch-at-login");
+  toast.click();
+  await vi.waitFor(() => expect(saveGeneral).toHaveBeenLastCalledWith({ toastSoundEnabled: false }));
+  launch.click();
+  await vi.waitFor(() => expect(saveGeneral).toHaveBeenLastCalledWith({ launchAtLogin: false }));
+  expect(saveGeneral.mock.calls.at(-1)?.[0]).not.toHaveProperty("language");
+  expect(general).toMatchObject({ toastSoundEnabled: false, launchAtLogin: false, language: "zh-CN" });
+  expect(element("desktop-save-status").hidden).toBe(true);
+});
+
+it("rolls a rejected desktop switch back, reports the failure, and clears it on a later successful save", async () => {
+  await vi.waitFor(() => expect(element<HTMLInputElement>("launch-at-login").checked).toBe(true));
+  const launch = element<HTMLInputElement>("launch-at-login");
+  const status = element("desktop-save-status");
+  saveGeneral.mockRejectedValueOnce(new Error("fixture write failure"));
+  launch.click();
+  await vi.waitFor(() => expect(status.classList.contains("is-error")).toBe(true));
+  expect(launch.checked).toBe(true);
+  expect(status.hidden).toBe(false);
+  expect(status.textContent).toBe("保存失败，请重试。");
+  launch.click();
+  await vi.waitFor(() => expect(status.hidden).toBe(true));
+  expect(general.launchAtLogin).toBe(false);
 });
 
 const modalIsOpen = () => document.getElementById("cy-modal-overlay")?.classList.contains("is-hidden") === false;
@@ -279,17 +325,15 @@ it("cancels a keyboard provider tab switch without moving selection or focus, th
   expect(document.activeElement).toBe(custom);
 });
 
-it("guards custom endpoint mode changes and preserves global vision inputs on confirmed switches", async () => {
+it("guards custom endpoint mode changes and keeps the editor usable on confirmed switches", async () => {
   element<HTMLButtonElement>("add-profile-btn").click();
   element<HTMLButtonElement>("provider-custom-tab").click();
   element<HTMLInputElement>("model-input").value = "custom-draft";
-  element<HTMLInputElement>("vision-model").value = "global-vision-draft";
   document.querySelector<HTMLButtonElement>('[data-custom-endpoint-mode="local"]')!.click();
   expect(modalIsOpen()).toBe(true);
   expect(document.querySelector('[data-custom-endpoint-mode="cloud"]')?.getAttribute("aria-pressed")).toBe("true");
   element<HTMLButtonElement>("cy-modal-confirm").click();
   await vi.waitFor(() => expect(document.querySelector('[data-custom-endpoint-mode="local"]')?.getAttribute("aria-pressed")).toBe("true"));
-  expect(element<HTMLInputElement>("vision-model").value).toBe("global-vision-draft");
 });
 
 it("keeps a failed save dirty and clears the discard guard only after a successful save", async () => {
@@ -504,4 +548,67 @@ it("ignores an old save response after the settings panel is remounted", async (
   expect(newSaveConfig).not.toHaveBeenCalled();
   expect(element("profile-draft-state").dataset.state).toBe("dirty");
   expect(key.value).toBe("fresh-panel-draft");
+});
+
+const pressedInputType = () => document.querySelector('#input-modalities-select [aria-pressed="true"]')?.getAttribute("data-value");
+
+it("saves a hand-set input type as a user declaration and returns to automatic by clearing it", async () => {
+  openExisting();
+  expect(pressedInputType()).toBe("auto");
+  element<HTMLElement>("input-modalities-select").querySelector<HTMLButtonElement>('[data-value="image"]')!.click();
+  expect(pressedInputType()).toBe("image");
+  submitProfile();
+  await vi.waitFor(() => expect(saveProfile).toHaveBeenCalledTimes(1));
+  expect(saveProfile.mock.calls.at(-1)?.[0]).toMatchObject({ id: "existing", inputModalities: ["text", "image"], inputModalitiesSource: "user" });
+  await vi.waitFor(() => expect(element("profile-draft-state").dataset.state).toBe("saved"));
+  expect(pressedInputType()).toBe("image");
+
+  element<HTMLElement>("input-modalities-select").querySelector<HTMLButtonElement>('[data-value="auto"]')!.click();
+  submitProfile();
+  await vi.waitFor(() => expect(saveProfile).toHaveBeenCalledTimes(2));
+  expect(saveProfile.mock.calls.at(-1)?.[0].inputModalities).toBeUndefined();
+  expect(saveProfile.mock.calls.at(-1)?.[0].inputModalitiesSource).toBeUndefined();
+});
+
+it("records a vendor-declared input type when a fetched model is picked, and drops it once the model id is edited by hand", async () => {
+  window.settings!.fetchModels = vi.fn(async (): Promise<{ ok: true; models: FetchedModel[] }> => ({
+    ok: true,
+    models: [{ id: "vendor-vision-x", inputModalities: ["text", "image"] }, { id: "vendor-text-y", inputModalities: ["text"] }],
+  }));
+  openExisting();
+  element<HTMLButtonElement>("fetch-models-btn").click();
+  await vi.waitFor(() => expect(document.querySelectorAll("#fetch-models-list [data-model-id]")).toHaveLength(2));
+  document.querySelector<HTMLButtonElement>('[data-model-id="vendor-vision-x"]')!.click();
+  expect(element<HTMLInputElement>("model-input").value).toBe("vendor-vision-x");
+  expect(pressedInputType()).toBe("auto");
+  submitProfile();
+  await vi.waitFor(() => expect(saveProfile).toHaveBeenCalledTimes(1));
+  expect(saveProfile.mock.calls.at(-1)?.[0]).toMatchObject({ model: "vendor-vision-x", inputModalities: ["text", "image"], inputModalitiesSource: "vendor-api" });
+  await vi.waitFor(() => expect(element("profile-draft-state").dataset.state).toBe("saved"));
+
+  const model = element<HTMLInputElement>("model-input");
+  model.value = "hand-typed-z";
+  model.dispatchEvent(new Event("input", { bubbles: true }));
+  expect(pressedInputType()).toBe("auto");
+  submitProfile();
+  await vi.waitFor(() => expect(saveProfile).toHaveBeenCalledTimes(2));
+  expect(saveProfile.mock.calls.at(-1)?.[0]).toMatchObject({ model: "hand-typed-z" });
+  expect(saveProfile.mock.calls.at(-1)?.[0].inputModalities).toBeUndefined();
+});
+
+it("also records the vendor-declared input type when a fetched model id is chosen through the native datalist", async () => {
+  window.settings!.fetchModels = vi.fn(async (): Promise<{ ok: true; models: FetchedModel[] }> => ({
+    ok: true,
+    models: [{ id: "vendor-vision-x", inputModalities: ["text", "image"] }, { id: "vendor-text-y", inputModalities: ["text"] }],
+  }));
+  openExisting();
+  element<HTMLButtonElement>("fetch-models-btn").click();
+  await vi.waitFor(() => expect(document.querySelectorAll("#fetch-models-list [data-model-id]")).toHaveLength(2));
+  // 不点自定义选择器：直接把输入框设成列表里的 id，等同于在原生 datalist 里选中
+  const model = element<HTMLInputElement>("model-input");
+  model.value = "vendor-vision-x";
+  model.dispatchEvent(new Event("input", { bubbles: true }));
+  submitProfile();
+  await vi.waitFor(() => expect(saveProfile).toHaveBeenCalledTimes(1));
+  expect(saveProfile.mock.calls.at(-1)?.[0]).toMatchObject({ model: "vendor-vision-x", inputModalities: ["text", "image"], inputModalitiesSource: "vendor-api" });
 });

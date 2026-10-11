@@ -18,12 +18,12 @@ vi.mock("./proactive-model", () => ({ runProactiveModel: async () => ({ kind: "s
 import { createProactiveLifecycle } from "./proactive-lifecycle";
 import { rememberProactiveChannelRecipient } from "../channels/proactive-delivery";
 beforeEach(() => { vi.clearAllMocks(); mocks.state = createDefaultProactiveState(); });
-it.each(["close", "invalidate"] as const)("%s during an actual first segment drains that send and blocks the second segment and late commit", async action => {
+it.each(["close", "invalidate"] as const)("%s during an in-flight send drains that send and blocks the late commit log", async action => {
   let entered!: () => void, release!: () => void;
   const started = new Promise<void>(resolve => { entered = resolve; }), held = new Promise<void>(resolve => { release = resolve; });
   mocks.send.mockImplementationOnce(async () => { entered(); await held; return { ok: true }; }).mockResolvedValue({ ok: true });
   rememberProactiveChannelRecipient({ channel: "wechat", chatId: "fixture-chat", senderId: "fixture-user", text: "hi", at: new Date() }, "fixture-session");
-  const lifecycle = createProactiveLifecycle({ loadGeneralSettings: () => ({ proactiveChatMode: "on", proactiveDeliveryTarget: "wechat", mobileMessageSegmentation: "on" } as any) });
+  const lifecycle = createProactiveLifecycle({ loadGeneralSettings: () => ({ proactiveChatMode: "on", proactiveDeliveryTarget: "wechat", } as any) });
   lifecycle.initializeProactiveChatService();
   const logs = vi.spyOn(console, "log");
   const running = lifecycle.getProactiveChatService()!.evaluateCandidate({ sceneId: "work_break", score: 90, sceneCooldownMs: 0 });
@@ -33,8 +33,8 @@ it.each(["close", "invalidate"] as const)("%s during an actual first segment dra
   const closing = (action === "close" ? lifecycle.close() : running).then(() => { closed = true; });
   await Promise.resolve(); expect(closed).toBe(false); expect(mocks.send).toHaveBeenCalledTimes(1);
   release(); await running; await closing; await lifecycle.close();
-  expect(mocks.send.mock.calls.map(([message]) => message.parts[0].text)).toEqual(["第一句。"]);
-  expect(mocks.history).toHaveBeenCalledWith("fixture-session", "assistant", "第一句。");
+  expect(mocks.send.mock.calls.map(([message]) => message.parts[0].text)).toEqual(["第一句。第二句。"]);
+  expect(mocks.history).toHaveBeenCalledWith("fixture-session", "assistant", "第一句。第二句。");
   expect(mocks.state.unansweredCount).toBe(0);
   expect(mocks.state.lastProactiveAt).toEqual(expect.any(Number));
   expect(mocks.state.lastFiredAt.work_break).toBe(mocks.state.lastProactiveAt);

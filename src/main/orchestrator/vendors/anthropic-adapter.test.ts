@@ -14,7 +14,6 @@ const anthropicCap: ProviderCapability = {
   thinkingField: "thinking",
   cacheStrategy: "cache_control",
   testStrategy: "text",
-  supportsVision: true,
 };
 
 describe("AnthropicAdapter", () => {

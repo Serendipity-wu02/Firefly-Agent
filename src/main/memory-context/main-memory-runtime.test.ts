@@ -39,7 +39,7 @@ async function fixture(mode: "persistent" | "temporary" = "persistent", temporar
     resolveProfile: id => id === "saved-secondary" ? { id, revision } : null,
     resolveEntry: () => ({ revision: 1 }), canRead: (from, to) => from.actorKey === to.actorKey });
   const config: VendorConfig = { provider: "OpenRouter", baseUrl: "https://openrouter.ai/api/v1", model: "openai/gpt-6-luna", apiKey: "synthetic-secret-do-not-log", explicitTransport: "openai" };
-  const capability: ProviderCapability = { id: "openrouter", displayName: "OpenRouter", baseUrl: config.baseUrl, transport: "openai", authStyle: "bearer", defaultModel: config.model, supportsTools: true, supportsThinking: true, thinkingField: "reasoning_content", cacheStrategy: "none", testStrategy: "text+tool", supportsVision: true };
+  const capability: ProviderCapability = { id: "openrouter", displayName: "OpenRouter", baseUrl: config.baseUrl, transport: "openai", authStyle: "bearer", defaultModel: config.model, supportsTools: true, supportsThinking: true, thinkingField: "reasoning_content", cacheStrategy: "none", testStrategy: "text+tool" };
   if (options.anthropic) {
     Object.assign(config, { model: "synthetic-model", explicitTransport: "anthropic" });
     Object.assign(capability, { transport: "anthropic", authStyle: "x-api-key", defaultModel: config.model, thinkingField: "thinking" });
@@ -539,7 +539,7 @@ it.each([400,422])("completes the real Chat image-to-caption path after HTTP %s 
  const f=await fixture("persistent",false,{defaultCapture:true,attachmentProjection:authority.token,attachments}),before=JSON.stringify(await f.store.read("session-a")),caption=vi.fn(async()=>({ok:true,caption:"fresh authorized caption"}));
  const built=await buildAgentRunOptions({sessionId:"session-a",userTurnId:"u1",mode:"chat",executionMode:"chat",messages:[{role:"user",content:"untrusted request"}]},{
   attachmentGrant:cap,requireAttachmentGrant:true,captionImageForFallback:caption,
-  loadModelSettings:()=>({...f.config,contextWindowTokens:100000}),loadGeneralSettings:()=>({currentStyleId:"default",customStyle:{diversity:{driver:"model-default"},repetition:"model-default"},chatSocialContextEnabled:false}),loadUserProfile:()=>({}),
+  loadModelSettings:()=>({...f.config,multimodal:true,contextWindowTokens:100000}),loadGeneralSettings:()=>({chatSocialContextEnabled:false}),loadUserProfile:()=>({}),
   buildEnvironmentContext:()=>"",buildSkillCatalog:()=>"",buildAutoInjectedSkillContext:()=>"",skillRegistry:{getEnabled:()=>[],getEnabledForMode:()=>[],getBody:()=>null},resolveSlashActivation:()=>"",buildToneInjection:()=>"",buildAlwaysOnContext:async()=>"",buildRelationshipContext:async()=>"",buildToolSystemPrompt:()=>"",buildSoulSystemBasePrompt:()=>"fixed persona",readStylePrompt:()=>"",resolveSoulSampling:()=>({}),toolRegistry:{getEnabled:()=>[],getEnabledToolsForMode:()=>[]},normalizeChatMessages:raw=>raw as any,chatRequestTimeoutMs:5000,
  });
  const run=await f.runtime.openRun(f.grant());f.onFetch(async request=>{

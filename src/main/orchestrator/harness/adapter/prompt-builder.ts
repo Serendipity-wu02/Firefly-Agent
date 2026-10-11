@@ -75,9 +75,7 @@ export function buildHarnessPromptLayers(
   if (options.soulRuntimeContext) runtimeParts.push(options.soulRuntimeContext);
   if (options.planSkillContext) runtimeParts.push(options.planSkillContext);
   if (options.runtimeEnvironmentContext) runtimeParts.push(options.runtimeEnvironmentContext);
-  if (options.citaContextBlock) runtimeParts.push(options.citaContextBlock);
   if (options.recoveryContext) runtimeParts.push(`[RECOVERY_CONTEXT]\n${options.recoveryContext}`);
-  if (options.responseContext) runtimeParts.push(`[RESPONSE_CONTEXT]\n${options.responseContext}`);
 
   const stablePrefix = [...personaParts, ...toolParts].join("\n\n---\n\n");
   // 调用方可能把同一段内容同时放进静态层和运行时层；这里去重，避免模型收到重复上下文。

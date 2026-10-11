@@ -68,7 +68,7 @@ async function fixture(actualSdk=false){
  const request={model:"fixture-model",messages:[{role:"system" as const,content:"fixed"}],maxTokens:128,stream:true};
  const target={conversationId:"session-a",runId:"run-s",userTurnId:"u1",assistantTurnId:"assistant-s",sink,onEvent:(event:any)=>{display.push(event)},isCurrent:()=>current};
  const input={request,stream:target};
- const runtime=createAgentRuntime({runtimeStateService:{getState:()=>({})},sContext:{enabled:true,createPort:()=>port,streamRequest:()=>request}} as any);
+ const runtime=createAgentRuntime({sContext:{enabled:true,createPort:()=>port,streamRequest:()=>request}} as any);
  const assistants=async()=>((await store.read("session-a")).entries.filter(e=>e.kind==="assistant"));
  return {...f,store,port,binding,closeTranscript:()=>adapter.close(),runtime,request,target,input,sink,stream,counted,sent,display,assistants,get closed(){return closed},setEvents:(value:any[])=>{events=value},setHook:(value:typeof hook)=>{hook=value},setCountHook:(value:typeof countHook)=>{countHook=value},switchRun:()=>{current=false},drift:()=>{revision++}};
 }
@@ -137,7 +137,7 @@ it.each(["abort","new-turn","forget"])("%s while final append is queued cannot p
 });
 it("default-off Runtime build does not read the stream builder or provision the port",async()=>{
  let touched=0;const injection:any={enabled:false};Object.defineProperty(injection,"streamRequest",{get(){touched++;throw Error("FORBIDDEN")}});Object.defineProperty(injection,"createPort",{get(){touched++;throw Error("FORBIDDEN")}});
- const runtime=createAgentRuntime({runtimeStateService:{getState:()=>({})},sContext:injection} as any);await runtime.buildOptions.prepareTranscript?.({messages:[],sessionId:"session-a",mode:"chat"});const built=await runtime.buildOptions({messages:[],sessionId:"session-a",mode:"chat"});expect(built.options.controlledResponses).toBeUndefined();expect(touched).toBe(0);
+ const runtime=createAgentRuntime({sContext:injection} as any);await runtime.buildOptions.prepareTranscript?.({messages:[],sessionId:"session-a",mode:"chat"});const built=await runtime.buildOptions({messages:[],sessionId:"session-a",mode:"chat"});expect(built.options.controlledResponses).toBeUndefined();expect(touched).toBe(0);
 });
 
 it("rejects a same-ID sink owned by a different canonical store before count/send",async()=>{
@@ -168,7 +168,7 @@ it("Runtime fixes stream scope and builder before delayed options construction",
  const f=await fixture(),original=vi.mocked(buildAgentRunOptions).getMockImplementation()!;let release!:()=>void,started!:()=>void;
  const wait=new Promise<void>(r=>{release=r}),start=new Promise<void>(r=>{started=r});
  vi.mocked(buildAgentRunOptions).mockImplementationOnce(async(...args)=>{started();await wait;return original(...args)});
- const injection:any={enabled:true,createPort:()=>f.port,streamRequest:()=>f.request},runtime=createAgentRuntime({runtimeStateService:{getState:()=>({})},sContext:injection} as any);
+ const injection:any={enabled:true,createPort:()=>f.port,streamRequest:()=>f.request},runtime=createAgentRuntime({sContext:injection} as any);
  const input:any={sessionId:"session-a",userTurnId:"u1",assistantTurnId:"assistant-s",mode:"chat",messages:[]};const pending=runtime.buildOptions(input);await start;
  input.sessionId="other-session";input.userTurnId="other-user";input.assistantTurnId="other-assistant";injection.streamRequest=()=>{throw Error("MUTATED_BUILDER")};release();
  const built=await pending;Object.assign(built.options,{runId:"run-s",transcriptSink:f.sink,isControlledRunCurrent:f.target.isCurrent});
@@ -308,7 +308,7 @@ it.each(["", "bad\nentry", "bad\u0000entry", "bad\u007fentry", "x".repeat(1025)]
 it("forget then reopen admits a freshly committed user before lazy controlled provisioning without reviving old text",async()=>{
  const f=await fixture(),fact=await f.active("I prefer PowerShell");await f.forget(fact.factId!);await f.closeTranscript();f.reopen();
  const store=new ConversationTranscriptStore(path.join(f.root,"conversation"));let adapter:ReturnType<typeof createConversationTranscriptAdapter>,provisions=0;
- const runtime=createAgentRuntime({runtimeStateService:{getState:()=>({})},sContext:{enabled:true,streamRequest:()=>f.request,createPort:()=>{
+ const runtime=createAgentRuntime({sContext:{enabled:true,streamRequest:()=>f.request,createPort:()=>{
   provisions++;return createMainSRuntimePort({enabled:true,clock:f.options.clock,registry:f.registry,transport:f.transport,actorAuthority:f.actorAuthority,actorToken:f.actor,binding:f.binding,createTranscript:context=>(adapter=createConversationTranscriptAdapter({enabled:true,store,context,actorAuthority:f.actorAuthority,actorToken:f.actor})!)})!;
  }}} as any);
  const input={sessionId:"session-a",userTurnId:"fresh-u",assistantTurnId:"fresh-a",mode:"chat" as const,messages:[]};
@@ -323,7 +323,7 @@ it("forget then reopen admits a freshly committed user before lazy controlled pr
 
 it("early controlled provisioning rejects temporary actors before context reads and retains its failed lifetime",async()=>{
  const f=await fixture(),temporary=f.actorAuthority.bindActor(f.access,f.provider.adapter,f.identity,{sessionMode:"temporary"}),before=f.commands.length;let provisions=0;
- const runtime=createAgentRuntime({runtimeStateService:{getState:()=>({})},sContext:{enabled:true,streamRequest:()=>f.request,createPort:()=>{
+ const runtime=createAgentRuntime({sContext:{enabled:true,streamRequest:()=>f.request,createPort:()=>{
   provisions++;return createMainSRuntimePort({enabled:true,registry:f.registry,transport:f.transport,actorAuthority:f.actorAuthority,actorToken:temporary,binding:f.binding,createTranscript:()=>{throw Error("TEMPORARY_TRANSCRIPT_FORBIDDEN")}})!;
  }}} as any);
  const input={sessionId:"session-a",userTurnId:"u1",assistantTurnId:"assistant-s",mode:"chat" as const,messages:[]};
@@ -334,12 +334,12 @@ it("early controlled provisioning rejects temporary actors before context reads 
 
 it('Main selection leaves unselected sessions on their ordinary path without provisioning memory',async()=>{
  const f=await fixture(),provision=vi.fn(()=>{throw Error('UNSELECTED_PROVISION_FORBIDDEN')});
- const runtime=createAgentRuntime({runtimeStateService:{getState:()=>({})},sContext:{enabled:true,isControlledSession:(id:string)=>id==='session-a',createPort:provision,streamRequest:()=>f.request}} as any);
+ const runtime=createAgentRuntime({sContext:{enabled:true,isControlledSession:(id:string)=>id==='session-a',createPort:provision,streamRequest:()=>f.request}} as any);
  const input={sessionId:'session-b',userTurnId:'u-b',assistantTurnId:'a-b',mode:'chat',messages:[],memoryEnabled:true,actorKey:'renderer-claim',scopeKey:'renderer-claim'} as any;
  await runtime.buildOptions.prepareTranscript!(input);const built=await runtime.buildOptions(input);expect(built.options.controlledResponses).toBeUndefined();expect(provision).not.toHaveBeenCalled();
 });
 it('an unselected session does not inspect a controlled-only request builder accessor',async()=>{
  const f=await fixture();const injection={enabled:true,isControlledSession:()=>false,createPort:()=>f.port};Object.defineProperty(injection,'streamRequest',{get(){throw Error('UNSELECTED_BUILDER_READ_FORBIDDEN')}});
- const runtime=createAgentRuntime({runtimeStateService:{getState:()=>({})},sContext:injection} as any);const input={sessionId:'session-b',mode:'chat',messages:[]} as any;
+ const runtime=createAgentRuntime({sContext:injection} as any);const input={sessionId:'session-b',mode:'chat',messages:[]} as any;
  await expect(runtime.buildOptions.prepareTranscript!(input)).resolves.toBeUndefined();expect((await runtime.buildOptions(input)).options.controlledResponses).toBeUndefined();
 });

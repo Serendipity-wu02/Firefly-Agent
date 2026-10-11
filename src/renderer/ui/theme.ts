@@ -1,6 +1,5 @@
 import { connectUiColors } from "./colors";
 import type { UiColors } from "../../shared/ui-colors";
-import "./window-corner-radius";
 import { DEFAULT_UI_THEME, normalizeUiTheme, type UiTheme } from "../../shared/ui-theme";
 import { DEFAULT_UI_FONT, normalizeUiFont, type UiFont } from "../../shared/ui-font";
 import type { ChatAppearanceSettings } from "../../shared/chat-appearance";
@@ -12,8 +11,6 @@ declare global {
       onColorsChanged: (callback: (colors: UiColors) => void) => () => void;
       get: () => Promise<UiTheme>;
       onChanged: (callback: (theme: UiTheme) => void) => () => void;
-      getRadius: () => Promise<boolean>;
-      onRadiusChanged: (callback: (theme: boolean) => void) => () => void;
     };
     fireflyFont?: {
       get: () => Promise<UiFont>;
@@ -37,10 +34,6 @@ function applyTheme(theme: unknown): void {
   const next = normalizeUiTheme(theme);
   document.documentElement.dataset.uiTheme = next;
   try { window.localStorage.setItem(THEME_CACHE_KEY, next); } catch { /* storage may be unavailable; the main process stays authoritative */ }
-}
-
-function applyRadius(radius: boolean): void {
-  document.documentElement.dataset.uiRadius = radius ? undefined : "false";
 }
 
 const CUSTOM_FONT_STYLE_ID = "firefly-custom-font";
@@ -70,14 +63,6 @@ void window.fireflyTheme?.get()
 
 window.fireflyTheme?.onChanged((theme) => {
   applyTheme(theme);
-});
-
-void window.fireflyTheme?.getRadius()
-  .then(applyRadius)
-  .catch(() => applyRadius(true));
-
-window.fireflyTheme?.onRadiusChanged((theme) => {
-  applyRadius(theme);
 });
 
 applyFont(DEFAULT_UI_FONT);

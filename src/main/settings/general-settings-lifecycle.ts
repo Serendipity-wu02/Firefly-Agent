@@ -143,18 +143,12 @@ export function handleGeneralSettingsChanged(
   if (before.uiTheme !== after.uiTheme) {
     deps.windowManager?.broadcast(IPC.UI_THEME_CHANGED, after.uiTheme);
   }
-  if (before.uiThemeRadius !== after.uiThemeRadius) {
-    deps.windowManager?.broadcast(IPC.UI_THEME_RADIUS_CHANGED, after.uiThemeRadius);
-  }
-  if (before.windowCornerRadius !== after.windowCornerRadius) {
-    deps.windowManager?.broadcast(IPC.UI_WINDOW_CORNER_RADIUS_CHANGED, after.windowCornerRadius);
-  }
   if (JSON.stringify(before.uiFont) !== JSON.stringify(after.uiFont)) {
     deps.windowManager?.broadcast(IPC.UI_FONT_CHANGED, after.uiFont);
   }
   const prevAppearance = normalizeChatAppearance(before);
   const nextAppearance = normalizeChatAppearance(after);
-  if (prevAppearance.chatLineHeight !== nextAppearance.chatLineHeight) {
+  if (JSON.stringify(prevAppearance) !== JSON.stringify(nextAppearance)) {
     broadcastToAllWindows(IPC.CHAT_TYPOGRAPHY_CHANGED, nextAppearance);
   }
   if (before.uiIcon !== after.uiIcon) {

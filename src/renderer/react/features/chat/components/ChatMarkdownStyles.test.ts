@@ -65,7 +65,9 @@ describe("chat Markdown style integration", () => {
   });
 
   it("polishes file links, display math, lists, and task controls", () => {
-    const stylesheet = readFileSync(resolve(componentDirectory, "ChatMessageList.css"), "utf8");
+    // jsdom 不解析 var()：按各变量的回落值求值，其余断言保持原样。
+    const stylesheet = readFileSync(resolve(componentDirectory, "ChatMessageList.css"), "utf8")
+      .replace(/var\(--cy-chat-font-size,\s*([^)]+)\)/g, "$1");
     const style = document.createElement("style");
     style.textContent = stylesheet;
     document.head.append(style);

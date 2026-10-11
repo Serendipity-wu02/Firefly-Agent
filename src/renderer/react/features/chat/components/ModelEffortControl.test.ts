@@ -10,6 +10,6 @@ describe("shortEffortLabel", () => {
   });
 
   it("keeps effort level names as they are", () => {
-    for (const label of ["low", "medium", "high", "xhigh", "max", "PRO"]) expect(shortEffortLabel(label)).toBe(label);
+    for (const label of ["low", "medium", "high", "xhigh", "max"]) expect(shortEffortLabel(label)).toBe(label);
   });
 });

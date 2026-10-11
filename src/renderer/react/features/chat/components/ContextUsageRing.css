@@ -46,122 +46,53 @@
 
 /* ── 占比菜单 ── */
 
-/* Popover 外壳对齐表情包选择器：16px 圆角 + 边框 + 收紧内边距。 */
+/* Popover 外壳：16px 圆角 + 边框 + 收紧内边距。 */
 .cy-context-usage-popover .ant-popover-inner {
-  padding: 14px 16px;
+  padding: 14px 14px 12px;
   border: 1px solid var(--cy-border);
-  border-radius: 12px;
+  border-radius: 16px;
 }
 
+/* 固定宽度，避免内容变化时弹层宽度跳动；各行不换行、只在行内截断。 */
 .cy-context-usage-menu {
   display: grid;
-  gap: 14px;
-  width: max-content;
-  min-width: 260px;
-  max-width: 320px;
-}
-
-/* 小人状态行：按档位换图换文案，warm/alert 时文字染色呼应圆环。
-   小人图可点击（can-compact）：两张图叠放 crossfade——
-   悬停渐隐档位小人、渐显压缩小人；压缩中固定显示压缩小人。 */
-.cy-context-usage-menu__mood {
-  display: flex;
-  align-items: center;
   gap: 12px;
-  padding: 2px 0;
-}
-
-.cy-context-usage-menu__mood-figure {
-  position: relative;
-  width: 52px;
-  height: 52px;
-  flex: none;
-  padding: 0;
-  border: 0;
-  background: transparent;
-  border-radius: 12px;
-}
-
-.cy-context-usage-menu__mood.can-compact .cy-context-usage-menu__mood-figure {
-  cursor: pointer;
-}
-
-.cy-context-usage-menu__mood-figure:disabled {
-  cursor: default;
-}
-
-.cy-context-usage-menu__mood-figure img {
-  position: absolute;
-  inset: 0;
-  width: 100%;
-  height: 100%;
-  object-fit: contain;
-  -webkit-user-drag: none;
-  transition: opacity 240ms ease;
-}
-
-/* 压缩小人默认隐形，悬停/压缩中接管显示。 */
-.cy-context-usage-menu__mood-img--compact {
-  opacity: 0;
-}
-
-.cy-context-usage-menu__mood.can-compact .cy-context-usage-menu__mood-figure:not(:disabled):hover
-.cy-context-usage-menu__mood-img:not(.cy-context-usage-menu__mood-img--compact) {
-  opacity: 0;
-}
-
-.cy-context-usage-menu__mood.can-compact .cy-context-usage-menu__mood-figure:not(:disabled):hover
-.cy-context-usage-menu__mood-img--compact,
-.cy-context-usage-menu__mood.is-compacting .cy-context-usage-menu__mood-img--compact {
-  opacity: 1;
-}
-
-.cy-context-usage-menu__mood.is-compacting .cy-context-usage-menu__mood-img:not(.cy-context-usage-menu__mood-img--compact) {
-  opacity: 0;
-}
-
-.cy-context-usage-menu__mood span {
-  font: 12px/1.5 var(--rb-font-sans, sans-serif);
-  color: var(--cy-text-muted);
-}
-
-.cy-context-usage-menu__mood.is-warm span {
-  color: var(--cy-warning);
-}
-
-.cy-context-usage-menu__mood.is-alert span {
-  color: var(--cy-danger);
+  width: 288px;
+  min-width: 0;
 }
 
 .cy-context-usage-menu__header {
   display: flex;
   align-items: baseline;
   justify-content: space-between;
-  gap: 16px;
+  gap: 12px;
 }
 
 .cy-context-usage-menu__header strong {
   font: 600 13px/1.4 var(--rb-font-sans, sans-serif);
   color: var(--cy-text);
+  white-space: nowrap;
 }
 
 .cy-context-usage-menu__header span {
   font: 12px/1.4 var(--rb-font-sans, sans-serif);
   color: var(--cy-text-muted);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
 }
 
 /* 总占比进度条：单色，随档位变色（呼应圆环）。 */
 .cy-context-usage-menu__progress {
-  height: 4px;
+  height: 6px;
   overflow: hidden;
-  border-radius: 2px;
+  border-radius: 3px;
   background: var(--cy-border);
 }
 
 .cy-context-usage-menu__progress span {
   display: block;
   height: 100%;
-  border-radius: 2px;
+  border-radius: 3px;
   transition: width 200ms ease;
 }
 
@@ -177,20 +108,85 @@
   background: #ef4444;
 }
 
+/* 压缩提示块：按钮独占一行（nowrap 药丸形），提示文字另起一行，互不挤压。 */
+.cy-context-usage-menu__mood {
+  display: grid;
+  justify-items: start;
+  gap: 6px;
+  padding: 8px 10px;
+  border-radius: 12px;
+  background: var(--cy-bg-subtle);
+}
+
+.cy-context-usage-menu__mood-figure {
+  display: inline-flex;
+  align-items: center;
+  min-height: 26px;
+  padding: 0 10px;
+  border: 1px solid var(--cy-border);
+  border-radius: 999px;
+  background: var(--cy-surface);
+  color: var(--cy-text);
+  font: 500 12px/1 var(--rb-font-sans, sans-serif);
+  white-space: nowrap;
+}
+
+.cy-context-usage-menu__mood.can-compact .cy-context-usage-menu__mood-figure {
+  cursor: pointer;
+}
+
+.cy-context-usage-menu__mood.can-compact .cy-context-usage-menu__mood-figure:not(:disabled):hover {
+  border-color: var(--cy-accent);
+  color: var(--cy-accent);
+}
+
+.cy-context-usage-menu__mood-figure:disabled {
+  color: var(--cy-text-muted);
+  cursor: default;
+}
+
+.cy-context-usage-menu__mood.is-compacting .cy-context-usage-menu__mood-figure {
+  color: var(--cy-text-muted);
+}
+
+.cy-context-usage-menu__mood span {
+  justify-self: stretch;
+  min-width: 0;
+  font: 12px/1.5 var(--rb-font-sans, sans-serif);
+  color: var(--cy-text-muted);
+  overflow-wrap: anywhere;
+}
+
+.cy-context-usage-menu__mood.is-warm span {
+  color: var(--cy-warning);
+}
+
+.cy-context-usage-menu__mood.is-alert span {
+  color: var(--cy-danger);
+}
+
+/* 明细：类别名 / token / 占比三列对齐。 */
 .cy-context-usage-menu__rows {
   display: grid;
-  gap: 10px;
+  gap: 2px;
   margin: 0;
-  padding: 2px 0;
+  padding: 0;
   list-style: none;
 }
 
 .cy-context-usage-menu__rows li {
-  display: flex;
+  display: grid;
+  grid-template-columns: 8px minmax(0, 1fr) auto 38px;
   align-items: center;
-  gap: 10px;
+  column-gap: 10px;
+  padding: 5px 2px;
+  border-radius: 8px;
   font: 12px/1.6 var(--rb-font-sans, sans-serif);
   color: var(--cy-text);
+}
+
+.cy-context-usage-menu__rows li:hover {
+  background: var(--cy-bg-subtle);
 }
 
 .cy-context-usage-menu__dot {
@@ -203,7 +199,6 @@
 }
 
 .cy-context-usage-menu__name {
-  flex: 1;
   min-width: 0;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -211,38 +206,23 @@
 }
 
 .cy-context-usage-menu__tokens {
-  min-width: 44px;
+  min-width: 0;
   text-align: right;
   color: var(--cy-text);
   font-variant-numeric: tabular-nums;
+  white-space: nowrap;
 }
 
 .cy-context-usage-menu__share {
-  width: 38px;
   text-align: right;
   color: var(--cy-text-muted);
   font-variant-numeric: tabular-nums;
+  white-space: nowrap;
 }
 
 .cy-context-usage-menu__footnote {
+  padding-top: 8px;
+  border-top: 1px solid var(--cy-border);
   font: 11px/1.4 var(--rb-font-sans, sans-serif);
   color: var(--cy-text-muted);
 }
-
-/* ── 版面整理：固定宽度、小人行做成提示条、数字列对齐 ── */
-.cy-context-usage-popover .ant-popover-inner { padding: 14px 14px 12px; border-radius: 16px; }
-.cy-context-usage-menu { gap: 12px; width: 288px; min-width: 0; max-width: none; }
-.cy-context-usage-menu__header { gap: 12px; }
-.cy-context-usage-menu__header span { font-variant-numeric: tabular-nums; }
-.cy-context-usage-menu__progress { height: 6px; border-radius: 3px; }
-.cy-context-usage-menu__progress span { border-radius: 3px; }
-
-.cy-context-usage-menu__mood { gap: 10px; padding: 8px 10px; border-radius: 12px; background: var(--cy-bg-subtle); }
-.cy-context-usage-menu__mood-figure { width: 40px; height: 40px; border-radius: 10px; overflow: hidden; color: transparent; font-size: 0; }
-.cy-context-usage-menu__mood span { min-width: 0; flex: 1; overflow-wrap: anywhere; }
-
-.cy-context-usage-menu__rows { gap: 2px; padding: 0; }
-.cy-context-usage-menu__rows li { display: grid; grid-template-columns: 8px minmax(0, 1fr) auto 38px; align-items: center; column-gap: 10px; padding: 5px 2px; border-radius: 8px; }
-.cy-context-usage-menu__rows li:hover { background: var(--cy-bg-subtle); }
-.cy-context-usage-menu__tokens { min-width: 0; }
-.cy-context-usage-menu__footnote { padding-top: 8px; border-top: 1px solid var(--cy-border); }

@@ -179,6 +179,13 @@
     "title": "Context: {{summary}}",
     "footnote": "Estimated value; refreshes after each message"
   },
+  "tokenUsageBar": {
+    "ariaLabel": "Token usage, last {{days}} days",
+    "requests": "{{count}} requests",
+    "total": "Last {{days}} days {{value}} tok",
+    "cacheHit": "Cache hit {{rate}}",
+    "tooltip": "Last {{days}} days: input {{input}} tok · output {{output}} tok"
+  },
   "agentRounds": {
     "liveListDir": "listing directory",
     "liveReadFile": "reading file",
@@ -259,12 +266,6 @@
     "directFallback": "Switched to direct execution — I'll keep going.",
     "partial": "Some steps didn't finish; I'll explain what's usable in my reply.",
     "failed": "This round didn't quite go through — check my reply for details, then try again."
-  },
-  "statusFloat": {
-    "offline": "Offline",
-    "listening": "Listening",
-    "companion": "Here with you",
-    "remind": "Reminder"
   },
   "rightInspector": {
     "closeTab": "Close {{name}} (Delete on the tab)",
@@ -566,15 +567,6 @@
     "entryFailed": "Plan failed · Click to view",
     "entryCancelled": "Plan cancelled · Click to view"
   },
-  "style": {
-    "panelTitle": "Reply style",
-    "optionDefault": "Gentle & warm",
-    "optionLively": "Energetic & playful",
-    "optionHealing": "Soothing & comforting",
-    "optionFocused": "Thoughtful & focused",
-    "optionSweet": "Sweet & cozy",
-    "optionCustom": "Custom"
-  },
   "todo": {
     "modeWork": "Work",
     "modeLearn": "Learn",
@@ -801,6 +793,7 @@
     "tools": "Tools",
     "skills": "Skills",
     "plugins": "Plugins",
+    "scheduledTasks": "Scheduled tasks",
     "modelNotConnected": "No model connected",
     "userAlt": "You",
     "settings": "Settings",

@@ -118,7 +118,6 @@ export interface AguiApi {
     messages: Array<{ role: "user" | "model"; content: string; at?: number }>;
     userTurnId: string;
     assistantTurnId: string;
-    styleId?: string;
     sessionId: string;
     imageAttachments?: Array<{ name: string; filePath: string; mime?: string }>;
     recoveryContext?: string;

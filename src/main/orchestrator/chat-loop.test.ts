@@ -47,7 +47,6 @@ const capability: ProviderCapability = {
   thinkingField: null,
   cacheStrategy: "none",
   testStrategy: "text",
-  supportsVision: false,
 };
 
 class FakeAdapter implements ChatVendorAdapter {
@@ -296,7 +295,6 @@ describe("runChatLoop", () => {
       adapter,
       messages: [{ role: "user", content: "陪我聊聊" }],
       soulSystemBaseContent: "SOUL_SYSTEM",
-      soulSampling: { temperature: 0.82, frequencyPenalty: 0.2 },
       timeoutMs: 30_000,
       onEvent,
       recordUsage,
@@ -308,8 +306,6 @@ describe("runChatLoop", () => {
     expect(adapter.requests[0].messages[1]).toEqual({ role: "user", content: "陪我聊聊" });
     expect(adapter.requests[0].tools).toBeUndefined();
     expect(adapter.requests[0].structuredOutput).toBeUndefined();
-    expect(adapter.requests[0].temperature).toBe(0.82);
-    expect(adapter.requests[0].frequencyPenalty).toBe(0.2);
     expect(result.toolResults).toEqual([]);
     expect(result.reply).toBe("只是陪你聊聊。");
     expect(result.totalUsage).toEqual({ input: 12, output: 6 });

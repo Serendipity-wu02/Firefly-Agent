@@ -300,38 +300,7 @@
   color: var(--rb-text-muted);
 }
 
-[data-ui-theme="pearl-white"] .plugin-panel-heading p,
-[data-ui-theme="pearl-white"] .plugin-card__body p,
-[data-ui-theme="pearl-white"] .plugin-card--sub .plugin-card__body p,
-[data-ui-theme="pearl-white"] .plugin-config .user-field-hint,
-[data-ui-theme="pearl-white"] .user-field-hint,
-[data-ui-theme="pearl-white"] .settings-nav__footer,
-[data-ui-theme="pearl-white"] .sidebar__version,
-[data-ui-theme="pearl-white"] .schedule-footer__version,
-[data-ui-theme="pearl-white"] .model-params-hint,
-[data-ui-theme="pearl-white"] .model-params-section .field small,
-[data-ui-theme="pearl-white"] .agent-setting-card p,
-[data-ui-theme="pearl-white"] .agent-setting-card__note,
-[data-ui-theme="pearl-white"] .agent-setting-subgroup p,
-[data-ui-theme="pearl-white"] .agent-status-row em,
-[data-ui-theme="pearl-white"] .vision-config-heading p,
-[data-ui-theme="pearl-white"] .vision-hint,
-[data-ui-theme="pearl-white"] .panel-hint,
-[data-ui-theme="pearl-white"] .empty-hint,
-[data-ui-theme="pearl-white"] .skill-row__desc,
-[data-ui-theme="pearl-white"] .skill-group__desc,
-[data-ui-theme="pearl-white"] .scheduler-empty,
-[data-ui-theme="pearl-white"] .scheduler-card__meta,
-[data-ui-theme="pearl-white"] .token-panel__hint,
-[data-ui-theme="pearl-white"] .token-empty__hint,
-[data-ui-theme="pearl-white"] .tts-hint,
-[data-ui-theme="pearl-white"] .tts-clone-hint,
-[data-ui-theme="pearl-white"] .sticker-field label,
-[data-ui-theme="pearl-white"] .sticker-file-name,
-[data-ui-theme="pearl-white"] .channels-card__hint,
-[data-ui-theme="pearl-white"] .todo-panel__count,
-[data-ui-theme="pearl-white"] .todo-progress__label,
-[data-ui-theme="pearl-white"] .choice-card__option-desc {
+[data-ui-theme="pearl-white"] .plugin-panel-heading p, [data-ui-theme="pearl-white"] .plugin-card__body p, [data-ui-theme="pearl-white"] .plugin-card--sub .plugin-card__body p, [data-ui-theme="pearl-white"] .plugin-config .user-field-hint, [data-ui-theme="pearl-white"] .user-field-hint, [data-ui-theme="pearl-white"] .settings-nav__footer, [data-ui-theme="pearl-white"] .sidebar__version, [data-ui-theme="pearl-white"] .schedule-footer__version, [data-ui-theme="pearl-white"] .model-params-hint, [data-ui-theme="pearl-white"] .model-params-section .field small, [data-ui-theme="pearl-white"] .agent-setting-card p, [data-ui-theme="pearl-white"] .agent-setting-card__note, [data-ui-theme="pearl-white"] .agent-setting-subgroup p, [data-ui-theme="pearl-white"] .agent-status-row em, [data-ui-theme="pearl-white"] .vision-config-heading p, [data-ui-theme="pearl-white"] .vision-hint, [data-ui-theme="pearl-white"] .panel-hint, [data-ui-theme="pearl-white"] .empty-hint, [data-ui-theme="pearl-white"] .skill-row__desc, [data-ui-theme="pearl-white"] .skill-group__desc, [data-ui-theme="pearl-white"] .scheduler-empty, [data-ui-theme="pearl-white"] .scheduler-card__meta, [data-ui-theme="pearl-white"] .tts-hint, [data-ui-theme="pearl-white"] .tts-clone-hint, [data-ui-theme="pearl-white"] .sticker-field label, [data-ui-theme="pearl-white"] .sticker-file-name, [data-ui-theme="pearl-white"] .channels-card__hint, [data-ui-theme="pearl-white"] .todo-panel__count, [data-ui-theme="pearl-white"] .todo-progress__label, [data-ui-theme="pearl-white"] .choice-card__option-desc {
   color: var(--rb-text-muted);
   opacity: 1;
 }
@@ -481,22 +450,7 @@
   border-color: var(--rb-pink-200);
 }
 
-[data-ui-theme="pearl-white"] .settings-panel,
-[data-ui-theme="pearl-white"] .panel-card,
-[data-ui-theme="pearl-white"] .schedule-usage,
-[data-ui-theme="pearl-white"] .disclaimer-section,
-[data-ui-theme="pearl-white"] .sticker-card,
-[data-ui-theme="pearl-white"] .setting-row,
-[data-ui-theme="pearl-white"] .agent-setting-card,
-[data-ui-theme="pearl-white"] .memory-card,
-[data-ui-theme="pearl-white"] .plugin-card,
-[data-ui-theme="pearl-white"] .tts-section,
-[data-ui-theme="pearl-white"] .token-card,
-[data-ui-theme="pearl-white"] .task-item,
-[data-ui-theme="pearl-white"] .chat__rail,
-[data-ui-theme="pearl-white"] .chat__rail-item,
-[data-ui-theme="pearl-white"] .sticker-picker,
-[data-ui-theme="pearl-white"] .sticker-picker__item {
+[data-ui-theme="pearl-white"] .settings-panel, [data-ui-theme="pearl-white"] .panel-card, [data-ui-theme="pearl-white"] .schedule-usage, [data-ui-theme="pearl-white"] .disclaimer-section, [data-ui-theme="pearl-white"] .sticker-card, [data-ui-theme="pearl-white"] .setting-row, [data-ui-theme="pearl-white"] .agent-setting-card, [data-ui-theme="pearl-white"] .memory-card, [data-ui-theme="pearl-white"] .plugin-card, [data-ui-theme="pearl-white"] .tts-section, [data-ui-theme="pearl-white"] .task-item, [data-ui-theme="pearl-white"] .chat__rail, [data-ui-theme="pearl-white"] .chat__rail-item, [data-ui-theme="pearl-white"] .sticker-picker, [data-ui-theme="pearl-white"] .sticker-picker__item {
   border-color: var(--rb-border-soft);
   background: var(--rb-card-bg);
   box-shadow: var(--rb-shadow-card);
@@ -504,7 +458,6 @@
 
 [data-ui-theme="pearl-white"] .panel-heading__icon,
 [data-ui-theme="pearl-white"] .placeholder-card__icon,
-[data-ui-theme="pearl-white"] .indicator__emoji,
 [data-ui-theme="pearl-white"] .model-feed__emoji {
   border-color: var(--rb-pink-200);
   background: var(--rb-pink-50);
@@ -741,29 +694,11 @@
   color: var(--rb-text-strong);
 }
 
-[data-ui-theme="pearl-white"] .perm-seg.is-active,
-[data-ui-theme="pearl-white"] .token-range__btn.is-active,
-[data-ui-theme="pearl-white"] .tts-engine.is-active {
+[data-ui-theme="pearl-white"] .perm-seg.is-active, [data-ui-theme="pearl-white"] .tts-engine.is-active {
   color: var(--rb-text-on-pink);
 }
 
-[data-ui-theme="pearl-white"] .plugin-card__icon,
-[data-ui-theme="pearl-white"] .plugin-perm-capsule,
-[data-ui-theme="pearl-white"] .accordion-toggle,
-[data-ui-theme="pearl-white"] .base-url-reset,
-[data-ui-theme="pearl-white"] .preset-website-link,
-[data-ui-theme="pearl-white"] .token-range__btn,
-[data-ui-theme="pearl-white"] .token-hero,
-[data-ui-theme="pearl-white"] .token-stat,
-[data-ui-theme="pearl-white"] .token-trend-wrap,
-[data-ui-theme="pearl-white"] .token-panel__hint,
-[data-ui-theme="pearl-white"] .tts-engine,
-[data-ui-theme="pearl-white"] .tts-hint,
-[data-ui-theme="pearl-white"] .tts-clone-section,
-[data-ui-theme="pearl-white"] .skill-group,
-[data-ui-theme="pearl-white"] .skill-group__header,
-[data-ui-theme="pearl-white"] .scheduler-toolbar,
-[data-ui-theme="pearl-white"] .scheduler-empty {
+[data-ui-theme="pearl-white"] .plugin-card__icon, [data-ui-theme="pearl-white"] .plugin-perm-capsule, [data-ui-theme="pearl-white"] .accordion-toggle, [data-ui-theme="pearl-white"] .base-url-reset, [data-ui-theme="pearl-white"] .preset-website-link, [data-ui-theme="pearl-white"] .tts-engine, [data-ui-theme="pearl-white"] .tts-hint, [data-ui-theme="pearl-white"] .tts-clone-section, [data-ui-theme="pearl-white"] .skill-group, [data-ui-theme="pearl-white"] .skill-group__header, [data-ui-theme="pearl-white"] .scheduler-toolbar, [data-ui-theme="pearl-white"] .scheduler-empty {
   color: var(--rb-text-default);
   background: var(--rb-bg-2);
   border-color: var(--rb-border-soft);
@@ -821,25 +756,11 @@
   background: var(--rb-card-bg);
 }
 
-[data-ui-theme="pearl-white"] .rag-model-card__desc,
-[data-ui-theme="pearl-white"] .token-hero__label,
-[data-ui-theme="pearl-white"] .token-hero__req-label,
-[data-ui-theme="pearl-white"] .token-stat__label,
-[data-ui-theme="pearl-white"] .token-bar__label,
-[data-ui-theme="pearl-white"] .token-section-title,
-[data-ui-theme="pearl-white"] .tts-engine__tag {
+[data-ui-theme="pearl-white"] .rag-model-card__desc, [data-ui-theme="pearl-white"] .tts-engine__tag {
   color: var(--rb-text-muted);
 }
 
-[data-ui-theme="pearl-white"] .rag-model-card em,
-[data-ui-theme="pearl-white"] .token-hero__req-value,
-[data-ui-theme="pearl-white"] .token-stat__value,
-[data-ui-theme="pearl-white"] .tts-section__title,
-[data-ui-theme="pearl-white"] .tts-engine__name,
-[data-ui-theme="pearl-white"] .tts-clone-title,
-[data-ui-theme="pearl-white"] .skill-row__title,
-[data-ui-theme="pearl-white"] .skill-group__title,
-[data-ui-theme="pearl-white"] .scheduler-toolbar__copy strong {
+[data-ui-theme="pearl-white"] .rag-model-card em, [data-ui-theme="pearl-white"] .tts-section__title, [data-ui-theme="pearl-white"] .tts-engine__name, [data-ui-theme="pearl-white"] .tts-clone-title, [data-ui-theme="pearl-white"] .skill-row__title, [data-ui-theme="pearl-white"] .skill-group__title, [data-ui-theme="pearl-white"] .scheduler-toolbar__copy strong {
   color: var(--rb-text-strong);
 }
 
@@ -861,18 +782,9 @@
   color: #b91c1c;
 }
 
-[data-ui-theme="pearl-white"] .token-tooltip {
-  color: var(--rb-text-default);
-  background: var(--rb-card-bg);
-  border-color: var(--rb-border-strong);
-  box-shadow: var(--rb-shadow-elevated);
-}
 
-[data-ui-theme="pearl-white"] .token-tooltip__date,
-[data-ui-theme="pearl-white"] .token-tooltip__row span:first-child {
-  color: var(--rb-text-muted);
-  border-color: var(--rb-border-soft);
-}
+
+
 
 [data-ui-theme="pearl-white"] .tts-engine.is-active,
 [data-ui-theme="pearl-white"] .rag-model-card.is-active {

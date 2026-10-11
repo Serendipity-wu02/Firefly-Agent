@@ -44,9 +44,9 @@ describe("resolveApiEndpoint", () => {
     });
   });
 
-  it("appends /responses to a third-party versioned base URL (Ark /v3)", () => {
-    expect(resolveApiEndpoint("https://ark.cn-beijing.volces.com/api/v3", "responses")).toEqual({
-      url: "https://ark.cn-beijing.volces.com/api/v3/responses",
+  it("appends /responses to a third-party versioned base URL (/api/v3)", () => {
+    expect(resolveApiEndpoint("https://gateway.example.com/api/v3", "responses")).toEqual({
+      url: "https://gateway.example.com/api/v3/responses",
       appendedSuffix: "/responses",
     });
   });

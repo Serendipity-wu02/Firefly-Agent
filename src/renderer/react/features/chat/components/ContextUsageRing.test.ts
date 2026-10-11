@@ -5,6 +5,7 @@
 // - contextWindowTokens<=0 / NaN：不渲染进度弧与百分比，菜单仍显示绝对值
 // - 分级变色（normal / warm≥70% / alert≥90%）
 // - 无快照返回 null；0 token 类别在菜单中隐藏；数字格式化
+import fs from "node:fs";
 import * as React from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it, vi } from "vitest";
@@ -239,5 +240,29 @@ describe("ContextUsageRing rendering", () => {
     expect(markup).toContain(`cy-context-usage-menu__dot" style="opacity:1`);
     expect(markup).toContain(`cy-context-usage-menu__dot" style="opacity:0.85`);
     expect(markup).toContain(`cy-context-usage-menu__dot" style="opacity:0.7`);
+  });
+});
+
+describe("ContextUsageRing popover layout", () => {
+  const css = fs.readFileSync("src/renderer/react/features/chat/components/ContextUsageRing.css", "utf8");
+  /** 取某个选择器规则的声明体（精确匹配 "selector {"，避免 mood 与 mood-figure 串台）。 */
+  function ruleBody(selector: string): string {
+    const start = css.indexOf(`${selector} {`);
+    if (start < 0) return "";
+    return css.slice(start, css.indexOf("}", start));
+  }
+
+  // 回归：按钮曾被锁成 40px 宽、文字透明，"整理记忆（压缩上下文）"被挤成竖排并与明细重叠。
+  it("keeps the compact button on one line and never squeezes it to a fixed figure size", () => {
+    const figure = ruleBody(".cy-context-usage-menu__mood-figure");
+    expect(figure).toContain("white-space: nowrap");
+    expect(figure).not.toMatch(/width:\s*\d+px/);
+    expect(figure).not.toMatch(/font-size:\s*0/);
+  });
+
+  it("stacks the hint text under the button instead of beside it", () => {
+    const mood = ruleBody(".cy-context-usage-menu__mood");
+    expect(mood).toContain("display: grid");
+    expect(mood).not.toContain("display: flex");
   });
 });

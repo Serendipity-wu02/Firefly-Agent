@@ -80,33 +80,3 @@ export function createVisibleStreamFilter(): {
     },
   };
 }
-
-export function parseObserverFeeling(text: string): string | null {
-  const payload = extractJsonPayload(text);
-  if (!payload || typeof payload !== "object") return null;
-  const record = payload as Record<string, unknown>;
-  const feeling = typeof record.feeling === "string" ? record.feeling : null;
-  const validFeelings = ["平静", "开心", "温柔", "激动", "撒娇", "担心", "难过", "感动", "害羞"];
-  return feeling && validFeelings.includes(feeling) ? feeling : null;
-}
-
-export function extractJsonPayload(text: string): unknown | null {
-  const cleaned = text
-    .replace(/^```(?:json)?\s*/i, "")
-    .replace(/```$/i, "")
-    .trim();
-
-  try {
-    return JSON.parse(cleaned) as unknown;
-  } catch {
-    const start = cleaned.indexOf("{");
-    const end = cleaned.lastIndexOf("}");
-    if (start < 0 || end <= start) return null;
-
-    try {
-      return JSON.parse(cleaned.slice(start, end + 1)) as unknown;
-    } catch {
-      return null;
-    }
-  }
-}

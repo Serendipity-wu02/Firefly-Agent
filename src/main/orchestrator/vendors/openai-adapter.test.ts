@@ -14,7 +14,6 @@ const capability: ProviderCapability = {
   thinkingField: null,
   cacheStrategy: "none",
   testStrategy: "text",
-  supportsVision: true,
 };
 
 describe("OpenAICompatAdapter", () => {
@@ -202,7 +201,7 @@ describe("OpenAICompatAdapter", () => {
     expect(req.headers.Authorization).toBeUndefined();
   });
 
-  // ─── 流式 / 非流式 reasoning_content 解析（覆盖 DeepSeek / Qwen / GLM / MiMo / Doubao） ───
+  // ─── 流式 / 非流式 reasoning_content 解析（覆盖 DeepSeek / Qwen / GLM / MiMo） ───
 
   test("parseStreamEvent: delta.reasoning_content → chunk.deltaThinking（DeepSeek/Qwen/GLM/MiMo 流式）", () => {
     const adapter = new OpenAICompatAdapter("test-openai", capability);
@@ -345,5 +344,66 @@ describe("OpenAICompatAdapter", () => {
     });
     // 第 4 条 user 顺序在最后
     expect(body.messages[3]).toEqual({ role: "user", content: "那上海呢" });
+  });
+});
+
+describe("OpenAICompatAdapter — OpenRouter", () => {
+  const openRouterCapability: ProviderCapability = {
+    ...capability,
+    id: "openrouter",
+    displayName: "OpenRouter",
+    baseUrl: "https://openrouter.ai/api/v1",
+    authStyle: "bearer",
+    defaultModel: "",
+  };
+  const adapter = new OpenAICompatAdapter("openrouter", openRouterCapability);
+  const cfg = {
+    provider: "OpenRouter",
+    baseUrl: "https://openrouter.ai/api/v1",
+    model: "openai/gpt-5.6",
+    apiKey: "sk-or-v1-test",
+  };
+  const req = { model: cfg.model, messages: [{ role: "user" as const, content: "hi" }] };
+
+  test("请求走 Chat Completions 端点，Bearer 鉴权，不附加 HTTP-Referer / X-Title", () => {
+    const http = adapter.buildRequest(req, cfg);
+    expect(http.url).toBe("https://openrouter.ai/api/v1/chat/completions");
+    expect(http.headers.Authorization).toBe("Bearer sk-or-v1-test");
+    expect(http.headers).not.toHaveProperty("HTTP-Referer");
+    expect(http.headers).not.toHaveProperty("X-Title");
+  });
+
+  test("推理档位写为 reasoning: { effort }，不写 reasoning_effort；max 线上为 xhigh", () => {
+    const body = JSON.parse(adapter.buildRequest(req, { ...cfg, reasoning: { mode: "on", effort: "max" } }).body);
+    expect(body.reasoning).toEqual({ effort: "xhigh" });
+    expect(body).not.toHaveProperty("reasoning_effort");
+  });
+
+  test("关闭推理 → reasoning: { effort: 'none' }；auto → 不发 reasoning 字段", () => {
+    const off = JSON.parse(adapter.buildRequest(req, { ...cfg, reasoning: { mode: "off" } }).body);
+    expect(off.reasoning).toEqual({ effort: "none" });
+    const auto = JSON.parse(adapter.buildRequest(req, { ...cfg, reasoning: { mode: "auto" } }).body);
+    expect(auto).not.toHaveProperty("reasoning");
+  });
+
+  test("流式请求保留通用 stream_options.include_usage（OpenRouter 文档称该字段无副作用）", () => {
+    const body = JSON.parse(adapter.buildStreamRequest(req, cfg).body);
+    expect(body).toMatchObject({ stream: true, stream_options: { include_usage: true } });
+  });
+
+  test("非流式 message.reasoning 字符串映射为思考文本", () => {
+    const parsed = adapter.parseResponse({
+      choices: [{ message: { role: "assistant", content: "answer", reasoning: "let me think" }, finish_reason: "stop" }],
+    });
+    expect(parsed.thinking).toBe("let me think");
+    expect(parsed.assistantMessage.thinking).toBe("let me think");
+    expect(parsed.text).toBe("answer");
+  });
+
+  test("message.reasoning 不是字符串时忽略，不当作思考文本", () => {
+    const parsed = adapter.parseResponse({
+      choices: [{ message: { role: "assistant", content: "answer", reasoning: { text: "x" } }, finish_reason: "stop" }],
+    });
+    expect(parsed.thinking).toBeUndefined();
   });
 });

@@ -1,5 +1,3 @@
-import { normalizeMobileMessageSegmentationMode, type MobileMessageSegmentationMode } from "../../shared/preferences";
-import { splitTextBySentenceBreaks } from "../../shared/message-segmentation";
 import type { ChannelManager } from "./manager";
 import {
   createChannelDeliveryService,
@@ -65,7 +63,6 @@ export type ProactiveChannelDeliveryResult =
 interface ProactiveChannelDeliveryInput {
   channel: ProactiveMobileChannel;
   text: string;
-  mobileMessageSegmentation: MobileMessageSegmentationMode;
   manager: Pick<ChannelManager, "getAdapter">;
   delivery?: ChannelDeliveryService;
   recipientRegistry?: ProactiveChannelRecipientRegistry;
@@ -86,8 +83,7 @@ export async function sendProactiveChannelMessage(
   if (!recipient) return { kind: "cancelled", reason: "recipient_unavailable" };
   const delivery = input.delivery ?? createChannelDeliveryService(input.manager);
 
-  const mode = normalizeMobileMessageSegmentationMode(input.mobileMessageSegmentation);
-  const texts = mode === "on" ? splitTextBySentenceBreaks(input.text) : [input.text.trim()].filter(Boolean);
+  const texts = [input.text.trim()].filter(Boolean);
   if (texts.length === 0) return { kind: "cancelled", reason: "empty_text" };
 
   const deliveredTexts: string[] = [];

@@ -5,11 +5,6 @@ import { resolveLocalStickerPath } from "../sticker-protocol";
 import { getStickersDir, loadUserStickerManifest } from "../sticker-storage";
 import { BUILT_IN_STICKER_FILES } from "../sticker-descriptions";
 import { BUILT_IN_STICKER_IDS } from "../../shared/sticker-types";
-import { splitTextBySentenceBreaks } from "../../shared/message-segmentation";
-import {
-  normalizeMobileMessageSegmentationMode,
-  type MobileMessageSegmentationMode,
-} from "../../shared/preferences";
 import type {
   ChannelCapability,
   IncomingMessage,
@@ -26,7 +21,6 @@ export interface ComposeOutgoingInput {
 
     stickerEnabled: boolean;
   };
-  mobileMessageSegmentation?: MobileMessageSegmentationMode;
 }
 
 export interface PreparedOutgoing {
@@ -50,13 +44,8 @@ export interface CreateOutgoingComposerOptions {
 
 const LOG = "[OutgoingComposer]";
 
-export function buildTextOutgoingParts(
-  replyText: string,
-  mobileMessageSegmentation: MobileMessageSegmentationMode | undefined,
-): OutgoingPart[] {
-  const mode = normalizeMobileMessageSegmentationMode(mobileMessageSegmentation);
-  const texts = mode === "on" ? splitTextBySentenceBreaks(replyText) : [replyText];
-  return texts.map((text) => ({ kind: "text", text }));
+export function buildTextOutgoingParts(replyText: string): OutgoingPart[] {
+  return [{ kind: "text", text: replyText }];
 }
 
 export function downgradeToCapability(
@@ -145,10 +134,7 @@ export function createOutgoingComposer(
   return {
     async compose(input): Promise<PreparedOutgoing> {
       const transientFiles: string[] = [];
-      const parts = buildTextOutgoingParts(
-        input.replyText,
-        input.mobileMessageSegmentation,
-      );
+      const parts = buildTextOutgoingParts(input.replyText);
 
       let resolvedStickerId: string | undefined;
       if (input.sticker && input.settings.stickerEnabled) {

@@ -17,7 +17,6 @@ import type {
 import type { ChannelsSettings } from "./settings-store";
 import { appendLog } from "./message-log";
 import { requireChannelMemoryIngress, type ChannelMemoryIngress } from "../memory-context/channel-memory-ingress";
-import type { MobileMessageSegmentationMode } from "../../shared/preferences";
 import { rememberProactiveChannelRecipient } from "./proactive-delivery";
 import type { ChannelRateLimiter } from "./rate-limiter";
 import type { KeyedQueue } from "./keyed-queue";
@@ -66,10 +65,6 @@ export interface DispatcherDeps {
   ) => Promise<{ text: string; sticker: string | null }>;
   /** 延迟读取渠道设置，避免应用就绪前访问加密存储。 */
   readonly loadSettings: () => ChannelsSettings;
-  /** 读取与渠道发送有关的通用设置。 */
-  readonly loadGeneralSettings: () => {
-    mobileMessageSegmentation?: MobileMessageSegmentationMode;
-  };
   /** 记录最近见到的外部聊天，供设置页列出可绑定的来源。 */
   readonly observeExternalChat?: (sessionId: string, msg: IncomingMessage) => void;
   /** 可选 — 桌面端镜像广播：bot 入站/出站消息通知给 chatWindow。 */
@@ -227,7 +222,6 @@ export class ChannelDispatcher {
 
         stickerEnabled: this.settings.stickerEnabled,
       },
-      mobileMessageSegmentation: this.deps.loadGeneralSettings().mobileMessageSegmentation,
     });
 
     try {

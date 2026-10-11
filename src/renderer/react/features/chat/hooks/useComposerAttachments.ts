@@ -207,7 +207,7 @@ export function useComposerAttachments(input: {
 
     let strategy: { mode: "direct" | "caption" } = { mode: "caption" };
     try {
-      // 传 sessionId：会话绑定的档案若声明 multimodal 则按档案裁决，否则回退全局
+      // 传 sessionId：按会话绑定的档案（厂商 + 型号）裁决图片能力，无绑定则用默认档案
       strategy = await chat.getImageSendStrategy(sessionId);
     } catch (error) {
       console.warn("[Firefly React] 获取图片发送策略失败，回退视觉描述:", error);

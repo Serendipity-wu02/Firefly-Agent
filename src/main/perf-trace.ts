@@ -12,7 +12,7 @@
 // 用法示例：
 //   perf.beginTurn("desktop");
 //   const ctx = await perf.track("always_on_context", () => buildAlwaysOnContext(...));
-//   const t = perf.begin("cita_prepare"); ...; t.end();
+//   const t = perf.begin("prepare"); ...; t.end();
 //   perf.dump();  // 在 complete 回调或 finally 中调用
 
 import { debugLog, debugWarn } from "./agent-log";

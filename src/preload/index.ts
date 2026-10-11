@@ -23,6 +23,7 @@ import type { ReviewSnapshot, ReviewRestoreOutcome } from "../shared/review-type
 import type { WorkspaceListResult, WorkspaceReadResult, WorkspaceSaveResult } from "../shared/workspace-files-types";
 import type { OpenInAppListResult, OpenInAppOpenResult } from "../shared/open-in-app-types";
 import { getLive2DIpcListenerCounts } from "./live2d-listener-diagnostics";
+import { createLive2dWorkApi } from "./live2d-work-api";
 import { exposeMusicApi } from "./music";
 import { normalizeChatAppearance, type ChatAppearanceSettings } from "../shared/chat-appearance";
 import type { AppUpdateApi, AppUpdateState } from "../shared/app-update";
@@ -147,8 +148,6 @@ const aguiApi = {
     messages: unknown[];
     userTurnId?: string;
     assistantTurnId?: string;
-    style?: string;
-    styleId?: string;
     executionMode?: "work" | "chat" | "code";
     sessionId?: string;
     attachments?: { name: string; text: string }[];
@@ -261,27 +260,9 @@ const fireflyThemeApi = {
     ipcRenderer.on(IPC.UI_THEME_CHANGED, listener);
     return () => ipcRenderer.off(IPC.UI_THEME_CHANGED, listener);
   },
-  getRadius: () => ipcRenderer.invoke(IPC.UI_THEME_RADIUS_GET) as Promise<boolean>,
-  onRadiusChanged: (callback: (theme: boolean) => void) => {
-    const listener = (_e: unknown, theme: boolean) => callback(theme);
-    ipcRenderer.on(IPC.UI_THEME_RADIUS_CHANGED, listener);
-    return () => ipcRenderer.off(IPC.UI_THEME_RADIUS_CHANGED, listener);
-  },
 };
 
 contextBridge.exposeInMainWorld("fireflyTheme", fireflyThemeApi);
-
-const fireflyWindowAppearanceApi = {
-  getCornerRadius: () =>
-    ipcRenderer.invoke(IPC.UI_WINDOW_CORNER_RADIUS_GET) as Promise<number>,
-  onCornerRadiusChanged: (callback: (radius: number) => void) => {
-    const listener = (_e: unknown, radius: number) => callback(radius);
-    ipcRenderer.on(IPC.UI_WINDOW_CORNER_RADIUS_CHANGED, listener);
-    return () => ipcRenderer.off(IPC.UI_WINDOW_CORNER_RADIUS_CHANGED, listener);
-  },
-};
-
-contextBridge.exposeInMainWorld("fireflyWindowAppearance", fireflyWindowAppearanceApi);
 
 const fireflyFontApi = {
   get: () => ipcRenderer.invoke(IPC.UI_FONT_GET) as Promise<UiFont>,
@@ -324,8 +305,8 @@ const settingsApi = {
   deleteModelProfile: (id: string) => ipcRenderer.invoke(IPC.SETTINGS_MODEL_PROFILE_DELETE, id),
   setDefaultModelProfile: (id: string) => ipcRenderer.invoke(IPC.SETTINGS_MODEL_PROFILE_SET_DEFAULT, id),
   fetchModels: (input: { provider: string; baseUrl: string; apiKey: string; explicitTransport?: "openai" | "anthropic" | "responses" }) => ipcRenderer.invoke(IPC.SETTINGS_FETCH_MODELS, input),
+  resolveInputModalities: (input: { provider: string; model: string; inputModalities?: Array<"text" | "image">; inputModalitiesSource?: "vendor-api" | "user" }) => ipcRenderer.invoke(IPC.SETTINGS_RESOLVE_INPUT_MODALITIES, input),
   testConnection: (config: { provider: string; baseUrl: string; model: string; apiKey: string; explicitTransport?: "openai" | "anthropic" | "responses"; reasoning?: ReasoningPreference }) => ipcRenderer.invoke(IPC.SETTINGS_TEST_CONNECTION, config),
-  testVision: (config: { baseUrl: string; apiKey: string; model: string }) => ipcRenderer.invoke(IPC.SETTINGS_TEST_VISION, config),
   // main → settings：要求切到指定标签（窗口已打开时由 main 发这个事件）
   onSwitchSection: (callback: (section: string) => void) => {
     const listener = (_e: unknown, section: string) => callback(section);
@@ -341,13 +322,10 @@ const settingsApi = {
   resetUiFont: () => ipcRenderer.invoke(IPC.SETTINGS_RESET_UI_FONT) as Promise<UiFont>,
   openSidebar: () => ipcRenderer.send(IPC.SETTINGS_OPEN_SIDEBAR),
   closeSidebar: () => ipcRenderer.send(IPC.SETTINGS_CLOSE_SIDEBAR),
-  openChromeGpu: () => ipcRenderer.send(IPC.SETTINGS_OPEN_CHROME_GPU),
   setPetAlwaysOnTop: (value: boolean) => ipcRenderer.send(IPC.SETTINGS_SET_PET_ALWAYS_ON_TOP, value),
   setPetVisible: (value: boolean) => ipcRenderer.send(IPC.SETTINGS_SET_PET_VISIBLE, value),
   setPetZoom: (value: number) => ipcRenderer.send(IPC.SETTINGS_SET_PET_ZOOM, value),
-  previewRuntimeSync: (value: "off" | "local" | "llm") => ipcRenderer.send(IPC.SETTINGS_PREVIEW_RUNTIME_SYNC, value),
   openStickerManager: () => ipcRenderer.invoke(IPC.SETTINGS_OPEN_STICKER_MANAGER),
-  openCustomStylePrompt: () => ipcRenderer.invoke(IPC.SETTINGS_OPEN_CUSTOM_STYLE_PROMPT),
   stickerPickFile: () => ipcRenderer.invoke(IPC.STICKERS_PICK_FILE),
   stickerAdd: (payload: { sourcePath: string; id: string; description: string; phrases: string[] }) => ipcRenderer.invoke(IPC.STICKERS_ADD, payload),
   embeddingSetModel: (model: string) => ipcRenderer.invoke(IPC.EMBEDDING_SET_MODEL, model),
@@ -597,14 +575,6 @@ const manualBrowserWorkspace: ManualBrowserWorkspaceApi = {
   },
 };
 contextBridge.exposeInMainWorld("manualBrowserWorkspace", manualBrowserWorkspace);
-const runtimeStateApi = {
-  get: () => ipcRenderer.invoke(IPC.RUNTIME_STATE_GET),
-  onChanged: (callback: (state: unknown) => void) => {
-    const listener = (_event: Electron.IpcRendererEvent, state: unknown) => callback(state);
-    ipcRenderer.on(IPC.RUNTIME_STATE_CHANGED, listener);
-    return () => ipcRenderer.removeListener(IPC.RUNTIME_STATE_CHANGED, listener);
-  },
-};
 
 const userApi = {
   getProfile: () => ipcRenderer.invoke(IPC.USER_GET_PROFILE),
@@ -631,27 +601,12 @@ const memoryPanelApi = {
   deleteImportedDoc: (importId: string, fileName?: string) => ipcRenderer.invoke(IPC.MEMORY_PANEL_DELETE_IMPORTED_DOC, { importId, fileName }),
   saveL0: (patch: Record<string, unknown>) => ipcRenderer.invoke(IPC.MEMORY_PANEL_SAVE_L0, patch),
   saveL1: (patch: Record<string, unknown>) => ipcRenderer.invoke(IPC.MEMORY_PANEL_SAVE_L1, patch),
-  exportToObsidianVault: () => ipcRenderer.invoke(IPC.MEMORY_EXPORT_OBSIDIAN_VAULT),
-  bindVault: () => ipcRenderer.invoke(IPC.OBSIDIAN_VAULT_BIND),
-  unbindVault: () => ipcRenderer.invoke(IPC.OBSIDIAN_VAULT_UNBIND),
-  getVaultConfig: () => ipcRenderer.invoke(IPC.OBSIDIAN_VAULT_GET_CONFIG),
-  setAutoSync: (autoSync: boolean) => ipcRenderer.invoke(IPC.OBSIDIAN_VAULT_SET_AUTO_SYNC, autoSync),
-  syncNow: () => ipcRenderer.invoke(IPC.OBSIDIAN_VAULT_SYNC_NOW),
 };
 
 contextBridge.exposeInMainWorld("user", userApi);
 contextBridge.exposeInMainWorld("memoryPanel", memoryPanelApi);
-contextBridge.exposeInMainWorld("runtimeState", runtimeStateApi);
 
-const live2dActionApi = {
-  onPlayAction: (callback: (payload: import("../shared/live2d-actions").Live2DActionRequest) => void) => {
-    const listener = (_event: Electron.IpcRendererEvent, payload: import("../shared/live2d-actions").Live2DActionRequest) => callback(payload);
-    ipcRenderer.on(IPC.LIVE2D_PLAY_ACTION, listener);
-    return () => ipcRenderer.removeListener(IPC.LIVE2D_PLAY_ACTION, listener);
-  },
-  reportReceipt: (receipt: import("../shared/live2d-actions").Live2DActionReceipt) => ipcRenderer.send(IPC.LIVE2D_ACTION_RECEIPT, receipt),
-};
-contextBridge.exposeInMainWorld("live2dAction", live2dActionApi);
+contextBridge.exposeInMainWorld("live2dWork", createLive2dWorkApi(ipcRenderer));
 
 const live2dDiagnosticsApi = {
   getMain: () => ipcRenderer.invoke(IPC.LIVE2D_GET_MAIN_DIAGNOSTICS),

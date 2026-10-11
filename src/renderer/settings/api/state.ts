@@ -3,6 +3,7 @@
 
 import type { ApiTransport } from "../../../shared/api-endpoint";
 import type { ReasoningLevelsConfig, ReasoningPreference } from "../../../shared/reasoning";
+import type { InputModality, InputModalitySource } from "../../../shared/input-modalities";
 import type { CustomEndpointMode } from "../custom-endpoint-state";
 
 /** 档案卡上需要展示/编辑的最小字段集（来自 listModelProfiles）。 */
@@ -17,7 +18,9 @@ export interface SavedProfileLite {
   reasoning?: ReasoningPreference;
   reasoningLevels?: ReasoningLevelsConfig;
   contextWindowTokens?: number;
-  multimodal?: boolean;
+  /** 显式声明的输入模态与来源；未声明 = 按内置目录判断（见 input-modalities.ts）。 */
+  inputModalities?: InputModality[];
+  inputModalitiesSource?: InputModalitySource;
 }
 
 export const apiState = {

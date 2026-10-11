@@ -1,12 +1,11 @@
 // buildAgentRunOptions —— 把 AG-UI 桥的 buildOptions 闭包抽成纯函数。
 //
 // 设计原则：
-//   - 函数无模块级状态；所有 index.ts 模块级符号（runtimeState, stickerEmbeddingIndex 等）
+//   - 函数无模块级状态；所有 index.ts 模块级符号（stickerEmbeddingIndex 等）
 //     通过 deps 参数注入。
 //   - 函数无副作用（不算 console.warn）；副作用（记忆写入/sticker 广播）由 onRunFinished
 //     单独做，注入到同一个 deps 里。
 //   - index.ts / dispatcher / scheduler 共用同一个 factory。
-//   - 默认 style 写死 '01_default.md'，与原行为一致。
 //
 // 字段依赖梳理（按 index.ts:3175-3281）：
 //   loadModelSettings / loadUserProfile / buildEnvironmentContext
@@ -14,9 +13,8 @@
 //   buildToneInjection
 //   buildSystemPrompt / CHAT_REQUEST_TIMEOUT_MS
 //   normalizeChatMessages / buildAlwaysOnContext / ToolDefinition
-//   scheduleMemoryWrite / inferRuntimeState / runtimeState / feelingToExpression
+//   scheduleMemoryWrite
 //   matchSticker / stickerEmbeddingIndex / getEmbeddingProvider / loadStickerSettings
-//   broadcastRuntimeStateChanged / observeRuntimeState
 //   sticker 文本预处理 / stickerEmbeddingIndex / getEmbeddingProvider / loadStickerSettings
 //
 // 这些全部塞到 BuildOptionsDeps 里。dispatcher / agent-runtime 通过
@@ -46,15 +44,6 @@ import {
   type ChatContextMessage,
 } from "../chat-time-context";
 import { perf } from "../perf-trace";
-import { debugLog } from "../agent-log";
-import { buildResponseContext } from "../cita/context-package";
-import {
-  STYLE_IDS,
-  normalizeStyleId,
-  type CustomStyleConfig,
-  type StyleId,
-} from "../../shared/style-sampling";
-import type { ApprovedStyleSampling } from "./vendors/style-sampling";
 import type {
   SocialAtom,
   SocialExtractionInput,
@@ -81,9 +70,9 @@ export interface BuildOptionsDeps {
   loadModelSettings: (modelProfileId?: string) => ModelSettingsLite;
   loadGeneralSettings: () => StyleSettingsLite;
   loadUserProfile: () => UserProfileLite;
-  buildEnvironmentContext: (model: { provider: string; model: string }, profile: unknown) => string;
+  buildEnvironmentContext: (model: { provider: string; model: string; multimodal?: boolean }, profile: unknown) => string;
   /** @deprecated 仅保留旧测试/调用方结构兼容；生产不再使用。 */
-  buildSystemPrompt?: (styleFile: string) => string;
+  buildSystemPrompt?: (promptName: string) => string;
   buildSkillCatalog: (skills: ReadonlyArray<unknown>) => string;
   buildAutoInjectedSkillContext: (skills: ReadonlyArray<unknown>) => string;
   buildAutoInjectedSoulContext?: (skills: ReadonlyArray<unknown>) => string;
@@ -109,19 +98,11 @@ export interface BuildOptionsDeps {
   /** 工具规则与目录 system prompt（进入 harness stablePrefix）。仅含自动生成的工具目录。 */
   buildToolSystemPrompt: (mode: ConversationMode, enabledTools: ReadonlyArray<unknown>) => string;
   /** 人设基础 system prompt；动态内容走 soulRuntimeContext，随请求尾部注入。 */
-  buildSoulSystemBasePrompt: (styleFile: string) => string;
+  buildSoulSystemBasePrompt: (promptName: string) => string;
   resolveRunCapabilities?: (input: {
     mode: ConversationMode; activeSearchBackend: SearchBackend; toolModeOverrides?: ToolModeOverrides; skillModeOverrides?: SkillModeOverrides;
     chatToolsEnabled?: boolean;
   }) => RunCapabilities;
-  /** 已由 main 侧解析好的 style Markdown；build-options 只负责注入边界。 */
-  readStylePrompt: (styleId: StyleId) => string;
-  /** 按 provider/model/reasoning/customStyle 解析后的 Soul 采样参数。 */
-  resolveSoulSampling: (input: {
-    styleId: StyleId;
-    settings: ModelSettingsLite;
-    customStyle: CustomStyleConfig;
-  }) => ApprovedStyleSampling;
   /** 第一期：注入 toolRegistry（用于 buildToolSystemPrompt 自动生成目录）。 */
   toolRegistry: {
     getEnabled(): ReadonlyArray<unknown>;
@@ -136,21 +117,6 @@ export interface BuildOptionsDeps {
   ) => Promise<MaterializedTranscript>;
   chatRequestTimeoutMs: number;
   captionImageForFallback?: (filePath: string) => Promise<{ ok: boolean; caption?: string; error?: string }>;
-  prepareCitaTurn?: (input: {
-    conversationId: string;
-    turnId: string;
-    originalQuery: string;
-    recentDialogue: Array<{ role: "user" | "assistant"; text: string }>;
-  }) => Promise<{
-    contextBlock: string;
-    contextPackage?: {
-      originalQuery: string;
-      contextualizedQuery: string;
-      resolvedReferences: Array<{ surface: string; targetRef: string }>;
-      focusedContexts?: Array<{ contextRef: string }>;
-      supportingContexts?: Array<{ contextRef: string }>;
-    };
-  }>;
   buildChatSocialContext?: (input: {
     conversationId: string;
     query: string;
@@ -180,15 +146,6 @@ export interface OnRunFinishedDeps {
   loadModelSettings: () => ModelSettingsLite;
   scheduleMemoryWrite: (userText: string, reply: string, conversationId?: string) => void;
   scheduleSocialAtomExtraction?: (input: SocialExtractionInput) => void;
-  inferRuntimeState: (userText: string, reply: string, flag: boolean) => { status: string };
-  runtimeState: {
-    status: string;
-    expression: number;
-    updatedAt: number;
-    feeling?: string;
-  };
-  feelingToExpression: Record<string, number>;
-  setRuntimeState: (next: { status?: string; expression?: number; updatedAt?: number; feeling?: string }) => void;
   stickerEmbeddingIndex: unknown;
   getStickerEmbeddingIndex?: () => unknown;
   getEmbeddingProvider: () => unknown;
@@ -199,13 +156,6 @@ export interface OnRunFinishedDeps {
     threshold: number,
   ) => Promise<{ id: string } | null | undefined>;
   loadStickerSettings: () => Record<string, boolean>;
-  broadcastRuntimeStateChanged: () => void;
-  observeRuntimeState: (
-    settings: ModelSettingsLite,
-    history: ReadonlyArray<unknown>,
-    userText: string,
-    reply: string,
-  ) => Promise<void>;
   recordRelationshipTurn: (input: RelationshipTurnInput) => Promise<unknown> | unknown;
 }
 
@@ -219,13 +169,10 @@ export interface ModelSettingsLite {
   reasoning?: import("../../shared/reasoning").ReasoningPreference;
   /** 档案声明的推理档位镜像；adapter 直接读。 */
   reasoningLevels?: import("../../shared/reasoning").ReasoningLevelsConfig;
-  runtimeSync?: string;
   stickerEnabled?: boolean;
   stickerSimilarityThreshold?: number;
-  /** 默认为 true；用户显式关闭时，图片先交给独立视觉模型转成文字。 */
+  /** 主模型能否直发图片（由显式声明 / 内置目录判定，见 resolveInputModalities）；非 true 时图片被拒绝并告知用户。 */
   multimodal?: boolean;
-  /** 独立视觉模型配置（可选）。image-router 路由判定用。 */
-  vision?: { baseUrl: string; apiKey: string; model: string };
   /** 上下文窗口大小（Token）。来自 ModelSettings.contextWindowTokens。 */
   contextWindowTokens?: number;
 }
@@ -233,8 +180,6 @@ export interface ModelSettingsLite {
 export interface StyleSettingsLite {
   /** Harness 安全工具并发设置；旧测试/旧配置可省略。 */
   maxParallelToolCalls?: unknown;
-  currentStyleId?: unknown;
-  customStyle?: unknown;
   chatSocialContextEnabled?: unknown;
   /** 工具-模式覆盖层（三模适配层）。未提供时按 modes 字段或全可见过滤。 */
   toolModeOverrides?: ToolModeOverrides;
@@ -356,11 +301,11 @@ async function withCaptionedImageAttachments(
     typeof image?.filePath === "string" && typeof image?.name === "string",
   ) ?? [];
   if (images.length === 0) return messages;
-  // [image-send] 链路日志②：降级路径上没有独立视觉配置时，图片会被完全丢弃
+  // [image-send] 链路日志②：降级路径上没有转述端点时，图片会被完全丢弃
   // （只剩文件名文本）——这是一个静默失败点，必须显式告知。
   if (!deps.captionImageForFallback) {
     console.warn(
-      `[image-send] 图片降级但未配置独立视觉模型（captionImageForFallback 缺失），${images.length} 张图将不会带给主模型`,
+      `[image-send] 图片降级但没有可用的转述端点（captionImageForFallback 缺失），${images.length} 张图将不会带给主模型`,
     );
     return messages;
   }
@@ -433,16 +378,6 @@ function withImageRejectNotice(
   return next;
 }
 
-function isStyleId(value: unknown): value is StyleId {
-  return typeof value === "string" && (STYLE_IDS as readonly string[]).includes(value);
-}
-
-function resolveRunStyleId(input: AguiRunInput, saved: StyleSettingsLite): StyleId {
-  if (isStyleId(input.styleId)) return input.styleId;
-  if (isStyleId(saved.currentStyleId)) return saved.currentStyleId;
-  return normalizeStyleId(undefined);
-}
-
 /**
  * 读取工作区静态元数据（项目名 + 是否 git 仓库）。
  * 刻意只提供这两项稳定事实，不注入 branch 等动态状态——branch 会随
@@ -458,18 +393,6 @@ function readWorkspaceMeta(root: string): { projectName: string; isGitRepo: bool
   } catch {
     return { projectName: "", isGitRepo: false };
   }
-}
-
-function buildStylePromptBlock(markdown: string): string {
-  const trimmed = markdown.trim();
-  if (!trimmed) return "";
-  return [
-    "[表达风格]",
-    "以下内容仅用于控制措辞、句式、语气和信息密度。",
-    "不得修改角色身份、事实记忆、工具规则、安全约束及硬性行为规则。",
-    "",
-    trimmed,
-  ].join("\n");
 }
 
 /** 轨迹侧崩溃孤儿说明：进入 recoveryContext 提示模型先查证，不得自动重放。 */
@@ -583,7 +506,7 @@ export async function buildAgentRunOptions(
   const envTimer = perf.begin("build_environment_context");
   try {
     environmentContext = deps.buildEnvironmentContext(
-      { provider: settings.provider, model: settings.model },
+      { provider: settings.provider, model: settings.model, multimodal: settings.multimodal },
       {
         nickname: profile.nickname,
         callPreference: profile.callPreference,
@@ -614,45 +537,6 @@ export async function buildAgentRunOptions(
       retrievedSocialAtoms = built.retrievedAtoms.slice(0, 5);
     } catch (err) {
       console.warn("[Firefly] chat social context build failed:", err);
-    }
-  }
-
-  let citaContextBlock = "";
-  let contextualizedQuery = latestUserText;
-  let responseContext = "";
-  let trustedRefs: string[] = [];
-  if (!isChatMode && deps.prepareCitaTurn) {
-    try {
-      const recentDialogue = messages
-        .filter((message): message is ChatMessage & { role: "user" | "assistant" } => (
-          message.role === "user" || message.role === "assistant"
-        ))
-        .slice(-12)
-        .map((message) => ({ role: message.role, text: contentToText(message.content) }));
-      const prepared = await perf.track("cita_prepare_turn", () => deps.prepareCitaTurn!({
-        conversationId,
-        turnId: `${conversationId}:${messages.length}`,
-        originalQuery: latestUserText,
-        recentDialogue,
-      }));
-      citaContextBlock = prepared.contextBlock;
-      contextualizedQuery = prepared.contextPackage?.contextualizedQuery ?? latestUserText;
-      if (prepared.contextPackage) {
-        trustedRefs = [...new Set([
-          ...prepared.contextPackage.resolvedReferences.map((reference) => reference.targetRef),
-          ...(prepared.contextPackage.focusedContexts ?? []).map((context) => context.contextRef),
-          ...(prepared.contextPackage.supportingContexts ?? []).map((context) => context.contextRef),
-        ])];
-        responseContext = buildResponseContext(
-          prepared.contextPackage.contextualizedQuery,
-          prepared.contextPackage.resolvedReferences,
-        );
-      }
-      debugLog(
-        `[CITA/Trace] injection conversation=${conversationId} tool=${citaContextBlock.length > 0} soul=${citaContextBlock.length > 0} blockChars=${citaContextBlock.length}`,
-      );
-    } catch {
-      console.warn(`[CITA] injection conversation=${conversationId} tool=false soul=false reason=prepare_failed`);
     }
   }
 
@@ -696,21 +580,6 @@ export async function buildAgentRunOptions(
     console.warn("[plugins] 构建插件提示词上下文失败，已跳过", error);
   }
 
-  const styleId = resolveRunStyleId(input, styleSettings);
-  const isTaskMode = resolvedMode === "work" || resolvedMode === "code";
-  // work/code 完全不受 style 影响：不注入风格 prompt，采样走厂商默认。
-  // chat/learn + default 也走厂商默认采样（不自己设 0.65）；
-  // 只有显式选了非 default 的具体 style 才用预设采样。
-  const stylePromptBlock = isTaskMode
-    ? ""
-    : buildStylePromptBlock(deps.readStylePrompt(styleId));
-  const soulSampling = (!isTaskMode && styleId !== "default")
-    ? deps.resolveSoulSampling({
-      styleId,
-      settings,
-      customStyle: styleSettings.customStyle as CustomStyleConfig,
-    })
-    : undefined;
   const modeEnabledTools = deps.toolRegistry.getEnabledToolsForMode(resolvedMode, styleSettings.toolModeOverrides);
   // 计划模式只读强制（第一层，权限层）：PLAN_DISCUSSING/PLAN_REVIEW 期间
   // 工具列表在 run 组装时就收敛到 read-only 策略允许的风险级。
@@ -866,15 +735,14 @@ export async function buildAgentRunOptions(
   // Soul 的稳定前缀只保留固定人设/渠道。每轮变化的事实在请求尾部注入，
   // 使厂商提示词缓存可以复用同一个前缀。
   // 工具结果以 role:tool 消息写回单循环 transcript。
-  const soulSystemWithoutCita =
+  const soulSystemPrompt =
     (channelSystem ? channelSystem + "\n\n" : "") +
     baseSoulSystemPrompt;
-  const soulSystemBaseContent = soulSystemWithoutCita;
+  const soulSystemBaseContent = soulSystemPrompt;
   const soulRuntimeContext = [
     environmentContext,
     conversationTimeContext,
     chatSocialContextBlock,
-    stylePromptBlock,
     autoInjectedSoulContext,
     skillActivation,
     toneInjection,
@@ -885,21 +753,21 @@ export async function buildAgentRunOptions(
     pluginPromptContext,
   ].filter((context): context is string => Boolean(context?.trim())).join("\n\n---\n\n");
 
-  // 图片路由统一收口在 image-router：direct 直发 / caption 转述 / reject 拒绝。
-  // 能力对错交给服务端仲裁（直发 400 时 chat-loop 会用 imageCaptionFallback
-  // 自动降级重试）。不维护「哪个协议支持发图」的静态表——该信息必然滞后于
+  // 图片路由统一收口在 image-router：direct 直发 / reject 拒绝。
+  // 图片能力由显式声明 / 内置目录判定（vendors/multimodal.ts 的 resolveInputModalities，经 settings.multimodal 带入）。直发被服务端 400 时 chat-loop 仍会用
+  // imageCaptionFallback 降级重试。不维护「哪个协议支持发图」的静态表——该信息必然滞后于
   // 服务端实际状态（MiniMax /anthropic 支持发图晚于文档标注）。
   const imageRoute = resolveImageRoute("attachment", settings);
   const directVisionOk = imageRoute.mode === "direct";
   // [image-send] 链路日志①：直发判定。图片"传不过去"先看这条——
-  // direct=false 时图片走 caption 降级/文本占位，根本不会以 image 块发给主模型。
+  // direct=false 时图片以拒绝提示代替，根本不会以 image 块发给主模型。
   if (input.imageAttachments?.length) {
     console.log("[image-send] 直发判定:", {
       provider: settings.provider,
       model: settings.model,
-      multimodal开关: settings.multimodal !== false,
+      多模态推断: settings.multimodal === true,
       图片数: input.imageAttachments.length,
-      结果: directVisionOk ? "直发 image 块" : imageRoute.mode === "caption" ? "降级（caption/文本占位）" : "拒绝（无可用视觉链路）",
+      结果: directVisionOk ? "直发 image 块" : "拒绝（当前型号不支持图片）",
     });
   }
   const preparedDocuments = new Map<number, OpenAIContentBlock>();
@@ -920,8 +788,9 @@ export async function buildAgentRunOptions(
       } else {
         const mediaInput = { ...input, imageAttachments: [{ name: attachment.name, filePath: attachment.filePath, mime: attachment.mime }] };
         const empty: ChatMessage[] = [{ role: "user", content: "" }];
-        const prepared = caption ? await withCaptionedImageAttachments(empty, mediaInput, deps) : directVisionOk ? withDirectImageAttachments(empty, mediaInput) : imageRoute.mode === "caption"
-          ? await withCaptionedImageAttachments(empty, mediaInput, deps) : withImageRejectNotice(empty, mediaInput, imageRoute.reason);
+        const prepared = caption ? await withCaptionedImageAttachments(empty, mediaInput, deps)
+          : directVisionOk ? withDirectImageAttachments(empty, mediaInput)
+            : withImageRejectNotice(empty, mediaInput, imageRoute.reason);
         readMainAttachmentGrant(attachmentGrant!);
         const content = prepared[0].content;
         if (Array.isArray(content)) blocks.push(...content.filter(block => block.type !== "text" || block.text !== ""));
@@ -939,17 +808,13 @@ export async function buildAgentRunOptions(
   };
   const fcMessages: ChatMessage[] = projectedAttachment ? withProjection(llmMessages as unknown as ChatMessage[]) : directVisionOk
     ? withDirectImageAttachments(llmMessages as unknown as ChatMessage[], input)
-    : imageRoute.mode === "caption"
-      ? await withCaptionedImageAttachments(llmMessages as unknown as ChatMessage[], input, deps)
-      : withImageRejectNotice(llmMessages as unknown as ChatMessage[], input, imageRoute.reason);
+    : withImageRejectNotice(llmMessages as unknown as ChatMessage[], input, imageRoute.reason);
   const cleanFcMessages: ChatMessage[] = projectedAttachment ? withProjection(cleanLlm as unknown as ChatMessage[]) : directVisionOk
     ? withDirectImageAttachments(cleanLlm as unknown as ChatMessage[], input)
-    : imageRoute.mode === "caption"
-      ? await withCaptionedImageAttachments(cleanLlm as unknown as ChatMessage[], input, deps)
-      : withImageRejectNotice(cleanLlm as unknown as ChatMessage[], input, imageRoute.reason);
+    : withImageRejectNotice(cleanLlm as unknown as ChatMessage[], input, imageRoute.reason);
   const fallbackSystem = isChatMode
-    ? [soulSystemWithoutCita, soulRuntimeContext].filter(Boolean).join("\n\n---\n\n")
-    : [toolSystemContent, soulSystemWithoutCita, soulRuntimeContext].filter(Boolean).join("\n\n---\n\n");
+    ? [soulSystemPrompt, soulRuntimeContext].filter(Boolean).join("\n\n---\n\n")
+    : [toolSystemContent, soulSystemPrompt, soulRuntimeContext].filter(Boolean).join("\n\n---\n\n");
   const imageCaptionFallback = directVisionOk && input.imageAttachments?.length && deps.captionImageForFallback
     ? attachmentGrant ? async (): Promise<ChatMessage[]> => {
       const caption = await reprepareMainAttachmentProjection(attachmentGrant, source => materializeAttachments(source, true));
@@ -981,11 +846,6 @@ export async function buildAgentRunOptions(
       cleanMessages: cleanFcMessages,
       conversationId,
       executionMode,
-      originalQuery: latestUserText,
-      contextualizedQuery,
-      citaContextBlock,
-      trustedRefs,
-      responseContext,
       runtimeEnvironmentContext: environmentContext,
       // 不设整轮任务期限；用户取消才停止整个 Agent Run。
       timeoutMs: 0,
@@ -994,7 +854,6 @@ export async function buildAgentRunOptions(
       soulSystemBaseContent,
       soulRuntimeContext,
       ...(planSkillContext ? { planSkillContext } : {}),
-      soulSampling,
       ...(socialContextEnabled && input.userTurnId && input.assistantTurnId ? {
         socialContext: {
           enabled: true as const,
@@ -1017,10 +876,8 @@ export async function buildAgentRunOptions(
 }
 
 /**
- * agent 跑完后的副作用：记忆 + 表情/sticker 推断 + 广播。
+ * agent 跑完后的副作用：记忆 + sticker。
  * 与 index.ts 原 AG-UI bridge 的 onRunFinished 行为完全一致。
- *
- * 注意：feeling 字段由 inferRuntimeState 内部副作用更新；本函数只同步 status/expression/updatedAt。
  *
  * 渠道（wechat/feishu/...）的 sticker 走 OutgoingMessage.parts（统一消息模型）；
  * 桌面聊天窗由 AG-UI bridge 把本函数返回的 sticker 决定发回本次 run 的发起窗口；
@@ -1039,7 +896,6 @@ export async function onAgentRunFinished(
   const socialContext = legacyPersonalMemoryEnabled && result.executionMode === "chat" && result.socialContext?.enabled === true
     ? result.socialContext
     : undefined;
-  const usesSocialExtractor = Boolean(socialContext);
   if (socialContext) {
     deps.scheduleSocialAtomExtraction?.({
       conversationId: socialContext.conversationId,
@@ -1061,19 +917,12 @@ export async function onAgentRunFinished(
   }
 
   const settings = deps.loadModelSettings();
-  const inferredStatus = deps.inferRuntimeState(sideEffectUserText, chatContent, false);
-  deps.setRuntimeState({
-    status: inferredStatus.status,
-    expression: deps.feelingToExpression[deps.runtimeState.feeling ?? ""] ?? 0,
-    updatedAt: Date.now(),
-  });
 
   if (legacyPersonalMemoryEnabled) {
     await perf.track("record_relationship_turn", async () => {
       await deps.recordRelationshipTurn({
         userText: sideEffectUserText,
         assistantText: chatContent,
-        fireflyFeeling: deps.runtimeState.feeling ?? "平静",
         channel: channel ?? "desktop",
       });
     });
@@ -1096,17 +945,6 @@ export async function onAgentRunFinished(
   }
   const stickerSettings = deps.loadStickerSettings();
   const sticker = stickerCandidate && stickerSettings[stickerCandidate] !== false ? stickerCandidate : null;
-
-  if (settings.runtimeSync === "local") {
-    deps.broadcastRuntimeStateChanged();
-  } else if (settings.runtimeSync === "llm") {
-    deps.broadcastRuntimeStateChanged();
-    // 心情观察器在 channels bot (wechat/feishu) 上跳过：节省一次 LLM 调用、加快首条回复
-    // 桌面聊天（channel === undefined）照常跑，保持 Live2D 表情/心情跟随对话变化
-    if (!usesSocialExtractor && channel === undefined) {
-      void deps.observeRuntimeState(settings, [], sideEffectUserText, chatContent);
-    }
-  }
 
   // 返回 sticker 决定：
   // - 桌面聊天窗由 AG-UI bridge 发到本次 run 的源窗口，避免只投递旧 chatWindow

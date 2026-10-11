@@ -33,7 +33,6 @@ import { runLearnPostTurnHook } from "./knowledge/progress/learn-post-turn";
 import { openKnowledgeWorkspace } from "./knowledge/knowledge-workspace";
 import { getAdapterForConfig } from "./orchestrator/vendors";
 import { perf } from "./perf-trace";
-import type { StyleId } from "../shared/style-sampling";
 import type { PendingTurnLifecycle } from "./plugin-host/pending-turn-lifecycle";
 import * as chatsStore from "./chats/chats-store";
 import { createRunAdjustmentPoller } from "./chats/pending-adjustment";
@@ -102,8 +101,6 @@ export interface AguiRunInput {
   userTurnId?: string;
   /** 本轮 assistant 占位消息的稳定 turn ID。 */
   assistantTurnId?: string;
-  /** 本轮表达风格，与 executionMode 正交。 */
-  styleId?: StyleId | string;
   sessionId?: string;    // 会话 ID；桌面运行模式只信任该会话持久化的 mode
   /** 主进程内部使用：为共享上下文指定工作区绑定来源；null 表示本轮不加载任何工作区。 */
   workspaceBindingSessionId?: string | null;

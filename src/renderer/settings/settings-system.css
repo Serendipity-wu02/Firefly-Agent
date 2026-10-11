@@ -21,8 +21,8 @@
   --sys-row-pad: 16px;
   --sys-gap: 16px;
 
-  /* 外观页的“窗口圆角”滑块写入 --cy-window-radius，默认 24 */
-  --st-radius-win: var(--cy-window-radius, 24px);
+  /* 窗口圆角固定为 24px（已不再由外观设置调整） */
+  --st-radius-win: 24px;
   --st-radius-card: 16px;
   --st-radius-inner: 12px;
   --st-radius-ctl: 12px;
@@ -134,7 +134,15 @@
 }
 .settings-shell .settings-nav__header { padding: 0 12px 18px; }
 .settings-shell .settings-nav__brand { gap: 8px; font: 500 16px/24px var(--rb-font-sans); color: var(--rb-text-strong); text-shadow: none; }
-.settings-shell .settings-nav__logo { width: 24px; height: 24px; border-radius: 8px; }
+.settings-shell .settings-nav__logo { width: 24px; height: 24px; }
+/* 流萤头像统一成圆形：导航品牌图、导航里的流萤项、页头头像共用一套裁切与发丝描边（颜色走 --st-*，深浅色都跟随） */
+.settings-shell :is(.settings-nav__logo, .nav-item__avatar, .panel-heading__avatar) {
+  box-sizing: border-box;
+  border-radius: 50%;
+  border: 1px solid var(--st-card-stroke);
+  object-fit: cover;
+  background: var(--st-inset-fill);
+}
 .settings-shell .settings-nav__list { gap: 4px; }
 .settings-shell .settings-nav__group { padding: 16px 12px 6px; font-size: 11px; font-weight: 500; letter-spacing: .04em; color: var(--rb-text-faint); }
 .settings-shell .settings-nav__group:first-child { padding-top: 0; }
@@ -241,9 +249,10 @@
 
 /* ── 其余页面的卡片共用同一张表面 ──────────────────────────
  * 选择类卡片（.rag-model-card / .appearance-option 等）有自己的选中态，放在后面单独处理。 */
+
 .settings-shell :is(
-  .plugin-card, .agent-setting-card, .memory-card, .scheduler-card, .channels-card, .channels-log,
-  .token-hero, .token-stat, .token-cache-summary, .token-card, .disclaimer-section, .panel-card,
+  .plugin-card, .agent-setting-card, .scheduler-card, .channels-card, .channels-log,
+  .disclaimer-section, .panel-card,
   .plugin-panel-card, .ui-color-controls, .appearance-font-control, .appearance-placeholder, .task-item
 ) {
   border: 1px solid var(--st-card-stroke);
@@ -272,14 +281,11 @@
 .settings-shell .appearance-section { margin-bottom: var(--sys-gap); }
 .settings-shell .appearance-section__heading h2, .settings-shell .appearance-section > h2 { font-size: 15px; font-weight: 600; }
 
-.memory-card__head h2, .agent-setting-card h2, .channels-card__header h2, .plugin-panel-card__header h2 { color: var(--rb-text-strong); }
-.settings-shell .memory-card__head p,
+.agent-setting-card h2, .channels-card__header h2, .plugin-panel-card__header h2 { color: var(--rb-text-strong); }
 .settings-shell .agent-setting-card p { color: var(--rb-text-muted); }
-.settings-shell .memory-card__hint { color: var(--rb-text-muted); font-style: normal; }
 .settings-shell .agent-form-actions { border-top-color: var(--st-divider); }
 .settings-shell .plugin-config { border-top: 1px dashed var(--st-divider); }
 .settings-shell .plugin-accordion-body { border-top-color: var(--st-divider); }
-.settings-shell .vision-config-section { border-top-color: var(--st-divider); }
 
 /* ── 手机页 / 工具页里写死的白字：浅色主题下读不出来，统一改读令牌 ── */
 .settings-shell .channels-card__hint,
@@ -374,9 +380,8 @@
 .settings-shell .perm-seg + .perm-seg { border-left: 1px solid transparent; }
 .settings-shell .perm-seg:not(.is-active):hover { color: var(--rb-text-strong); background: var(--st-nav-hover); }
 .settings-shell .perm-seg.is-active { color: var(--st-selected-text); background: var(--st-selected-fill); border-color: var(--st-selected-stroke); box-shadow: none; }
-.settings-shell .token-range__btn { border-color: var(--st-card-stroke); background: transparent; border-radius: var(--st-radius-ctl); }
-.settings-shell .token-range__btn.is-active,
-[data-ui-theme="pearl-white"] .settings-shell .token-range__btn.is-active { background: var(--st-selected-fill); border-color: var(--st-selected-stroke); color: var(--st-selected-text); }
+
+
 .settings-shell .gender-select__btn.is-active { background: var(--st-selected-fill); border-color: var(--st-selected-stroke); color: var(--st-selected-text); }
 
 /* ── 按钮 ────────────────────────────────────────────────
@@ -454,7 +459,7 @@
 .settings-shell .plugin-add-btn:hover:not(:disabled) { background: var(--st-nav-hover); border-color: var(--st-primary); color: var(--st-primary); transform: none; box-shadow: none; }
 
 /* ── 输入控件在设置页里统一高度和边框 ────────────────────── */
-.settings-shell :is(.field, .settings-list, .panel-body, .channels-card, .plugin-card, .memory-card, .agent-setting-card, .scheduler-card, .ui-color-controls) :is(input:not([type=checkbox]):not([type=radio]):not([type=range]):not([type=color]), select, textarea) {
+.settings-shell :is(.field, .settings-list, .panel-body, .channels-card, .plugin-card, .agent-setting-card, .scheduler-card, .ui-color-controls) :is(input:not([type=checkbox]):not([type=radio]):not([type=range]):not([type=color]), select, textarea) {
   box-sizing: border-box;
   border: 1px solid var(--rb-input-border);
   border-radius: var(--st-radius-ctl);
@@ -464,9 +469,9 @@
   font: inherit;
   font-size: 14px;
 }
-.settings-shell :is(.field, .settings-list, .panel-body, .channels-card, .plugin-card, .memory-card, .agent-setting-card, .scheduler-card) :is(input:not([type=checkbox]):not([type=radio]):not([type=range]):not([type=color]), select):not(textarea) { min-height: var(--st-ctl-h); padding: 6px 12px; }
-.settings-shell :is(.field, .settings-list, .panel-body, .channels-card, .plugin-card, .memory-card, .agent-setting-card, .scheduler-card, .ui-color-controls) :is(input, select, textarea)::placeholder { color: var(--rb-input-placeholder); }
-.settings-shell :is(.field, .settings-list, .panel-body, .channels-card, .plugin-card, .memory-card, .agent-setting-card, .scheduler-card, .ui-color-controls) :is(input, select, textarea):focus {
+.settings-shell :is(.field, .settings-list, .panel-body, .channels-card, .plugin-card, .agent-setting-card, .scheduler-card) :is(input:not([type=checkbox]):not([type=radio]):not([type=range]):not([type=color]), select):not(textarea) { min-height: var(--st-ctl-h); padding: 6px 12px; }
+.settings-shell :is(.field, .settings-list, .panel-body, .channels-card, .plugin-card, .agent-setting-card, .scheduler-card, .ui-color-controls) :is(input, select, textarea)::placeholder { color: var(--rb-input-placeholder); }
+.settings-shell :is(.field, .settings-list, .panel-body, .channels-card, .plugin-card, .agent-setting-card, .scheduler-card, .ui-color-controls) :is(input, select, textarea):focus {
   outline: none;
   border-color: var(--st-primary);
   background: var(--rb-input-bg);
@@ -503,7 +508,7 @@
 .settings-shell .plugin-switch input:checked + span::after { transform: translateX(20px); background: #ffffff; }
 
 /* ── 标签 / 状态点 ───────────────────────────────────────── */
-.settings-shell :is(.memory-card__badge, .profile-card__badge, .plugin-placeholder-tag, .tts-engine__tag) {
+.settings-shell :is(.profile-card__badge, .plugin-placeholder-tag, .tts-engine__tag) {
   padding: 1px 8px;
   border: 1px solid var(--st-card-stroke);
   border-radius: 6px;
@@ -512,8 +517,7 @@
   font-size: 11px;
   line-height: 16px;
 }
-.settings-shell .channels-status__dot,
-.settings-shell .token-model-row__dot { width: 8px; height: 8px; border-radius: 50%; box-shadow: none; }
+.settings-shell .channels-status__dot { width: 8px; height: 8px; border-radius: 50%; box-shadow: none; }
 .settings-shell .channels-status__dot { background: var(--st-dot-idle); }
 .settings-shell .channels-status__dot--running { background: var(--st-dot-ok); }
 .settings-shell .channels-status__dot--starting { background: var(--st-dot-warn); }
@@ -586,13 +590,85 @@
 #desktop-asr-form [role="status"] { margin: 0; min-height: 0; color: var(--rb-text-muted); font-size: 13px; }
 #desktop-asr-form [role="status"]:empty { display: none; }
 
-/* ── 外观页：把带缺口的 fieldset 变成普通卡片 ──────────────── */
-.ui-color-controls { padding: 4px var(--sys-pad-x) 16px; }
-.ui-color-controls legend { float: left; width: 100%; margin: 0; padding: 16px 0 0; font-size: 14px; }
-.ui-color-controls legend + * { clear: both; margin-top: 10px; }
-.ui-color-controls > p { margin: 6px 0 12px; }
-.settings-shell .ui-color-row input[type="color"] { border-radius: var(--st-radius-ctl); border-color: var(--rb-input-border); }
-.settings-shell .ui-color-row input[type="text"] { border-radius: var(--st-radius-ctl); }
+/* ── 外观页：卡片设计语言（模式 / 自定义 / 字体 / 高级 / 桌宠） ──────────
+ * 结构沿用 .settings-list + .setting-row；这里只补：缩略图、色点 pill、字号输入、折叠区。 */
+
+/* 界面基础字号：设置窗口本身也跟随外观设置的界面字号 */
+body { font-size: var(--cy-ui-font-size, 16px); }
+
+.appearance-visually-hidden {
+  position: absolute; width: 1px; height: 1px; margin: -1px; padding: 0;
+  overflow: hidden; clip: rect(0, 0, 0, 0); white-space: nowrap; border: 0;
+}
+
+#appearance-form .appearance-card { margin-bottom: 0; }
+#appearance-form .appearance-section__heading { margin-bottom: 10px; }
+
+/* 模式：标签在左，两个小缩略图在右，选中态用强调色描边 */
+#appearance-form .appearance-mode-row { align-items: center; }
+#appearance-form .appearance-theme-options { display: flex; flex: none; gap: 12px; }
+#appearance-form .appearance-theme-option {
+  display: flex; flex-direction: column; align-items: center; gap: 6px; min-width: 0; padding: 6px;
+  border: 1px solid transparent; border-radius: var(--st-radius-inner); background: transparent; box-shadow: none; cursor: pointer;
+}
+#appearance-form .appearance-theme-option:hover:not(:disabled) { background: var(--st-nav-hover); border-color: transparent; }
+#appearance-form .appearance-theme-option.is-active { border-color: var(--st-primary); background: var(--st-selected-fill); }
+#appearance-form .appearance-theme-option:focus-visible { outline: 2px solid color-mix(in srgb, var(--st-primary) 55%, transparent); outline-offset: 2px; }
+#appearance-form .appearance-theme-option__label { color: var(--rb-text-strong); font-size: 13px; font-weight: 500; white-space: nowrap; }
+#appearance-form .appearance-theme-swatch {
+  width: 96px; height: 60px; padding: 5px; gap: 4px; border-radius: 10px; border: 1px solid var(--st-card-stroke);
+}
+#appearance-form .appearance-theme-swatch i { border-radius: 4px; }
+
+/* 自定义：启用开关行 + 每个颜色一行，右侧是圆角 pill（色点 + hex） */
+#appearance-form .ui-color-controls { min-width: 0; margin: 0; padding: 0 var(--sys-pad-x); }
+#appearance-form .ui-color-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+#appearance-form .ui-color-pill {
+  display: inline-flex; align-items: center; gap: 8px; flex: none; height: 34px; padding: 0 12px 0 6px;
+  border: 1px solid var(--rb-input-border); border-radius: 999px; background: var(--rb-input-bg);
+}
+#appearance-form .ui-color-pill:focus-within { border-color: var(--st-primary); box-shadow: var(--st-focus-ring); }
+#appearance-form .ui-color-dot {
+  flex: none; width: 22px; height: 22px; padding: 0; border: 1px solid rgba(34, 48, 77, .18); border-radius: 50%;
+  background: none; cursor: pointer; overflow: hidden; -webkit-appearance: none; appearance: none;
+}
+#appearance-form .ui-color-dot::-webkit-color-swatch-wrapper { padding: 0; }
+#appearance-form .ui-color-dot::-webkit-color-swatch { border: 0; border-radius: 50%; }
+#appearance-form .ui-color-dot:disabled { cursor: not-allowed; opacity: .5; }
+#appearance-form .ui-color-hex {
+  width: 84px; height: 24px; min-height: 0; padding: 0; border: 0; border-radius: 0; background: transparent;
+  box-shadow: none; color: var(--rb-text-strong); font: 500 13px/1 var(--rb-font-mono, monospace);
+}
+#appearance-form .ui-color-hex:focus { border: 0; box-shadow: none; outline: none; }
+#appearance-form .ui-color-hex[aria-invalid="true"] { color: var(--st-danger); }
+#appearance-form .ui-color-hex:disabled { opacity: .5; }
+#appearance-form .ui-color-reset-row { justify-content: flex-end; }
+#appearance-form .ui-colors-status { margin: 0; padding: 0 0 14px; min-height: 0; color: var(--rb-text-muted); font-size: 13px; }
+#appearance-form .ui-colors-status:empty { display: none; }
+
+/* 字体：下拉 + 导入 / 恢复按钮 */
+#appearance-form .appearance-font-row { align-items: center; }
+#appearance-form .appearance-font-actions { display: flex; flex-wrap: wrap; align-items: center; justify-content: flex-end; gap: 8px; }
+#appearance-form #ui-font-select { min-height: 32px; height: 32px; min-width: 132px; padding: 0 10px; border-radius: var(--st-radius-ctl); }
+
+/* 高级：折叠区，里面是字号输入和行 / 段间距滑块 */
+#appearance-form .appearance-advanced { margin-top: var(--sys-gap); }
+#appearance-form .appearance-advanced__summary {
+  display: inline-flex; align-items: center; gap: 8px; padding: 4px 2px 10px; color: var(--rb-text-muted);
+  font-size: 14px; font-weight: 500; list-style: none; cursor: pointer; user-select: none;
+}
+#appearance-form .appearance-advanced__summary::-webkit-details-marker { display: none; }
+#appearance-form .appearance-advanced__summary::after {
+  content: ""; width: 7px; height: 7px; border-right: 1.5px solid currentColor; border-bottom: 1.5px solid currentColor;
+  transform: rotate(45deg); transition: transform .15s ease;
+}
+#appearance-form .appearance-advanced[open] > .appearance-advanced__summary::after { transform: rotate(225deg); }
+#appearance-form .appearance-advanced > .appearance-card { margin-top: 0; }
+#appearance-form .appearance-size-input { display: inline-flex; align-items: center; gap: 6px; color: var(--rb-text-muted); font-size: 13px; }
+#appearance-form .appearance-size-input input {
+  width: 68px; min-height: 32px; height: 32px; padding: 0 8px; border-radius: var(--st-radius-ctl); text-align: center;
+  font-size: 13px; font-variant-numeric: tabular-nums;
+}
 
 /* ── 手机页：标题放回第一位，消息日志是次要入口 ──────────────── */
 #channels-panel:not(.is-hidden) { display: flex; flex-direction: column; }
@@ -607,6 +683,55 @@
 .channels-card__body .form-input--wide { width: 100%; max-width: none; }
 .settings-shell .channels-card__body .form-input-with-action .btn-reveal { width: var(--st-ctl-h); height: var(--st-ctl-h); border-radius: var(--st-radius-ctl); }
 .channels-card__actions { margin-top: 16px; gap: 8px; }
+
+/* 连接手机：渠道卡片是折叠卡（<details>）。标题行 = 图标 + 名称 + 状态 + 开关 + 箭头，
+ * 展开后才显示凭据、配对与高级项。开关的 input 覆盖整个开关，点开关不会触发折叠。 */
+#channels-panel .channels-card--fold { padding: 0; }
+#channels-panel .channels-card--fold > summary.channels-card__header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 12px;
+  margin: 0;
+  padding: 14px 18px;
+  cursor: pointer;
+  list-style: none;
+  user-select: none;
+}
+#channels-panel .channels-card--fold > summary::-webkit-details-marker { display: none; }
+#channels-panel .channels-card--fold > summary:focus-visible { outline: 2px solid color-mix(in srgb, var(--st-primary) 55%, transparent); outline-offset: -2px; border-radius: var(--st-radius-card); }
+#channels-panel .channels-card--fold > summary h2 { flex: 1 1 auto; min-width: 0; }
+#channels-panel .channels-card--fold > summary .channels-status,
+#channels-panel .channels-card--fold > summary .switch { flex: none; }
+#channels-panel .channels-card--fold > summary::after {
+  content: "";
+  flex: none;
+  width: 7px;
+  height: 7px;
+  margin: 0 4px 0 2px;
+  border-right: 1.5px solid var(--rb-text-muted);
+  border-bottom: 1.5px solid var(--rb-text-muted);
+  transform: rotate(45deg);
+  transition: transform .15s ease;
+}
+#channels-panel .channels-card--fold[open] > summary::after { transform: rotate(-135deg); }
+#channels-panel .channels-card--fold > .channels-card__body { padding: 16px 18px; border-top: 1px solid var(--st-divider); }
+
+/* 连接概览 / Firefly 手机 App 接入位 */
+#channels-panel .channels-overview > .channels-card__header,
+#channels-panel .channels-app-card > .channels-card__header { flex-wrap: wrap; gap: 6px 12px; }
+#channels-panel .channels-overview__summary { color: var(--rb-text-muted); font-size: 13px; white-space: nowrap; }
+#channels-panel .channels-overview__sub { margin: 0 0 4px; font-size: 13px; font-weight: 600; color: var(--rb-text-strong); }
+#channels-panel .channels-badge {
+  padding: 2px 8px;
+  border: 1px solid var(--st-card-stroke);
+  border-radius: 6px;
+  color: var(--rb-text-muted);
+  font-size: 11px;
+  line-height: 16px;
+  white-space: nowrap;
+}
+#channels-panel #channels-app-pair:disabled { opacity: .55; cursor: not-allowed; }
 
 /* ── 窄窗口 ───────────────────────────────────────────── */
 @media (max-width: 780px) {
@@ -631,7 +756,123 @@
 }
 
 /* Token 页的正文原来单独限宽 720，和其他页对不齐 */
-#token-panel .panel-body { max-width: none; }
+
 
 /* 记忆页：几张卡片之间原来没有间距 */
 #memory-panel > .panel-body { display: grid; gap: var(--sys-gap); }
+
+/* 记忆页四张卡片：统一用 .settings-list 表面；卡内只补标题、工具栏、条目动作与 Obsidian 状态行 */
+#memory-panel .memory-section { margin: 0; padding-block: 16px; }
+#memory-panel .memory-section__head h2 { margin: 0; color: var(--rb-text-strong); font: var(--rb-text-body-em); font-size: 16px; line-height: 1.4; font-weight: 600; }
+#memory-panel .memory-section__head p { margin: 4px 0 0; color: var(--rb-text-muted); font: var(--rb-text-small); }
+#memory-panel .memory-section__hint { margin: 12px 0 0; color: var(--rb-text-muted); font: var(--rb-text-small); }
+#memory-panel .memory-section__actions { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 8px; }
+#memory-panel .memory-entries { display: grid; gap: 10px; }
+#memory-panel .memory-toolbar { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; padding-top: 4px; }
+#memory-panel .memory-toolbar input[type="search"] { flex: 1 1 220px; min-width: 0; }
+#memory-panel .memory-record__actions { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 10px; }
+#memory-panel .memory-record__actions .save-btn { min-height: 30px; padding: 4px 12px; font-size: 12.5px; }
+#memory-panel .memory-section .setting-row { padding: 14px 0; }
+
+/* ── 用户信息页：账号卡片 + 个人资料 / 位置与时间卡片 ───────
+ * 每个字段都是一行 .setting-row（左：标题 + 说明，右：控件）。控件统一占 240px，窄屏时折到整行。 */
+#user-panel [hidden] { display: none !important; }
+#user-panel .setting-row > :is(input, select, .gender-select) {
+  flex: 0 0 240px;
+  width: 240px;
+  max-width: 58%;
+  box-sizing: border-box;
+}
+#user-panel .user-avatar-actions { display: flex; align-items: center; gap: 12px; flex-shrink: 0; }
+#user-panel .user-avatar {
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  overflow: hidden;
+  flex-shrink: 0;
+  border: 1px solid var(--st-card-stroke);
+  background: var(--st-inset-fill);
+  color: var(--rb-text-muted);
+}
+#user-panel .user-avatar > span { display: flex; align-items: center; justify-content: center; width: 100%; height: 100%; }
+#user-panel .user-avatar > span > svg { display: block; flex: none; width: 22px; height: 22px; }
+#user-panel .user-panel-hint { margin: 12px 0 0; padding: 0 4px; }
+
+/* 账号卡片：未登录 / 已登录两行只显示一行 */
+.account-card__identity { display: flex; align-items: center; gap: 14px; flex: 1 1 auto; min-width: 0; }
+.account-card__identity > div { display: grid; gap: 2px; min-width: 0; }
+.account-card__identity > div > span { color: var(--rb-text-muted); font-size: 13px; line-height: 1.65; overflow-wrap: anywhere; }
+.account-card__avatar {
+  width: 44px;
+  height: 44px;
+  flex-shrink: 0;
+  display: grid;
+  place-items: center;
+  overflow: hidden;
+  border-radius: 50%;
+  border: 1px solid var(--st-card-stroke);
+  background: var(--st-inset-fill);
+  color: var(--rb-text-muted);
+}
+.account-card__avatar img { width: 100%; height: 100%; object-fit: cover; }
+.account-card__avatar > span { display: grid; place-items: center; }
+.account-card__actions { display: flex; align-items: center; gap: 10px; flex-shrink: 0; }
+.account-card__soon { color: var(--rb-text-muted); font-size: 12px; }
+
+@media (max-width: 560px) {
+  #user-panel .setting-row { flex-wrap: wrap; }
+  #user-panel .setting-row > div:first-child,
+  .account-card__identity { flex-basis: 100%; }
+  #user-panel .setting-row > :is(input, select, .gender-select) { flex: 1 1 100%; width: 100%; max-width: none; }
+  .account-card__actions { margin-left: auto; flex-wrap: wrap; justify-content: flex-end; }
+}
+
+/* ── 记忆页卡片头：标题与说明之下一条分隔线；第一行内容不再重复画线（原先上边线贴着标题压住文字） ── */
+#memory-panel .memory-section__head { padding-bottom: 12px; margin-bottom: 4px; border-bottom: 1px solid var(--st-divider); }
+#memory-panel .memory-section__head + .setting-row { border-top: 0; }
+
+/* ── 连接手机 · 连接概览 · 公共设置（紧凑布局） ── */
+/* 两个限速输入并排，各自带标签；窄窗口回退单列 */
+#channels-panel .channels-rate-pair { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0 12px; margin-top: 14px; }
+#channels-panel .channels-rate-pair > .form-row { margin-top: 0; }
+/* 两个开关做成 .setting-row 风格的行：左标题、右开关 */
+#channels-panel .channels-overview .channels-setting-row { min-height: 0; margin-top: 0; padding: 10px 0; border-top: 1px solid var(--st-divider); border-bottom: 0; cursor: pointer; }
+#channels-panel .channels-overview .channels-setting-row strong { margin: 0; font-size: 13.5px; font-weight: 500; }
+/* 工具权限：两列选项卡；说明字号和间距收紧 */
+#channels-panel .channels-overview .tool-permission-group { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
+#channels-panel .channels-overview .tool-permission-option { gap: 8px; padding: 8px 10px; background: var(--st-inset-fill); border-color: var(--st-card-stroke); }
+#channels-panel .channels-overview .tool-permission-option:hover { background: var(--st-inset-fill); border-color: color-mix(in srgb, var(--st-primary) 45%, transparent); }
+#channels-panel .channels-overview .tool-permission-option:has(input:checked) { border-color: var(--st-primary); }
+#channels-panel .channels-overview .tool-permission-option__title { font-size: 13px; }
+#channels-panel .channels-overview .tool-permission-option__desc { font-size: 12px; line-height: 1.45; }
+@media (max-width: 560px) {
+  #channels-panel .channels-rate-pair,
+  #channels-panel .channels-overview .tool-permission-group { grid-template-columns: minmax(0, 1fr); }
+}
+
+/* 概览：五项做成紧凑的“小标签 + 大号值”格子，宽窗口 3 列、窄窗口 2 列；格子之间不再有横线 */
+#memory-panel #memory-overview { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; }
+#memory-panel #memory-overview > .memory-section__head { grid-column: 1 / -1; }
+#memory-panel #memory-overview > .setting-row {
+  display: grid;
+  align-content: start;
+  min-height: 0;
+  margin: 0;
+  padding: 12px 14px;
+  border: 0;
+  border-radius: var(--st-radius-inner);
+  background: var(--st-inset-fill);
+}
+#memory-panel .setting-row.is-hidden,
+#memory-panel #memory-overview > .setting-row.is-hidden { display: none; }
+#memory-panel #memory-overview > .setting-row > div { display: grid; gap: 6px; min-width: 0; }
+#memory-panel #memory-overview > .setting-row strong { margin: 0; color: var(--rb-text-muted); font-size: 12.5px; font-weight: 500; line-height: 1.4; }
+#memory-panel #memory-overview > .setting-row > div > span { color: var(--rb-text-strong); font-size: 18px; font-weight: 600; line-height: 1.3; overflow-wrap: anywhere; }
+@media (max-width: 900px) {
+  #memory-panel #memory-overview { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+
+/* 账号卡默认头像：占位图标直接放在 44px 圆里，居中并固定 22px，避免贴左上 */
+.account-card__avatar > svg { display: block; flex: none; width: 22px; height: 22px; }

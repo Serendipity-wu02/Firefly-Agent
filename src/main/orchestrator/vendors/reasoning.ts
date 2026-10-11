@@ -16,6 +16,7 @@
 //   - fixed-on 走 resolveEffectiveReasoning 后 effective.mode 永远 on，
 //     故 applyReasoningPreference 不再判 fixed-on/off → 直接按 on 处理
 //   - 互斥字段防御：每个 requestStyle 只用自己专属字段，路径互不交叉
+//   - openrouter-reasoning 的 effort 写 reasoning: { effort }（OpenRouter 统一写法），其余写法仍写顶层 reasoning_effort（见 writeEffortField）
 //   - 日志只记 provider / model / requested / effective mode-effort；不记 apiKey / 消息 / reasoning 内容
 
 import {
@@ -72,6 +73,7 @@ export function applyReasoningPreference(
         result.enable_thinking = true;
         break;
       case "openai-effort":
+      case "openrouter-reasoning":
       case "none":
         // 不注入字段（K2.7-Code / K2.7-Code-HighSpeed / M2.x）
         break;
@@ -112,7 +114,7 @@ export function applyReasoningPreference(
       case "effort":
         // supportsDisable=false → 不发任何字段（用户修订 #1）
         if (capability.supportsDisable) {
-          result.reasoning_effort = "none";
+          writeEffortField(result, capability, "none");
         }
         break;
       case "toggle-effort":
@@ -138,7 +140,7 @@ export function applyReasoningPreference(
         if (effective.effort !== undefined && capability.supportedEfforts && !capability.supportedEfforts.includes(effective.effort)) {
           effort = capability.defaultEffort ?? effort;
         }
-        result.reasoning_effort = effort;
+        writeEffortField(result, capability, effort);
         break;
       }
       case "toggle-effort":
@@ -155,6 +157,23 @@ export function applyReasoningPreference(
 
 // ── 辅助函数 ──────────────────────────────────────────────
 
+/**
+ * OpenRouter 线上档位：内部最高档 max 没有同名取值，按 OpenAI 系最高档 xhigh 下发
+ * （OpenRouter 文档虽也列出 max，这里取 xhigh，跨上游更稳）；其余档位与 "none"（关闭）原样下发。
+ */
+function openRouterWireEffort(effort: string): string {
+  return effort === "max" ? "xhigh" : effort;
+}
+
+/** 写入 effort 字段：openai-effort 写顶层 reasoning_effort；openrouter-reasoning 写 reasoning: { effort }。 */
+function writeEffortField(result: Record<string, unknown>, cap: ReasoningCapability, effort: string): void {
+  if (cap.requestStyle === "openrouter-reasoning") {
+    result.reasoning = { effort: openRouterWireEffort(effort) };
+  } else {
+    result.reasoning_effort = effort;
+  }
+}
+
 function applyToggleOff(result: Record<string, unknown>, cap: ReasoningCapability): void {
   switch (cap.requestStyle) {
     case "qwen-enable-thinking":
@@ -167,8 +186,9 @@ function applyToggleOff(result: Record<string, unknown>, cap: ReasoningCapabilit
       result.thinking = { type: "disabled" };
       break;
     case "openai-effort":
-      // 档案声明了无档位 + 可关闭的 OpenAI 写法：关 = reasoning_effort "none"，开 = 服务端默认
-      if (cap.supportsDisable) result.reasoning_effort = "none";
+    case "openrouter-reasoning":
+      // 档案声明了无档位 + 可关闭的 effort 写法：关 = effort "none"，开 = 服务端默认
+      if (cap.supportsDisable) writeEffortField(result, cap, "none");
       break;
     case "none":
       // 理论上不存在
@@ -194,8 +214,9 @@ function applyToggleOn(
       result.thinking = { type: "adaptive" };
       break;
     case "openai-effort":
+    case "openrouter-reasoning":
     case "none":
-      // 理论上不存在
+      // openai-effort / openrouter-reasoning 的“开”是服务端默认，不发字段；none 理论上不存在
       break;
   }
 }
@@ -203,10 +224,9 @@ function applyToggleOn(
 function applyToggleEffortOff(result: Record<string, unknown>, cap: ReasoningCapability): void {
   switch (cap.requestStyle) {
     case "openai-effort":
+    case "openrouter-reasoning":
       // supportsDisable=false 时不发（用户修订 #1）
-      if (cap.supportsDisable) {
-        result.reasoning_effort = "none";
-      }
+      if (cap.supportsDisable) writeEffortField(result, cap, "none");
       break;
     case "thinking-type":
       result.thinking = { type: "disabled" };
@@ -235,7 +255,8 @@ function applyToggleEffortOn(
   }
   switch (cap.requestStyle) {
     case "openai-effort":
-      result.reasoning_effort = effort;
+    case "openrouter-reasoning":
+      writeEffortField(result, cap, effort);
       break;
     case "thinking-type": {
       const keep = cap.keepOnTools === true && context.hasTools;

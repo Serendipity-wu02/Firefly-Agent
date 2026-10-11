@@ -54,8 +54,6 @@ interface ChatWindowApi {
   /** 主进程通用设置（只声明渲染端读取的字段） */
   getGeneralSettings: () => Promise<{
     language?: string;
-    currentStyleId?: string;
-
   }>;
 }
 

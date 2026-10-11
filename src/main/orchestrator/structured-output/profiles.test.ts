@@ -11,7 +11,6 @@ describe("resolveStructuredOutputProfile", () => {
     ["claude", "claude-sonnet-4-6", "anthropic", "provider_json_schema"],
     ["kimi", "kimi-k3", "openai", "provider_json_schema"],
     ["kimi", "kimi-for-coding", "openai", "provider_json_schema"],
-    ["doubao", "doubao-seed-2-1-pro-260628", "openai", "provider_json_schema"],
     ["deepseek", "deepseek-flash", "openai", "provider_json_object"],
     ["deepseek", "deepseek-v4-pro", "openai", "provider_json_object"],
     ["qwen", "qwen3.7-plus", "openai", "provider_json_object"],
@@ -48,27 +47,6 @@ describe("resolveStructuredOutputProfile", () => {
     expect(resolveStructuredOutputProfile({
       provider: "chatgpt",
       model: "future-unverified-model",
-      transport: "openai",
-      endpointKind: "official",
-    }).mode).toBe("prompt_json");
-  });
-
-  test("Doubao Seed deployment IDs use the A profile regardless of their user-specific suffix", () => {
-    expect(resolveStructuredOutputProfile({
-      provider: "doubao",
-      model: "doubao-seed-user-deployment-abc123",
-      transport: "openai",
-      endpointKind: "official",
-    })).toMatchObject({
-      tier: "A",
-      mode: "provider_json_schema",
-    });
-  });
-
-  test("Doubao prefix matching keeps a hyphen boundary", () => {
-    expect(resolveStructuredOutputProfile({
-      provider: "doubao",
-      model: "doubao-seeding-unrelated",
       transport: "openai",
       endpointKind: "official",
     }).mode).toBe("prompt_json");
@@ -124,11 +102,6 @@ describe("resolveStructuredOutputProfile", () => {
         reasoningSplit: true,
       },
       repair: {
-        cita: {
-          maxAttempts: 2,
-          totalBudgetMs: 10_000,
-          perAttemptTimeoutMs: 5_500,
-        },
         task_router: {
           maxAttempts: 2,
           totalBudgetMs: 12_000,
@@ -147,12 +120,6 @@ describe("resolveStructuredOutputProfile", () => {
     })).toMatchObject({
       tier: "B",
       repair: {
-        cita: {
-          maxAttempts: 2,
-          totalBudgetMs: 16_000,
-          perAttemptTimeoutMs: 8_000,
-          minimumRemainingBudgetMs: 500,
-        },
         task_router: {
           maxAttempts: 2,
           totalBudgetMs: 20_000,
@@ -165,19 +132,13 @@ describe("resolveStructuredOutputProfile", () => {
 
   test("A tier gives schema-capable providers 2.5x the baseline time budget", () => {
     expect(resolveStructuredOutputProfile({
-      provider: "doubao",
-      model: "doubao-seed-2-1-pro-260628",
+      provider: "chatgpt",
+      model: "gpt-5.6",
       transport: "openai",
       endpointKind: "official",
     })).toMatchObject({
       tier: "A",
       repair: {
-        cita: {
-          maxAttempts: 2,
-          totalBudgetMs: 20_000,
-          perAttemptTimeoutMs: 10_000,
-          minimumRemainingBudgetMs: 500,
-        },
         task_router: {
           maxAttempts: 2,
           totalBudgetMs: 25_000,
@@ -185,47 +146,6 @@ describe("resolveStructuredOutputProfile", () => {
           minimumRemainingBudgetMs: 800,
         },
       },
-    });
-  });
-
-  test.each([
-    "kimi-k2.7-code",
-    "kimi-k3",
-    "kimi-for-coding",
-  ])("%s gets the slow-thinking Kimi CITA budget", (model) => {
-    expect(resolveStructuredOutputProfile({
-      provider: "kimi",
-      model,
-      transport: "openai",
-      endpointKind: "official",
-    })).toMatchObject({
-      tier: "A",
-      repair: {
-        cita: {
-          maxAttempts: 2,
-          totalBudgetMs: 40_000,
-          perAttemptTimeoutMs: 20_000,
-          minimumRemainingBudgetMs: 500,
-        },
-        task_router: {
-          maxAttempts: 2,
-          totalBudgetMs: 25_000,
-          perAttemptTimeoutMs: 12_500,
-          minimumRemainingBudgetMs: 800,
-        },
-      },
-    });
-  });
-
-  test("kimi-k2.6 keeps the standard A-tier CITA budget", () => {
-    expect(resolveStructuredOutputProfile({
-      provider: "kimi",
-      model: "kimi-k2.6",
-      transport: "openai",
-      endpointKind: "official",
-    }).repair.cita).toMatchObject({
-      totalBudgetMs: 20_000,
-      perAttemptTimeoutMs: 10_000,
     });
   });
 

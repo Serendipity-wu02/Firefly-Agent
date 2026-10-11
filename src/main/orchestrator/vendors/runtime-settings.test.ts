@@ -54,11 +54,10 @@ describe("resolveVendorRuntimeSettings — 分流逻辑", () => {
     });
   });
 
-  describe("preset 厂商（命中 capability 表的 9 家）", () => {
+  describe("preset 厂商（命中 capability 表的 8 家）", () => {
     test.each([
       ["MiniMax（稀宇科技）", 1, true],
       ["DeepSeek（深度求索）", -1, true],
-      ["豆包（火山方舟）", 1, false],
       ["GLM（智谱）", 1, true],
       ["Qwen（通义千问）", -1, true],
       ["ChatGPT（OpenAI）", 1, true],

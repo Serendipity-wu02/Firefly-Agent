@@ -9,6 +9,12 @@ on:
 permissions:
   contents: read
 
+# 同一分支上新提交到达后，旧提交还没跑完的运行没有意义，取消它们，释放运行器、减少偶发停顿的暴露面。
+# push 与 pull_request 分开计组：二者各自保留，PR 上的必需检查不会被另一类事件的运行取消；main 上的每次推送都完整跑完。
+concurrency:
+  group: test-${{ github.event_name }}-${{ github.head_ref || github.ref_name }}
+  cancel-in-progress: ${{ github.ref != 'refs/heads/main' }}
+
 jobs:
   test:
     runs-on: windows-latest

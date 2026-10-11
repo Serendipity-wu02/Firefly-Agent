@@ -1,10 +1,9 @@
-// 通用保存状态条：7 个面板的 save-status DOM 文本/类名更新
+// 通用保存状态条：各面板的 save-status DOM 文本/类名更新
 // 从 settings.ts 抽离。
-// 依赖：shared/shell.ts（全局壳 save-status）+ appearance/general 面板内 save-status DOM。
+// 依赖：shared/shell.ts（全局壳 save-status）+ appearance 面板内 save-status DOM。
 
 import { saveStatus, fireflySaveStatus, preferencesSaveStatus, runtimeSaveStatus } from "./shell";
 import { appearanceSaveStatus } from "../appearance/dom";
-import { generalSaveStatus } from "../general/dom";
 
 export function setSaveStatus(text: string, cls?: string): void {
   saveStatus.textContent = text;
@@ -28,12 +27,6 @@ export function setAppearanceSaveStatus(text: string, cls?: string): void {
   appearanceSaveStatus.textContent = text;
   appearanceSaveStatus.className = "save-status";
   if (cls) appearanceSaveStatus.classList.add(cls);
-}
-
-export function setGeneralSaveStatus(text: string, cls?: string): void {
-  generalSaveStatus.textContent = text;
-  generalSaveStatus.className = "save-status";
-  if (cls) generalSaveStatus.classList.add(cls);
 }
 
 export function setRuntimeSaveStatus(text: string, cls?: string): void {

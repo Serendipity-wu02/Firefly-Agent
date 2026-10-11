@@ -15,7 +15,6 @@ interface ReasoningState {
   model: string;
   preference?: ReasoningPreference;
   thinkingOverride?: -1 | 0 | 1;
-  transport?: "openai" | "anthropic" | "responses";
   /** Levels the connected API declared in its profile; absent = fall back to the model-name table. */
   reasoningLevels?: ReasoningLevelsConfig;
   /** The profile the main process actually resolved (session binding, pending welcome pick, default); echoed back on write. */
@@ -32,7 +31,7 @@ function reasoningApi(): ChatReasoningApi | undefined {
 }
 
 function preferenceKey(preference: ReasoningPreference): string {
-  return `${preference.mode}:${preference.effort ?? ""}:${preference.proMode ? "pro" : ""}`;
+  return `${preference.mode}:${preference.effort ?? ""}`;
 }
 
 /** 滑块每一档下面的短标签：两个字以内，才能在 260px 的面板里排得下。 */
@@ -95,7 +94,7 @@ export function ModelEffortControl({ sessionId, activeProfileId, onSelectModelPr
       const state = await api.getReasoningState({ sessionId, modelProfileId: activeProfileId });
       setProviderKey(state.providerKey);
       setResolvedProfileId(state.modelProfileId ?? null);
-      setView(computeReasoningDropdown(state.providerId, state.model, state.preference, state.thinkingOverride, state.transport, state.reasoningLevels));
+      setView(computeReasoningDropdown(state.providerId, state.model, state.preference, state.thinkingOverride, state.reasoningLevels));
     } catch {
       setView(undefined);
     }

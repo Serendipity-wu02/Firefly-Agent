@@ -3,6 +3,16 @@ import { Live2DModel, MotionPriority } from "pixi-live2d-display/cubism4";
 import type { HitAreaDef } from "./interaction";
 import { type Live2DTarget } from "../../shared/live2d-actions";
 import { buildMotionIndexMap } from "./model-manifest";
+import {
+  NON_BODY_DRAWABLE_IDS,
+  canvasToModelPoint,
+  installHiddenDrawableGuard,
+  pointInTriangle,
+  resolveFireflyHitRegions,
+  type CanvasModelSpace,
+  type FireflyCoreModel,
+  type HitRegionDrawable,
+} from "./model-regions";
 
 export type { HitAreaDef } from "./interaction";
 
@@ -14,13 +24,6 @@ export type { HitAreaDef } from "./interaction";
 const PET_WINDOW_BASE_WIDTH = 400;
 const PET_WINDOW_BASE_HEIGHT = 500;
 const PET_TARGET_FPS = 60;
-// Firefly's drink, cake plate and table; the adjacent ArtMesh156 chair stays visible.
-const HIDDEN_DRAWABLE_IDS = new Set(["ArtMesh153", "ArtMesh154", "ArtMesh155"]);
-interface DrawableOpacityModel {
-  getDrawableIndex(id: string): number;
-  getDrawableOpacity(index: number): number;
-}
-
 
 export interface Live2DManagerOptions {
   canvas: HTMLCanvasElement;
@@ -64,11 +67,8 @@ function buildHitAreaDefs(json: ModelJsonShape): HitAreaDef[] {
   for (const area of hitAreas) {
     const name = area.Name;
     const id = area.Id;
-    if (!name || !id || HIDDEN_DRAWABLE_IDS.has(id)) continue;
-    const expressionName = name === "Head" ? "expression4" : name === "Body" ? "expression3" : null;
-    if (expressionName && json.FileReferences?.Expressions?.some((entry) => entry.Name === expressionName)) {
-      out.push({ name, id, target: { kind: "expression", name: expressionName } });
-    }
+    if (!name || !id) continue;
+    out.push({ name, id });
   }
   return out;
 }
@@ -76,7 +76,7 @@ function buildHitAreaDefs(json: ModelJsonShape): HitAreaDef[] {
 export class Live2DManager {
   private app: PIXI.Application | null = null;
   private model: Live2DModel | null = null;
-  private restoreDrawableOpacity: (() => void) | null = null;
+  private removeHiddenDrawableGuard: (() => void) | null = null;
   private hitAreaDefs: HitAreaDef[] = [];
   /** group -> motionName -> index in internalModel.motionManager.definitions[group]. */
   private motionIndexMap: Map<string, Map<string, number>> = new Map();
@@ -166,15 +166,12 @@ export class Live2DManager {
       model.destroy();
       return;
     }
-    const core = model.internalModel.coreModel as Partial<DrawableOpacityModel>;
+    // 按网格隐藏饮料、蛋糕盘与桌子（覆盖 coreModel.getDrawableOpacity），椅子与影子保持可见。
+    this.removeHiddenDrawableGuard?.();
+    this.removeHiddenDrawableGuard = null;
+    const core = model.internalModel.coreModel as unknown as Partial<FireflyCoreModel>;
     if (typeof core?.getDrawableIndex === "function" && typeof core.getDrawableOpacity === "function") {
-      const opacityModel = core as DrawableOpacityModel;
-      const hidden = new Set([...HIDDEN_DRAWABLE_IDS].map(id => opacityModel.getDrawableIndex(id)).filter(index => index >= 0));
-      const original = opacityModel.getDrawableOpacity;
-      opacityModel.getDrawableOpacity = function(index) {
-        return hidden.has(index) ? 0 : original.call(this, index);
-      };
-      this.restoreDrawableOpacity = () => { opacityModel.getDrawableOpacity = original; };
+      this.removeHiddenDrawableGuard = installHiddenDrawableGuard(core as FireflyCoreModel);
     }
     this.model = model;
     this.hitAreaDefs = buildHitAreaDefs(json);
@@ -231,6 +228,47 @@ export class Live2DManager {
     return this.hitAreaDefs;
   }
 
+  /**
+   * 屏幕点（与 pointer 事件同坐标系）命中的区域名：["Head"]、["Body"] 或 []。
+   * 先找点击处可见、非场景的角色网格（ArtMesh23 等脸部网格也算角色网格）；没有命中返回 []。
+   * 有命中后按点击点的模型坐标 y 划分：y >= HEAD_MIN_Y 为 Head，否则为 Body。
+   */
+  hitTestRegions(x: number, y: number): string[] {
+    const model = this.model;
+    if (!model) return [];
+    const internal = model.internalModel;
+    const core = internal.coreModel as unknown as FireflyCoreModel;
+    const local = new PIXI.Point(x, y);
+    model.toModelPosition(local, local);
+    const point = canvasToModelPoint(local.x, local.y, internal as unknown as CanvasModelSpace);
+    const drawables: HitRegionDrawable[] = internal.getDrawableIDs().map((id, index) => ({
+      index,
+      id,
+      opacity: core.getDrawableOpacity(index),
+    }));
+    return resolveFireflyHitRegions({
+      drawables,
+      excludedDrawableIds: NON_BODY_DRAWABLE_IDS,
+      isPointInDrawable: (index) => this.drawableContainsPoint(core, index, point.x, point.y),
+      pointModelY: point.y,
+    });
+  }
+
+  /** 模型单位的点是否落在某个网格的任一三角形内。顶点取自 core 的模型单位坐标。 */
+  private drawableContainsPoint(core: FireflyCoreModel, index: number, mx: number, my: number): boolean {
+    const vertices = core.getDrawableVertices(index);
+    const triangles = core.getDrawableVertexIndices(index);
+    for (let t = 0; t + 2 < triangles.length; t += 3) {
+      const a = triangles[t] * 2;
+      const b = triangles[t + 1] * 2;
+      const c = triangles[t + 2] * 2;
+      if (pointInTriangle(mx, my, vertices[a], vertices[a + 1], vertices[b], vertices[b + 1], vertices[c], vertices[c + 1])) {
+        return true;
+      }
+    }
+    return false;
+  }
+
   hasAction(target: Live2DTarget): boolean {
     if (!this.model) return false;
     return target.kind === "motion"
@@ -267,10 +305,7 @@ export class Live2DManager {
         const inner = this.motionIndexMap.get(target.group);
         const index = inner?.get(target.motionName);
         if (typeof index !== "number") return false;
-        const priority = target.group === "Idle" && target.motionName === "0"
-          ? MotionPriority.IDLE
-          : MotionPriority.NORMAL;
-        return await this.model.motion(target.group, index, priority);
+        return await this.model.motion(target.group, index, MotionPriority.NORMAL);
       }
       if (!this.expressionNames.has(target.name)) return false;
       return await this.model.expression(target.name);
@@ -312,8 +347,8 @@ export class Live2DManager {
 
   dispose(): void {
     this.disposed = true;
-    this.restoreDrawableOpacity?.();
-    this.restoreDrawableOpacity = null;
+    this.removeHiddenDrawableGuard?.();
+    this.removeHiddenDrawableGuard = null;
     if (this.model) {
       this.model.destroy();
       this.model = null;

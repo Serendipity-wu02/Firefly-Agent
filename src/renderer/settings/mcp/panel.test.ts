@@ -75,7 +75,7 @@ describe("MCP Server 管理 UI - 添加流程", () => {
 describe("自定义端点接入说明模态框 - 内容完整性", () => {
   it("包含官方云端模型说明段落", () => {
     expect(mcpSource).toContain("官方云端模型");
-    expect(mcpSource).toContain("OpenAI、Claude、Kimi、DeepSeek、MiniMax、智谱 GLM、通义千问、豆包、小米 MiMo");
+    expect(mcpSource).toContain("OpenAI、Claude、Kimi、DeepSeek、MiniMax、智谱 GLM、通义千问、小米 MiMo、OpenRouter");
   });
 
   it("包含自定义端点高级说明段落", () => {

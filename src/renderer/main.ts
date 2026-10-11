@@ -1,17 +1,19 @@
 import { Live2DManager } from "./live2d/manager";
 import "./ui/theme";
-import { FIREFLY_DOUBLE_CLICK_TARGET, InteractionController } from "./live2d/interaction";
+import { InteractionController } from "./live2d/interaction";
 import { MouseFocusController } from "./live2d/focus";
 import { FireflyExpressionState } from "./live2d/expression-state";
 import { FireflyActionController } from "./live2d/action-controller";
-import { moodExpression } from "./live2d/mood-expression";
 
 import { BlinkController } from "./live2d/blink";
 // OpenerBubbleController 已被移除（主动开口子系统整体删除）。
 import { ClickThroughController } from "./live2d/click-through";
 import { Live2DRendererLifecycleTracker } from "./live2d/lifecycle-diagnostics";
 import { resolveAsset } from "../shared/renderer-base";
-import { findAction, type Live2DActionReceipt, type Live2DActionRequest } from "../shared/live2d-actions";
+import { LIVE2D_DEFAULT_EXPRESSION, LIVE2D_WORKING_EXPRESSION } from "../shared/live2d-actions";
+
+/** 双击触发的临时表情持续时长（毫秒），结束后恢复到当前基础表情。 */
+const DOUBLE_CLICK_EXPRESSION_MS = 5000;
 
 const canvas = document.getElementById("live2d-canvas") as HTMLCanvasElement;
 if (!canvas) throw new Error("Canvas #live2d-canvas not found");
@@ -35,13 +37,9 @@ if (!window.firefly) {
 declare global {
   interface Window {
 
-    live2dAction?: {
-      onPlayAction: (callback: (request: Live2DActionRequest) => void) => () => void;
-      reportReceipt: (receipt: Live2DActionReceipt) => void;
-    };
-    runtimeState?: {
-      get: () => Promise<{ feeling: string; updatedAt: number }>;
-      onChanged: (callback: (state: { feeling: string; updatedAt: number }) => void) => () => void;
+    live2dWork?: {
+      onChanged: (callback: (working: boolean) => void) => () => void;
+      getWorking?: () => Promise<boolean>;
     };
   }
 }
@@ -57,8 +55,9 @@ let petZoomOff: (() => void) | null = null;
 let petVisibilityOff: (() => void) | null = null;
 let petVisible = true;
 
-let actionOff: (() => void) | null = null;
-let moodOff: (() => void) | null = null;
+let workOff: (() => void) | null = null;
+/** 主进程报告的“工作中”状态；模型加载前到达的状态也以它为准。 */
+let workingNow = false;
 const live2dLifecycle = new Live2DRendererLifecycleTracker();
 
 function trackSubscription(label: string, off: () => void): () => void {
@@ -86,26 +85,19 @@ const manager = new Live2DManager({
     if (!model) return;
 
     expressionReset = new FireflyExpressionState(model);
+    void expressionReset.setBase(currentBaseExpression());
     actions = new FireflyActionController(manager, expressionReset);
-    const applyMood = (state: { feeling: string; updatedAt: number }) => {
-      const expression = moodExpression(state.feeling);
-      if (expression) void expressionReset?.setMood(expression, state.updatedAt);
-    };
-    moodOff = trackSubscription("runtimeState:onChanged", window.runtimeState?.onChanged(applyMood) ?? (() => {}));
-    void window.runtimeState?.get().then(applyMood).catch((error) => console.warn("[Firefly] mood read failed", error));
 
     blink = new BlinkController(model);
 
     interaction = new InteractionController(canvas, model, manager.getHitAreaDefs(), {
-      doubleClickTarget: manager.hasAction(FIREFLY_DOUBLE_CLICK_TARGET) ? FIREFLY_DOUBLE_CLICK_TARGET : undefined,
-      playAction: (target) => actions?.play(target, 5000, (receipt) => {
-        console.info("[Firefly] interaction", target, receipt.stage, receipt.reason ?? "");
-      }) ?? Promise.resolve(false),
-      onTrigger: (area) => {
-        console.info("[Firefly] hit", area.name, "started", area.target);
+      resolveRegions: (x, y) => manager.hitTestRegions(x, y),
+      playAction: (target) => actions?.play(target, DOUBLE_CLICK_EXPRESSION_MS) ?? Promise.resolve(false),
+      onTrigger: (area, target) => {
+        console.info("[Firefly] double-click", area.name, "started", target);
       },
-      onMiss: (area) =>
-        console.info("[Firefly] hit", area.name, "action not started"),
+      onMiss: (area, target) =>
+        console.info("[Firefly] double-click", area.name, "not started", target),
     });
 
     focus = new MouseFocusController(canvas, model);
@@ -155,8 +147,6 @@ const manager = new Live2DManager({
           interaction: interaction !== null,
           focus: focus !== null,
           expressionReset: expressionReset !== null,
-          mouthSync: mouthSync !== null,
-          speakingMotion: speakingMotion !== null,
           blink: blink !== null,
           clickThrough: clickThrough !== null,
         },
@@ -170,16 +160,22 @@ const manager = new Live2DManager({
   },
 });
 
-actionOff = trackSubscription("live2dAction:onPlayAction", window.live2dAction?.onPlayAction((request) => {
-  const report = (receipt: Omit<Live2DActionReceipt, "requestId">) => {
-    const fullReceipt = { requestId: request.requestId, ...receipt };
-    console.info("[Firefly] action", fullReceipt.requestId, fullReceipt.stage, fullReceipt.reason ?? "");
-    window.live2dAction?.reportReceipt(fullReceipt);
-  };
-  if (!request || typeof request.requestId !== "string" || !request.target || !Number.isFinite(request.durationMs) || request.durationMs <= 0) return;
-  if (actions) void actions.play(request.target, request.durationMs, report);
-  else report({ stage: "failed", reason: "model_unavailable" });
+function currentBaseExpression(): string {
+  return workingNow ? LIVE2D_WORKING_EXPRESSION : LIVE2D_DEFAULT_EXPRESSION;
+}
+
+// 工作中（工具调用期间）基础表情为 expression6，否则为 expression00；
+// 临时表情或手动动作在播时 setBase 只记录，结束后恢复时生效。
+workOff = trackSubscription("live2dWork:onChanged", window.live2dWork?.onChanged((working) => {
+  workingNow = working === true;
+  void expressionReset?.setBase(currentBaseExpression());
 }) ?? (() => {}));
+// 初始快照：桌宠晚于“true”事件加载或重载时，补上当前是否处于工作中。
+// 订阅已先挂好，快照之后到达的跳变事件仍会覆盖它。
+void window.live2dWork?.getWorking?.().then((working) => {
+  workingNow = working === true;
+  void expressionReset?.setBase(currentBaseExpression());
+}).catch(() => { /* 读取失败按不在工作处理 */ });
 
 manager.init();
 
@@ -193,10 +189,8 @@ window.addEventListener("beforeunload", () => {
   expressionReset = null;
   actions?.dispose();
   actions = null;
-  actionOff?.();
-  actionOff = null;
-  moodOff?.();
-  moodOff = null;
+  workOff?.();
+  workOff = null;
 
   blink?.dispose();
   blink = null;
@@ -391,8 +385,6 @@ addTrackedEventListener(canvas, "canvas:pointerup", "pointerup", (e) => {
   }
   flushMove();
   finishDrag();
-  const dragged = findAction("被拖拽");
-  if (moved && dragged) void actions?.play(dragged.target, dragged.durationMs);
 
   try {
     (event.target as Element).releasePointerCapture(event.pointerId);

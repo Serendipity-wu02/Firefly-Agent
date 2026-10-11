@@ -1,9 +1,10 @@
 import type { Live2DModel } from "pixi-live2d-display/cubism4";
+import { LIVE2D_DEFAULT_EXPRESSION } from "../../shared/live2d-actions";
 
 export class FireflyExpressionState {
   private readonly model: Live2DModel;
-  private moodExpression = "expression00";
-  private moodUpdatedAt = -1;
+  /** 当前基础表情：临时表情、手动动作结束后恢复到它。 */
+  private baseExpression: string = LIVE2D_DEFAULT_EXPRESSION;
   private temporaryTimer: number | null = null;
   private resetTimer: number | null = null;
   private manualActive = false;
@@ -14,12 +15,19 @@ export class FireflyExpressionState {
     this.restart();
   }
 
-  async setMood(expressionName: string, updatedAt: number): Promise<boolean> {
-    if (this.disposed || !Number.isFinite(updatedAt) || updatedAt <= this.moodUpdatedAt) return false;
-    this.moodUpdatedAt = updatedAt;
-    if (expressionName === this.moodExpression) return false;
-    this.moodExpression = expressionName;
-    return this.temporaryTimer === null && !this.manualActive ? this.resetNow() : false;
+  /** 当前基础表情名。 */
+  getBase(): string {
+    return this.baseExpression;
+  }
+
+  /**
+   * 设置基础表情。空闲时立即应用；临时表情或手动动作在播时只记录，
+   * 等它们结束后的恢复步骤再生效。
+   */
+  async setBase(name: string): Promise<boolean> {
+    if (this.disposed) return false;
+    this.baseExpression = name;
+    return this.resetNow();
   }
 
   suspend(): void {
@@ -42,10 +50,11 @@ export class FireflyExpressionState {
     this.restart();
   }
 
+  /** 恢复到当前基础表情；临时表情或手动动作在播时不做任何事。 */
   async resetNow(): Promise<boolean> {
     if (this.disposed || this.temporaryTimer !== null || this.manualActive) return false;
     try {
-      return await this.model.expression(this.moodExpression);
+      return await this.model.expression(this.baseExpression);
     } catch (error) {
       console.warn("[Firefly] expression restore failed", error);
       return false;

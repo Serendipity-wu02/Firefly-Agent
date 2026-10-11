@@ -14,7 +14,6 @@ const baseCap: ProviderCapability = {
   thinkingField: null,
   cacheStrategy: "none",
   testStrategy: "text",
-  supportsVision: false,
 };
 
 describe("authHeaderFor", () => {

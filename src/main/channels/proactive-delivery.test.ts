@@ -58,7 +58,6 @@ describe("proactive channel delivery", () => {
     const result = await sendProactiveChannelMessage({
       channel: "wechat",
       text: "第一句。",
-      mobileMessageSegmentation: "on",
       manager: { getAdapter: () => adapter },
       recipientRegistry: registry,
       appendHistory: vi.fn(),
@@ -74,7 +73,6 @@ describe("proactive channel delivery", () => {
     const result = await sendProactiveChannelMessage({
       channel: "wechat",
       text: "第一句。",
-      mobileMessageSegmentation: "off",
       manager: { getAdapter: () => adapter },
       recipientRegistry: registry,
       appendHistory: vi.fn(),
@@ -85,14 +83,13 @@ describe("proactive channel delivery", () => {
     expect(adapter.send).not.toHaveBeenCalled();
   });
 
-  it("sends one complete text part when segmentation is off", async () => {
+  it("sends the complete reply as one text part", async () => {
     const adapter = fakeAdapter();
     registry.remember(incoming("wechat", "wx-1"), "session-wx-1");
 
     const result = await sendProactiveChannelMessage({
       channel: "wechat",
       text: "第一句。第二句？",
-      mobileMessageSegmentation: "off",
       manager: { getAdapter: () => adapter },
       recipientRegistry: registry,
       appendHistory: vi.fn(),
@@ -107,86 +104,36 @@ describe("proactive channel delivery", () => {
     });
   });
 
-  it("sends segmented text sequentially and caps it at ten parts", async () => {
-    const adapter = fakeAdapter();
-    const order: string[] = [];
-    vi.mocked(adapter.send).mockImplementation(async (message) => {
-      const part = message.parts[0];
-      if (part.kind === "text") order.push(part.text);
-      return { ok: true };
-    });
-    registry.remember(incoming("wechat", "wx-1"), "session-wx-1");
-    const text = Array.from({ length: 12 }, (_, index) => `第${index + 1}句。`).join("");
-
-    const result = await sendProactiveChannelMessage({
-      channel: "wechat",
-      text,
-      mobileMessageSegmentation: "on",
-      manager: { getAdapter: () => adapter },
-      recipientRegistry: registry,
-      appendHistory: vi.fn(),
-      appendLog: vi.fn(),
-    });
-
-    expect(result).toEqual({ kind: "committed", deliveredParts: 10, totalParts: 10 });
-    expect(order).toHaveLength(10);
-    expect(order.slice(0, 2)).toEqual(["第1句。", "第2句。"]);
-    expect(order[9]).toContain("第12句。");
-  });
-
-  it("cancels total failure but commits a partial delivery", async () => {
+  it("cancels without committing history when the send fails", async () => {
     const adapter = fakeAdapter();
     registry.remember(incoming("wechat", "wx-1"), "session-wx-1");
     vi.mocked(adapter.send).mockResolvedValue({ ok: false, error: "failed" });
-
-    const failed = await sendProactiveChannelMessage({
-      channel: "wechat",
-      text: "第一句。第二句？",
-      mobileMessageSegmentation: "on",
-      manager: { getAdapter: () => adapter },
-      recipientRegistry: registry,
-    });
-    expect(failed).toEqual({ kind: "cancelled", reason: "send_failed" });
-
-    vi.mocked(adapter.send)
-      .mockReset()
-      .mockResolvedValueOnce({ ok: true })
-      .mockResolvedValueOnce({ ok: false, error: "failed" });
     const appendHistory = vi.fn();
-    const appendLog = vi.fn();
-    const partial = await sendProactiveChannelMessage({
+
+    const result = await sendProactiveChannelMessage({
       channel: "wechat",
       text: "第一句。第二句？",
-      mobileMessageSegmentation: "on",
       manager: { getAdapter: () => adapter },
       recipientRegistry: registry,
       appendHistory,
-      appendLog,
+      appendLog: vi.fn(),
     });
 
-    expect(partial).toEqual({ kind: "committed", deliveredParts: 1, totalParts: 2 });
-    expect(appendHistory).toHaveBeenCalledWith("session-wx-1", "assistant", "第一句。");
-    expect(appendLog).toHaveBeenCalledWith(expect.objectContaining({ text: "第一句。" }));
+    expect(result).toEqual({ kind: "cancelled", reason: "send_failed" });
+    expect(appendHistory).not.toHaveBeenCalled();
   });
 
-  it("通过统一传输服务发送并只提交实际送达的片段", async () => {
+  it("通过统一传输服务发送并在送达后提交完整文本", async () => {
     const adapter = fakeAdapter();
     registry.remember(incoming("wechat", "wx-1"), "session-wx-1");
-    let attempts = 0;
     let committedText = "";
 
     const result = await sendProactiveChannelMessage({
       channel: "wechat",
       text: "第一句。第二句？",
-      mobileMessageSegmentation: "on",
       manager: { getAdapter: () => adapter },
       delivery: {
-        send: async () => {
-          attempts += 1;
-          return attempts === 1
-            ? { ok: true }
-            : { ok: false, error: "send_failed" };
-        },
+        send: async () => ({ ok: true }),
       },
       recipientRegistry: registry,
       appendHistory: (_sessionId, _role, text) => {
@@ -195,53 +142,25 @@ describe("proactive channel delivery", () => {
       appendLog: vi.fn(),
     });
 
-    expect(result).toEqual({ kind: "committed", deliveredParts: 1, totalParts: 2 });
-    expect(committedText).toBe("第一句。");
+    expect(result).toEqual({ kind: "committed", deliveredParts: 1, totalParts: 1 });
+    expect(committedText).toBe("第一句。第二句？");
   });
 
-  it("stops before the next segment when the proactive generation becomes invalid", async () => {
+  it("does not send when the proactive generation is no longer valid", async () => {
     const adapter = fakeAdapter();
     registry.remember(incoming("wechat", "wx-1"), "session-wx-1");
-    let allowed = true;
-    vi.mocked(adapter.send).mockImplementation(async () => {
-      allowed = false;
-      return { ok: true };
-    });
 
     const result = await sendProactiveChannelMessage({
       channel: "wechat",
       text: "第一句。第二句？",
-      mobileMessageSegmentation: "on",
       manager: { getAdapter: () => adapter },
       recipientRegistry: registry,
       appendHistory: vi.fn(),
       appendLog: vi.fn(),
-      canContinue: () => allowed,
+      canContinue: () => false,
     });
 
-    expect(result).toEqual({ kind: "committed", deliveredParts: 1, totalParts: 2 });
-    expect(adapter.send).toHaveBeenCalledTimes(1);
-  });
-
-  it("stops at the first failed segment instead of sending later fragments", async () => {
-    const adapter = fakeAdapter();
-    registry.remember(incoming("wechat", "wx-1"), "session-wx-1");
-    vi.mocked(adapter.send)
-      .mockResolvedValueOnce({ ok: true })
-      .mockResolvedValueOnce({ ok: false, error: "failed" })
-      .mockResolvedValueOnce({ ok: true });
-
-    const result = await sendProactiveChannelMessage({
-      channel: "wechat",
-      text: "第一句。第二句？第三句！",
-      mobileMessageSegmentation: "on",
-      manager: { getAdapter: () => adapter },
-      recipientRegistry: registry,
-      appendHistory: vi.fn(),
-      appendLog: vi.fn(),
-    });
-
-    expect(result).toEqual({ kind: "committed", deliveredParts: 1, totalParts: 3 });
-    expect(adapter.send).toHaveBeenCalledTimes(2);
+    expect(result.kind).toBe("cancelled");
+    expect(adapter.send).not.toHaveBeenCalled();
   });
 });

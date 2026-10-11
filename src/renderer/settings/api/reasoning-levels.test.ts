@@ -8,7 +8,6 @@ function mount() {
     <div id="reasoning-levels-options">
       ${["minimal", "low", "medium", "high", "xhigh", "max"].map((e) => `<input type="checkbox" data-effort="${e}" />`).join("")}
       <input id="reasoning-levels-off" type="checkbox" />
-      <input id="reasoning-levels-pro" type="checkbox" />
     </div>`;
   bindReasoningLevels();
 }
@@ -32,13 +31,19 @@ describe("reasoning levels form", () => {
   });
 
   it("does not overwrite a selection the user already made", () => {
-    writeReasoningLevels({ efforts: ["xhigh", "max"], allowOff: true, pro: true });
-    expect(readReasoningLevels()).toEqual({ efforts: ["xhigh", "max"], allowOff: true, pro: true });
+    writeReasoningLevels({ efforts: ["xhigh", "max"], allowOff: true });
+    expect(readReasoningLevels()).toEqual({ efforts: ["xhigh", "max"], allowOff: true });
     auto().checked = true;
     auto().dispatchEvent(new Event("change"));
     auto().checked = false;
     auto().dispatchEvent(new Event("change"));
-    expect(readReasoningLevels()).toEqual({ efforts: ["xhigh", "max"], allowOff: true, pro: true });
+    expect(readReasoningLevels()).toEqual({ efforts: ["xhigh", "max"], allowOff: true });
+  });
+
+  it("offers no PRO option, and a legacy pro flag is ignored", () => {
+    expect(document.querySelector("#reasoning-levels-pro")).toBeNull();
+    writeReasoningLevels({ efforts: ["max"], pro: true } as Parameters<typeof writeReasoningLevels>[0]);
+    expect(readReasoningLevels()).toEqual({ efforts: ["max"] });
   });
 
   it("round-trips a profile, and an undeclared profile goes back to automatic", () => {

@@ -19,7 +19,6 @@ const openAICapability: ProviderCapability = {
   thinkingField: "reasoning_content",
   cacheStrategy: "none",
   testStrategy: "text",
-  supportsVision: true,
 };
 
 const anthropicCapability: ProviderCapability = {

@@ -15,6 +15,7 @@ import {
 import { resolveVendorRuntimeSettings } from "../orchestrator/vendors/runtime-settings";
 import { resolveTransport } from "../orchestrator/vendors/transport-detector";
 import { getSession } from "./chats-store";
+import { getActiveLive2dWorkRunCount } from "../orchestrator/live2d-work-signal";
 import { describePendingAttachment } from "../rag/file-ingest";
 import { processDocumentIndexRequest } from "../rag/document-index-ipc";
 import {
@@ -55,6 +56,9 @@ export function registerChatUiIpc(deps: ChatUiIpcDependencies): void {
   ipc.handle(IPC.LIVE2D_GET_MAIN_DIAGNOSTICS, () => ({
     window: live2dWindowLifecycle.getDiagnostics(),
   }));
+
+  // 桌宠只会收到“工作中”的跳变事件；窗口晚于 true 事件加载或重载时，用这个快照补上当前状态。
+  ipc.handle(IPC.LIVE2D_GET_WORKING, () => getActiveLive2dWorkRunCount() > 0);
 
   ipc.on(IPC.CHAT_MINIMIZE, (event) => {
     BrowserWindow.fromWebContents(event.sender)?.minimize();
@@ -217,8 +221,8 @@ export function registerChatUiIpc(deps: ChatUiIpcDependencies): void {
   });
 
   ipc.handle(IPC.CHAT_GET_IMAGE_SEND_STRATEGY, (_event, payload: unknown) => {
-    // 按会话解析：会话绑定的档案若声明了 multimodal 则优先于全局值；
-    // 无 sessionId / 会话未绑档案 / 档案未声明 → 回退全局（现行为）。
+    // 按会话解析：会话绑定的档案按其厂商 + 型号推断图片能力；
+    // 无 sessionId / 会话未绑档案 → 使用默认档案（现行为）。
     const sessionId = payload && typeof payload === "object"
       ? (payload as { sessionId?: unknown }).sessionId
       : undefined;
@@ -230,7 +234,7 @@ export function registerChatUiIpc(deps: ChatUiIpcDependencies): void {
       }
     }
     // 图片路由统一收口在 image-router；返回形状保持 { mode: "direct" | "caption" } 不变。
-    // reject（纯文本主模型 + 未配视觉模型）映射为 caption：UI 侧转述请求会拿到路由的
+    // reject（当前型号不支持图片）映射为 caption：UI 侧转述请求会拿到路由的
     // 人话错误并如实展示，而不是假装能直发。
     const imageRoute = resolveImageRoute("attachment", settings);
     return { mode: imageRoute.mode === "direct" ? "direct" as const : "caption" as const };

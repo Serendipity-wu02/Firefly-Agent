@@ -98,26 +98,21 @@ describe("MODEL_REASONING_RULES — 规则匹配优先级", () => {
 // ── B. 9 家全部存在性 ──────────────────────────────────────
 
 describe("MODEL_REASONING_RULES — 9 家全部存在性", () => {
-  test("chatgpt gpt-6-astra → effort 五档 + supportsDisable=false + supportsProMode（2026-09-03 新旗舰）", () => {
+  test("chatgpt gpt-6-astra → effort 五档 + supportsDisable=false（2026-09-03 新旗舰）", () => {
     const cap = resolveReasoningCapability("chatgpt", "gpt-6-astra");
     expect(cap.control).toBe("effort");
     expect(cap.requestStyle).toBe("openai-effort");
     expect(cap.supportedEfforts).toEqual(["low", "medium", "high", "xhigh", "max"]);
     // 官方迁移说明：不支持 none 档 → UI 不显示"关闭"，off 折叠为 on 落 defaultEffort
     expect(cap.supportsDisable).toBe(false);
-    // 官方迁移指南：pro mode 与 5.6 一致继续支持
-    expect(cap.supportsProMode).toBe(true);
   });
 
-  test("chatgpt gpt-5.6 → effort + openai-effort + supportedEfforts 含 max + supportsProMode", () => {
+  test("chatgpt gpt-5.6 → effort + openai-effort + supportedEfforts 含 max", () => {
     const cap = resolveReasoningCapability("chatgpt", "gpt-5.6");
     expect(cap.control).toBe("effort");
     expect(cap.requestStyle).toBe("openai-effort");
     expect(cap.supportedEfforts).toContain("max");
     expect(cap.supportsDisable).toBe(true);
-    // Responses API reasoning.mode:"pro"（gpt-5.6-sol 别名同规则）
-    expect(cap.supportsProMode).toBe(true);
-    expect(resolveReasoningCapability("chatgpt", "gpt-5.6-sol").supportsProMode).toBe(true);
   });
 
   test("chatgpt gpt-5 → effort + supportedEfforts 含 minimal", () => {
@@ -266,13 +261,6 @@ describe("MODEL_REASONING_RULES — 9 家全部存在性", () => {
     expect(cap.requestStyle).toBe("thinking-type");
   });
 
-  test("doubao seed 2.1 → toggle + thinking-type", () => {
-    const cap = resolveReasoningCapability("doubao", "doubao-seed-2-1-pro-260628");
-    expect(cap.control).toBe("toggle");
-    expect(cap.requestStyle).toBe("thinking-type");
-    expect(cap.supportsDisable).toBe(true);
-  });
-
   test("未知 provider + 任意 model → none", () => {
     const cap = resolveReasoningCapability("unknown", "anything");
     expect(cap.control).toBe("none");
@@ -330,12 +318,19 @@ describe("normalizeReasoningPreference — 白名单", () => {
     }
   });
 
-  test("proMode=true → 保留", () => {
-    expect(normalizeReasoningPreference({ mode: "on", proMode: true }))
-      .toEqual({ mode: "on", proMode: true });
+  test("旧 PRO 档位 effort:'pro' → 映射为最高档 max", () => {
+    expect(normalizeReasoningPreference({ mode: "on", effort: "pro" }))
+      .toEqual({ mode: "on", effort: "max" });
   });
 
-  test("proMode 非法（字符串/null）→ 丢弃 proMode，其余保留", () => {
+  test("旧 proMode（mode on、无档位）→ 映射为 max；有档位时保留档位，proMode 字段不再保留", () => {
+    expect(normalizeReasoningPreference({ mode: "on", proMode: true }))
+      .toEqual({ mode: "on", effort: "max" });
+    expect(normalizeReasoningPreference({ mode: "on", effort: "high", proMode: true }))
+      .toEqual({ mode: "on", effort: "high" });
+  });
+
+  test("proMode 非法（字符串/null）→ 丢弃，其余保留", () => {
     expect(normalizeReasoningPreference({ mode: "on", effort: "high", proMode: "yes" }))
       .toEqual({ mode: "on", effort: "high" });
     expect(normalizeReasoningPreference({ mode: "on", proMode: null }))
@@ -475,38 +470,6 @@ describe("resolveEffectiveReasoning", () => {
     expect(saved).toEqual({ mode: "on", effort: "max" });
   });
 
-  // ── proMode（Responses API reasoning.mode="pro"，gpt-5.6 系列）──
-
-  const proCap: ReasoningCapability = {
-    control: "effort",
-    supportedEfforts: ["low", "medium", "high", "xhigh", "max"],
-    defaultEffort: "medium",
-    requestStyle: "openai-effort",
-    supportsDisable: true,
-    supportsProMode: true,
-  };
-
-  test("supportsProMode + {on, proMode:true} → 保留 proMode", () => {
-    expect(resolveEffectiveReasoning({ mode: "on", proMode: true }, proCap))
-      .toEqual({ mode: "on", effort: "medium", proMode: true });
-  });
-
-  test("supportsProMode + {on, effort:'high', proMode:true} → effort 与 proMode 共存", () => {
-    expect(resolveEffectiveReasoning({ mode: "on", effort: "high", proMode: true }, proCap))
-      .toEqual({ mode: "on", effort: "high", proMode: true });
-  });
-
-  test("capability 不支持（supportsProMode 未声明）→ proMode 丢弃", () => {
-    expect(resolveEffectiveReasoning({ mode: "on", proMode: true }, toggleEffortCap))
-      .toEqual({ mode: "on", effort: "high" });
-  });
-
-  test("mode !== on → proMode 丢弃", () => {
-    expect(resolveEffectiveReasoning({ mode: "auto", proMode: true }, proCap))
-      .toEqual({ mode: "auto" });
-    expect(resolveEffectiveReasoning({ mode: "off", proMode: true }, proCap))
-      .toEqual({ mode: "off" });
-  });
 });
 
 // ── E. 规则表数据完整性 ──────────────────────────────────────
@@ -515,7 +478,7 @@ describe("MODEL_REASONING_RULES — 数据完整性", () => {
   test("所有 providerId 与 capabilities.ts 的 id 一致", () => {
     const known = new Set([
       "chatgpt", "claude", "deepseek", "glm", "kimi",
-      "qwen", "minimax", "mimo", "doubao",
+      "qwen", "minimax", "mimo", "openrouter",
     ]);
     const providerIds = new Set(MODEL_REASONING_RULES.map(r => r.providerId));
     for (const id of providerIds) {
@@ -617,12 +580,6 @@ describe("resolveReasoningCapability — 厂商/模型家族错配时按模型�
     expect(cap.control).toBe("toggle-effort");
   });
 
-  test("I3 托管 doubao-seed 系列 → 命中豆包 toggle 规则", () => {
-    const cap = resolveReasoningCapability("unknown", "doubao-seed-2-1-pro-260628");
-    expect(cap.control).toBe("toggle");
-    expect(cap.supportsDisable).toBe(true);
-  });
-
   test("I4 未识别模型名 → 保持 UNKNOWN 兜底（control=none）", () => {
     const cap = resolveReasoningCapability("unknown", "some-homemade-endpoint-model");
     expect(cap.control).toBe("none");
@@ -635,11 +592,63 @@ describe("resolveReasoningCapability — 厂商/模型家族错配时按模型�
     expect(cap.requestStyle).toBe("none");
   });
 
-  test("I6 家族错配回归：豆包档案跑 glm-5.3-flash（方舟 coding plan 真实场景）→ 按模型名命中 glm 规则", () => {
-    const cap = resolveReasoningCapability("doubao", "glm-5.3-flash");
+  test("I6 家族错配回归：minimax 档案跑 glm-5.3-flash（托管端点真实场景）→ 按模型名命中 glm 规则", () => {
+    const cap = resolveReasoningCapability("minimax", "glm-5.3-flash");
     expect(cap.control).toBe("toggle-effort");
     expect(cap.requestStyle).toBe("thinking-type");
     expect(cap.supportedEfforts).toEqual(["low", "high", "max"]);
     expect(cap.supportsDisable).toBe(false);
+  });
+});
+
+// ── G. OpenRouter（聚合网关）：统一 reasoning.effort 写法 ──────────
+
+describe("MODEL_REASONING_RULES — OpenRouter 聚合网关", () => {
+  test("openrouter 任意型号 → effort 控制 + openrouter-reasoning 写法 + 通用档位 low/medium/high/max", () => {
+    for (const model of ["openai/gpt-5.6", "anthropic/claude-sonnet-4.6", "some-unlisted-model"]) {
+      const cap = resolveReasoningCapability("openrouter", model);
+      expect(cap).toMatchObject({
+        control: "effort",
+        requestStyle: "openrouter-reasoning",
+        supportedEfforts: ["low", "medium", "high", "max"],
+        defaultEffort: "medium",
+        supportsDisable: true,
+      });
+      expect(cap.autoEffort).toBeUndefined();
+    }
+  });
+
+  test("openrouter 的最高档 max 保留；不在档位内的 xhigh 退回 defaultEffort medium", () => {
+    const cap = resolveReasoningCapability("openrouter", "openai/gpt-5.6");
+    expect(resolveEffectiveReasoning({ mode: "on", effort: "max" }, cap)).toEqual({ mode: "on", effort: "max" });
+    expect(resolveEffectiveReasoning({ mode: "on", effort: "xhigh" }, cap)).toEqual({ mode: "on", effort: "medium" });
+  });
+
+  test("openrouter + 档案声明档位 → 以档案为准，写法保持 openrouter-reasoning", () => {
+    const cap = resolveReasoningCapability("openrouter", "openai/o3", { efforts: ["low", "high"] });
+    expect(cap).toMatchObject({
+      control: "effort",
+      requestStyle: "openrouter-reasoning",
+      supportedEfforts: ["low", "high"],
+      defaultEffort: "high",
+    });
+  });
+
+  test("openrouter + 档案只声明开/关（无档位、允许关闭）→ toggle，关闭仍是 openrouter-reasoning", () => {
+    expect(resolveReasoningCapability("openrouter", "x", { efforts: [], allowOff: true })).toMatchObject({
+      control: "toggle",
+      requestStyle: "openrouter-reasoning",
+      supportsDisable: true,
+    });
+  });
+
+  test("openrouter + 档案无档位且不允许关闭 → 无可控项（与 openai-effort 写法一致）", () => {
+    expect(resolveReasoningCapability("openrouter", "x", { efforts: [] }).control).toBe("none");
+  });
+
+  test("聚合网关规则不泄漏到其它厂商：未知厂商 / 其它厂商的未知型号仍为 none", () => {
+    expect(resolveReasoningCapability("unknown", "openai/gpt-5.6").control).toBe("none");
+    expect(resolveReasoningCapability("deepseek", "anything-else").control).toBe("none");
+    expect(resolveReasoningCapability("kimi", "anything-else").control).toBe("none");
   });
 });

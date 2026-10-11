@@ -16,7 +16,7 @@ function fixture(transport: Transport) {
     transport, baseUrl: "https://synthetic.invalid/v1", authStyle: transport === "anthropic" ? "x-api-key" : "bearer",
     defaultModel: "synthetic-model", supportsTools: true, supportsThinking: true,
     thinkingField: transport === "anthropic" ? "thinking" : "reasoning_content",
-    cacheStrategy: "none", testStrategy: "text+tool", supportsVision: true,
+    cacheStrategy: "none", testStrategy: "text+tool",
   };
   const config: VendorConfig = { provider: "Synthetic", baseUrl: capability.baseUrl,
     model: "synthetic-model", apiKey: "synthetic-secret-do-not-log", explicitTransport: transport };

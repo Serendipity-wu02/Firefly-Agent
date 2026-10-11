@@ -15,7 +15,7 @@ pluginAddBtn?.addEventListener("click", () => { void management?.add(); });
 export const CUSTOM_ENDPOINT_GUIDE_BODY = [
   '<section class="custom-endpoint-guide-section">',
   '  <h4>官方云端模型</h4>',
-  '  <p>从列表选择已适配厂商（OpenAI、Claude、Kimi、DeepSeek、MiniMax、智谱 GLM、通义千问、豆包、小米 MiMo），填写对应平台获取的 API Key 即可。Base URL 与推荐模型 ID 已预填。</p>',
+  '  <p>从列表选择已适配厂商（OpenAI、Claude、Kimi、DeepSeek、MiniMax、智谱 GLM、通义千问、小米 MiMo、OpenRouter），填写对应平台获取的 API Key 即可。Base URL 与推荐模型 ID 已预填。</p>',
   '  <p class="custom-endpoint-guide-note">同一厂商的不同模型在结构化输出、工具调用和思考模式等能力上可能存在差异，请优先使用列表内的推荐型号。</p>',
   '</section>',
   '<section class="custom-endpoint-guide-section">',

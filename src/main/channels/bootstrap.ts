@@ -3,7 +3,6 @@ import type { BrowserWindow } from "electron";
 import type { IpcScope } from "../application/ipc-scope";
 import { IPC } from "../../shared/ipc-channels";
 import type { PluginPromptMode, PluginTurnStatus } from "../../plugins/api";
-import { loadGeneralSettings } from "../settings/settings-facade";
 import { loadModelSettings, resolveModelSettingsProfile } from "../settings/model-settings";
 import { resolveDefaultModelProfile } from "../settings/model-catalog";
 import { requireChannelMemoryIngress, type ChannelsMemoryHost } from "../memory-context/channel-memory-ingress";
@@ -200,7 +199,6 @@ export function createChannelsSubsystem(
           ...historyMessages,
           { role: "user", content: agentUserText },
         ],
-        styleId: "default",
         sessionId,
         ...(modelProfileId ? { modelProfileId } : {}),
         // 渠道绑定只共享文字上下文，不继承桌面对话的工作区权限。
@@ -322,7 +320,6 @@ export function createChannelsSubsystem(
     buildAndRunAgent,
     memoryEnabled: !!deps.memory,
     loadSettings: loadChannelsSettings,
-    loadGeneralSettings,
     observeExternalChat,
     broadcastChat,
   });

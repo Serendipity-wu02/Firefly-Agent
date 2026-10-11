@@ -23,23 +23,21 @@ describe("buildMotionIndexMap", () => {
     expect(map.get("Gesture")?.get("wave")).toBe(0);
   });
 
-  it("resolves every catalog target against the actual bundled Firefly manifest", async () => {
+  it("resolves every expression the Live2D rules use against the bundled Firefly manifest", async () => {
     const manifest = JSON.parse(readFileSync("src/renderer/public/models/firefly/Firefly.model3.json", "utf8"));
-    const map = buildMotionIndexMap(manifest);
-    const { LIVE2D_ACTIONS } = await import("../../shared/live2d-actions");
     const expressions = new Set(manifest.FileReferences.Expressions.map((entry: { Name: string }) => entry.Name));
-    for (const action of LIVE2D_ACTIONS) {
-      if (action.target.kind === "motion") {
-        expect(map.get(action.target.group)?.has(action.target.motionName), action.alias).toBe(true);
-      } else {
-        expect(expressions.has(action.target.name), action.alias).toBe(true);
-      }
+    const { LIVE2D_DEFAULT_EXPRESSION, LIVE2D_WORKING_EXPRESSION } = await import("../../shared/live2d-actions");
+    const ruleExpressions = [
+      LIVE2D_DEFAULT_EXPRESSION,
+      LIVE2D_WORKING_EXPRESSION,
+      "expression1",
+      "expression2",
+      "expression9",
+      "expression10",
+    ];
+    for (const name of ruleExpressions) {
+      expect(expressions.has(name), name).toBe(true);
     }
     expect(manifest.HitAreas.map((area: { Name: string }) => area.Name)).toEqual(["Body", "Head"]);
-    const { moodExpression } = await import("./mood-expression");
-    for (const feeling of ["平静", "开心", "温柔", "激动", "撒娇", "担心", "难过", "感动", "害羞"]) {
-      expect(expressions.has(moodExpression(feeling)), feeling).toBe(true);
-    }
-    expect(moodExpression("未定义状态")).toBeUndefined();
   });
 });
