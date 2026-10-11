@@ -1,4 +1,4 @@
-import { resolveEffectiveReasoning, resolveReasoningCapability, type ReasoningPreference } from "../../../shared/reasoning";
+import { resolveEffectiveReasoning, resolveReasoningCapability, type ReasoningLevelsConfig, type ReasoningPreference } from "../../../shared/reasoning";
 import { getVendorRuntimeSettings } from "./runtime-settings";
 import type { Transport } from "./types";
 
@@ -13,6 +13,8 @@ export interface ToolChoicePolicyInput {
   model: string;
   transport: Transport;
   reasoning: ReasoningPreference;
+  /** 档案里声明的推理档位；和请求体用同一份能力判断，避免 tool_choice 与 reasoning 字段对不上。 */
+  reasoningLevels?: ReasoningLevelsConfig;
   requestedToolName: string;
   supportedModes?: ReadonlyArray<ToolChoicePolicy["kind"]>;
 }
@@ -24,7 +26,7 @@ function isThinkingEnabled(input: AutomaticToolChoicePolicyInput): boolean {
   // 只有明确 mode="off" 才认为 thinking 关闭
   const resolved = resolveEffectiveReasoning(
     input.reasoning,
-    resolveReasoningCapability(input.providerId, input.model),
+    resolveReasoningCapability(input.providerId, input.model, input.reasoningLevels, input.transport === "anthropic" ? "anthropic-adaptive" : "openai-effort"),
     getVendorRuntimeSettings().thinkingOverride,
   );
   return resolved.mode === "on" || resolved.mode === "auto";

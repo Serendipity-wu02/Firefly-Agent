@@ -7,7 +7,10 @@ const stylesheet = readFileSync(resolve(__dirname, "ChatMessageList.css"), "utf8
 describe("chat reading width", () => {
   it("uses one responsive reading width for the run activity", () => {
     expect(stylesheet).toContain("--cy-message-reading-width: 100%");
-    expect(stylesheet).toMatch(/\.cy-message-list \.ant-bubble-list \{[^}]*max-width: 770px;[^}]*margin-inline: auto;/);
+    // 阅读宽度由 react-root.css 的 --cy-reading-width 决定，随窗口宽度自动调节，不再写死 770px
+    expect(stylesheet).toMatch(/\.cy-message-list \.ant-bubble-list \{[^}]*max-width: var\(--cy-reading-width\);[^}]*margin-inline: auto;/);
+    const root = readFileSync(resolve(__dirname, "../../../styles/react-root.css"), "utf8");
+    expect(root).toMatch(/--cy-reading-width: clamp\(\d+px, \d+%, \d+px\);/);
     expect(stylesheet).toMatch(/\.cy-message--activity \{[\s\S]*width: var\(--cy-message-reading-width\)/);
   });
 

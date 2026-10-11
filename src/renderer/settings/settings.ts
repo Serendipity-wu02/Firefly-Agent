@@ -3,7 +3,7 @@ import type {} from "../global";
 import { bindUiColorControls } from "./appearance/colors";
 import { DEFAULT_UI_COLORS } from "../../shared/ui-colors";
 import { renderProviderRows } from "./api/provider-rows";
-import { applyProviderEditorLayout } from "./api/provider-editor";
+import { applyProviderEditorLayout, mountProfileEditor, placeSaveStatus, renderKeepingProfileEditor } from "./api/provider-editor";
 import { bindSettingsNavigation, resolveSettingsSection, updateSettingsNavigation } from "./shared/navigation";
 /* 标记！AI写的超大技术债，延期重构*/
 import "../ui/base.css";
@@ -71,7 +71,9 @@ import { modalState } from "./shared/modal-state";
 import { formatDateTime, escapeHtml } from "./shared/format";
 import { parsePositiveIntOrThrow, parseCommandLine } from "./shared/parse";
 import { apiState, type SavedProfileLite } from "./api/state";
-import { apiForm, apiRuntimeForm, presetCards, profileList, profileListCount, profileEditorTitle, deleteProfileBtn, presetWebsiteLink, displayNameInput, baseUrlInput, baseUrlResetBtn, modelInput, modelInputSuggestions, contextWindowInput, apiKeyInput, apiKeyLabel, apiKeyHint, testConnectionBtn, transportSelect, transportHint, endpointPreview, customEndpointControls, customEndpointOverrides, customEndpointSummary, customEndpointGuideBtn, workFlowAdaptBtn, apiNoteText, multimodalToggle, embeddingDimensionsInput, toggleEnableThinking, toggleDisableThinking, toggleDisableMaxToken } from "./api/dom";
+import { bindReasoningLevels, readReasoningLevels, writeReasoningLevels } from "./api/reasoning-levels";
+import { createModelPicker } from "./api/model-picker";
+import { apiForm, apiRuntimeForm, presetCards, profileList, profileListCount, profileEditorTitle, deleteProfileBtn, presetWebsiteLink, displayNameInput, baseUrlInput, baseUrlResetBtn, modelInput, modelInputSuggestions, contextWindowInput, apiKeyInput, apiKeyLabel, apiKeyHint, testConnectionBtn, transportSelect, transportHint, endpointPreview, customEndpointControls, customEndpointOverrides, customEndpointSummary, customEndpointGuideBtn, workFlowAdaptBtn, apiNoteText, multimodalToggle, fetchModelsBtn, fetchModelsStatus, fetchModelsPicker, fetchModelsSearch, fetchModelsList, fetchModelsEmpty, embeddingDimensionsInput, toggleEnableThinking, toggleDisableThinking, toggleDisableMaxToken } from "./api/dom";
 import { visionBaseUrlInput, visionApiKeyInput, visionModelInput, visionFieldsWrap, testVisionBtn, visionTestStatus } from "./vision/dom";
 import { appearanceForm, appearanceSaveStatus, runtimeSyncSelect, runtimeSyncNote, windowCornerRadiusInput, windowCornerRadiusVal, petAlwaysOnTopInput, petVisibleInput, petZoomInput, petZoomVal, chatLineHeightInput, chatLineHeightVal, chatParaSpacingInput, chatParaSpacingVal, launchAtLoginInput, uiFontCurrent, uiFontImportButton, uiFontResetButton, uiIconSelect, uiThemeSelect, screenshotHotkeyInput, openChromeGpu, disableGpuInput, toastSoundEnabledInput } from "./appearance/dom";
 import { generalForm, generalSaveStatus, languageSelect, defaultChatModeSelect, segmentedOutputSelect, mobileMessageSegmentationSelect, proactiveChatSelect, proactiveDeliveryRow, proactiveDeliverySelect, chatSocialContextEnabledInput, citaEnabledInput, citaEngineSelect, customStyleSamplingBtn, customStylePromptBtn } from "./general/dom";
@@ -625,7 +627,13 @@ function findPreset(providerName: string): ModelPreset {
  * 填充模型名输入框 + datalist 联想建议。
  * 模式按钮已删除——只有一个输入框，可手填，按方向键也能从厂商预设里选。
  */
+// 表单每次被填成另一个档案 / 厂商，就作废还在路上的“获取模型列表”，并收起上一个档案的候选列表。
+let fetchModelsGeneration = 0;
+let closeFetchedModelPicker: () => void = () => {};
 function fillModelOptions(preset: ModelPreset, preferredModel?: string): void {
+  fetchModelsGeneration += 1;
+  closeFetchedModelPicker();
+  if (fetchModelsStatus) { fetchModelsStatus.textContent = ""; fetchModelsStatus.classList.remove("is-error", "is-ok"); }
   // datalist 联想建议
   modelInputSuggestions.replaceChildren();
   for (const model of preset.mainModels) {
@@ -660,6 +668,7 @@ function profileDraftSnapshot(): string {
     apiState.activeProvider, displayNameInput.value, baseUrlInput.value,
     modelInput.value, apiKeyInput.value, transportSelect.value,
     contextWindowInput.value, multimodalToggle.checked,
+    readReasoningLevels() ?? null,
   ]);
 }
 
@@ -673,7 +682,7 @@ function updateProfileDraftState(): void {
   const editor = document.getElementById("profile-editor");
   editor?.setAttribute("aria-busy", String(profileSavePending));
   if (profileSavePending) {
-    apiForm.querySelectorAll<HTMLButtonElement>('button[type="submit"], #close-profile-editor, #delete-profile-btn, #add-profile-btn, #empty-add-profile-btn, [data-profile-action], [data-provider-tab], .preset-card, [data-custom-endpoint-mode]').forEach(button => {
+    apiForm.querySelectorAll<HTMLButtonElement>('button[type="submit"], #close-profile-editor, #delete-profile-btn, #add-profile-btn, [data-profile-action], [data-provider-tab], .preset-card, [data-custom-endpoint-mode]').forEach(button => {
       if (!profilePendingButtons.has(button)) profilePendingButtons.set(button, button.disabled);
       button.disabled = true;
     });
@@ -723,26 +732,28 @@ function restoreVisionInputs(snapshot: { baseUrl: string; apiKey: string; model:
   visionModelInput.value = snapshot.model;
 }
 
-/** 已配置模型列表：紧凑行与独立编辑/删除操作。 */
+/** 已配置模型列表：每个档案一张卡片，编辑器内联在选中的卡片里。 */
 function renderProfileList(): void {
   if (!profileList) return;
-  profileList.replaceChildren();
   const count = apiState.profiles.length;
   profileListCount.textContent = count ? t("settings.profile.count", { count }) : "";
-
-  if (count === 0) {
-    const empty = document.createElement("div");
-    empty.className = "profile-list__empty";
-    empty.textContent = t(apiState.profilesLoadState === "loading"
-      ? "settings.profile.loading"
-      : apiState.profilesLoadState === "error"
-        ? "settings.profile.readFailed"
-        : "settings.profile.empty");
-    profileList.appendChild(empty);
-    return;
-  }
-
-  renderProviderRows(profileList, apiState.profiles, apiState.defaultProfileId, apiState.editorOpen ? apiState.editingProfileId : undefined);
+  const editingId = apiState.editorOpen ? apiState.editingProfileId : undefined;
+  // 编辑器挂在选中的卡片里：重绘前先让出，重绘后挂回（草稿与焦点原样保留）。
+  renderKeepingProfileEditor(apiForm, editingId, () => {
+    if (count === 0) {
+      profileList.replaceChildren();
+      const empty = document.createElement("div");
+      empty.className = "profile-list__empty";
+      empty.textContent = t(apiState.profilesLoadState === "loading"
+        ? "settings.profile.loading"
+        : apiState.profilesLoadState === "error"
+          ? "settings.profile.readFailed"
+          : "settings.profile.empty");
+      profileList.appendChild(empty);
+      return;
+    }
+    renderProviderRows(profileList, apiState.profiles, apiState.defaultProfileId, editingId);
+  });
 }
 
 /** 从 main 拉取档案列表并渲染。 */
@@ -777,13 +788,22 @@ function applyEditingStateUI(): void {
   profileEditorTitle.textContent = apiState.editingProfileId ? t("settings.profile.editorTitle.edit") : t("settings.profile.editorTitle.new");
   deleteProfileBtn.hidden = !apiState.editingProfileId;
   document.getElementById("profile-editor")!.hidden = !apiState.editorOpen;
-  document.getElementById("profile-editor-empty")!.hidden = apiState.editorOpen;
+  // 新建草稿展开时，“添加模型提供商”让位给草稿本身。
+  document.getElementById("add-profile-btn")!.hidden = apiState.editorOpen && !apiState.editingProfileId;
   document.querySelector<HTMLElement>(".provider-tabs")!.hidden = Boolean(apiState.editingProfileId);
-  applyProviderEditorLayout(apiForm, getCustomEndpointMode(apiState.activeProvider) ? "custom" : "preset");
+  applyProviderEditorLayout(apiForm, getCustomEndpointMode(apiState.activeProvider) ? "custom" : "preset", Boolean(apiState.editingProfileId));
+  syncCustomEndpointControlsVisibility();
+  mountProfileEditor(apiForm, apiState.editorOpen ? apiState.editingProfileId : undefined);
+  placeSaveStatus(apiForm, apiState.editorOpen);
+}
+
+/** 云端/本地切换与接入说明只在“添加自定义 API”时出现；已保存的卡片里切模式等于换了一份新草稿，会让人困惑。 */
+function syncCustomEndpointControlsVisibility(): void {
+  customEndpointControls.hidden = !getCustomEndpointMode(apiState.activeProvider) || Boolean(apiState.editingProfileId);
 }
 
 /** 载入档案到编辑表单。 */
-function editProfile(profile: SavedProfileLite, globalMultimodal: boolean, focusEditor = true): void {
+function editProfile(profile: SavedProfileLite, globalMultimodal: boolean): void {
   const visionSnapshot = snapshotVisionInputs();
   apiState.editorOpen = true;
   apiState.editingProfileId = profile.id;
@@ -800,13 +820,14 @@ function editProfile(profile: SavedProfileLite, globalMultimodal: boolean, focus
   // 档案级字段：未定义 = 老档案，回退全局值显示
   contextWindowInput.value = profile.contextWindowTokens ? String(profile.contextWindowTokens) : "";
   multimodalToggle.checked = profile.multimodal ?? globalMultimodal;
+  writeReasoningLevels(profile.reasoningLevels);
   applyMultimodalUI();
   applyEditingStateUI();
   renderProfileList();
   profileDraftBaseline = profileDraftSnapshot();
   updateProfileDraftState();
   setSaveStatus(t("settings.profile.editing", { name: profile.displayName || profile.model }));
-  if (focusEditor) (getCustomEndpointMode(profile.provider) ? displayNameInput : apiKeyInput).focus();
+  (getCustomEndpointMode(profile.provider) ? displayNameInput : apiKeyInput).focus();
 }
 
 /** 开始新建草稿：preset 预填 URL/模型/协议，清空 Key 与昵称。 */
@@ -821,6 +842,7 @@ function startNewDraft(providerName: string): void {
   contextWindowInput.value = "";
   // 新建草稿默认开多模态；applyPreset 已不再按厂商门控
   multimodalToggle.checked = true;
+  writeReasoningLevels(undefined);
   applyMultimodalUI();
   applyEditingStateUI();
   renderProfileList();
@@ -896,7 +918,7 @@ function updateEndpointPreview(): void {
 
 function applyCustomEndpointUI(preset: ModelPreset): void {
   const mode = getCustomEndpointMode(preset.providerName);
-  customEndpointControls.hidden = mode === null;
+  customEndpointControls.hidden = mode === null || Boolean(apiState.editingProfileId);
   customEndpointOverrides.hidden = mode === null;
   transportSelect.disabled = false;
 
@@ -1011,7 +1033,7 @@ export function applyPreset(
   }
 
   apiState.activeProvider = preset.providerName;
-  applyProviderEditorLayout(apiForm, customMode ? "custom" : "preset");
+  applyProviderEditorLayout(apiForm, customMode ? "custom" : "preset", Boolean(apiState.editingProfileId));
   applyMultimodalUI();
 }
 
@@ -1051,16 +1073,11 @@ async function loadConfig(): Promise<void> {
     toggleDisableThinking.checked = cfg.thinkingOverride === -1;
     toggleDisableMaxToken.checked = !!cfg.disableMaxToken;
 
-    // 在右侧展示默认档案；没有档案时保留新建入口与空态。
+    // 所有卡片默认折叠（默认档案只带“默认”标记），点“编辑”才展开；
+    // 表单里的全局项（超时 / 视觉模型等）已由上面的 applyPreset 和各自面板按已存配置填好。
     await reloadProfiles();
     if (!isCurrentProfilePanel()) return;
-    const defaultProfile = apiState.profiles.find((p) => p.id === apiState.defaultProfileId) ?? apiState.profiles[0];
-    if (defaultProfile) {
-      editProfile(defaultProfile, cfg.multimodal, false);
-    } else {
-      contextWindowInput.value = String(cfg.contextWindowTokens ?? 256000);
-      applyEditingStateUI();
-    }
+    if (apiState.profiles.length === 0) contextWindowInput.value = String(cfg.contextWindowTokens ?? 256000);
 
     applyEditingStateUI();
     setSaveStatus(t("settings.status.waiting"));
@@ -1433,6 +1450,64 @@ multimodalToggle.addEventListener("change", () => {
   applyMultimodalUI();
   setSaveStatus(t("settings.status.dirty"));
 });
+bindReasoningLevels();
+
+// ── 从厂商获取模型列表：型号由接入的厂商决定，预设只是拉不到时的兜底建议 ──
+const modelPicker = fetchModelsPicker && fetchModelsSearch && fetchModelsList && fetchModelsEmpty
+  ? createModelPicker({ root: fetchModelsPicker, search: fetchModelsSearch, list: fetchModelsList, empty: fetchModelsEmpty }, (id) => {
+    modelInput.value = id;
+    modelInput.dispatchEvent(new Event("input", { bubbles: true }));
+  })
+  : undefined;
+closeFetchedModelPicker = () => modelPicker?.close();
+modelInput.addEventListener("input", () => modelPicker?.syncCurrent(modelInput.value.trim()));
+function fetchModelsErrorText(error: string): string {
+  const status = /^HTTP_(\d+)$/.exec(error)?.[1];
+  if (status === "401" || status === "403") return t("settings.panel.api.field.model.fetch.unauthorized", { status });
+  if (status === "404") return t("settings.panel.api.field.model.fetch.notFound");
+  if (status) return t("settings.panel.api.field.model.fetch.http", { status });
+  if (error === "MISSING_API_KEY" || error === "MISSING_BASE_URL") return t("settings.panel.api.field.model.fetch.needKey");
+  if (error === "TIMEOUT") return t("settings.panel.api.field.model.fetch.timeout");
+  if (error === "BAD_RESPONSE") return t("settings.panel.api.field.model.fetch.empty");
+  return t("settings.panel.api.field.model.fetch.network");
+}
+fetchModelsBtn?.addEventListener("click", async () => {
+  if (!fetchModelsBtn || !fetchModelsStatus) return;
+  const show = (text: string, tone: "" | "is-error" | "is-ok" = "") => {
+    fetchModelsStatus.textContent = text;
+    fetchModelsStatus.classList.remove("is-error", "is-ok");
+    if (tone) fetchModelsStatus.classList.add(tone);
+  };
+  show(t("settings.panel.api.field.model.fetch.loading"));
+  modelPicker?.close();
+  fetchModelsBtn.disabled = true;
+  const generation = fetchModelsGeneration;
+  try {
+    const result = await settings.fetchModels?.({
+      provider: apiState.activeProvider,
+      baseUrl: baseUrlInput.value.trim(),
+      apiKey: getApiKeyForRequest(),
+      explicitTransport: transportSelect.value as ApiTransport,
+    });
+    // 等待期间切到了别的档案：结果属于上一个档案，丢掉，不要写进现在这个档案的候选里
+    if (generation !== fetchModelsGeneration) return;
+    if (!result) { show(fetchModelsErrorText("NETWORK"), "is-error"); return; }
+    if (!result.ok) { show(fetchModelsErrorText(result.error), "is-error"); return; }
+    modelInputSuggestions.replaceChildren();
+    for (const model of result.models) {
+      const option = document.createElement("option");
+      option.value = model.id;
+      if (model.name) option.label = model.name;
+      modelInputSuggestions.appendChild(option);
+    }
+    modelPicker?.open(result.models, modelInput.value.trim());
+    show(t("settings.panel.api.field.model.fetch.done", { count: result.models.length }), "is-ok");
+  } catch {
+    if (generation === fetchModelsGeneration) show(fetchModelsErrorText("NETWORK"), "is-error");
+  } finally {
+    fetchModelsBtn.disabled = false;
+  }
+});
 
 // Base URL 重置按钮：一键复原厂商默认 baseUrl
 baseUrlResetBtn.addEventListener("click", () => {
@@ -1589,6 +1664,8 @@ apiForm.addEventListener("submit", async (e) => {
       apiKey: getApiKeyForRequest(),
       explicitTransport: transportSelect.value as ApiTransport,
       reasoning: apiState.editingReasoning,
+      // 没声明（自动）= undefined：保存时清掉旧声明，回到按型号名判断。
+      reasoningLevels: readReasoningLevels(),
       contextWindowTokens: Math.max(4096, parseInt(contextWindowInput.value, 10) || 256000),
       multimodal: multimodalToggle.checked,
     };
@@ -1625,6 +1702,7 @@ apiForm.addEventListener("submit", async (e) => {
           applyPreset(saved.provider, saved.model, apiKeyInput.value, saved.baseUrl, saved.displayName,
             saved.explicitTransport, snapshotVisionInputs(), saved.multimodal);
           contextWindowInput.value = saved.contextWindowTokens ? String(saved.contextWindowTokens) : "";
+          writeReasoningLevels(saved.reasoningLevels);
           apiState.editingReasoning = saved.reasoning;
         }
         profileDraftBaseline = profileDraftSnapshot();
@@ -1858,8 +1936,9 @@ profileList?.addEventListener("click", (e) => {
   if (button?.dataset.profileAction === "delete") {
     requestDeleteProfile(profile.id);
   } else if (apiState.editorOpen && apiState.editingProfileId === profile.id) {
+    // 再点已展开的卡片 = 折叠（草稿有改动时先确认）。
     profileEditorReturnProfileId = profile.id;
-    (getCustomEndpointMode(profile.provider) ? displayNameInput : apiKeyInput).focus();
+    closeProfileEditor();
   } else {
     changeProfileEditor(() => {
       profileEditorReturnProfileId = profile.id;
@@ -1877,17 +1956,12 @@ async function deleteProfile(profileId: string): Promise<void> {
     await window.settings?.deleteModelProfile?.(profileId);
     setSaveStatus(t("settings.profile.deleted", { name }), "is-ok");
     await reloadProfiles();
-    // 仅删除当前编辑项时更新编辑表单，其余草稿保留。
+    // 仅删除当前编辑项时收起编辑器（不再自动展开别的卡片），其余草稿保留。
     if (apiState.editingProfileId === profileId) {
-      const next = apiState.profiles.find((p) => p.id === apiState.defaultProfileId) ?? apiState.profiles[0];
-      if (next && apiState.editorOpen) {
-        editProfile(next, multimodalToggle.checked, false);
-      } else {
-        apiState.editingProfileId = undefined;
-        apiState.editingReasoning = undefined;
-        apiState.editorOpen = false;
-        applyEditingStateUI();
-      }
+      apiState.editingProfileId = undefined;
+      apiState.editingReasoning = undefined;
+      apiState.editorOpen = false;
+      applyEditingStateUI();
     }
     const editButtons = Array.from(profileList.querySelectorAll<HTMLButtonElement>('[data-profile-action="edit"]'));
     (editButtons[Math.min(Math.max(rowIndex, 0), editButtons.length - 1)] ?? document.getElementById("add-profile-btn"))?.focus();
@@ -1917,17 +1991,19 @@ function addProfile(): void {
   });
 }
 document.getElementById("add-profile-btn")?.addEventListener("click", addProfile);
-document.getElementById("empty-add-profile-btn")?.addEventListener("click", addProfile);
-document.getElementById("close-profile-editor")?.addEventListener("click", () => {
+/** 折叠编辑器（“取消”按钮与再点已展开的卡片共用）；焦点回到打开它的卡片。 */
+function closeProfileEditor(): void {
   changeProfileEditor(() => {
+    const originId = profileEditorReturnProfileId ?? apiState.editingProfileId;
     apiState.editorOpen = false;
     applyEditingStateUI();
     renderProfileList();
     const origin = Array.from(profileList.querySelectorAll<HTMLButtonElement>('[data-profile-action="edit"]'))
-      .find(button => button.closest<HTMLElement>('[data-profile-id]')?.dataset.profileId === profileEditorReturnProfileId);
+      .find(button => button.closest<HTMLElement>('[data-profile-id]')?.dataset.profileId === originId);
     (origin ?? document.getElementById("add-profile-btn"))?.focus();
   });
-});
+}
+document.getElementById("close-profile-editor")?.addEventListener("click", closeProfileEditor);
 const providerTabs = Array.from(document.querySelectorAll<HTMLButtonElement>("[data-provider-tab]"));
 function selectProviderTab(button: HTMLButtonElement, focusTab = false): void {
   const custom = button.dataset.providerTab === "custom";

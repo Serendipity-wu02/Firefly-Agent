@@ -164,8 +164,9 @@ it("keeps registration current across compact orientation changes and Work mode 
   await click(button("展开/收起右侧面板")); expect(panelWidth()).toBeGreaterThan(0);
   expect(inspector()).toBe(before);
   await click(inspector()!.querySelector<HTMLElement>(".cy-right-inspector__close")!);
-  await click([...host.querySelectorAll<HTMLElement>('.cy-mode-tabs [role="tab"]')].find(node => node.textContent?.includes("Work"))!);
-  expect(host.querySelector(".cy-mode-tabs__tab.is-active")?.textContent).toContain("Work");
+  await click(host.querySelector<HTMLElement>(".cy-mode-menu__trigger")!);
+  await click([...document.querySelectorAll<HTMLElement>('[role="menuitemradio"]')].find(node => node.textContent?.includes("Work"))!);
+  expect(host.querySelector(".cy-mode-menu__trigger")?.textContent).toContain("Work");
   expect(inspector()?.hidden).toBe(false); expect(panelWidth()).toBeGreaterThan(0);
   expect(fetch).not.toHaveBeenCalled();
 });

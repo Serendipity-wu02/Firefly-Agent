@@ -82,6 +82,7 @@ export class OpenAICompatAdapter implements ChatVendorAdapter {
           model: cfg.model,
           transport: this.transport,
           reasoning: cfg.reasoning ?? { mode: "auto" },
+          reasoningLevels: cfg.reasoningLevels,
           requestedToolName: req.toolChoiceIntent.toolName,
           supportedModes: this.capability.toolChoiceModes,
         });
@@ -93,6 +94,7 @@ export class OpenAICompatAdapter implements ChatVendorAdapter {
         model: cfg.model,
         transport: this.transport,
         reasoning: cfg.reasoning ?? { mode: "auto" },
+        reasoningLevels: cfg.reasoningLevels,
         supportedModes: this.capability.toolChoiceModes,
       }) === "auto") {
         body.tool_choice = "auto";
@@ -116,7 +118,7 @@ export class OpenAICompatAdapter implements ChatVendorAdapter {
     }
     // 推理控制：按 (providerId, model) 解析 capability，调用 applyReasoningPreference 转换 body。
     // cfg.reasoning 缺省视为 auto（不发送任何字段）。
-    const reasoningCap = resolveReasoningCapability(this.capability.id, cfg.model);
+    const reasoningCap = resolveReasoningCapability(this.capability.id, cfg.model, cfg.reasoningLevels, "openai-effort");
     const finalBody = applyReasoningPreference(
       body,
       cfg.reasoning ?? { mode: "auto" },

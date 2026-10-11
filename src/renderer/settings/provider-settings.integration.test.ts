@@ -4,6 +4,7 @@ import path from "node:path";
 import { beforeEach, expect, it, vi } from "vitest";
 import { DEFAULT_TIMEOUT_SETTINGS } from "../../shared/timeout-types";
 import { SPECIALIST_AGENTS } from "../../shared/specialist-agents";
+import { CUSTOM_ENDPOINT_PROVIDERS } from "./custom-endpoint-state";
 import type { SettingsApi } from "./shared/types";
 import type { SavedProfileLite } from "./api/state";
 
@@ -143,11 +144,73 @@ it("saves visible General settings without resetting the persisted hidden sideba
 const modalIsOpen = () => document.getElementById("cy-modal-overlay")?.classList.contains("is-hidden") === false;
 const submitProfile = () => element<HTMLFormElement>("api-form").dispatchEvent(new Event("submit", { bubbles: true, cancelable: true }));
 const profileButton = () => document.querySelector<HTMLButtonElement>('[data-profile-id="existing"] [data-profile-action="edit"]')!;
+// 卡片默认折叠：需要编辑器的用例先点“编辑”展开已存的档案。
+const openExisting = () => profileButton().click();
 
-it("opens the saved default in the right editor and exposes the selected profile to assistive technology", () => {
+it("starts with every card collapsed, keeps the default tag, and fills the global controls from the stored config", () => {
+  expect(element("profile-editor").hidden).toBe(true);
+  expect(element("profile-editor").parentElement).toBe(element("provider-editor-slot"));
+  expect(document.querySelector('[data-profile-id="existing"] .provider-row__tag--default')?.textContent).toBe("默认");
+  expect(profileButton().getAttribute("aria-expanded")).toBe("false");
+  expect(profileButton().hasAttribute("aria-current")).toBe(false);
+  expect(element<HTMLButtonElement>("add-profile-btn").hidden).toBe(false);
+  expect(element("save-status").parentElement).toBe(element("provider-status-top"));
+  expect(element<HTMLInputElement>("timeout-test").value).toBe(String(DEFAULT_TIMEOUT_SETTINGS.testTimeout));
+});
+
+it("opens a saved card inline on Edit, exposes it to assistive technology, and collapses it on a second click", () => {
+  openExisting();
   expect(element("profile-editor").hidden).toBe(false);
   expect(profileButton().getAttribute("aria-current")).toBe("true");
-  expect(element("profile-editor-empty").hidden).toBe(true);
+  expect(profileButton().getAttribute("aria-expanded")).toBe("true");
+  expect(element("profile-editor").parentElement).toBe(document.querySelector('[data-profile-id="existing"]'));
+  expect(element<HTMLButtonElement>("add-profile-btn").hidden).toBe(false);
+  expect(element("save-status").parentElement).toBe(element("provider-status-slot"));
+  profileButton().click();
+  expect(element("profile-editor").hidden).toBe(true);
+  expect(element("profile-editor").parentElement).toBe(element("provider-editor-slot"));
+  expect(profileButton().getAttribute("aria-expanded")).toBe("false");
+  expect(document.activeElement).toBe(profileButton());
+});
+
+it("hides the cloud/local switch and guide inside a saved custom card but shows them when adding a custom API", async () => {
+  profiles = [{ ...profiles[0], provider: CUSTOM_ENDPOINT_PROVIDERS.cloud, displayName: "Proxy" }];
+  vi.resetModules();
+  document.body.innerHTML = html;
+  await import("./settings");
+  await vi.waitFor(() => expect(document.querySelectorAll(".provider-row")).toHaveLength(1));
+  openExisting();
+  expect(element("custom-endpoint-controls").hidden).toBe(true);
+  expect(element("provider-preset-page").hidden).toBe(true);
+  element<HTMLButtonElement>("close-profile-editor").click();
+  element<HTMLButtonElement>("add-profile-btn").click();
+  element<HTMLButtonElement>("provider-custom-tab").click();
+  expect(element("custom-endpoint-controls").hidden).toBe(false);
+  expect(element("custom-endpoint-guide-btn")).not.toBeNull();
+});
+
+it("expands a new draft under the list in place of the add button, then moves into the new card once saved", async () => {
+  element<HTMLButtonElement>("add-profile-btn").click();
+  expect(element("profile-editor").parentElement).toBe(element("provider-editor-slot"));
+  expect(element<HTMLButtonElement>("add-profile-btn").hidden).toBe(true);
+  expect(document.querySelector('[data-profile-id="existing"] #profile-editor')).toBeNull();
+  element<HTMLInputElement>("api-key").value = "inline-new-key";
+  submitProfile();
+  await vi.waitFor(() => expect(element("save-status").classList.contains("is-ok")).toBe(true));
+  expect(element("profile-editor").parentElement).toBe(document.querySelector('[data-profile-id="new-profile"]'));
+  expect(element<HTMLButtonElement>("add-profile-btn").hidden).toBe(false);
+  expect(element<HTMLInputElement>("api-key").value).toBe("inline-new-key");
+});
+
+it("moves the editor between cards when another profile is chosen", async () => {
+  element<HTMLButtonElement>("add-profile-btn").click();
+  element<HTMLInputElement>("api-key").value = "second-key";
+  submitProfile();
+  await vi.waitFor(() => expect(document.querySelectorAll(".provider-row")).toHaveLength(2));
+  await vi.waitFor(() => expect(element("profile-draft-state").dataset.state).toBe("saved"));
+  profileButton().click();
+  expect(element("profile-editor").parentElement).toBe(document.querySelector('[data-profile-id="existing"]'));
+  expect(element<HTMLInputElement>("api-key").value).toBe("fixture-key");
 });
 
 it("keeps a changed profile when discard is canceled and starts a clean draft only after confirmation", async () => {
@@ -183,12 +246,18 @@ it("retains an unsaved new profile on repeat Add or provider selection and guard
   await vi.waitFor(() => expect(element<HTMLInputElement>("api-key").value).toBe(""));
 });
 
-it("does not reload a selected profile or lose its changed model on repeat selection", () => {
+it("asks before a repeat click collapses an open card with changes, and keeps the changed model when canceled", async () => {
   profileButton().click();
   element<HTMLInputElement>("model-input").value = "unsaved-model";
   profileButton().click();
+  expect(modalIsOpen()).toBe(true);
+  element<HTMLButtonElement>("cy-modal-cancel").click();
+  await vi.waitFor(() => expect(modalIsOpen()).toBe(false));
+  expect(element("profile-editor").hidden).toBe(false);
   expect(element<HTMLInputElement>("model-input").value).toBe("unsaved-model");
-  expect(modalIsOpen()).toBe(false);
+  profileButton().click();
+  element<HTMLButtonElement>("cy-modal-confirm").click();
+  await vi.waitFor(() => expect(element("profile-editor").hidden).toBe(true));
 });
 
 it("cancels a keyboard provider tab switch without moving selection or focus, then confirms it", async () => {
@@ -270,7 +339,8 @@ it("preserves the draft across settings categories and asks before closing its e
   expect(modalIsOpen()).toBe(true);
   element<HTMLButtonElement>("cy-modal-confirm").click();
   await vi.waitFor(() => expect(element("profile-editor").hidden).toBe(true));
-  expect(element("profile-editor-empty").hidden).toBe(false);
+  expect(element("profile-editor").parentElement).toBe(element("provider-editor-slot"));
+  expect(element("save-status").parentElement).toBe(element("provider-status-top"));
   expect(document.activeElement).toBe(profileButton());
 });
 
@@ -322,6 +392,7 @@ it("keeps duplicate and invalid save drafts guarded and does not save their chan
 
 it("distinguishes saved profiles, changed drafts, and a clean new draft without claiming connection success", async () => {
   const state = () => element("profile-draft-state");
+  openExisting();
   expect(state()?.textContent).toBe("已保存的档案");
   const key = element<HTMLInputElement>("api-key");
   key.value = "changed-key";
@@ -347,6 +418,7 @@ it("distinguishes saved profiles, changed drafts, and a clean new draft without 
 });
 
 it("keeps pending save feedback accurate while a newer change is made and submitted later", async () => {
+  openExisting();
   const key = element<HTMLInputElement>("api-key");
   key.value = "submitted-key";
   key.dispatchEvent(new Event("input", { bubbles: true }));
@@ -370,6 +442,7 @@ it("keeps pending save feedback accurate while a newer change is made and submit
 
 
 it("refreshes a clean saved editor from Main without replacing its key from the catalog", async () => {
+  openExisting();
   const key = element<HTMLInputElement>("api-key");
   key.value = "submitted-key";
   saveProfile.mockImplementationOnce(async profile => {
@@ -393,6 +466,7 @@ it("returns editor collapse focus to the saved profile that opened it", () => {
 });
 
 it("disables only save and switching actions during a write while retaining editable draft fields", async () => {
+  openExisting();
   let finish!: (result: unknown) => void;
   saveProfile.mockImplementationOnce(() => new Promise(resolve => { finish = resolve; }));
   submitProfile();
@@ -408,6 +482,7 @@ it("disables only save and switching actions during a write while retaining edit
 });
 
 it("ignores an old save response after the settings panel is remounted", async () => {
+  openExisting();
   let finish!: (result: unknown) => void;
   saveProfile.mockImplementationOnce(() => new Promise(resolve => { finish = resolve; }));
   submitProfile();
@@ -417,6 +492,8 @@ it("ignores an old save response after the settings panel is remounted", async (
   const newSaveConfig = vi.fn(async config => config);
   window.settings!.saveConfig = newSaveConfig;
   await import("./settings");
+  await vi.waitFor(() => expect(document.querySelectorAll(".provider-row")).toHaveLength(1));
+  openExisting();
   await vi.waitFor(() => expect(element("profile-draft-state").dataset.state).toBe("saved"));
   const key = element<HTMLInputElement>("api-key");
   key.value = "fresh-panel-draft";

@@ -10,6 +10,8 @@
   <link rel="stylesheet" href="./settings.css" />
   <link rel="stylesheet" href="../ui/theme.css" />
   <link rel="stylesheet" href="./settings-layout.css" />
+  <link rel="stylesheet" href="./settings-system.css" />
+  <link rel="stylesheet" href="./settings-api.css" />
 </head>
 <body>
   <div class="settings-shell">
@@ -91,34 +93,25 @@
             </div>
           </div>
 
-          <div class="model-settings-workspace">
-          <aside class="model-settings-sidebar" aria-labelledby="model-profile-list-title">
-          <div class="profile-list-section">
-            <div class="profile-list-heading">
-              <div>
-                <h2 id="model-profile-list-title"><span data-i18n="settings.providerUi.listTitle">已配置模型提供商</span></h2>
-                <p><span data-i18n="settings.providerUi.listSubtitle">每条配置使用一个模型；状态仅反映已保存的配置。</span></p>
-              </div>
-              <div class="provider-list__tools"><span class="profile-list-count" id="profile-list-count"></span><button type="button" class="save-btn save-btn--ghost" id="add-profile-btn" data-i18n="settings.providerUi.addTitle">添加模型提供商</button></div>
+          <!-- 模型提供商：单列卡片列表；编辑器在选中的卡片内联展开，新建时展开在列表下方。 -->
+          <div class="provider-board" id="provider-board">
+          <div class="provider-board__head">
+            <div>
+              <h2 id="model-profile-list-title"><span data-i18n="settings.providerUi.listTitle">已配置模型提供商</span></h2>
+              <p><span data-i18n="settings.providerUi.listSubtitle">每条配置使用一个模型；状态仅反映已保存的配置。</span></p>
             </div>
-            <div class="profile-list" id="model-profile-list"></div>
+            <span class="profile-list-count" id="profile-list-count"></span>
           </div>
-
-          </aside>
-          <div class="model-settings-detail">
-          <div class="save-status" id="save-status" role="status" aria-live="polite" aria-atomic="true"><span data-i18n="panel.api.saveStatus">等待保存</span></div>
-          <div class="provider-editor-empty" id="profile-editor-empty">
-            <h2 data-i18n="settings.providerUi.emptyTitle">选择或添加模型配置</h2>
-            <p data-i18n="settings.providerUi.emptyHint">从左侧选择已保存的配置，或添加一个模型提供商开始设置。</p>
-            <button type="button" class="save-btn save-btn--ghost" id="empty-add-profile-btn" data-i18n="settings.providerUi.addTitle">添加模型提供商</button>
+          <div class="provider-board__status" id="provider-status-top">
+            <div class="save-status" id="save-status" role="status" aria-live="polite" aria-atomic="true"><span data-i18n="panel.api.saveStatus">等待保存</span></div>
           </div>
+          <div class="profile-list" id="model-profile-list" aria-labelledby="model-profile-list-title"></div>
+          <button type="button" class="provider-add" id="add-profile-btn"><span data-i18n="settings.providerUi.addTitle">添加模型提供商</span></button>
+          <div class="provider-editor-slot" id="provider-editor-slot">
           <section class="provider-editor" id="profile-editor" hidden aria-labelledby="profile-editor-title">
-            <div class="provider-editor__toolbar">
-              <div class="provider-tabs" role="tablist" data-i18n-aria-label="settings.providerUi.addTitle" aria-label="添加模型提供商">
-                <button type="button" role="tab" id="provider-preset-tab" data-provider-tab="preset" aria-controls="provider-preset-page" aria-selected="true" data-i18n="settings.providerUi.presetTab">预设提供商</button>
-                <button type="button" role="tab" id="provider-custom-tab" data-provider-tab="custom" aria-controls="custom-endpoint-controls" aria-selected="false" tabindex="-1" data-i18n="settings.providerUi.customTab">自定义 API</button>
-              </div>
-              <button type="button" class="provider-row__action" id="close-profile-editor" data-i18n="settings.providerUi.close">收起</button>
+            <div class="provider-tabs" role="tablist" data-i18n-aria-label="settings.providerUi.addTitle" aria-label="添加模型提供商">
+              <button type="button" role="tab" id="provider-preset-tab" data-provider-tab="preset" aria-controls="provider-preset-page" aria-selected="true" data-i18n="settings.providerUi.presetTab">预设提供商</button>
+              <button type="button" role="tab" id="provider-custom-tab" data-provider-tab="custom" aria-controls="custom-endpoint-controls" aria-selected="false" tabindex="-1" data-i18n="settings.providerUi.customTab">自定义 API</button>
             </div>
 
           <div class="preset-row" id="provider-preset-page" role="tabpanel" aria-labelledby="provider-preset-tab">
@@ -148,11 +141,16 @@
           </div>
 
           <div class="profile-editor-heading">
-            <span class="profile-draft-state" id="profile-draft-state" role="status" aria-live="polite" aria-atomic="true"></span>
-            <h2 id="profile-editor-title"><span data-i18n="panel.api.editor.title">新建档案</span></h2>
+            <div class="profile-editor-heading__line">
+              <h2 id="profile-editor-title"><span data-i18n="panel.api.editor.title">新建档案</span></h2>
+              <span class="profile-draft-state" id="profile-draft-state" role="status" aria-live="polite" aria-atomic="true"></span>
+            </div>
             <p><span data-i18n="panel.api.editor.subtitle">昵称用于区分同模型名、不同 API 的配置；上下文窗口与多模态跟随档案，聊天窗口切档案时自动生效。</span></p>
           </div>
 
+          <!-- 连接：API Key 始终可见；预设厂商的昵称 / Base URL / 协议收进“自定义设置”，自定义 API 则直接展开（见 applyProviderEditorLayout）。 -->
+          <section class="provider-section" aria-labelledby="provider-section-connection">
+            <h3 class="provider-section__title" id="provider-section-connection"><span data-i18n="settings.providerUi.sectionConnection">连接</span></h3>
           <div class="form-grid" id="provider-primary-fields">
             <label class="field" data-provider-field="custom">
               <span><span data-i18n="panel.api.field.nickname.label">昵称</span></span>
@@ -195,31 +193,72 @@
               </div>
               <span class="form-hint" id="transport-hint"><span data-i18n="panel.api.field.transport.hint">请按服务商实际提供的接口类型选择（chat/completion / anthropic / Responses）；程序不会自动识别协议。</span></span>
             </div>
+          </div>
+          <details class="provider-details provider-details--inline" id="provider-connection-more">
+            <summary data-i18n="settings.providerUi.connectionMore">自定义设置</summary>
+            <div class="form-grid" id="provider-connection-more-fields"></div>
+          </details>
+          </section>
 
-            <label class="field field--full" data-provider-field="custom">
+          <!-- 模型：模型名 + 获取列表 + 候选，随后是按档案保存的上下文窗口 / 多模态 / 推理强度档位。 -->
+          <section class="provider-section" aria-labelledby="provider-section-model">
+            <h3 class="provider-section__title" id="provider-section-model"><span data-i18n="settings.providerUi.sectionModel">模型</span></h3>
+          <div class="form-grid" id="provider-model-fields">
+            <label class="field field--full">
               <span><span data-i18n="panel.api.field.model.label">模型名</span></span>
               <input id="model-input" type="text" placeholder="选厂商后自动填入，可手填覆盖" autocomplete="off" list="model-input-suggestions" data-i18n-placeholder="panel.api.field.model.placeholder" />
               <datalist id="model-input-suggestions"></datalist>
+              <span class="model-fetch-row">
+                <button type="button" class="save-btn save-btn--ghost model-fetch-btn" id="fetch-models-btn"><span data-i18n="panel.api.field.model.fetch.button">从厂商获取模型列表</span></button>
+                <span class="form-hint" id="fetch-models-status" role="status" aria-live="polite"></span>
+              </span>
+              <span class="model-picker" id="fetch-models-picker" hidden>
+                <input type="search" class="model-picker__search" id="fetch-models-search" autocomplete="off" placeholder="搜索型号" aria-label="搜索型号" data-i18n-placeholder="panel.api.field.model.fetch.search" data-i18n-aria-label="panel.api.field.model.fetch.search" />
+                <span class="model-picker__list" id="fetch-models-list" role="listbox"></span>
+                <span class="model-picker__empty form-hint" id="fetch-models-empty" hidden data-i18n="panel.api.field.model.fetch.noMatch">没有匹配的型号</span>
+              </span>
             </label>
 
-            <label class="field" data-provider-field="advanced">
+            <label class="field field--full">
               <span><span data-i18n="panel.api.field.model.contextWindow">上下文窗口（Token）</span></span>
               <input id="context-window-input" type="number" min="4096" step="1" placeholder="256000" autocomplete="off" data-i18n-placeholder="panel.api.field.model.contextWindowPlaceholder" />
               <span class="form-hint"><span data-i18n="panel.api.field.model.contextWindowHint">按档案保存；留空按 256000。</span></span>
             </label>
 
-            <label class="setting-row profile-multimodal-row" data-provider-field="advanced">
+            <label class="setting-row profile-multimodal-row">
               <div>
                 <strong><span data-i18n="panel.api.field.model.multimodal.title">多模态（能直发图片）</span></strong>
                 <span><span data-i18n="panel.api.field.model.multimodal.desc">开启后图片直发该模型；关闭则走下方视觉模型转述。跟随档案生效。</span></span>
               </div>
               <span class="switch"><input id="multimodal-toggle" type="checkbox" title="多模态" data-i18n-title="panel.api.field.model.multimodal.toggleTitle" /><span class="switch__track"><span class="switch__thumb"></span></span></span>
             </label>
-          </div>
 
-          <details class="provider-details" id="provider-advanced">
+            <div class="field field--full reasoning-levels-field">
+              <label class="setting-row">
+                <div>
+                  <strong><span data-i18n="panel.api.field.model.reasoningLevels.title">推理强度档位</span></strong>
+                  <span><span data-i18n="panel.api.field.model.reasoningLevels.desc">默认按型号名判断。自定义地址、代理或新型号请关闭"自动"，勾选这个 API 实际支持的档位。</span></span>
+                </div>
+                <span class="switch-with-label"><span class="switch-with-label__text" data-i18n="panel.api.field.model.reasoningLevels.autoLabel">自动</span><span class="switch"><input id="reasoning-levels-auto" type="checkbox" checked title="自动" data-i18n-title="panel.api.field.model.reasoningLevels.autoTitle" /><span class="switch__track"><span class="switch__thumb"></span></span></span></span>
+              </label>
+              <div class="reasoning-levels" id="reasoning-levels-options" role="group" aria-label="推理强度档位" data-i18n-aria-label="panel.api.field.model.reasoningLevels.group">
+                <label class="reasoning-levels__chip"><input type="checkbox" data-effort="low" /><span>low</span></label>
+                <label class="reasoning-levels__chip"><input type="checkbox" data-effort="medium" /><span>medium</span></label>
+                <label class="reasoning-levels__chip"><input type="checkbox" data-effort="high" /><span>high</span></label>
+                <label class="reasoning-levels__chip"><input type="checkbox" data-effort="xhigh" /><span>xhigh</span></label>
+                <label class="reasoning-levels__chip"><input type="checkbox" data-effort="max" /><span>max</span></label>
+                <label class="reasoning-levels__chip reasoning-levels__chip--flag"><input type="checkbox" id="reasoning-levels-off" /><span data-i18n="panel.api.field.model.reasoningLevels.off">可关闭</span></label>
+                <label class="reasoning-levels__chip reasoning-levels__chip--flag"><input type="checkbox" id="reasoning-levels-pro" /><span data-i18n="panel.api.field.model.reasoningLevels.pro">PRO（Responses）</span></label>
+              </div>
+              <span class="form-hint"><span data-i18n="panel.api.field.model.reasoningLevels.hint">一个档位都不勾，表示这个 API 只有"开 / 关"（OpenAI 写法需同时勾选“可关闭”才有效）。输入框右下角的强度滑块会只显示这里勾选的档位。</span></span>
+            </div>
+          </div>
+          </section>
+
+          <!-- 高级：超时、自定义端点覆盖、视觉模型（全局，不随档案走）。默认折叠。 -->
+          <details class="provider-details provider-advanced" id="provider-advanced">
             <summary data-i18n="settings.providerUi.advanced">高级设置</summary>
-            <div class="form-grid" id="provider-advanced-fields"></div>
+          <div class="provider-advanced__body">
           <div class="api-note">
             <span><svg width="22" height="22" viewBox="0 0 48 48" fill="none" aria-hidden="true" style="display:block"><title>安全</title><rect x="6" y="22" width="36" height="22" rx="2" fill="none" stroke="currentColor" stroke-width="4" stroke-linejoin="round"/><path d="M14 22V14C14 8.47715 18.4772 4 24 4C29.5228 4 34 8.47715 34 14V22" stroke="currentColor" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/><path d="M24 30V36" stroke="currentColor" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/></svg></span>
             <p id="api-note-text"><span data-i18n="panel.api.noteText">选择模型预设后会自动填入 Provider、Base URL 和模型名；你只需要填写对应平台的 API Key。配置只保存在本机 Electron 用户数据目录。</span></p>
@@ -230,8 +269,6 @@
               <span aria-hidden="true">ⓘ</span> <span data-i18n="panel.api.workFlowAdapt">模型厂商 Work 流程适配</span>
             </button>
           </div>
-
-          <hr class="api-section-divider" />
 
           <div class="form-grid">
             <label class="field field--full">
@@ -244,12 +281,9 @@
           </div>
 
           <div class="custom-endpoint-overrides" id="custom-endpoint-overrides" hidden>
-            <hr class="api-section-divider" />
-            <div class="panel-heading">
-              <div>
-                <h1><span data-i18n="panel.api.customEndpoint.overrides.title">自定义端点覆盖选项</span></h1>
-                <p><span data-i18n="panel.api.customEndpoint.overrides.subtitle">仅在当前厂商为自定义端点时生效。</span></p>
-              </div>
+            <div class="provider-subhead">
+              <h4><span data-i18n="panel.api.customEndpoint.overrides.title">自定义端点覆盖选项</span></h4>
+              <p><span data-i18n="panel.api.customEndpoint.overrides.subtitle">仅在当前厂商为自定义端点时生效。</span></p>
             </div>
             <div class="settings-list">
               <label class="setting-row">
@@ -308,11 +342,13 @@
               <div class="save-status" id="vision-test-status"></div>
             </div>
           </div>
-
+          </div>
           </details>
 
-          <div class="form-actions">
+          <div class="form-actions provider-editor__footer">
             <button type="button" class="save-btn save-btn--danger" id="delete-profile-btn" hidden><span data-i18n="panel.api.deleteProfileButton">删除档案</span></button>
+            <span class="provider-editor__status" id="provider-status-slot"></span>
+            <button type="button" class="save-btn save-btn--ghost" id="close-profile-editor"><span data-i18n="settings.providerUi.cancel">取消</span></button>
             <button type="button" class="save-btn save-btn--ghost" id="test-connection-btn"><span data-i18n="panel.api.testConnectionButton">测试连接</span></button>
             <button type="submit" class="save-btn"><span data-i18n="panel.api.saveButton">保存档案</span></button>
           </div>
@@ -600,8 +636,8 @@
             </div>
           </div>
 
+          <h2 class="settings-group-title" data-i18n="panel.general.groups.desktop">桌面与提醒</h2>
           <div class="settings-list">
-            <h2 class="settings-group-title" data-i18n="panel.general.groups.desktop">桌面与提醒</h2>
             <div class="setting-row">
               <div>
                 <strong><span data-i18n="panel.general.toastSound.title">提醒音效</span></strong>
@@ -610,7 +646,10 @@
               <span class="switch"><input id="toast-sound-enabled" type="checkbox" checked /><span class="switch__track"><span class="switch__thumb"></span></span></span>
             </div>
 
-            <h2 class="settings-group-title" data-i18n="panel.general.groups.system">系统</h2>
+          </div>
+
+          <h2 class="settings-group-title" data-i18n="panel.general.groups.system">系统</h2>
+          <div class="settings-list">
             <label class="setting-row">
               <div>
                 <strong><span data-i18n="panel.general.launchAtLogin.title">开机自启</span></strong>

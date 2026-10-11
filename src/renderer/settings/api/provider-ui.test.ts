@@ -3,7 +3,7 @@ import fs from "node:fs";
 import path from "node:path";
 import { afterEach, expect, it } from "vitest";
 import { renderProviderRows } from "./provider-rows";
-import { applyProviderEditorLayout } from "./provider-editor";
+import { applyProviderEditorLayout, mountProfileEditor, renderKeepingProfileEditor } from "./provider-editor";
 import type { SavedProfileLite } from "./state";
 import { CUSTOM_ENDPOINT_PROVIDERS } from "../custom-endpoint-state";
 import { applyTranslations, setLocale, t } from "../i18n";
@@ -42,13 +42,20 @@ it("relocates original field nodes without changing their values", () => {
   const model = document.getElementById("model-input") as HTMLInputElement;
   model.value = "manual-model-id";
   applyProviderEditorLayout(root, "preset");
-  expect(model.closest("details")?.id).toBe("provider-advanced");
+  // 预设：昵称 / Base URL / 协议收进“自定义设置”，API Key 与模型名始终可见。
+  expect(document.getElementById("display-name")?.closest("details")?.id).toBe("provider-connection-more");
+  expect(document.getElementById("transport-select")?.closest("details")?.id).toBe("provider-connection-more");
   expect(document.getElementById("api-key")?.closest("details")).toBeNull();
+  expect(model.closest("details")).toBeNull();
+  expect(model.closest("#provider-model-fields")).not.toBeNull();
+  expect((document.getElementById("provider-connection-more") as HTMLElement).hidden).toBe(false);
   applyProviderEditorLayout(root, "custom");
   expect(document.getElementById("model-input")).toBe(model);
   expect(model.closest("details")).toBeNull();
   expect(model.value).toBe("manual-model-id");
   expect(document.getElementById("transport-select")?.closest("details")).toBeNull();
+  expect(document.getElementById("base-url")?.closest("#provider-primary-fields")).not.toBeNull();
+  expect((document.getElementById("provider-connection-more") as HTMLElement).hidden).toBe(true);
   expect(root.querySelector('[data-provider-tab="custom"]')?.getAttribute("aria-selected")).toBe("true");
 });
 
@@ -74,14 +81,82 @@ it("does not expose the retired standalone status-panel control", () => {
   expect(document.getElementById("general-save-status")).not.toBeNull();
 });
 
-it("places profile navigation beside a persistent editor region and keeps routing outside the editor", () => {
+it("lists profiles as one column of cards with an add button below, and keeps routing outside the editor", () => {
   document.body.innerHTML = html;
-  const workspace = document.querySelector('.model-settings-workspace')!;
-  expect(workspace).not.toBeNull();
-  expect(workspace.querySelector('.model-settings-sidebar')?.contains(document.getElementById('model-profile-list'))).toBe(true);
-  expect(workspace.querySelector('.model-settings-detail')?.contains(document.getElementById('profile-editor'))).toBe(true);
-  expect(workspace.querySelector('.model-settings-detail')?.contains(document.getElementById('profile-editor-empty'))).toBe(true);
-  expect(document.getElementById('profile-editor')?.contains(document.getElementById('agent-routing-group'))).toBe(false);
+  const board = document.querySelector(".provider-board")!;
+  expect(board).not.toBeNull();
+  expect(board.contains(document.getElementById("model-profile-list"))).toBe(true);
+  expect(board.contains(document.getElementById("add-profile-btn"))).toBe(true);
+  expect(board.contains(document.getElementById("profile-editor"))).toBe(true);
+  expect(document.querySelector(".model-settings-workspace, .model-settings-sidebar, .model-settings-detail")).toBeNull();
+  expect(document.getElementById("profile-editor-empty")).toBeNull();
+  expect(document.getElementById("profile-editor")?.contains(document.getElementById("agent-routing-group"))).toBe(false);
+});
+
+it("groups the editor into connection, model and a collapsed advanced section, with footer actions in order", () => {
+  document.body.innerHTML = html;
+  const editor = document.getElementById("profile-editor")!;
+  const sections = [...editor.querySelectorAll<HTMLElement>(".provider-section")].map(section => section.getAttribute("aria-labelledby"));
+  expect(sections).toEqual(["provider-section-connection", "provider-section-model"]);
+  expect(document.getElementById("provider-section-connection")!.closest("section")!.contains(document.getElementById("api-key"))).toBe(true);
+  const model = document.getElementById("provider-section-model")!.closest("section")!;
+  for (const id of ["model-input", "fetch-models-btn", "fetch-models-picker", "context-window-input", "multimodal-toggle", "reasoning-levels-auto"]) {
+    expect(model.contains(document.getElementById(id)), id).toBe(true);
+  }
+  const advanced = document.getElementById("provider-advanced") as HTMLDetailsElement;
+  expect(advanced.open).toBe(false);
+  for (const id of ["timeout-test", "vision-base-url", "custom-endpoint-overrides", "test-vision-btn"]) {
+    expect(advanced.contains(document.getElementById(id)), id).toBe(true);
+  }
+  const footer = [...editor.querySelectorAll<HTMLButtonElement>(".provider-editor__footer button")].map(button => button.id || button.type);
+  expect(footer).toEqual(["delete-profile-btn", "close-profile-editor", "test-connection-btn", "submit"]);
+});
+
+it("keeps the editor inside the selected card across list redraws and parks it when no card matches", () => {
+  document.body.innerHTML = html;
+  const form = document.getElementById("api-form")!;
+  const list = document.getElementById("model-profile-list")!;
+  const editor = document.getElementById("profile-editor")!;
+  const key = document.getElementById("api-key") as HTMLInputElement;
+  key.value = "draft-survives";
+  const draw = () => renderProviderRows(list, [profile("first"), profile("second")], "first", "second");
+  renderKeepingProfileEditor(form, "second", draw);
+  expect(editor.parentElement).toBe(list.querySelector('[data-profile-id="second"]'));
+  expect(editor.parentElement?.lastElementChild).toBe(editor);
+  renderKeepingProfileEditor(form, "second", draw);
+  expect(editor.parentElement).toBe(list.querySelector('[data-profile-id="second"]'));
+  expect(key.value).toBe("draft-survives");
+  mountProfileEditor(form, undefined);
+  expect(editor.parentElement).toBe(document.getElementById("provider-editor-slot"));
+  renderKeepingProfileEditor(form, "missing", draw);
+  expect(editor.parentElement).toBe(document.getElementById("provider-editor-slot"));
+  expect(document.contains(editor)).toBe(true);
+});
+
+it("restores focus inside the editor after it moves between cards", () => {
+  document.body.innerHTML = html;
+  const form = document.getElementById("api-form")!;
+  const list = document.getElementById("model-profile-list")!;
+  const draw = () => renderProviderRows(list, [profile("first"), profile("second")]);
+  renderKeepingProfileEditor(form, "first", draw);
+  const key = document.getElementById("api-key") as HTMLInputElement;
+  key.focus();
+  expect(document.activeElement).toBe(key);
+  renderKeepingProfileEditor(form, "second", draw);
+  expect(document.activeElement).toBe(key);
+});
+
+it("marks custom and default profiles with tags and flags missing credentials with a red status dot", () => {
+  const root = document.createElement("div");
+  renderProviderRows(root, [profile("a"), profile("b", { apiKey: "", provider: CUSTOM_ENDPOINT_PROVIDERS.cloud })], "a");
+  const first = root.querySelector('[data-profile-id="a"]')!;
+  const second = root.querySelector('[data-profile-id="b"]')!;
+  expect(first.querySelector(".provider-row__tag--default")?.textContent).toBe("默认");
+  expect(first.querySelector(".provider-row__dot")?.getAttribute("data-state")).toBe("ok");
+  expect(first.querySelector(".provider-row__tag:not(.provider-row__tag--default)")).toBeNull();
+  expect(second.querySelector(".provider-row__tag")?.textContent).toBe("自定义");
+  expect(second.querySelector(".provider-row__dot")?.getAttribute("data-state")).toBe("missing");
+  expect(first.querySelector(".provider-row__head")?.contains(first.querySelector('[data-profile-action="delete"]'))).toBe(true);
 });
 
 it("marks only the selected profile and makes the full profile summary a navigation button", () => {
@@ -93,31 +168,46 @@ it("marks only the selected profile and makes the full profile summary a navigat
   expect(root.querySelector('[data-profile-id="first"] [data-profile-action="edit"]')?.hasAttribute('aria-current')).toBe(false);
 });
 
-it("defines a two-column workspace and a narrow single-column layout", () => {
-  const css = fs.readFileSync(path.resolve('src/renderer/settings/settings-layout.css'), 'utf8');
-  expect(css).toMatch(/\.model-settings-workspace\s*\{[^}]*grid-template-columns:\s*minmax\(220px,\s*\.72fr\)\s+minmax\(0,\s*1\.9fr\)/);
-  expect(css).toMatch(/@media\s*\(max-width:\s*760px\)\s*\{[\s\S]*?\.model-settings-workspace\s*\{[^}]*grid-template-columns:\s*minmax\(0,\s*1fr\)/);
+it("styles profiles as a single column of 16px cards with a dashed add button", () => {
+  const css = fs.readFileSync(path.resolve('src/renderer/settings/settings-api.css'), 'utf8');
+  expect(css).toMatch(/--api-card-radius:\s*16px/);
+  expect(css).toMatch(/#api-form #model-profile-list\s*\{[^}]*flex-direction:\s*column/);
+  expect(css).toMatch(/#api-form \.provider-row\s*\{[^}]*border-radius:\s*var\(--api-card-radius\)/);
+  expect(css).toMatch(/#api-form \.provider-add\s*\{[^}]*border:\s*1px dashed/);
+  expect(css).not.toMatch(/model-settings-(workspace|sidebar|detail)/);
+  // 旧的左右分栏工作区样式已移除，不应再留在通用样式表里。
+  for (const file of ["settings-layout.css", "settings.css"]) {
+    const legacy = fs.readFileSync(path.resolve("src/renderer/settings", file), "utf8");
+    expect(legacy, file).not.toMatch(/model-settings-(workspace|sidebar|detail)|provider-list__tools|provider-editor-empty|provider-editor__toolbar|profile-list-(section|heading)/);
+  }
+});
+
+it("marks the card whose editor is open as expanded", () => {
+  const root = document.createElement("div");
+  renderProviderRows(root, [profile("first"), profile("second")], "first", "second");
+  expect(root.querySelector('[data-profile-id="second"] [data-profile-action="edit"]')?.getAttribute("aria-expanded")).toBe("true");
+  expect(root.querySelector('[data-profile-id="first"] [data-profile-action="edit"]')?.getAttribute("aria-expanded")).toBe("false");
 });
 
 it("lets protocol labels wrap inside the narrower editor column", () => {
   document.body.innerHTML = html;
   const style = document.createElement('style');
-  style.textContent = fs.readFileSync(path.resolve('src/renderer/settings/settings.css'), 'utf8') + '\n' + fs.readFileSync(path.resolve('src/renderer/settings/settings-layout.css'), 'utf8');
+  style.textContent = fs.readFileSync(path.resolve('src/renderer/settings/settings.css'), 'utf8') + '\n' + fs.readFileSync(path.resolve('src/renderer/settings/settings-api.css'), 'utf8');
   document.head.append(style);
   expect(getComputedStyle(document.querySelector('.transport-cards .preset-card__name')!).whiteSpace).toBe('normal');
   style.remove();
 });
 
-it("preserves the 12px radius contract on profile navigation surfaces", () => {
+it("keeps profile card controls on the rounded-corner contract (10px small buttons, 10px copy focus ring)", () => {
   document.body.innerHTML = html;
   const style = document.createElement("style");
-  style.textContent = fs.readFileSync(path.resolve("src/renderer/settings/settings-layout.css"), "utf8");
+  style.textContent = fs.readFileSync(path.resolve("src/renderer/settings/settings-api.css"), "utf8");
   document.head.append(style);
   try {
     const root = document.getElementById("model-profile-list")!;
     renderProviderRows(root, [profile("first")]);
-    for (const selector of [".provider-row", ".provider-row__copy", ".provider-row__action"]) {
-      expect.soft(getComputedStyle(root.querySelector(selector)!).borderRadius, selector).toBe("12px");
+    for (const selector of [".provider-row__copy", ".provider-row__chip", ".provider-row__action"]) {
+      expect.soft(getComputedStyle(root.querySelector(selector)!).borderRadius, selector).toBe("10px");
     }
   } finally {
     style.remove();

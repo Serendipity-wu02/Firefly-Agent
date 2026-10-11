@@ -10,12 +10,18 @@ interface PermissionSettingsApi {
 }
 
 // 只存 i18n key（t() 不能出现在模块顶层常量里），展示文案在组件内求值。
+// 弹窗里只给三档：只读 / 请求审批 / 完全访问。
+// 完全只读、指定目录仍是后端认得的等级（旧配置、插件页可能已经存了），所以放在 KNOWN_LEVELS 里，
+// 触发按钮会照实显示它们的名字，只是不再出现在选择列表里。
 const PERMISSION_OPTIONS: ReadonlyArray<{ level: PermissionLevel; labelKey: string; descKey: string }> = [
-  { level: "project-read-only", labelKey: "permission.levelProjectReadOnly", descKey: "permission.descProjectReadOnly" },
   { level: "read-only", labelKey: "permission.levelReadOnly", descKey: "permission.descReadOnly" },
-  { level: "scoped", labelKey: "permission.levelScoped", descKey: "permission.descScoped" },
   { level: "per-action", labelKey: "permission.levelPerAction", descKey: "permission.descPerAction" },
   { level: "full", labelKey: "permission.levelFull", descKey: "permission.descFull" },
+];
+const KNOWN_LEVELS: ReadonlyArray<{ level: PermissionLevel; labelKey: string }> = [
+  ...PERMISSION_OPTIONS,
+  { level: "project-read-only", labelKey: "permission.levelProjectReadOnly" },
+  { level: "scoped", labelKey: "permission.levelScoped" },
 ];
 
 function permissionApi(): PermissionSettingsApi | undefined {
@@ -40,7 +46,7 @@ function ChevronIcon() {
 }
 
 function labelFor(level: PermissionLevel, translate: (key: string) => string): string {
-  const option = PERMISSION_OPTIONS.find((item) => item.level === level);
+  const option = KNOWN_LEVELS.find((item) => item.level === level);
   return translate(option?.labelKey ?? "permission.levelReadOnly");
 }
 
@@ -82,21 +88,23 @@ export function PermissionControl() {
       overlayClassName="cy-permission-popover"
       content={
         <div className="cy-permission-panel">
-          <strong>{t("permission.panelQuestion")}</strong>
-          <div className="cy-permission-panel__options">
+          <strong className="cy-permission-panel__title">{t("permission.panelQuestion")}</strong>
+          <div className="cy-permission-panel__options" role="radiogroup" aria-label={t("permission.panelTitle")}>
             {PERMISSION_OPTIONS.map((option) => (
               <button
                 type="button"
+                role="radio"
+                aria-checked={level === option.level}
                 key={option.level}
                 className={`cy-permission-panel__option is-${option.level} ${level === option.level ? "is-active" : ""}`}
                 onClick={() => void select(option.level)}
               >
-                <PermissionIcon level={option.level} />
+                <span className="cy-permission-panel__icon"><PermissionIcon level={option.level} /></span>
                 <span className="cy-permission-panel__text">
                   <span className="cy-permission-panel__label">{t(option.labelKey)}</span>
                   <small>{t(option.descKey)}</small>
                 </span>
-                {level === option.level && <svg className="cy-permission-panel__check" viewBox="0 0 24 24" aria-hidden="true"><path d="m5 12.5 4.5 4.5L19 7.5" /></svg>}
+                <svg className="cy-permission-panel__check" viewBox="0 0 24 24" aria-hidden="true"><path d="m5 12.5 4.5 4.5L19 7.5" /></svg>
               </button>
             ))}
           </div>

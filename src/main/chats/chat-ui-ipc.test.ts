@@ -19,6 +19,14 @@ const mocks = vi.hoisted(() => ({
       apiKey: "profile-key",
       explicitTransport: "openai" as const,
       reasoning: { mode: "on" as const, effort: "high" as const },
+    }, {
+      id: "custom-profile",
+      provider: "自定义",
+      model: "my-proxy-model",
+      baseUrl: "https://proxy.example.test/v1",
+      apiKey: "proxy-key",
+      explicitTransport: "openai" as const,
+      reasoningLevels: { efforts: ["low" as const, "high" as const], allowOff: true },
     }],
     thinkingOverride: -1 as const,
     defaultModelProfileId: undefined as string | undefined,
@@ -31,6 +39,10 @@ vi.mock("electron", () => ({
   BrowserWindow: {
     fromWebContents: vi.fn(),
     getAllWindows: () => [],
+  },
+  screen: {
+    getCursorScreenPoint: () => ({ x: 0, y: 0 }),
+    getDisplayNearestPoint: () => ({ workArea: { x: 0, y: 0, width: 1920, height: 1040 } }),
   },
   ipcMain: {
     handle: vi.fn((channel: string, handler: (...args: any[]) => unknown) => {
@@ -91,6 +103,18 @@ describe("chat reasoning IPC", () => {
       thinkingOverride: 0,
       transport: "openai",
       modelProfileId: "openai-profile",
+    });
+  });
+
+  it("returns the effort levels the connected API declared in its profile", async () => {
+    mocks.sessions.set("session-custom", { id: "session-custom", modelProfileId: "custom-profile" });
+    await register();
+    const handler = mocks.handlers.get(IPC.CHAT_GET_REASONING_STATE);
+    if (!handler) throw new Error("reasoning state handler was not registered");
+
+    expect(handler({}, { sessionId: "session-custom" })).toMatchObject({
+      model: "my-proxy-model",
+      reasoningLevels: { efforts: ["low", "high"], allowOff: true },
     });
   });
 

@@ -217,6 +217,7 @@ export class ResponsesAdapter implements ChatVendorAdapter {
           model: cfg.model,
           transport: this.transport,
           reasoning: cfg.reasoning ?? { mode: "auto" },
+          reasoningLevels: cfg.reasoningLevels,
           requestedToolName: req.toolChoiceIntent.toolName,
           supportedModes: this.capability.toolChoiceModes,
         });
@@ -228,6 +229,7 @@ export class ResponsesAdapter implements ChatVendorAdapter {
         model: cfg.model,
         transport: this.transport,
         reasoning: cfg.reasoning ?? { mode: "auto" },
+        reasoningLevels: cfg.reasoningLevels,
         supportedModes: this.capability.toolChoiceModes,
       }) === "auto") {
         body.tool_choice = "auto";
@@ -237,7 +239,7 @@ export class ResponsesAdapter implements ChatVendorAdapter {
     // 推理控制：复用共享推理层，再把 Chat Completions 语义的 reasoning_effort
     // 翻译成 Responses 的 reasoning:{effort}。thinking / enable_thinking /
     // output_config 等 Chat Completions / Anthropic 专属字段对 Responses 无效，丢弃。
-    const reasoningCap = resolveReasoningCapability(this.capability.id, cfg.model);
+    const reasoningCap = resolveReasoningCapability(this.capability.id, cfg.model, cfg.reasoningLevels, "openai-effort");
     const scratch = applyReasoningPreference(
       { ...body },
       cfg.reasoning ?? { mode: "auto" },

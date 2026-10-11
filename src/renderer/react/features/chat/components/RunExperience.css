@@ -31,7 +31,7 @@
 
 .cy-task-plan-card,
 .cy-run-outcome {
-  width: min(100%, 620px);
+  width: min(100%, calc(var(--cy-reading-width) * .8));
   border: 1px solid var(--cy-border, var(--cy-border));
   border-radius: 12px;
   background: var(--cy-surface);
@@ -168,7 +168,7 @@
 
 .cy-interaction-panel {
   position: relative;
-  width: min(100%, 770px);
+  width: min(100%, var(--cy-reading-width));
   box-sizing: border-box;
   padding: 16px 18px 14px;
   border: 1px solid var(--cy-border);
@@ -369,7 +369,7 @@
 /* ── Diff Review 卡片（工具变更审查） ───────────────────── */
 
 .cy-file-change-card {
-  width: min(100%, 620px);
+  width: min(100%, calc(var(--cy-reading-width) * .8));
   box-sizing: border-box;
   margin: 7px 0 2px;
   border: 1px solid var(--cy-border, var(--cy-border));

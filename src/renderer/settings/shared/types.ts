@@ -7,7 +7,7 @@ import type { UiColors } from "../../../shared/ui-colors";
 // 到 src/shared/ 需要 ../../../shared/，到 settings/ 下其他模块用 ../
 
 import type { ApiTransport } from "../../../shared/api-endpoint";
-import type { ReasoningPreference } from "../../../shared/reasoning";
+import type { ReasoningLevelsConfig, ReasoningPreference } from "../../../shared/reasoning";
 import type { ChatAppearanceSettings } from "../../../shared/chat-appearance";
 import type { UiTheme } from "../../../shared/ui-theme";
 import type { UiFont } from "../../../shared/ui-font";
@@ -246,8 +246,8 @@ export interface SettingsApi {
   getAgentRouting?: () => Promise<AgentRoutingView>;
   updateAgentRouting?: (input: AgentRoutingUpdate) => Promise<AgentRoutingView>;
   saveConfig: (config: Partial<ModelSettings>) => Promise<ModelSettings>;
-  listModelProfiles?: () => Promise<{ profiles: Array<{ id: string; provider: string; displayName?: string; baseUrl: string; model: string; apiKey: string; explicitTransport?: ApiTransport; reasoning?: ReasoningPreference; contextWindowTokens?: number; multimodal?: boolean }>; defaultModelProfileId?: string }>;
-  saveModelProfile?: (profile: { id?: string; provider: string; displayName?: string; baseUrl: string; model: string; apiKey: string; explicitTransport?: ApiTransport; reasoning?: ReasoningPreference; contextWindowTokens?: number; multimodal?: boolean }) => Promise<{ added: boolean; profiles: unknown[]; defaultModelProfileId?: string }>;
+  listModelProfiles?: () => Promise<{ profiles: Array<{ id: string; provider: string; displayName?: string; baseUrl: string; model: string; apiKey: string; explicitTransport?: ApiTransport; reasoning?: ReasoningPreference; reasoningLevels?: ReasoningLevelsConfig; contextWindowTokens?: number; multimodal?: boolean }>; defaultModelProfileId?: string }>;
+  saveModelProfile?: (profile: { id?: string; provider: string; displayName?: string; baseUrl: string; model: string; apiKey: string; explicitTransport?: ApiTransport; reasoning?: ReasoningPreference; reasoningLevels?: ReasoningLevelsConfig; contextWindowTokens?: number; multimodal?: boolean }) => Promise<{ added: boolean; profiles: unknown[]; defaultModelProfileId?: string }>;
   deleteModelProfile?: (id: string) => Promise<unknown>;
   setDefaultModelProfile?: (id: string) => Promise<unknown>;
   getGeneral: () => Promise<GeneralSettings>;
@@ -312,6 +312,7 @@ export interface SettingsApi {
   onPlanStateChanged?: (
     callback: (payload: { conversationId: string; state: string }) => void,
   ) => (() => void) | void;
+  fetchModels?: (input: { provider: string; baseUrl: string; apiKey: string; explicitTransport?: ApiTransport }) => Promise<{ ok: true; models: Array<{ id: string; name?: string }> } | { ok: false; error: string }>;
   testConnection?: (config: { provider: string; baseUrl: string; model: string; apiKey: string; explicitTransport?: ApiTransport; reasoning?: ReasoningPreference }) => Promise<{ ok: boolean; latency: number; sample?: string; error?: string }>;
   testVision?: (config: { baseUrl: string; apiKey: string; model: string }) => Promise<{ ok: boolean; latency: number; sample?: string; error?: string }>;
   // main → settings：要求切到指定标签（窗口已打开时由 main 发这个事件）

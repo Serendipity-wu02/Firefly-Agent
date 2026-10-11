@@ -1,5 +1,6 @@
-import { BrowserWindow } from "electron";
+import { BrowserWindow, screen } from "electron";
 import { IPC } from "../../shared/ipc-channels";
+import { createWindowDragController } from "./window-drag";
 import { createIpcScope, type IpcScope } from "../application/ipc-scope";
 import { getCapabilityOrOpenAI } from "../orchestrator/vendors";
 import { normalizeReasoningPreference } from "../../shared/reasoning";
@@ -77,6 +78,17 @@ export function registerChatUiIpc(deps: ChatUiIpcDependencies): void {
     return BrowserWindow.fromWebContents(event.sender)?.isMaximized() ?? false;
   });
 
+  // 无边框透明窗口最大化后拖标题栏不会被系统还原：渲染端发起拖动，这里还原并跟随光标。
+  const windowDrag = createWindowDragController({
+    getCursor: () => screen.getCursorScreenPoint(),
+    getWorkArea: (point) => screen.getDisplayNearestPoint(point).workArea,
+  });
+  ipc.on(IPC.CHAT_WINDOW_DRAG_START, (event) => {
+    const senderWindow = BrowserWindow.fromWebContents(event.sender);
+    if (senderWindow) windowDrag.start(senderWindow);
+  });
+  ipc.on(IPC.CHAT_WINDOW_DRAG_END, () => windowDrag.stop());
+
   ipc.handle(IPC.CHAT_GET_REASONING_STATE, (_event, payload?: { sessionId?: unknown; modelProfileId?: unknown }) => {
     const baseSettings = loadModelSettings();
     const sessionId = typeof payload?.sessionId === "string" ? payload.sessionId : undefined;
@@ -95,6 +107,8 @@ export function registerChatUiIpc(deps: ChatUiIpcDependencies): void {
       providerId: cap.id,
       model: settings.model,
       preference: settings.reasoning,
+      // 档案里声明的档位；没声明时渲染端按型号规则表回退。
+      reasoningLevels: settings.reasoningLevels,
       thinkingOverride: resolveVendorRuntimeSettings(settings).thinkingOverride,
       // PRO 档（reasoning.mode="pro"）仅 Responses 协议存在，UI 据此决定是否显示
       transport: resolveTransport({

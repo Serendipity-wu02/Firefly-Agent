@@ -2,7 +2,7 @@ import { Popover, Slider } from "antd";
 import { useEffect, useState } from "react";
 import { useTranslation } from "../../../i18n";
 import { computeReasoningDropdown, type ReasoningDropdownView } from "../../../../lib/reasoning-dropdown";
-import type { ReasoningPreference } from "../../../../../shared/reasoning";
+import type { ReasoningLevelsConfig, ReasoningPreference } from "../../../../../shared/reasoning";
 
 interface ModelProfile { id: string; provider: string; displayName?: string; model: string; }
 interface ModelCatalogApi {
@@ -16,6 +16,8 @@ interface ReasoningState {
   preference?: ReasoningPreference;
   thinkingOverride?: -1 | 0 | 1;
   transport?: "openai" | "anthropic" | "responses";
+  /** Levels the connected API declared in its profile; absent = fall back to the model-name table. */
+  reasoningLevels?: ReasoningLevelsConfig;
   /** The profile the main process actually resolved (session binding, pending welcome pick, default); echoed back on write. */
   modelProfileId?: string | null;
 }
@@ -31,6 +33,17 @@ function reasoningApi(): ChatReasoningApi | undefined {
 
 function preferenceKey(preference: ReasoningPreference): string {
   return `${preference.mode}:${preference.effort ?? ""}:${preference.proMode ? "pro" : ""}`;
+}
+
+/** 滑块每一档下面的短标签：两个字以内，才能在 260px 的面板里排得下。 */
+export function shortEffortLabel(label: string): string {
+  switch (label) {
+    case "跟随模型": return "自动";
+    case "关闭": return "关";
+    case "开启": return "开";
+    case "始终开启": return "常开";
+    default: return label;
+  }
 }
 
 function ChevronIcon({ direction = "down" }: { direction?: "down" | "right" | "left" }) {
@@ -82,7 +95,7 @@ export function ModelEffortControl({ sessionId, activeProfileId, onSelectModelPr
       const state = await api.getReasoningState({ sessionId, modelProfileId: activeProfileId });
       setProviderKey(state.providerKey);
       setResolvedProfileId(state.modelProfileId ?? null);
-      setView(computeReasoningDropdown(state.providerId, state.model, state.preference, state.thinkingOverride, state.transport));
+      setView(computeReasoningDropdown(state.providerId, state.model, state.preference, state.thinkingOverride, state.transport, state.reasoningLevels));
     } catch {
       setView(undefined);
     }
@@ -134,7 +147,9 @@ export function ModelEffortControl({ sessionId, activeProfileId, onSelectModelPr
           max={items.length - 1}
           step={1}
           dots
-          marks={Object.fromEntries(items.map((_, index) => [index, ""]))}
+          marks={Object.fromEntries(items.map((item, index) => [index, {
+            label: <span className={`cy-effort__mark${index === shownIndex ? " is-current" : ""}${item.disabled ? " is-disabled" : ""}`}>{shortEffortLabel(item.label)}</span>,
+          }]))}
           value={shownIndex}
           tooltip={{ open: false }}
           aria-label={t("modelEffort.sliderLabel")}

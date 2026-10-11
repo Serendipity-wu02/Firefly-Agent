@@ -84,6 +84,8 @@ const chatApi = {
   close: () => ipcRenderer.send(IPC.CHAT_CLOSE),
   toggleMaximize: () => ipcRenderer.send(IPC.CHAT_TOGGLE_MAXIMIZE),
   isMaximized: () => ipcRenderer.invoke(IPC.CHAT_IS_MAXIMIZED),
+  startWindowDrag: () => ipcRenderer.send(IPC.CHAT_WINDOW_DRAG_START),
+  endWindowDrag: () => ipcRenderer.send(IPC.CHAT_WINDOW_DRAG_END),
   getEnabledStickers: () => ipcRenderer.invoke(IPC.STICKERS_GET_ENABLED),
   /** 从 dataTransfer.files 或 fileInput.files 提取路径后批量摄入。
    *  路径提取在 preload（webUtils.getPathForFile），避免新版 Electron 中 File.path 不可用的问题。
@@ -321,6 +323,7 @@ const settingsApi = {
   saveModelProfile: (profile: unknown) => ipcRenderer.invoke(IPC.SETTINGS_MODEL_PROFILE_SAVE, profile),
   deleteModelProfile: (id: string) => ipcRenderer.invoke(IPC.SETTINGS_MODEL_PROFILE_DELETE, id),
   setDefaultModelProfile: (id: string) => ipcRenderer.invoke(IPC.SETTINGS_MODEL_PROFILE_SET_DEFAULT, id),
+  fetchModels: (input: { provider: string; baseUrl: string; apiKey: string; explicitTransport?: "openai" | "anthropic" | "responses" }) => ipcRenderer.invoke(IPC.SETTINGS_FETCH_MODELS, input),
   testConnection: (config: { provider: string; baseUrl: string; model: string; apiKey: string; explicitTransport?: "openai" | "anthropic" | "responses"; reasoning?: ReasoningPreference }) => ipcRenderer.invoke(IPC.SETTINGS_TEST_CONNECTION, config),
   testVision: (config: { baseUrl: string; apiKey: string; model: string }) => ipcRenderer.invoke(IPC.SETTINGS_TEST_VISION, config),
   // main → settings：要求切到指定标签（窗口已打开时由 main 发这个事件）

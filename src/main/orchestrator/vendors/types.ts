@@ -2,7 +2,7 @@
 // 调度层（FireflyHarness）只依赖这里的统一结构，绝不出现 if (provider === "xxx")。
 // 协议事实来源：各厂商官方 API 文档
 
-import type { ReasoningPreference } from "../../../shared/reasoning";
+import type { ReasoningLevelsConfig, ReasoningPreference } from "../../../shared/reasoning";
 import type { PromptLayerMetadata } from "../prompt-layers";
 
 export type Transport = "openai" | "anthropic" | "responses";
@@ -25,6 +25,8 @@ export interface VendorConfig {
    * commit 2 落地后由 ModelSettings 顶层镜像字段填充；commit 1 期间为可选。
    */
   reasoning?: ReasoningPreference;
+  /** 档案声明的推理档位（见 ProviderProfile.reasoningLevels）；缺省按型号规则表。 */
+  reasoningLevels?: ReasoningLevelsConfig;
 }
 
 export type OpenAIContentBlock =
