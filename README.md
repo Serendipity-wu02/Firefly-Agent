@@ -1,118 +1,131 @@
-<h1 align="center">Firefly_Agent</h1>
-
 <p align="center">
-  <strong>中文</strong> | <a href="./README.en.md">English</a>
+  <img src="./readme-assets/firefly-live2d-banner.gif" alt="Firefly_Agent — 流萤桌面伴侣与 AI 工作台" width="880" />
+</p>
+<p align="center">
+  <img src="./readme-assets/firefly-motto.svg" alt="与流萤交流，把想法变成可继续的行动。" width="720" />
+</p>
+<p align="center">
+  <img src="./readme-assets/electron.svg" alt="electron 技术标签" height="22" />
+  <img src="./readme-assets/typescript.svg" alt="typescript 技术标签" height="22" />
+  <img src="./readme-assets/react.svg" alt="react 技术标签" height="22" />
+  <img src="./readme-assets/rust.svg" alt="rust 技术标签" height="22" />
+  <img src="./readme-assets/sqlite.svg" alt="sqlite 技术标签" height="22" />
 </p>
 
-**Firefly_Agent 1.1.0** 是以《崩坏：星穹铁道》流萤为角色的 Windows Live2D AI 桌面伴侣与多模式 Agent 工作台。项目使用 Electron、TypeScript 和 React，将角色化桌面交互、对话、任务执行与开发工具放在同一应用中。
+---
 
-[项目仓库](https://github.com/Serendipity-wu02/Firefly_Agent) · [问题反馈](https://github.com/Serendipity-wu02/Firefly_Agent/issues)
 
-## 功能速览
+Firefly_Agent 是以《崩坏：星穹铁道》流萤为角色的 **Windows Live2D 桌面伴侣与 AI 工作台**。与她交流、整理资料、学习和开发项目，让对话中的想法成为可以继续的行动。
 
-| 能力 | 当前实现 |
+[项目仓库](https://github.com/Serendipity-wu02/Firefly_Agent) · [问题反馈](https://github.com/Serendipity-wu02/Firefly_Agent/issues) · [English](./README.en.md)
+
+## 主要能力
+
+- **桌面流萤与 Chat**：Live2D 角色、双击互动表情、拖动与待机动作；角色化对话、模型档案、流式回复与会话历史。
+- **Work**：处理文件、文档与知识资料，调用工具和 Skills，通过专业 Agent 协作推进任务；展示工具执行、审批与取消过程。已结束的 Work 任务可导出 Markdown，任务完成与文件完整读取分别展示。
+- **Code**：在绑定工作区中阅读和处理代码，使用 Git、LSP、AST、文件和命令工具。语言服务器需要对应语言的运行环境。
+- **模型与图像**：提供 OpenRouter 预设与 Chat Completions 入口；图像输入按用户声明、厂商模型列表、内置目录逐层判定，无法确认时按纯文本处理，具体效果取决于所选模型与服务。
+- **知识工作区**：学习、测验、笔记与进度能力位于 Work。绑定已有工作区后使用；已有 `learn/progress.md` 的 Vault 才维护进度，普通任务不会自动创建学习目录。
+- **记忆与知识**：默认使用 S/M/H 上下文、事实记忆与历史检索链，SQLite 支撑现行记忆核心；角色与文档知识 RAG 独立保留。
+- **网页与扩展**：提供网页搜索、正文读取和浏览器工作区；手动浏览与 Agent 授权分离，Agent 只在 Main 当前批准的范围内操作。支持按模式启用 Skills、用户覆盖、本地插件与隔离面板，也可配置外部 MCP 服务。
+
+当前会话模式为 **Chat / Work / Code**。Chat 不委派专业 Agent，通用工具增强需显式开启并勾选；内置角色工具保留自身开关。专业 Agent 用于 Work / Code，需要在设置中绑定可用模型档案；角色、Skills 和头像不会自动扩大工具权限。
+
+## 界面展示
+
+![真实电脑端界面截图待补充：桌面流萤与 Chat、Work 任务与工具；此图仅标示展示位置](./readme-assets/screenshots-pending.svg)
+
+**真实界面截图待补充**：桌面流萤与 Chat、Work 任务及审批、Code 与知识工作区。顶部 GIF 为现有 Live2D 模型的渲染展示，不能代替真实产品界面截图。
+
+## 环境要求
+
+| 项目 | 要求 |
 | --- | --- |
-| 桌面角色 | 流萤 Live2D 模型、点击与双击表情、拖动、动作播放与复位；Chat 动作沿用工具与事件链。12 位任务角色保留独立头像和展示身份；专业角色映射已明确配置。 |
-| Chat | 角色化对话、模型档案、流式回复与历史。称呼采用明确偏好，其次已有昵称，默认“开拓者”；原作经历不会自动成为与当前用户的共同经历。 |
-| Work | 工具调用、文件和文档处理、Skills、Task/Subagent、审批与取消。明确要求读取的文件使用本次运行证据；预算不足时确认部分范围，任务完成与完整读取分别展示；已结束任务通过原生保存对话框导出 Markdown。 |
-| Work 知识工作区 | 学习、测验、笔记与进度能力保留在 Work。先绑定工作区；只有已存在 `learn/progress.md` 的 Vault 才会维护进度，普通 Work 不自动创建 Vault、学习目录或进度文件。 |
-| Code | Git、LSP、AST、文件与命令工具，以及 Code Skills；执行沿用现有 Agent、工具权限与审批。外部语言服务器需要相应环境。 |
-| Browser / Files | 手动浏览需用户逐次原生确认精确 HTTPS 站点及其资源域；资源域不能用于页面导航，手动授权不供 Agent 使用。Agent 保留 Main 当前四个固定域名与动作范围。文件工作区支持完整 UTF-8 文本编辑（≤1 MiB），每次保存需原生确认，并检查版本哈希冲突、保护未保存草稿。真实 Windows GUI 尚未验收。 |
-| Skills | 41 项第三方 Skills 与 `diagram`、`document-reader-validation`、`knowledge-workspace`、`plugin-development` 四项项目 Skills，共 45 项；角色表达及计划/文件协议移至 `prompts/persona-support/`、`prompts/workflow-support/`，不再占用 Skill ID。保留扫描注册、模式过滤、按需正文及附件读取、用户覆盖，以及带哈希识别、备份和用户修改保护的托管更新。 |
-| Plugins | 本地安装、生命周期和隔离面板；本地可构建的 SDK、manifest/schema 契约与四个示例。尚无本项目在线市场或已发布 SDK 包的承诺。 |
-| Memory / RAG | 默认使用 S/M/H 上下文、事实记忆与历史检索链。H 缺少可信历史快照时显式报告 coverage 不足，不据此认定历史不存在，也不回退旧个人向量检索。角色与文档知识 RAG 独立保留。 |
-| Voice / Channels | 桌面 ASR 提供关闭、Mossland 和阿里云选项；明确点击录音，停止后仅填入输入框草稿，不自动发送。桌面 Call/TTS 产品入口已退役；通知提示音、内部音频与渠道语音处理保留。QQ Music、飞书、微信、QQ 等服务由用户配置；真实麦克风和外部服务仍待验收。 |
+| 系统 | Windows 为当前主要开发与验收平台 |
+| Node.js | `>=24 <25` |
+| npm | `>=10`；项目声明 `npm@11.17.0` |
+| 模型服务 | 自行配置应用支持的协议、服务地址、模型和凭据 |
+| 可选外部工具 | 按工作流准备语言服务器、办公程序、ASR、知识向量资源与渠道服务 |
 
-模型、工具、Skills 和插件共享当前运行与权限机制。Skill 说明和头像不会自动扩大工具权限；启用状态和可用模式由现有配置决定。
+本地打包还需要 Rust/Cargo Windows MSVC 与 C++ 构建工具，用于截图及历史辅助程序。源码不附带可直接使用的模型、语音资源或账户凭据。
 
-## 当前状态
+## 安装与运行
 
-当前源码是 Firefly 独立维护的产品基线。原项目保留来源和历史兼容用途，运行和构建无需读取原项目工作树。
-
-**历史已验证范围（vNext 调整前，不代表当前版本验收）**：独立源码构建，Main/Preload/Renderer 类型与构建检查，Main 和 Renderer 隔离基础启动，Chat / Work / Learn / Code 入口，39+8 Skills 注册，ZIP 恶意及正常归档回归，真实旧 Skills 归档的托管升级与用户保护，定向自动测试，XLSX `find-label` 基础 Smoke，以及本地插件 SDK/示例编译与 Mock。
-
-**vNext 布局基线验证（移除两项技能前）**：冻结源码后的完整测试为 538 个文件通过，4766 项通过、1 项因 Windows 符号链接权限跳过；Main/Preload/Renderer 类型检查、完整构建、插件 SDK 与四个示例验证通过。隔离用户目录中确认 Main/Renderer 启动、Chat / Work / Code 切换、44 项 Skills 注册及正常退出。旧 Learn 会话备份后迁移为 Work，新 Learn 请求拒绝；真实用户迁移未执行。
-
-**当前 vNext 边界**：Main 使用12个持久专业 Agent 和显式模型档案路由；Chat不委派，Work/Code按模式提供角色。设置页可绑定已保存档案，未配置时明确失败。旧 public task 工具已退出当前运行链，旧 schema1 历史保持可读。离线自动验证不代替真实模型、完整 GUI 或外部服务验收。
-
-**仍未完整验收**：真实模型端到端、深度 GUI、外部 Office/LibreOffice/.NET 完整流程、真实用户环境、安装器升级、跨平台、麦克风录音、真实 ASR 服务、QQ Music 完整审批链、持续帧率及公开发布所需的全部资产再分发许可。
-
-Skill 附件分页去重已按可信运行域隔离，同一运行的调度器调用共享去重记录，不跨运行或角色串用。首次历史列表为空事件的原始根因仍未确定；已修复读取失败伪装为空列表与失败后覆盖文件的问题，成功重开不改变原始根因结论。
-
-定向结果不表示全量测试或全部功能完成。当前不承诺公开安装包或自动更新，自动更新保持关闭。
-
-## 开发环境与启动
-
-需要 Windows、Node.js `>=24 <25` 和 npm `>=10`；项目声明包管理器版本为 npm `11.17.0`。在仓库根目录执行：
+在 PowerShell 中获取源码：
 
 ```powershell
+git clone https://github.com/Serendipity-wu02/Firefly_Agent.git
+cd Firefly_Agent
 npm ci
-$isolationRoot = Join-Path (Get-Location).Path "output\development-profile"
-New-Item -ItemType Directory -Force -Path $isolationRoot | Out-Null
+```
+
+创建仓库内的开发隔离目录，并启动：
+
+```powershell
+$fireflyDevRoot = Join-Path (Get-Location).Path "output\development-profile"
+New-Item -ItemType Directory -Force -Path $fireflyDevRoot | Out-Null
 $env:FIREFLY_RUNTIME_PROFILE = "development"
-$env:FIREFLY_ISOLATION_ROOT = (Resolve-Path -LiteralPath $isolationRoot).Path
+$env:FIREFLY_ISOLATION_ROOT = (Resolve-Path -LiteralPath $fireflyDevRoot).Path
 npm run dev
 ```
 
-`npm run dev` 显式选择 `development`。隔离根必须是已存在的绝对目录，且不能与正式 appData 相等或互为父子目录；缺失或无效时启动会拒绝继续。上述示例只在当前工作区创建隔离目录。
+隔离根必须是已存在的绝对目录，不能与正式 appData 目录相等或互为父子目录；无效配置会拒绝启动。`npm run dev` 显式选择 development，数据位于上述隔离根下的 `Firefly-development`。
 
-从当前仓库的构建产物启动（在已设置上述环境变量的同一 PowerShell 会话中）：
+从当前源码构建产物启动，在**已设置上述变量的同一 PowerShell 会话**中执行：
 
 ```powershell
 npm run build
 npm start
 ```
 
-`npm start` 加载当前仓库的 `dist`，源码变化后先构建。仓库内的 `electron .` 仍是未打包实例；上述环境变量显式选择 `development` 并提供隔离根。仅设置隔离根而未指定 profile 会被拒绝。新开 PowerShell 会话时需重新设置上述变量。此示例的两个启动方式使用 `Firefly-development` 身份及 `$isolationRoot\Firefly-development` 数据目录；它们共用这一开发目录，开启另一实例前正常退出当前实例。正式打包应用默认选择 `production`，不使用这个开发隔离目录。
+`npm start` 加载当前仓库的 dist；源码变化后先构建。新终端需重新设置开发隔离变量，另一实例启动前先正常退出当前实例。
 
-在应用设置中创建模型档案，填写服务实际支持的协议、地址、模型和自己的凭据，再选择档案。仓库不附带密钥或可直接使用的模型配置。发送给模型的对话、所选资料和工具结果可能离开本机，取决于你选择的服务与操作。
-
-Windows 批处理遵循同一开发隔离规则：`setup.bat` 只准备构建产物，不持久化隔离目录。已按上面的步骤创建目录并构建后，新 PowerShell 会话可显式传入目录，无需重新设置环境变量：
-
-```powershell
-.\start.bat (Resolve-Path -LiteralPath ".\output\development-profile").Path
-```
-
-`start.bat` 使用本仓库的构建 CLI；参数只在这次启动中设置隔离根。无参数时沿用当前进程的 `FIREFLY_ISOLATION_ROOT`（或旧显式 smoke 隔离根），仍选择 `development`。缺少隔离根时会提示用法并以错误码 1 退出；无效路径或正式目录重叠仍由 Main 拒绝，应用失败码会保留。双击启动不会继承另一终端里临时设置的变量，需要已继承的显式隔离根；脚本不会自动创建目录。
-
-## 检查与本地打包
-
-以下命令来自当前 [package.json](./package.json)：
+常用开发检查与本地解包准备，入口均见 [package.json](./package.json)：
 
 ```powershell
 npm run check:renderer
 npm test
-npm run build
 npm run check:plugin-sdk
 npm run test:plugin-examples
-```
-
-Main 和 Preload 的 TypeScript 检查包含在 `build:main` / `build:preload` 中。当前主验收平台为 Windows，截图路径及默认 `cmd` 集成用例仅在 Windows 执行；跨平台进程管理用例保留，Linux 的局部通过不表示 Linux 产品支持已验收。`npm test` 运行 `vitest.config.ts` 定义的套件，不包含脚本 Node 测试、Rust 测试、安装器或真实外部服务验收；脚本入口见 [scripts/README.md](./scripts/README.md)。Windows Bash 集成测试需将 `FIREFLY_TEST_BASH` 设置为本机实际存在的 Git Bash `bash.exe` 绝对路径。
-
-正式 Skills 目录变化时先核对 `vendor/firefly-skills/skills-manifest.json` 与来源通知，并运行 `npm run validate:skills`。构建直接打包已核验的目录，不生成 Skills ZIP。截图助手使用 Rust/Cargo Windows MSVC 工具链与 C++ 构建依赖。本地解包准备为：
-
-```powershell
 npm run validate:skills
 npm run package:win:dir
 ```
 
-该脚本构建应用和截图助手、准备经校验的 MinGit，并生成 Windows 解包目录；不等于安装器验收或公开发布。该准备流程不发布 Release、SDK 或安装器。用户数据、模型权重、语音资源和测试日志不得进入源码或产物。
+`package:win:dir` 构建应用、原生助手并准备 MinGit，生成 Windows 解包目录；不等于安装器升级、真实环境或公开发布验收。Windows Bash 集成测试需要按本机实际安装配置 `FIREFLY_TEST_BASH`。更多脚本见 [scripts/README.md](./scripts/README.md)。
 
-## 外部服务前提
+## 配置与使用
 
-- **桌面 ASR**：在设置中选择关闭、Mossland 或阿里云，并配置相应服务凭据。录音需明确操作和麦克风许可；音频会发送至所选服务，停止后转写仅填入草稿。项目不附带可用的本地 ASR 环境，真实麦克风与服务转写尚未验收。
-- **QQ Music**：需要运行且可访问的桌面会话。状态与控制走现有工具权限链，分别报告命令提交和观察到的状态变化。控制会影响当前播放，应用内完整审批链仍待验收，没有网易云自动回退。
-- **知识 RAG / BGE-M3**：向量检索需要用户配置相应模型资源；未配置时明确不可用。不自动下载模型，不借用主 Chat 档案充当向量配置；角色与文档知识 RAG 不承担默认 S/M/H 个人记忆或历史检索。
-- **办公与渠道**：按实际工作流准备 Python 模块、LibreOffice、.NET、语言服务器，以及渠道服务和授权。静态说明或一次基础 Smoke 不能证明所有外部程序可用。
+1. 在设置中创建模型档案，填写实际服务支持的协议、地址、模型和自己的凭据，保存后选择档案。OpenRouter 可使用现有预设；图像能力可选自动、图片或仅文本，用户覆盖会替换厂商列表声明。
+2. 选择 Chat、Work 或 Code。Work / Code 按任务绑定工作区，并为需要的专业 Agent 配置已保存的模型档案；未配置时会明确报错。
+3. 按需要开启工具、Skills、插件或 MCP。涉及文件写入、命令执行和外部操作时，遵循当前审批与取消机制。
+4. 知识工作区使用已有 Obsidian Vault 或学习资料目录；学习进度依赖现有文件和服务结果，不保证每次回复都会写入。
+5. 桌面 ASR 可选择关闭、Mossland 或阿里云。明确操作开始录音，停止后转写只填入输入框草稿，不自动发送；桌面 Call / TTS 产品入口已退役。
+6. 日程入口位于聊天侧栏的 **More / 更多** 菜单。设置中的连接手机页保留渠道配置，Firefly 手机 App 目前仅为预留接入位，配对按钮不可用。
+
+默认记忆链区分当前上下文、事实记忆与历史检索。H 缺少可信历史快照时会报告覆盖不足，不能据此认定历史不存在；知识 RAG / BGE-M3 需要独立配置，不承担默认个人记忆或历史检索。
+
+正式 production 数据默认位于 `%APPDATA%\Firefly`，开发实例使用上述隔离目录。设置、凭据、历史与用户 Skills 不属于 Git 或安装包；手工处理前退出并备份，保留原目录。根据所选服务与操作，对话、资料、工具结果和录音可能发送至外部服务。
+
+## 当前状态与限制
+
+项目处于持续开发中。功能入口、自动检查和真实环境验收分别说明，不引用历史测试数量作为当前版本结论。
+
+- **需自行准备**：模型服务、知识向量资源、ASR、QQ Music、办公程序、语言服务器与渠道凭据；入口存在不表示相关服务已配置可用。
+- **仍需完整验收**：真实模型端到端、深度 GUI、真实用户环境、麦克风及 ASR、QQ Music 完整审批链、外部办公流程、安装器升级和跨平台兼容。
+- **浏览器边界**：手动授权不授予 Agent 操作权；Agent 仅能使用已批准的域名与动作，不能自行授权。完整真实 Windows GUI 仍待验收。
+- **界面边界**：设置页暂时只有中文，聊天窗口语言选项重启后生效；完整英文设置 UI 尚未完成。旧 Live2D action tool 与运行状态卡片已移除，桌宠保留双击表情与工具执行时的工作表情。
+- **模型兼容边界**：OpenRouter 预设、推理字段映射与图像能力判定已有接入；推理内容回放、流式错误的完整兼容和真实模型端点仍需针对具体上游继续验收，不承诺所有模型能力。
+- **维护边界**：首次历史列表为空的原始根因仍未确定，已修复读取失败伪装为空列表及随后覆盖文件的问题；成功重开不改变根因结论。
+- **发布状态**：自动更新保持关闭；当前不承诺公开安装包、本项目在线插件市场或已发布 SDK 包。角色素材的公开再分发材料仍需归档。
 
 ## 架构与目录
 
-应用从 `src/main/index.ts` 启动，编译入口为 `dist/main/main/index.js`；Preload 提供受控 IPC，React 与 Live2D 负责窗口和桌面展示。Chat / Work / Code 三模式使用现有 Firefly Agent 执行链，工具、Task、审批与取消保持各自所有者。
+应用从 `src/main/index.ts` 启动，编译入口为 `dist/main/main/index.js`；Preload 提供受控 IPC，React 与 Live2D 负责窗口和桌面展示。
 
 | 路径 | 职责 |
 | --- | --- |
 | `src/main/`、`src/preload/`、`src/renderer/` | 应用服务、受控桥接、React 界面与 Live2D |
-| `src/main/orchestrator/` | Firefly Agent 编排、工具执行、Task/Subagent 与权限集成 |
+| `src/main/orchestrator/` | Firefly Agent 编排、工具执行、专业 Agent 与权限集成 |
 | `src/main/skills/`、`skills/` | Skills 扫描注册、读取及项目内置内容 |
 | `vendor/firefly-skills/`、`scripts/packaging/` | 正式继承 Skills 目录、来源/许可、历史适配依据与打包校验 |
 | `src/plugins/`、`packages/plugin-sdk/`、`examples/` | 插件宿主、本地 SDK、schema 与开发示例 |
@@ -120,21 +133,14 @@ npm run package:win:dir
 | `prompts/`、`assets/` | 分层角色提示词、世界观及产品资源 |
 | `native/`、`electron-builder.yml` | 原生助手源码与应用打包配置 |
 
+开发请阅读 [AGENTS.md](./AGENTS.md)，按修改范围验证并说明未覆盖项。问题反馈与 PR 不要附密钥、私人对话或用户数据。
 
-## 数据与升级保护
+## 许可证与角色素材
 
-正式 `production` 的默认用户数据目录为 `%APPDATA%\Firefly`。技术包名 `firefly-agent`、展示名 `Firefly_Agent`、运行数据身份 `Firefly` 和 appId `com.serendipitywu02.firefly` 各有用途；改展示名不重建数据目录。
+源码采用 [MIT License](./LICENSE)。部分实现源自 [Cyrene-Agent](https://github.com/Playa-0v0/Cyrene-Agent)，保留原版权声明；第三方依赖、Skills、模型、图片与角色 IP 分别遵循各自许可或授权。
 
-设置、模型档案、Chat / Work 历史、运行记录及用户 Skills 不属于 Git 或安装包。手工处理前正常退出并备份，保留旧目录，不覆盖已有目标或直接混合目录。集中迁移处理旧格式和凭据解密，新数据优先，冲突保留并诊断，读取失败不写回空数据。Skills 更新只处理可识别的托管内容，保留用户修改和同名自定义文件。
+项目所有者确认取得流萤模型原作者授权；仓库尚未归档可核对的作者署名、授权原文、所涵盖文件与再分发范围，不能由此确认公开再分发的具体范围。模型授权不自动覆盖头像、任务肖像、图标、贴图或派生渲染素材，源码 MIT 许可也不授予这些素材的再分发权。详见 [MODEL_LICENSE.md](./MODEL_LICENSE.md) 与 [THIRD_PARTY_NOTICES.md](./THIRD_PARTY_NOTICES.md)。
 
-## 开发流程
+流萤及《崩坏：星穹铁道》相关角色形象与知识产权归 HoYoverse / 米哈游及相应权利人所有，本项目为非官方项目。
 
-后续开发在 `firefly-mini-v1.1.x` 完成提交与验证，再通过 PR 合入 `main`。按修改范围执行实际检查并说明未覆盖项。请阅读 [AGENTS.md](./AGENTS.md)；Issue 与 PR 不要附密钥、私人对话或用户数据。
-
-## 维护与许可
-
-Firefly_Agent 由 Serendipity-wu02 独立维护。源码版权与许可见 [LICENSE](./LICENSE)。
-
-源码见完整 [MIT License](./LICENSE)。第三方 Skills、依赖、Live2D 模型、头像、角色 IP 和其他资产分别遵循自己的许可或授权；MIT 源码许可不自动授予素材再分发权。来源与边界见 [THIRD_PARTY_NOTICES.md](./THIRD_PARTY_NOTICES.md)及 [MODEL_LICENSE.md](./MODEL_LICENSE.md)。公开资产再分发检查继续保留。
-
-流萤及《崩坏：星穹铁道》相关知识产权归其权利人，本项目为非官方项目。
+横幅使用仓库现有模型的渲染画面。五枚技术徽章使用 Shields 官方生成图形与 Simple Icons 标志，来源及许可见 [图标说明](./readme-assets/ICON_SOURCES.md)；技术标签不表示实测通过或官方关联。
