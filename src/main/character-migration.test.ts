@@ -57,11 +57,12 @@ describe("Firefly character assets", () => {
     }
     expect(read("prompts/soul.md")).toMatch(/^# 流萤 · 人格核心/);
     expect(read("prompts/soul.md")).not.toMatch(/^character:|^daily_mode:|^work_mode:/m);
-    expect(read("prompts/soul.md")).toContain("## 对话示例");
-    expect(read("prompts/soul.md")).toContain("共同经历过的见面、相处和约定，只能依据当前对话或明确提供的有效记忆");
+    expect(read("prompts/soul.md")).toContain("火萤Ⅳ型战略强袭装甲");
+    expect(read("prompts/soul.md")).toContain("AR-26710");
+    expect(read("prompts/soul.md")).toContain("没有对应聊天记录时，不声称记得与当前用户一起");
     for (const file of ["prompts/canon_quotes.md", "prompts/canon_quotes_lite.md"]) {
       const quotes = read(file);
-      expect(quotes).toContain("火萤IV型战略强袭装甲");
+      expect(quotes).toContain("不是官方台词");
       expect(quotes).not.toContain("火萤V型战略强袭装甲");
       expect(quotes).not.toContain("分享·心愿：");
     }
