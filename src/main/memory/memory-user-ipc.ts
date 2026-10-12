@@ -25,10 +25,8 @@ import {
   stickerManagerWindow,
 } from "../windows/window-state";
 import type { EmbeddingIndexService } from "../services/embedding/embedding-index-service";
-import { memoryStore } from "./memory-store";
-import { exportMemoryToObsidianVault, syncToBoundVault } from "./obsidian-exporter";
-import { loadObsidianVaultConfig, saveObsidianVaultConfig, unbindVault } from "./obsidian-vault-config";
-import { startVaultWatcher, stopVaultWatcher } from "./obsidian-importer";
+import { loadObsidianVaultConfig } from "./obsidian-vault-config";
+import { startVaultWatcher } from "./obsidian-importer";
 
 export interface MemoryUserToolIpcDependencies {
   get windowManager(): WindowManager | null;
@@ -47,13 +45,9 @@ function broadcastToAuxWindows(channel: string, payload: unknown): void {
   }
 }
 
-const L0_EDITABLE_KEYS = ["preferredName", "occupation", "longTermInterests", "language", "permanentNote"];
-const L1_EDITABLE_KEYS = ["recentGoals", "recentPreferences", "currentProject"];
-
 export function registerMemoryUserToolIpc(deps: MemoryUserToolIpcDependencies): void {
   const { embeddingIndexService } = deps;
   const personalMemoryRetired = deps.personalMemoryMode === "smh";
-  const retired = () => ({ ok: false as const, code: "MEMORY_LEGACY_RETIRED" as const });
   const ipc = deps.ipc ?? createIpcScope();
   // 注意：windowManager 不解构，统一用 deps.windowManager 实时读取 getter。
   // registerMemoryUserToolIpc 在模块加载阶段调用，那时 windowManager 仍为 null，
@@ -148,101 +142,6 @@ export function registerMemoryUserToolIpc(deps: MemoryUserToolIpcDependencies): 
   ipc.handle(IPC.MEMORY_PANEL_DELETE_IMPORTED_DOC, (_event, payload: { importId: string; fileName?: string }) => {
     const deleted = deleteImportedDoc(payload.importId, payload.fileName);
     return { ok: true, deleted };
-  });
-
-  ipc.handle(IPC.MEMORY_PANEL_SAVE_L0, async (_event, raw: Record<string, unknown>) => {
-    if (personalMemoryRetired) return retired();
-    const patch: Partial<{
-      preferredName: string;
-      occupation: string;
-      longTermInterests: string;
-      language: string;
-      permanentNote: string;
-    }> = {};
-    for (const key of L0_EDITABLE_KEYS) {
-      if (key in raw && typeof raw[key] === "string") {
-        (patch as Record<string, unknown>)[key] = (raw[key] as string).trim();
-      }
-    }
-    await memoryStore.updateL0(patch);
-    return { ok: true };
-  });
-
-  ipc.handle(IPC.MEMORY_PANEL_SAVE_L1, async (_event, raw: Record<string, unknown>) => {
-    if (personalMemoryRetired) return retired();
-    const patch: Partial<{
-      recentGoals: string;
-      recentPreferences: string;
-      currentProject: string;
-    }> = {};
-    for (const key of L1_EDITABLE_KEYS) {
-      if (key in raw && typeof raw[key] === "string") {
-        (patch as Record<string, unknown>)[key] = (raw[key] as string).trim();
-      }
-    }
-    await memoryStore.updateL1(patch);
-    return { ok: true };
-  });
-
-  // ── Obsidian Vault 绑定 / 同步 / 配置 ──
-
-  // 一次性导出（不绑定）：弹目录选择框 → 调导出器
-  ipc.handle(IPC.MEMORY_EXPORT_OBSIDIAN_VAULT, async () => {
-    if (personalMemoryRetired) return retired();
-    const result = await dialog.showOpenDialog({
-      title: "选择 Obsidian Vault 导出位置",
-      properties: ["openDirectory", "createDirectory"],
-    });
-    if (result.canceled || result.filePaths.length === 0) {
-      return { ok: false, canceled: true };
-    }
-    return exportMemoryToObsidianVault(result.filePaths[0]);
-  });
-
-  // 绑定 vault：弹目录选择 → 保存路径 → 立即同步一次 → 启动回流监听
-  ipc.handle(IPC.OBSIDIAN_VAULT_BIND, async () => {
-    if (personalMemoryRetired) return retired();
-    const result = await dialog.showOpenDialog({
-      title: "选择要绑定的 Obsidian Vault 文件夹",
-      properties: ["openDirectory", "createDirectory"],
-    });
-    if (result.canceled || result.filePaths.length === 0) {
-      return { ok: false, canceled: true };
-    }
-    const vaultPath = result.filePaths[0];
-    saveObsidianVaultConfig({ vaultPath });
-    // 绑定后立即同步一次
-    const syncResult = await syncToBoundVault();
-    // 启动 Obsidian → PMRS 回流监听
-    startVaultWatcher(vaultPath);
-    return { ok: syncResult.ok, vaultPath, fileCount: syncResult.fileCount, error: syncResult.error };
-  });
-
-  // 解绑：先停监听再清配置
-  ipc.handle(IPC.OBSIDIAN_VAULT_UNBIND, () => {
-    if (personalMemoryRetired) return retired();
-    stopVaultWatcher();
-    unbindVault();
-    return { ok: true };
-  });
-
-  // 读配置
-  ipc.handle(IPC.OBSIDIAN_VAULT_GET_CONFIG, () => {
-    if (personalMemoryRetired) return retired();
-    return loadObsidianVaultConfig();
-  });
-
-  // 设置自动同步开关
-  ipc.handle(IPC.OBSIDIAN_VAULT_SET_AUTO_SYNC, (_event, autoSync: boolean) => {
-    if (personalMemoryRetired) return retired();
-    const updated = saveObsidianVaultConfig({ autoSync: Boolean(autoSync) });
-    return { ok: true, config: updated };
-  });
-
-  // 立即同步
-  ipc.handle(IPC.OBSIDIAN_VAULT_SYNC_NOW, async () => {
-    if (personalMemoryRetired) return retired();
-    return syncToBoundVault();
   });
 
   ipc.handle(IPC.USER_GET_PROFILE, () => loadUserProfile());
