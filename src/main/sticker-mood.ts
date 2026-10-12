@@ -20,11 +20,13 @@ const NEGATIVE_CUES = /生气|不高兴|不开心|不爽|哼|气死|讨厌|恼�
 const POSITIVE_CUES = /哈哈|嘿嘿|嘻嘻|开心|高兴|太好了|好呀|好啊|谢谢|喜欢|爱你|好棒|真棒|期待|happy|glad|thanks|great|love|😊|😄|😁|🥰|❤/i;
 /** “没生气”“别生气”“不会生气”这类否定不算不悦语气。 */
 const NEGATED_NEGATIVE = /(?:没有?|不会?|别|才不|并不)[^，。,.!！?？\s]{0,2}(?:生气|不高兴|不开心|不爽|恼火|火大)/g;
+/** 英文否定：“I'm not angry”“don't be annoyed”“never mad” 等。 */
+const NEGATED_NEGATIVE_EN = /(?:\bnot\b|\bnever\b|\bno longer\b|n['’]t\b)[^.!?,，。\n]{0,16}?\b(?:angry|annoyed|upset|mad)\b/gi;
 const NEGATIVE_PHRASES = /不高兴|不开心|不爽/g;
 
 /** 回复是否带明确的不悦语气：有不悦词（排除否定用法），且没有正面语气词。 */
 export function replyReadsAsDispleased(reply: string): boolean {
-  const withoutNegations = reply.replace(NEGATED_NEGATIVE, " ");
+  const withoutNegations = reply.replace(NEGATED_NEGATIVE, " ").replace(NEGATED_NEGATIVE_EN, " ");
   if (!NEGATIVE_CUES.test(withoutNegations)) return false;
   // “不开心”里含“开心”，先去掉这些短语再判断有没有正面语气。
   return !POSITIVE_CUES.test(withoutNegations.replace(NEGATIVE_PHRASES, " "));
@@ -39,15 +41,25 @@ interface LastSticker {
   at: number;
 }
 
+export interface StickerMoodOptions {
+  /** 用户自定义贴图占用了内置 ID 时，按自定义处理：不套用内置情绪。 */
+  isCustom?: (stickerId: string) => boolean;
+  now?: number;
+}
+
 export interface StickerMoodGuard {
   /** 去掉当前不该出现的负面表情包，其余原样返回。 */
-  filterIndex(index: StickerEmbeddingEntry[], reply: string, conversationKey: string, now?: number): StickerEmbeddingEntry[];
+  filterIndex(index: StickerEmbeddingEntry[], reply: string, conversationKey: string, options?: StickerMoodOptions): StickerEmbeddingEntry[];
   /** 记录这个会话最终发出的表情包。 */
-  recordSent(conversationKey: string, stickerId: string, now?: number): void;
+  recordSent(conversationKey: string, stickerId: string, options?: StickerMoodOptions): void;
 }
 
 export function createStickerMoodGuard(): StickerMoodGuard {
   const last = new Map<string, LastSticker>();
+
+  function builtInMood(stickerId: string, isCustom?: (stickerId: string) => boolean): StickerMood | undefined {
+    return isCustom?.(stickerId) ? undefined : moodOfAutoSticker(stickerId);
+  }
 
   function negativeAllowed(reply: string, conversationKey: string, now: number): boolean {
     if (!replyReadsAsDispleased(reply)) return false;
@@ -56,13 +68,14 @@ export function createStickerMoodGuard(): StickerMoodGuard {
   }
 
   return {
-    filterIndex(index, reply, conversationKey, now = Date.now()) {
-      if (!index.some(entry => moodOfAutoSticker(entry.id) === "negative")) return index;
+    filterIndex(index, reply, conversationKey, { isCustom, now = Date.now() } = {}) {
+      const negative = (entry: StickerEmbeddingEntry) => builtInMood(entry.id, isCustom) === "negative";
+      if (!index.some(negative)) return index;
       if (negativeAllowed(reply, conversationKey, now)) return index;
-      return index.filter(entry => moodOfAutoSticker(entry.id) !== "negative");
+      return index.filter(entry => !negative(entry));
     },
-    recordSent(conversationKey, stickerId, now = Date.now()) {
-      const mood = moodOfAutoSticker(stickerId);
+    recordSent(conversationKey, stickerId, { isCustom, now = Date.now() } = {}) {
+      const mood = builtInMood(stickerId, isCustom);
       if (mood) last.set(conversationKey, { mood, at: now });
     },
   };

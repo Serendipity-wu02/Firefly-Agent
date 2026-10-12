@@ -158,6 +158,8 @@ export interface OnRunFinishedDeps {
     threshold: number,
   ) => Promise<{ id: string } | null | undefined>;
   loadStickerSettings: () => Record<string, boolean>;
+  /** 用户自定义贴图占用了内置 ID 时返回 true；情绪守卫据此不把内置情绪套到自定义贴图上。 */
+  isCustomSticker?: (stickerId: string) => boolean;
   recordRelationshipTurn: (input: RelationshipTurnInput) => Promise<unknown> | unknown;
 }
 
@@ -936,7 +938,7 @@ export async function onAgentRunFinished(
   const moodKey = conversationId ?? channel ?? "desktop";
   // 情绪守卫：回复不是明确不悦、或刚发过正面表情包时，生气类表情包不参与匹配。
   const eligibleIndex = Array.isArray(stickerIndex)
-    ? stickerMoodGuard.filterIndex(stickerIndex as StickerEmbeddingEntry[], chatContent, moodKey)
+    ? stickerMoodGuard.filterIndex(stickerIndex as StickerEmbeddingEntry[], chatContent, moodKey, { isCustom: deps.isCustomSticker })
     : stickerIndex;
   // 只有代码/公式时 stickerQuery 为空：不请求 embedding，避免技术内容误触发表情。
   if (settings.stickerEnabled && eligibleIndex && stickerQuery) {
@@ -952,7 +954,7 @@ export async function onAgentRunFinished(
   }
   const stickerSettings = deps.loadStickerSettings();
   const sticker = stickerCandidate && stickerSettings[stickerCandidate] !== false ? stickerCandidate : null;
-  if (sticker) stickerMoodGuard.recordSent(moodKey, sticker);
+  if (sticker) stickerMoodGuard.recordSent(moodKey, sticker, { isCustom: deps.isCustomSticker });
 
   // 返回 sticker 决定：
   // - 桌面聊天窗由 AG-UI bridge 发到本次 run 的源窗口，避免只投递旧 chatWindow

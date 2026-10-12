@@ -55,6 +55,7 @@ import {
 import { buildModePrompt } from "./mode-prompt-profile";
 import { resolveRunCapabilities } from "./run-capabilities";
 import { loadStickerSettings } from "./sticker-settings";
+import { loadUserStickerManifest } from "../sticker-storage";
 import type { LlmClient } from "../services/llm/llm-client";
 import type {
   PluginTurnCompletedEvent,
@@ -254,6 +255,7 @@ export function createAgentRuntime(rawDeps: AgentRuntimeDeps): AgentRuntime {
           id: string;
         } | null | undefined>) as OnRunFinishedDeps["matchSticker"],
       loadStickerSettings,
+      isCustomSticker: (id) => Object.prototype.hasOwnProperty.call(loadUserStickerManifest(), id),
       recordRelationshipTurn,
     };
   }

@@ -24,6 +24,14 @@ describe("auto sticker moods", () => {
     expect(replyReadsAsDispleased("哈哈，被你气死了，不过好开心")).toBe(false);
     expect(replyReadsAsDispleased("今天天气真好，一起去散步吧")).toBe(false);
   });
+
+  it("handles English negation and cheerful wording", () => {
+    expect(replyReadsAsDispleased("I'm a bit annoyed that you ignored me")).toBe(true);
+    expect(replyReadsAsDispleased("I'm not angry, don't worry")).toBe(false);
+    expect(replyReadsAsDispleased("Don't be upset, I am not mad at you")).toBe(false);
+    expect(replyReadsAsDispleased("I am never annoyed by questions")).toBe(false);
+    expect(replyReadsAsDispleased("Haha, I'm angry? Not at all, thanks for asking")).toBe(false);
+  });
 });
 
 describe("sticker mood guard", () => {
@@ -35,17 +43,29 @@ describe("sticker mood guard", () => {
 
   it("never turns from a happy sticker straight into an angry one", () => {
     const guard = createStickerMoodGuard();
-    guard.recordSent("c1", "firefly-cake", 1_000);
-    expect(ids(guard.filterIndex(index, "哼，我生气了", "c1", 2_000))).not.toContain("firefly-pout");
+    guard.recordSent("c1", "firefly-cake", { now: 1_000 });
+    expect(ids(guard.filterIndex(index, "哼，我生气了", "c1", { now: 2_000 }))).not.toContain("firefly-pout");
     // another conversation is unaffected
-    expect(ids(guard.filterIndex(index, "哼，我生气了", "c2", 2_000))).toContain("firefly-pout");
+    expect(ids(guard.filterIndex(index, "哼，我生气了", "c2", { now: 2_000 }))).toContain("firefly-pout");
     // after the cooldown it may happen again
-    expect(ids(guard.filterIndex(index, "哼，我生气了", "c1", 1_000 + NEGATIVE_AFTER_POSITIVE_COOLDOWN_MS + 1))).toContain("firefly-pout");
+    expect(ids(guard.filterIndex(index, "哼，我生气了", "c1", { now: 1_000 + NEGATIVE_AFTER_POSITIVE_COOLDOWN_MS + 1 }))).toContain("firefly-pout");
   });
 
   it("lets a happy sticker follow an angry one", () => {
     const guard = createStickerMoodGuard();
-    guard.recordSent("c1", "firefly-pout", 1_000);
-    expect(ids(guard.filterIndex(index, "好啦好啦，不生气了，哈哈", "c1", 2_000))).toContain("firefly-cake");
+    guard.recordSent("c1", "firefly-pout", { now: 1_000 });
+    expect(ids(guard.filterIndex(index, "好啦好啦，不生气了，哈哈", "c1", { now: 2_000 }))).toContain("firefly-cake");
+  });
+
+  it("does not apply a built-in mood to a custom sticker that reuses a built-in id", () => {
+    const guard = createStickerMoodGuard();
+    const isCustom = (id: string) => id === "firefly-pout";
+    // the user's own "firefly-pout" stays available in a cheerful reply
+    expect(ids(guard.filterIndex(index, "好呀，我们一起吃蛋糕吧", "c1", { isCustom }))).toContain("firefly-pout");
+    // and sending it does not start the happy→angry cooldown either way
+    guard.recordSent("c1", "firefly-pout", { isCustom, now: 1_000 });
+    guard.recordSent("c2", "firefly-cake", { isCustom, now: 1_000 });
+    expect(ids(guard.filterIndex(index, "哼，我生气了", "c1", { now: 2_000 }))).toContain("firefly-pout");
+    expect(ids(guard.filterIndex(index, "哼，我生气了", "c2", { now: 2_000 }))).not.toContain("firefly-pout");
   });
 });
