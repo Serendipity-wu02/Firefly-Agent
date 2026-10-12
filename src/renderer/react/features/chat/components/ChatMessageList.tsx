@@ -602,9 +602,11 @@ function RunActivityContent({
         aria-controls={`${activityId}-details`}
       >
         <span className="cy-run-activity__title">
-            <span className="cy-run-activity__art" aria-hidden="true">
-              {snapshot.processing && <DotSpinner />}
-            </span>
+            {snapshot.processing && (
+              <span className="cy-run-activity__art" aria-hidden="true">
+                <DotSpinner />
+              </span>
+            )}
             <span>{title}</span>
             {stage && <RunStageIndicator stage={stage} />}
         </span>
@@ -836,7 +838,7 @@ function FireflyMessageAvatar() {
 function UserMessageAvatar({ src }: { src: string | null }) {
   const { t } = useTranslation();
   if (src) return <img className="cy-message-avatar__image" src={src} alt={t("messageList.userAvatarAlt")} draggable={false} />;
-  return <span className="cy-message-avatar__user" aria-label={t("messageList.userAvatarAlt")} />;
+  return <span className="cy-message-avatar__user" role="img" aria-label={t("messageList.userAvatarAlt")}>U</span>;
 }
 
 function createRoles(
