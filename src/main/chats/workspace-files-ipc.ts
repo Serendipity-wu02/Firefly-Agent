@@ -169,7 +169,14 @@ export function registerWorkspaceFilesIpc(ipcOption?: IpcScope, options?: {
     owner.once("destroyed", () => owner.removeListener("will-prevent-unload", preventUnload));
   };
 
-  ipc.handle(IPC.WORKSPACE_FILES_LIST, (_event, payload: { sessionId?: string; relPath?: string }) => {
+  // 列目录 / 读文件只服务聊天主窗口的主 frame：其他窗口、浏览器来宾页或子 frame 不能借此枚举工作区。
+  const fromChatWindow = (event: IpcMainInvokeEvent): boolean => {
+    const owner = options?.getChatContents();
+    return Boolean(owner && !owner.isDestroyed() && event.sender === owner && event.senderFrame && event.senderFrame === owner.mainFrame);
+  };
+
+  ipc.handle(IPC.WORKSPACE_FILES_LIST, (event: IpcMainInvokeEvent, payload: { sessionId?: string; relPath?: string }) => {
+    if (!fromChatWindow(event)) return { ok: false as const, code: "FORBIDDEN" as const };
     if (!payload?.sessionId) return { ok: false as const, code: "NO_WORKSPACE" as const };
     const binding = chatsStore.getWorkspaceBinding(payload.sessionId);
     if (!binding) return { ok: false as const, code: "NO_WORKSPACE" as const };
@@ -177,6 +184,7 @@ export function registerWorkspaceFilesIpc(ipcOption?: IpcScope, options?: {
   });
 
   ipc.handle(IPC.WORKSPACE_FILES_READ, (event: IpcMainInvokeEvent, payload: { sessionId?: string; relPath?: string }) => {
+    if (!fromChatWindow(event)) return { ok: false as const, code: "FORBIDDEN" as const };
     if (!payload?.sessionId) return { ok: false as const, code: "NO_WORKSPACE" as const };
     const binding = chatsStore.getWorkspaceBinding(payload.sessionId);
     if (!binding) return { ok: false as const, code: "NO_WORKSPACE" as const };

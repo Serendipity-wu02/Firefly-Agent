@@ -1,12 +1,14 @@
 import type { BrowserDomInput } from "../../shared/manual-browser";
+import { ACCOUNT_ACTION_LABEL_SOURCE, ACCOUNT_PATH_SOURCE, SENSITIVE_FIELD_SOURCE } from "../../shared/browser-account-policy";
 /** Fixed source in an isolated world. Only JSON data crosses this boundary;
  * callers cannot supply JavaScript, selectors, evaluation expressions or a CDP command.
  */
 const operation = String.raw`(input => {
   const denied = () => ({ok:false});
   if (location.href !== input.url || location.protocol !== 'https:') return denied();
-  const sensitive = /password|passwd|secret|token|credit|card.?number|security.?code|one.?time|otp|social.?security/i;
-  const account = /(?:^|\/)(?:login|log-in|signin|sign-in|signup|sign-up|logout|session|sessions|oauth|authorize|settings)(?:\/|$)/i;
+  const sensitive = new RegExp(${JSON.stringify(SENSITIVE_FIELD_SOURCE)}, 'i');
+  const account = new RegExp(${JSON.stringify(ACCOUNT_PATH_SOURCE)}, 'i');
+  const accountAction = new RegExp(${JSON.stringify(ACCOUNT_ACTION_LABEL_SOURCE)}, 'i');
   const safeUrl = value => {
     try { const u = new URL(value, location.href); return u.protocol === 'https:' && !u.username && !u.password && (!u.port || u.port === '443') && !account.test(decodeURIComponent(u.pathname)) && (!input.hosts || input.hosts.includes(u.hostname)); }
     catch { return false; }
@@ -18,9 +20,9 @@ const operation = String.raw`(input => {
   };
   const textInput = el => (el.tagName === 'TEXTAREA' || (el.tagName === 'INPUT' && ['text','search','url'].includes(el.type)))
     && !el.disabled && !el.readOnly && !sensitive.test([el.name,el.id,el.autocomplete,el.getAttribute('aria-label'),el.getAttribute('placeholder')].join(' '))
-    && !el.closest('form')?.querySelector('input[type=password],input[autocomplete=one-time-code],input[type=file]');
+    && !el.closest('form')?.querySelector('input[type=password],input[autocomplete=one-time-code],input[autocomplete^=cc-],input[type=file]');
   const clickable = el => {
-    if (el.disabled || el.getAttribute('aria-disabled') === 'true' || el.closest('[download]') || /sign[ -]?in|log[ -]?in|sign[ -]?up|log[ -]?out|登录|登陆|注册|密码/i.test(el.getAttribute('aria-label') || el.innerText || el.textContent || '')) return false;
+    if (el.disabled || el.getAttribute('aria-disabled') === 'true' || el.closest('[download]') || accountAction.test(el.getAttribute('aria-label') || el.innerText || el.textContent || '')) return false;
     const a = el.closest('a[href]');
     if (a) return safeUrl(a.href) && !a.download && (!a.target || a.target === '_self');
     if (el.tagName === 'BUTTON' && el.type === 'submit' && el.form) return false;

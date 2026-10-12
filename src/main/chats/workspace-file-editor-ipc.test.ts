@@ -26,6 +26,19 @@ it("read yields a complete editable snapshot and save requires the current ChatW
  expect(await handler({ sender: owner, senderFrame: owner.mainFrame }, payload)).toMatchObject({ ok: true, content: "after" });
  expect(mocks.confirm.mock.calls[0][1]).toMatchObject({ cancelId: 0, defaultId: 0 });
 });
+it("lists and reads only for the ChatWindow main frame, not for other windows, guest pages or subframes", async () => {
+ const list = handlers.get(IPC.WORKSPACE_FILES_LIST)!, read = handlers.get(IPC.WORKSPACE_FILES_READ)!;
+ const foreign = [{ sender: new Contents(), senderFrame: owner.mainFrame }, { sender: owner, senderFrame: {} }, { sender: owner, senderFrame: null }, { sender: undefined, senderFrame: undefined }];
+ for (const event of foreign) {
+  expect(await list(event, { sessionId: "s", relPath: "" })).toEqual({ ok: false, code: "FORBIDDEN" });
+  expect(await read(event, { sessionId: "s", relPath: "text.txt" })).toEqual({ ok: false, code: "FORBIDDEN" });
+ }
+ const trusted = { sender: owner, senderFrame: owner.mainFrame };
+ expect(await list(trusted, { sessionId: "s", relPath: "" })).toMatchObject({ ok: true });
+ expect(await read(trusted, { sessionId: "s", relPath: "text.txt" })).toMatchObject({ ok: true });
+ // 被拒绝的调用方不应触发未保存草稿保护的挂接。
+ expect(owner.listenerCount("will-prevent-unload")).toBe(1);
+});
 it("navigation while the native save dialog is open invalidates approval", async () => {
  mocks.confirm.mockImplementation(async () => { owner.emit("did-start-navigation", { isMainFrame: true }); return { response: 1 }; });
  expect(await handlers.get(IPC.WORKSPACE_FILES_SAVE)!({ sender: owner, senderFrame: owner.mainFrame }, await request())).toEqual({ ok: false, code: "FORBIDDEN" });

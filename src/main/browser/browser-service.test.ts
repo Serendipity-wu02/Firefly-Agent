@@ -348,6 +348,9 @@ describe("Main-owned bounded session permission", () => {
     const open = await service.dispatch(f.sender, { kind: "open", url: "https://example.com/" });
     expect(open.ok).toBe(true);
     expect(await service.dispatch(f.sender, { kind: "navigate", browserId: open.value.browserId, url: "https://example.com/login" })).toEqual({ ok: false, code: "blocked_url" });
+    for (const path of ["join", "register", "login.php", "checkout", "wp-login.php", "oauth2/authorize"]) {
+      expect(await service.dispatch(f.sender, { kind: "navigate", browserId: open.value.browserId, url: `https://example.com/${path}` })).toEqual({ ok: false, code: "blocked_url" });
+    }
     expect(f.callbacks[0].allowsNavigation("https://github.com/")).toBe(false);
     await service.dispatch(f.sender, { kind: "close", browserId: open.value.browserId });
     expect(await service.dispatchPermission(f.sender, { kind: "get" })).toMatchObject({ ok: true, value: { status: "required" } });
