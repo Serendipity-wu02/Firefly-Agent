@@ -25,8 +25,6 @@ import {
   stickerManagerWindow,
 } from "../windows/window-state";
 import type { EmbeddingIndexService } from "../services/embedding/embedding-index-service";
-import { loadObsidianVaultConfig } from "./obsidian-vault-config";
-import { startVaultWatcher } from "./obsidian-importer";
 
 export interface MemoryUserToolIpcDependencies {
   get windowManager(): WindowManager | null;
@@ -250,12 +248,4 @@ export function registerMemoryUserToolIpc(deps: MemoryUserToolIpcDependencies): 
     console.log(`[Skill] override ${p.skillId}@${mode}=${p.enabled !== false}`);
     return { ok: true };
   });
-
-  // 启动时：若已绑定 vault，恢复 Obsidian → PMRS 回流监听
-  if (!personalMemoryRetired) {
-    const existingConfig = loadObsidianVaultConfig();
-    if (existingConfig.vaultPath) {
-      startVaultWatcher(existingConfig.vaultPath);
-    }
-  }
 }
