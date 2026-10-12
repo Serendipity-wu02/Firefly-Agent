@@ -23,43 +23,49 @@ Firefly_Agent is a **Windows Live2D desktop companion and AI workspace** featuri
 
 [Repository](https://github.com/Serendipity-wu02/Firefly_Agent) · [Issues](https://github.com/Serendipity-wu02/Firefly_Agent/issues)
 
-She lives on your desktop: she blinks, answers a double-click, and now and then sends a sticker on her own when the mood fits. When there is work to do, the same Firefly can read files, edit code, look things up and organize documents, then put the result in front of you instead of just saying "done".
+## Features
 
-## What she can do
+- **Desktop Firefly and Chat**: a Live2D character with double-click expressions, dragging, and idle animations; character conversations, model profiles, streamed replies, and conversation history.
+- **Work**: process files, documents, and knowledge materials, use tools and Skills, and collaborate with specialist Agents. Tool execution, approvals, and cancellation are visible. Finished Work tasks can be exported as Markdown; task completion and complete file reading are reported separately.
+- **Code**: read and work on code in a linked workspace using Git, LSP, AST, file, and command tools. Language servers require the appropriate language environment.
+- **Models and images**: an OpenRouter preset and Chat Completions entry point are available. Image input is determined through user declarations, provider model-list metadata, and the built-in catalog; unknown capabilities fall back to text-only input. Results depend on the selected model and service.
+- **Knowledge workspace**: learning, quizzes, notes, and progress are part of Work. Link an existing workspace first. Progress is maintained only for a Vault that already has `learn/progress.md`; ordinary tasks do not automatically create learning folders.
+- **Memory and knowledge**: the default chain uses S/M/H context, fact memory, and history retrieval, with SQLite supporting the current memory core. Character and document knowledge RAG remain separate.
+- **Web and extensions**: web search, page-text retrieval, and a browser workspace are available. Manual browsing and Agent authorization are separate; Agents operate only within the scope currently approved by Main. Skills can be enabled by mode and overridden by users. Local plugins, isolated panels, and external MCP services are also supported.
 
-**Chat, like talking to someone**
-The character is injected in layers, so tone, forms of address and the things she cares about stay consistent. Replies stream in and conversations can be revisited. She sends stickers on her own when the mood fits, and the angry one never turns up right after a happy one.
+The current conversation modes are **Chat / Work / Code**. Chat does not delegate to specialist Agents. General tool enhancement requires explicit enablement and selection; built-in character tools retain their own switches. Specialist Agents are available in Work / Code and need a usable model profile assigned in settings. Characters, Skills, and portraits do not automatically expand tool permissions.
 
-**Work, with every step visible**
-Work handles files, documents and materials; Code reads and writes code inside the workspace you link, with Git, LSP, AST and command tools. Tool calls, approvals and cancellation are shown as they happen, and a finished Work task can be exported as Markdown. Learning, quizzes, notes and progress live in Work too, once you link an existing Obsidian Vault or study-material folder.
+## Interface preview
 
-**Remembers, and tells things apart**
-Default memory has three layers: S is the current conversation context, M is fact memory across sessions, H is history retrieval. When H has no trustworthy snapshot it reports insufficient coverage instead of pretending nothing happened. The context window defaults to 1M tokens and can be changed per model profile; at 85% it is compacted automatically so long tasks do not lose the thread.
+![Real desktop screenshots are pending: Firefly and Chat, Work tasks and tools. This image only marks the intended placement.](./readme-assets/screenshots-pending.en.svg)
 
-**Reaches the web, but does not wander**
-A built-in browser workspace keeps *you browsing* and *Firefly acting for you* as two separate things. The Agent only acts inside the domains and actions you approved, does not enter sign-in, sign-up or payment pages, does not type into password, card or ID-number fields, and always treats page content as untrusted external text.
+**Real interface screenshots are still needed**: desktop Firefly and Chat, Work tasks and approvals, and Code and knowledge workspaces. The banner GIF is a render of the existing Live2D model, not a substitute for a real application screenshot.
 
-**Plugs into your own tools**
-Skills, local plugins, MCP services, and WeChat, Feishu and QQ channels (channels are chat-only by default, with no tools). Anything that starts a command or changes something outside, such as installing an MCP server or sending email, shows a confirmation card first, and the card is voided if the task is cancelled.
+## Requirements
 
-## Take a look
-
-| Light | Dark · Firefly |
+| Item | Requirement |
 | --- | --- |
-| ![Chat window (light): conversation list, replies and an automatically sent sticker](./readme-assets/screenshots/chat-light.png) | ![Chat window (dark Firefly green)](./readme-assets/screenshots/chat-dark.png) |
+| System | Windows is the primary development and validation platform |
+| Node.js | `>=24 <25` |
+| npm | `>=10`; the project declares `npm@11.17.0` |
+| Model service | Configure a supported protocol, endpoint, model, and your own credentials |
+| Optional external tools | Prepare language servers, office applications, ASR, knowledge embedding resources, and channel services as needed |
 
-![Settings · Appearance: the light and dark Firefly themes](./readme-assets/screenshots/settings-dark.png)
+Local packaging also requires the Rust/Cargo Windows MSVC toolchain and C++ build tools for the screenshot and history helpers. The source repository does not include ready-to-use models, voice resources, or account credentials.
 
-<sub>Screenshots come from the current build of this repository, using a demo conversation and an isolated development data directory. They contain no real conversations or credentials. The translucent glass of the window is drawn by the system and does not show up in them.</sub>
+## Install and run
 
-## Quick start
-
-You need Windows, Node.js `>=24 <25`, npm `>=10`, and your own model service (protocol, address, model and credentials go into settings).
+Get the source in PowerShell:
 
 ```powershell
 git clone https://github.com/Serendipity-wu02/Firefly_Agent.git
 cd Firefly_Agent
 npm ci
+```
+
+Create a development isolation directory inside the repository, then start the app:
+
+```powershell
 $fireflyDevRoot = Join-Path (Get-Location).Path "output\development-profile"
 New-Item -ItemType Directory -Force -Path $fireflyDevRoot | Out-Null
 $env:FIREFLY_RUNTIME_PROFILE = "development"
@@ -67,16 +73,18 @@ $env:FIREFLY_ISOLATION_ROOT = (Resolve-Path -LiteralPath $fireflyDevRoot).Path
 npm run dev
 ```
 
-The development instance keeps its data in that isolation directory and never touches production data (`%APPDATA%\Firefly`). After the first launch:
+The isolation root must be an existing absolute directory. It must not equal, contain, or be inside the production appData directory; invalid configurations are rejected. `npm run dev` explicitly selects development, with data stored in `Firefly-development` beneath that isolation root.
 
-1. **Settings → Models**: create a model profile, choose the protocol, enter the address and key, save it and select it. Leave the context window empty to use 1M.
-2. Pick **Chat / Work / Code**; Work and Code bind a workspace per task.
-3. Turn on tools, Skills, plugins or MCP in settings as you need them.
+To run the build output from the current source, use **the same PowerShell session with the variables above already set**:
 
-To build and start from source, run `npm run build` and then `npm start` in the same PowerShell session where the isolation variables are set. More scripts are listed in [scripts/README.md](./scripts/README.md).
+```powershell
+npm run build
+npm start
+```
 
-<details>
-<summary>Development checks and local packaging</summary>
+`npm start` loads this repository's dist output. Rebuild after source changes. Set the development isolation variables again in a new terminal, and exit the current instance before starting another one.
+
+Common development checks and local unpacked-build preparation are defined in [package.json](./package.json):
 
 ```powershell
 npm run check:renderer
@@ -87,39 +95,56 @@ npm run validate:skills
 npm run package:win:dir
 ```
 
-`package:win:dir` produces an unpacked Windows directory and needs Rust/Cargo (Windows MSVC) plus the C++ build tools to build the screenshot and history helpers; it is not an installer upgrade or a public-release validation. The Windows Bash integration tests need `FIREFLY_TEST_BASH` set for your local install, and the history-helper tests need `FIREFLY_HISTORY_PRESENCE_TEST_HELPER`.
-</details>
+`package:win:dir` builds the app and native helpers, prepares MinGit, and produces an unpacked Windows directory. This does not establish installer-upgrade, real-environment, or public-release readiness. Windows Bash integration tests require `FIREFLY_TEST_BASH` to match the actual local installation. See [scripts/README.md](./scripts/README.md) for more scripts.
 
-## Project map
+## Configure and use
+
+1. Create a model profile in settings. Enter the protocol, endpoint, model, and your own credentials supported by the service, save it, and select the profile. OpenRouter has an existing preset. Image capability can be set to Auto, Image, or Text-only; a user override replaces the provider's model-list declaration.
+2. Choose Chat, Work, or Code. Link a workspace for Work / Code tasks and assign saved model profiles to the specialist Agents you need. Missing configuration produces an explicit error.
+3. Enable tools, Skills, plugins, or MCP as needed. Follow the current approval and cancellation mechanisms for file writes, command execution, and external operations.
+4. Use an existing Obsidian Vault or learning-material directory for the knowledge workspace. Progress updates depend on existing files and service results; they are not guaranteed after every reply.
+5. Desktop ASR offers Off, Mossland, and Alibaba Cloud. Recording starts only through an explicit action. After stopping, transcription fills the input draft without automatically sending it. The desktop Call / TTS product entry points have been retired.
+6. Scheduled tasks are in the chat sidebar's **More / 更多** menu. The phone connection page in settings retains channel configuration. The Firefly mobile app is currently only a reserved connection slot, with pairing disabled.
+
+The default memory chain separates current context, fact memory, and history retrieval. H reports insufficient coverage when a trusted history snapshot is unavailable; this does not establish that no history exists. Knowledge RAG / BGE-M3 needs separate configuration and does not provide the default personal-memory or history-retrieval chain.
+
+Production data defaults to `%APPDATA%\Firefly`; development instances use the isolation directory above. Settings, credentials, history, and user Skills do not belong in Git or installation packages. Exit and back up before handling them manually, and preserve the original directory. Conversations, materials, tool results, and recordings may be sent to external services depending on the selected service and operation.
+
+## Status and limitations
+
+The project is under active development. Feature entry points, automated checks, and validation in real environments are separate claims; historical test counts are not used as evidence for the current version.
+
+- **Bring your own services and tools**: model services, knowledge embedding resources, ASR, QQ Music, office applications, language servers, and channel credentials. An available entry point does not mean its service is configured and usable.
+- **Full validation is still needed**: real-model end-to-end runs, extensive GUI testing, real user environments, microphones and ASR, the complete QQ Music approval flow, external office workflows, installer upgrades, and cross-platform compatibility.
+- **Browser boundaries**: manual consent does not authorize Agent operations. Agents can use only approved domains and actions and cannot authorize themselves. Full validation of the real Windows GUI is still pending.
+- **UI boundaries**: settings are currently Chinese-only. The chat-window language selection takes effect after a restart; a complete English settings UI is not available. The old Live2D action tool and runtime-status cards have been removed. Double-click expressions and the working expression during tool execution remain.
+- **Model compatibility**: OpenRouter presets, reasoning-field mapping, and image-capability resolution are integrated. Reasoning replay, complete streaming-error compatibility, and real model endpoints still require validation against each upstream service. Support for every model capability is not promised.
+- **Maintenance boundaries**: the original cause of the first empty history list remains unknown. Read failures being presented as empty lists and subsequent file overwrites have been fixed; a successful reopen does not resolve the original root cause.
+- **Release status**: automatic updates remain disabled. Public installation packages, a project-run online plugin marketplace, and a published SDK package are not currently promised. Documentation of public redistribution rights for character assets is still pending.
+
+## Architecture and directories
+
+The app starts from `src/main/index.ts`, compiled to `dist/main/main/index.js`. Preload provides controlled IPC; React and Live2D handle the windows and desktop presentation.
 
 | Path | Responsibility |
 | --- | --- |
-| `src/main/`, `src/preload/`, `src/renderer/` | Application services, controlled bridge, React UI and Live2D |
-| `src/main/orchestrator/` | Agent orchestration, tool execution, specialist Agents and permissions |
-| `src/main/memory-context/` | The S/M/H memory chain |
-| `src/main/browser/` | Browser workspace and network policy |
-| `src/main/skills/`, `skills/`, `vendor/firefly-skills/` | Skill discovery, reading and built-in content |
-| `src/plugins/`, `packages/plugin-sdk/`, `examples/` | Plugin host, SDK and examples |
-| `src/shared/` | IPC, data and event contracts |
-| `prompts/`, `assets/` | Layered character prompts, world-building material and product resources |
-| `native/` | Native helper source |
+| `src/main/`, `src/preload/`, `src/renderer/` | Application services, controlled bridge, React UI, and Live2D |
+| `src/main/orchestrator/` | Firefly Agent orchestration, tool execution, specialist Agents, and permission integration |
+| `src/main/skills/`, `skills/` | Skill discovery, registration, reading, and project-built content |
+| `vendor/firefly-skills/`, `scripts/packaging/` | Maintained inherited Skills, sources and licenses, historical adaptation references, and packaging checks |
+| `src/plugins/`, `packages/plugin-sdk/`, `examples/` | Plugin host, local SDK, schemas, and development examples |
+| `src/shared/` | IPC, data and event contracts, and ZIP security boundaries |
+| `prompts/`, `assets/` | Layered character prompts, world-building material, and product resources |
+| `native/`, `electron-builder.yml` | Native helper source and app packaging configuration |
 
-Read [AGENTS.md](./AGENTS.md) before developing. Do not attach secrets, private conversations or user data to issues or PRs.
-
-## Boundaries, up front
-
-- **Bring your own**: model services, language servers, office applications, speech recognition, knowledge embedding resources and channel credentials. An entry point being present does not mean the service is configured.
-- **Where data goes**: settings, credentials, history and user Skills are not in Git or installation packages. Depending on the service and operation you choose, conversations, materials, tool results and recordings may be sent to external services. Exit and back up before handling data by hand.
-- **Not fully validated yet**: real-model end-to-end runs, a complete deep Windows GUI pass, microphone and ASR, external office workflows, installer upgrades and cross-platform support. Automatic updates are off, and a public installer, a project-run online plugin marketplace or a published SDK package are not promised.
-- **UI**: settings are Chinese-only for now; the chat-window language takes effect after a restart.
-- **Model differences**: image input is decided by *your declaration → the provider's model list → the built-in catalog*, and falls back to text-only when it cannot be confirmed; reasoning replay and similar behavior depend on the upstream service.
+Read [AGENTS.md](./AGENTS.md) before development. Validate the scope of your changes and state what remains unverified. Do not attach secrets, private conversations, or user data to issues or PRs.
 
 ## License and character assets
 
-Source code is licensed under the [MIT License](./LICENSE). Some implementation derives from [Cyrene-Agent](https://github.com/Playa-0v0/Cyrene-Agent), with the original copyright notices retained. Third-party dependencies, Skills, models, images and character IP each remain subject to their own licenses or permissions.
+Source code is licensed under the [MIT License](./LICENSE). Some implementation derives from [Cyrene-Agent](https://github.com/Playa-0v0/Cyrene-Agent), with the original copyright notices retained. Third-party dependencies, Skills, models, images, and character IP each remain subject to their own licenses or permissions.
 
-The project owner confirms authorization from the original creator of the Firefly model. Verifiable creator attribution, written terms, covered files and redistribution scope have not yet been archived in the repository, so the specific scope of public redistribution cannot be established from that statement. Model authorization does not automatically cover avatars, task portraits, icons, stickers or derived renders, and the source-code MIT license grants no redistribution rights to those assets. See [MODEL_LICENSE.md](./MODEL_LICENSE.md) and [THIRD_PARTY_NOTICES.md](./THIRD_PARTY_NOTICES.md).
+The project owner confirms authorization from the original creator of the Firefly model. Verifiable creator attribution, written terms, covered files, and redistribution scope have not yet been archived in the repository, so the specific scope of public redistribution cannot be established from that statement. Model authorization does not automatically cover avatars, task portraits, icons, stickers, or derived renders, and the source-code MIT license grants no redistribution rights to those assets. See [MODEL_LICENSE.md](./MODEL_LICENSE.md) and [THIRD_PARTY_NOTICES.md](./THIRD_PARTY_NOTICES.md).
 
-Firefly and the characters and intellectual property of *Honkai: Star Rail* belong to HoYoverse / miHoYo and the respective rights holders. This is an unofficial project.
+Firefly and *Honkai: Star Rail* character imagery and related intellectual property belong to HoYoverse / miHoYo and the respective rights holders. This is an unofficial project.
 
-The banner uses a render of the model already in the repository. The five technology badges use Shields-generated graphics and Simple Icons marks; sources and licenses are in the [icon notes](./readme-assets/ICON_SOURCES.md). Technology badges do not imply tested results or an official affiliation.
+The banner uses renders of the repository's existing model. The five technology badges use official Shields graphics and Simple Icons marks; see the [icon sources and licenses](./readme-assets/ICON_SOURCES.md). Technology labels do not indicate successful validation or an official affiliation.
