@@ -67,7 +67,7 @@ describe("sticker embedding cache", () => {
     fs.writeFileSync(path.join(dir, "unrelated-vector.json"), "public-sentinel");
     const updated = provider();
     const result = await buildCachedStickerEmbeddingIndex(updated, BUILT_IN_STICKER_DESCRIPTIONS, custom, dir);
-    expect(result).toHaveLength(22);
+    expect(result).toHaveLength(30);
     expect(result.some(entry => entry.id === "playful")).toBe(false);
     expect(result.some(entry => entry.id === "user-public")).toBe(true);
     expect(updated.embedBatch).toHaveBeenCalledOnce();

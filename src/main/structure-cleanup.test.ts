@@ -17,7 +17,7 @@ it("keeps the twelve avatar mappings and excludes source persona from runtime pr
 });
 
 it("indexes only current Firefly descriptions and resources", () => {
-  expect(Object.keys(BUILT_IN_STICKER_DESCRIPTIONS)).toHaveLength(21);
+  expect(Object.keys(BUILT_IN_STICKER_DESCRIPTIONS)).toHaveLength(29);
   for (const file of Object.values(BUILT_IN_STICKER_FILES)) expect(fs.existsSync(path.join(root, "src/renderer/public/stickers", file))).toBe(true);
 });
 

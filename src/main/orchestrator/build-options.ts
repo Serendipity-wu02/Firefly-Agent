@@ -53,6 +53,8 @@ import type { SkillRouteInfo } from "./firefly-agent";
 import { filterToolsBySearchBackend, type SearchBackend } from "./search-backend-filter";
 import type { RunCapabilities } from "./run-capabilities";
 import { buildStickerEmbeddingQuery } from "../sticker-query";
+import { stickerMoodGuard } from "../sticker-mood";
+import type { StickerEmbeddingEntry } from "../sticker-embedder";
 import { isPlanReadOnly, getPlanState } from "./plan-mode";
 import { policyFor } from "../permission-policy";
 import { resolveTranscriptRetainTokens, type MaterializedTranscript } from "./conversation-transcript-context";
@@ -931,13 +933,18 @@ export async function onAgentRunFinished(
   const stickerIndex = deps.getStickerEmbeddingIndex?.() ?? deps.stickerEmbeddingIndex;
   const stickerQuery = buildStickerEmbeddingQuery(chatContent, sideEffectUserText);
   let stickerCandidate: string | null = null;
+  const moodKey = conversationId ?? channel ?? "desktop";
+  // 情绪守卫：回复不是明确不悦、或刚发过正面表情包时，生气类表情包不参与匹配。
+  const eligibleIndex = Array.isArray(stickerIndex)
+    ? stickerMoodGuard.filterIndex(stickerIndex as StickerEmbeddingEntry[], chatContent, moodKey)
+    : stickerIndex;
   // 只有代码/公式时 stickerQuery 为空：不请求 embedding，避免技术内容误触发表情。
-  if (settings.stickerEnabled && stickerIndex && stickerQuery) {
+  if (settings.stickerEnabled && eligibleIndex && stickerQuery) {
     const matched = await perf.track("match_sticker", () =>
       deps.matchSticker(
         stickerQuery,
         deps.getEmbeddingProvider(),
-        stickerIndex,
+        eligibleIndex,
         settings.stickerSimilarityThreshold ?? 0.55,
       ),
     );
@@ -945,6 +952,7 @@ export async function onAgentRunFinished(
   }
   const stickerSettings = deps.loadStickerSettings();
   const sticker = stickerCandidate && stickerSettings[stickerCandidate] !== false ? stickerCandidate : null;
+  if (sticker) stickerMoodGuard.recordSent(moodKey, sticker);
 
   // 返回 sticker 决定：
   // - 桌面聊天窗由 AG-UI bridge 发到本次 run 的源窗口，避免只投递旧 chatWindow
