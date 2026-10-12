@@ -20,7 +20,6 @@ vi.mock("electron", () => ({ app: m.app, BrowserWindow: { getAllWindows: () => [
   contextBridge: { exposeInMainWorld: (name: string, value: any) => m.exposed.set(name, value) },
   ipcRenderer: { invoke: m.invoke, on: vi.fn(), off: vi.fn(), removeListener: vi.fn(), send: vi.fn() }, webUtils: { getPathForFile: vi.fn() } }));
 vi.mock("../../preload/music", () => ({ exposeMusicApi: vi.fn() }));
-vi.mock("../../preload/live2d-listener-diagnostics", () => ({ getLive2DIpcListenerCounts: vi.fn() }));
 vi.mock("../../plugins/installer", () => ({ preparePluginZip: m.dangerous.installerPrepare, commitPreparedPlugin: m.dangerous.installerCommit }));
 vi.mock("../../plugins/manager", () => ({ PluginManager: class { installZip = m.dangerous.pluginInstall; } }));
 vi.mock("../permission", () => ({ setCurrentLevel: m.dangerous.permissionSet }));

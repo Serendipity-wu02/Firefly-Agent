@@ -30,10 +30,6 @@ export function registerWindowSystemIpc(deps: WindowSystemIpcDependencies): void
     deps.windowManager?.setPetWindowInteractive(interactive);
   });
 
-  ipc.on(IPC.WINDOW_MOVE, (_event, dx: number, dy: number) => {
-    deps.windowManager?.movePetWindowRelative(dx, dy);
-  });
-
   ipc.on(IPC.WINDOW_MOVE_TO, (_event, x: number, y: number) => {
     deps.windowManager?.movePetWindowTo(x, y);
   });
@@ -48,11 +44,6 @@ export function registerWindowSystemIpc(deps: WindowSystemIpcDependencies): void
     deps.windowManager?.minimizePetWindow();
   });
 
-  ipc.on(IPC.WINDOW_CLOSE, () => {
-    deps.windowManager?.hidePetWindow();
-  });
-
-  ipc.handle(IPC.WINDOW_CAPTURE_FRAME, async () => deps.windowManager?.capturePetWindowFrame() ?? null);
   ipc.handle(IPC.WINDOW_GET_CURSOR_POSITION, () => deps.windowManager?.getCursorScreenPosition() ?? { x: 0, y: 0 });
 
   ipc.on(IPC.SIDEBAR_MINIMIZE, () => {
@@ -100,9 +91,4 @@ export function registerWindowSystemIpc(deps: WindowSystemIpcDependencies): void
     clearUsage();
   });
 
-  // 退出是应用级请求而非窗口操作：deps.quit() 最终走 app.quit()，
-  // 触发 before-quit 受控退出，由 ShutdownCoordinator 完成固定阶段清理后再退出。
-  ipc.on(IPC.APP_QUIT, () => {
-    deps.quit();
-  });
 }

@@ -21,6 +21,10 @@ export interface GeneralSettings extends ChatAppearanceSettings {
   plugins: Record<string, boolean>;
   /** Harness 同时执行已明确安全工具的上限；1 表示完全串行。 */
   maxParallelToolCalls: number;
+  /** 一次运行最多的工具轮数；0 表示不限。 */
+  maxToolRounds: number;
+  /** 一次运行最长的执行时间（分钟，ask_user 等待不计）；0 表示不限。 */
+  runTimeoutMinutes: number;
   /** Chat 模式的轻量社交上下文；默认关闭，开启后每轮最多多一次异步抽取调用。 */
   chatSocialContextEnabled: boolean;
   petAlwaysOnTop: boolean;

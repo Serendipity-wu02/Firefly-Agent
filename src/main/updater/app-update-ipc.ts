@@ -31,7 +31,7 @@ export function registerAppUpdateIpc(options: RegisterAppUpdateIpcOptions): void
   const getWindows = options.getWindows ?? (() => BrowserWindow.getAllWindows());
 
   ipc.handle(IPC.APP_UPDATE_GET_STATE, () => options.service.getState());
-  ipc.handle(IPC.APP_UPDATE_CHECK, () => options.service.check());
+
   ipc.handle(IPC.APP_UPDATE_DOWNLOAD, () => options.service.download());
   // 安装更新不得直接触发退出：先走受控退出完成清理，再把 quitAndInstall 作为最终动作执行。
   ipc.handle(IPC.APP_UPDATE_INSTALL, async () => {

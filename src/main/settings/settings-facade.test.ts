@@ -72,6 +72,26 @@ describe("general LSP settings", () => {
   });
 });
 
+describe("general run limit settings", () => {
+  it("defaults to 200 rounds and 120 minutes, and 0 means unlimited", () => {
+    const defaults = normalizeGeneralSettings({});
+    expect(defaults.maxToolRounds).toBe(200);
+    expect(defaults.runTimeoutMinutes).toBe(120);
+    expect(normalizeGeneralSettings({ maxToolRounds: 0, runTimeoutMinutes: 0 } as never)).toMatchObject({ maxToolRounds: 0, runTimeoutMinutes: 0 });
+  });
+  it("clamps and rejects invalid values back to the defaults", () => {
+    expect(normalizeGeneralSettings({ maxToolRounds: 99999 } as never).maxToolRounds).toBe(10_000);
+    expect(normalizeGeneralSettings({ runTimeoutMinutes: 99999 } as never).runTimeoutMinutes).toBe(1440);
+    expect(normalizeGeneralSettings({ maxToolRounds: -5, runTimeoutMinutes: "x" } as never)).toMatchObject({ maxToolRounds: 200, runTimeoutMinutes: 120 });
+    expect(normalizeGeneralSettings({ maxToolRounds: 12.9 } as never).maxToolRounds).toBe(12);
+    // null / 空串 / 空白不是「不限」：回到默认；只有明确的 0 才关闭限制。
+    for (const blank of [null, "", "   "]) {
+      expect(normalizeGeneralSettings({ maxToolRounds: blank, runTimeoutMinutes: blank } as never)).toMatchObject({ maxToolRounds: 200, runTimeoutMinutes: 120 });
+    }
+    expect(normalizeGeneralSettings({ maxToolRounds: "0", runTimeoutMinutes: "30" } as never)).toMatchObject({ maxToolRounds: 0, runTimeoutMinutes: 30 });
+  });
+});
+
 describe("general Harness tool concurrency settings", () => {
   it("defaults to four and normalizes the configured safe range", () => {
     expect(normalizeGeneralSettings({}).maxParallelToolCalls).toBe(4);

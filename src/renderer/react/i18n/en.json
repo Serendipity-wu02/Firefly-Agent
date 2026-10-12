@@ -598,13 +598,13 @@
     "levelProjectReadOnly": "Read-only",
     "descProjectReadOnly": "Reads the current project only; changes nothing",
     "levelReadOnly": "Read only",
-    "descReadOnly": "Can read files, cannot modify them",
+    "descReadOnly": "Reads files, changes nothing",
     "levelScoped": "Project folder",
     "descScoped": "Can read and write inside the current project folder",
     "levelPerAction": "Ask first",
-    "descPerAction": "Asks before every file change or command",
+    "descPerAction": "Asks before changes or commands",
     "levelFull": "Full access",
-    "descFull": "Unrestricted access to any file or command on this computer"
+    "descFull": "Unrestricted files and commands"
   },
   "tts": {
     "labelIdle": "Read aloud",

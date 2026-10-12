@@ -678,6 +678,8 @@ export function createMainDefaultMemory(options: MainDefaultMemoryOptions) {
   const owner = {
     settingsHost, channelHost, backgroundHost, prepareBackgroundRun: backgroundHost.prepareBackgroundRun,
     usesCanonicalUserContent: true as const,
+    /** 默认 S/M/H 接管全部会话，旧历史向量索引不再写入；受控模式只管辖部分会话，没有此标记。 */
+    retiresLegacyHistoryIndex: true as const,
     prepareAttachmentGrant(event: Event, id: string, input: { userTurnId: string }): Promise<MainAttachmentGrant | undefined> {
       return serialized(async () => {
         const grant = bind(event, id), admission = requireAdmission(id);

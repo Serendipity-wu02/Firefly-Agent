@@ -22,7 +22,6 @@ import type { AguiRunAck } from "../shared/run-terminal";
 import type { ReviewSnapshot, ReviewRestoreOutcome } from "../shared/review-types";
 import type { WorkspaceListResult, WorkspaceReadResult, WorkspaceSaveResult } from "../shared/workspace-files-types";
 import type { OpenInAppListResult, OpenInAppOpenResult } from "../shared/open-in-app-types";
-import { getLive2DIpcListenerCounts } from "./live2d-listener-diagnostics";
 import { createLive2dWorkApi } from "./live2d-work-api";
 import { exposeMusicApi } from "./music";
 import { normalizeChatAppearance, type ChatAppearanceSettings } from "../shared/chat-appearance";
@@ -36,17 +35,12 @@ const rendererTargetId = crypto.randomUUID();
 
 const fireflyApi = {
   minimize: () => ipcRenderer.send(IPC.WINDOW_MINIMIZE),
-  hide: () => ipcRenderer.send(IPC.WINDOW_CLOSE),
-  quit: () => ipcRenderer.send(IPC.APP_QUIT),
   setInteractive: (interactive: boolean) =>
     ipcRenderer.invoke(IPC.WINDOW_SET_INTERACTIVE, interactive),
-  moveBy: (dx: number, dy: number) =>
-    ipcRenderer.send(IPC.WINDOW_MOVE, dx, dy),
   moveTo: (x: number, y: number) =>
     ipcRenderer.send(IPC.WINDOW_MOVE_TO, x, y),
   setDragging: (isDragging: boolean) =>
     ipcRenderer.send(IPC.WINDOW_SET_DRAGGING, isDragging),
-  captureFrame: () => ipcRenderer.invoke(IPC.WINDOW_CAPTURE_FRAME),
   getCursorPosition: () => ipcRenderer.invoke(IPC.WINDOW_GET_CURSOR_POSITION),
   onPetZoom: (callback: (zoom: number) => void) => {
     const listener = (_e: unknown, zoom: number) => callback(zoom);
@@ -62,7 +56,6 @@ const fireflyApi = {
 
 const appUpdateApi: AppUpdateApi = {
   getState: () => ipcRenderer.invoke(IPC.APP_UPDATE_GET_STATE),
-  check: () => ipcRenderer.invoke(IPC.APP_UPDATE_CHECK),
   download: () => ipcRenderer.invoke(IPC.APP_UPDATE_DOWNLOAD),
   install: () => ipcRenderer.invoke(IPC.APP_UPDATE_INSTALL),
   onStateChanged: (callback: (state: AppUpdateState) => void) => {
@@ -102,15 +95,6 @@ const chatApi = {
     if (entries.length === 0) return [];
     return ipcRenderer.invoke(IPC.CHAT_INGEST_FILES, entries);
   },
-  processDocuments: (filePaths: string[], query: string) =>
-    ipcRenderer.invoke(IPC.CHAT_PROCESS_DOCUMENTS, { filePaths, query }),
-  onDocumentIndexProgress: (callback: (progress: DocumentIndexProgress) => void) => {
-    const listener = (_event: unknown, progress: DocumentIndexProgress) => callback(progress);
-    ipcRenderer.on(IPC.CHAT_DOCUMENT_INDEX_PROGRESS, listener);
-    return () => ipcRenderer.removeListener(IPC.CHAT_DOCUMENT_INDEX_PROGRESS, listener);
-  },
-  cancelDocumentIndex: (jobId: string) =>
-    ipcRenderer.invoke(IPC.CHAT_CANCEL_DOCUMENT_INDEX, { jobId }) as Promise<boolean>,
   captionImage: (filePath: string, hasAnnotations = false) =>
     ipcRenderer.invoke(IPC.CHAT_CAPTION_IMAGE, { filePath, hasAnnotations }),
   getImagePreview: (filePath: string) =>
@@ -183,13 +167,6 @@ const aguiApi = {
 };
 
 contextBridge.exposeInMainWorld("agui", aguiApi);
-
-// System utilities exposed to renderer
-const systemApi = {
-  openExternal: (url: string) => ipcRenderer.invoke(IPC.OPEN_EXTERNAL, url),
-};
-
-contextBridge.exposeInMainWorld("system", systemApi);
 
 const schedulerEventsApi = {
   onEvent: (callback: (event: unknown) => void) => {
@@ -320,8 +297,6 @@ const settingsApi = {
   pickUiFont: () => ipcRenderer.invoke(IPC.SETTINGS_PICK_UI_FONT) as Promise<string | null>,
   importUiFont: (sourcePath: string) => ipcRenderer.invoke(IPC.SETTINGS_IMPORT_UI_FONT, sourcePath) as Promise<UiFont>,
   resetUiFont: () => ipcRenderer.invoke(IPC.SETTINGS_RESET_UI_FONT) as Promise<UiFont>,
-  openSidebar: () => ipcRenderer.send(IPC.SETTINGS_OPEN_SIDEBAR),
-  closeSidebar: () => ipcRenderer.send(IPC.SETTINGS_CLOSE_SIDEBAR),
   setPetAlwaysOnTop: (value: boolean) => ipcRenderer.send(IPC.SETTINGS_SET_PET_ALWAYS_ON_TOP, value),
   setPetVisible: (value: boolean) => ipcRenderer.send(IPC.SETTINGS_SET_PET_VISIBLE, value),
   setPetZoom: (value: number) => ipcRenderer.send(IPC.SETTINGS_SET_PET_ZOOM, value),
@@ -331,15 +306,11 @@ const settingsApi = {
   embeddingSetModel: (model: string) => ipcRenderer.invoke(IPC.EMBEDDING_SET_MODEL, model),
   rerankerSetMode: (mode: string) => ipcRenderer.invoke(IPC.RERANKER_SET_MODE, mode),
   getRerankerStatus: (): Promise<{ light: boolean; standard: boolean }> => ipcRenderer.invoke(IPC.RERANKER_GET_STATUS),
-  setToolEnabled: (id: string, enabled: boolean) => ipcRenderer.invoke(IPC.TOOL_SET_ENABLED, { id, enabled }),
-  getToolEnabled: () => ipcRenderer.invoke(IPC.TOOL_GET_ENABLED),
   // 三模适配层：工具-模式覆盖层（UI 设置面板用）
   getToolCatalog: () => ipcRenderer.invoke(IPC.TOOL_GET_CATALOG),
   getToolModeOverrides: () => ipcRenderer.invoke(IPC.TOOL_GET_MODE_OVERRIDES),
   setToolModeOverride: (toolId: string, mode: string, enabled: boolean) =>
     ipcRenderer.invoke(IPC.TOOL_SET_MODE_OVERRIDE, { toolId, mode, enabled }),
-  clearToolModeOverride: (toolId: string, mode?: string) =>
-    ipcRenderer.invoke(IPC.TOOL_CLEAR_MODE_OVERRIDE, { toolId, mode }),
   externalSkills: {
     list: (sourceId, refresh = false) => ipcRenderer.invoke(IPC.EXTERNAL_SKILLS_LIST, { sourceId, refresh }),
     detail: (sourceId, id) => ipcRenderer.invoke(IPC.EXTERNAL_SKILLS_DETAIL, { sourceId, id }),
@@ -347,7 +318,6 @@ const settingsApi = {
     commit: (token) => ipcRenderer.invoke(IPC.EXTERNAL_SKILLS_COMMIT, { token }),
     cancel: () => ipcRenderer.invoke(IPC.EXTERNAL_SKILLS_CANCEL, {}),
   } satisfies ExternalSkillsApi,
-  listSkills: () => ipcRenderer.invoke(IPC.SKILL_LIST),
   setSkillEnabled: (id: string, enabled: boolean) => ipcRenderer.invoke(IPC.SKILL_SET_ENABLED, { id, enabled }),
   // 三模适配层：skill-模式覆盖层（UI 设置面板用）
   getSkillCatalog: () => ipcRenderer.invoke(IPC.SKILL_GET_CATALOG),
@@ -355,28 +325,15 @@ const settingsApi = {
   getSkillModeOverrides: () => ipcRenderer.invoke(IPC.SKILL_GET_MODE_OVERRIDES),
   setSkillModeOverride: (skillId: string, mode: string, enabled: boolean) =>
     ipcRenderer.invoke(IPC.SKILL_SET_MODE_OVERRIDE, { skillId, mode, enabled }),
-  clearSkillModeOverride: (skillId: string, mode?: string) =>
-    ipcRenderer.invoke(IPC.SKILL_CLEAR_MODE_OVERRIDE, { skillId, mode }),
   addMcpServer: (config: unknown) => ipcRenderer.invoke(IPC.MCP_ADD_SERVER, config),
   removeMcpServer: (serverId: string) => ipcRenderer.invoke(IPC.MCP_REMOVE_SERVER, serverId),
   listMcpServers: () => ipcRenderer.invoke(IPC.MCP_LIST_SERVERS),
   // 多渠道（微信/飞书/QQ/QQ 机器人）
   channelsGetConfig: () => ipcRenderer.invoke(IPC.CHANNELS_GET_CONFIG),
   channelsSaveConfig: (patch: unknown) => ipcRenderer.invoke(IPC.CHANNELS_SAVE_CONFIG, patch),
-  channelsList: () => ipcRenderer.invoke(IPC.CHANNELS_LIST),
   channelsGetStatus: () => ipcRenderer.invoke(IPC.CHANNELS_GET_STATUS),
   channelsRestart: () => ipcRenderer.invoke(IPC.CHANNELS_RESTART),
-  channelsWechatInstall: () => ipcRenderer.invoke(IPC.CHANNELS_WECHAT_INSTALL),
   channelsWechatLoginStart: () => ipcRenderer.invoke(IPC.CHANNELS_WECHAT_LOGIN_START),
-  channelsWechatLoginCancel: () => ipcRenderer.invoke(IPC.CHANNELS_WECHAT_LOGIN_CANCEL),
-  channelsWechatPairingList: () => ipcRenderer.invoke(IPC.CHANNELS_WECHAT_PAIRING_LIST),
-  channelsWechatPairingApprove: (code: string) => ipcRenderer.invoke(IPC.CHANNELS_WECHAT_PAIRING_APPROVE, code),
-  channelsWechatLogout: () => ipcRenderer.invoke(IPC.CHANNELS_WECHAT_LOGOUT),
-  channelsWechatRuntimeDetect: () => ipcRenderer.invoke(IPC.CHANNELS_WECHAT_RUNTIME_DETECT),
-  channelsWechatRuntimeInstall: () => ipcRenderer.invoke(IPC.CHANNELS_WECHAT_RUNTIME_INSTALL),
-  channelsWechatRuntimeUpdate: () => ipcRenderer.invoke(IPC.CHANNELS_WECHAT_RUNTIME_UPDATE),
-  channelsFeishuTestConnection: () => ipcRenderer.invoke(IPC.CHANNELS_FEISHU_TEST_CONNECTION),
-  channelsFeishuTestWebhookReachable: () => ipcRenderer.invoke(IPC.CHANNELS_FEISHU_TEST_WEBHOOK_REACHABLE),
   channelsQqTestConnection: () => ipcRenderer.invoke(IPC.CHANNELS_QQ_TEST_CONNECTION),
   // 权威鉴权预检：监听地址能否解析、是否必须配 token 只有主进程知道
   channelsQqResolveAuthRequirement: (input: { listenMode: string; customHost?: string }) =>
@@ -520,10 +477,6 @@ const stickerManagerApi = {
 	  close: () => ipcRenderer.send(IPC.STICKERS_CLOSE),
 	  getConfig: () => ipcRenderer.invoke(IPC.STICKERS_GET_CONFIG),
 	  setEnabled: (id: string, enabled: boolean) => ipcRenderer.invoke(IPC.STICKERS_SET_ENABLED, { id, enabled }),
-	  pickFile: () => ipcRenderer.invoke(IPC.STICKERS_PICK_FILE),
-	  addSticker: (payload: { sourcePath: string; id: string; description: string; phrases: string[] }) =>
-	    ipcRenderer.invoke(IPC.STICKERS_ADD, payload),
-	  deleteSticker: (id: string) => ipcRenderer.invoke(IPC.STICKERS_DELETE, id),
 	};
 
 contextBridge.exposeInMainWorld("stickerManager", stickerManagerApi);
@@ -599,20 +552,12 @@ const memoryPanelApi = {
   auditSource: (factId: string): Promise<MemoryPanelSourceAudit> => ipcRenderer.invoke(IPC.MEMORY_PANEL_AUDIT_SOURCE, factId),
   getData: () => ipcRenderer.invoke(IPC.MEMORY_PANEL_GET_DATA),
   deleteImportedDoc: (importId: string, fileName?: string) => ipcRenderer.invoke(IPC.MEMORY_PANEL_DELETE_IMPORTED_DOC, { importId, fileName }),
-  saveL0: (patch: Record<string, unknown>) => ipcRenderer.invoke(IPC.MEMORY_PANEL_SAVE_L0, patch),
-  saveL1: (patch: Record<string, unknown>) => ipcRenderer.invoke(IPC.MEMORY_PANEL_SAVE_L1, patch),
 };
 
 contextBridge.exposeInMainWorld("user", userApi);
 contextBridge.exposeInMainWorld("memoryPanel", memoryPanelApi);
 
 contextBridge.exposeInMainWorld("live2dWork", createLive2dWorkApi(ipcRenderer));
-
-const live2dDiagnosticsApi = {
-  getMain: () => ipcRenderer.invoke(IPC.LIVE2D_GET_MAIN_DIAGNOSTICS),
-  getIpcListenerCounts: () => getLive2DIpcListenerCounts(ipcRenderer),
-};
-contextBridge.exposeInMainWorld("live2dDiagnostics", live2dDiagnosticsApi);
 
 // 聊天会话存储（多对话历史）
 const chatStoreApi = {
@@ -627,17 +572,12 @@ const chatStoreApi = {
   list: (options?: { mode?: "chat" | "work" | "code" }) => ipcRenderer.invoke(IPC.CHATS_LIST, options),
   get: (id: string) => ipcRenderer.invoke(IPC.CHATS_GET, id),
   exportWorkMarkdown: (id: string) => ipcRenderer.invoke(IPC.CHATS_EXPORT_WORK_MARKDOWN, id),
-  getPage: (id: string, before: number | null, limit: number) =>
-    ipcRenderer.invoke(IPC.CHATS_GET_PAGE, { id, before, limit }),
   create: (payload?: { title?: string; identityId?: string | null; mode?: "chat" | "work" | "code" }) =>
     ipcRenderer.invoke(IPC.CHATS_CREATE, payload ?? {}),
   append: (id: string, message: unknown) =>
     ipcRenderer.invoke(IPC.CHATS_APPEND, { id, message }),
   upsert: (id: string, message: unknown) =>
     ipcRenderer.invoke(IPC.CHATS_UPSERT, { id, message }),
-
-  replaceMessages: (id: string, messages: unknown[]) =>
-    ipcRenderer.invoke(IPC.CHATS_REPLACE_MESSAGES, { id, messages }),
   replaceTail: (id: string, startIndex: number, messages: unknown[]) =>
     ipcRenderer.invoke(IPC.CHATS_REPLACE_TAIL, { id, startIndex, messages }),
   // 主动压缩：把模型窗口内旧消息摘要成一条记忆（上下文容量菜单小人点击触发）
@@ -681,7 +621,6 @@ const chatStoreApi = {
     ipcRenderer.invoke(IPC.CHATS_SET_PINNED, { id, pinned }),
   setModelProfile: (id: string, modelProfileId?: string) =>
     ipcRenderer.invoke(IPC.CHATS_SET_MODEL_PROFILE, { id, modelProfileId }),
-  openFolder: () => ipcRenderer.invoke(IPC.CHATS_OPEN_FOLDER),
   openWorkspace: (workspaceRoot: string) =>
     ipcRenderer.invoke(IPC.CHATS_OPEN_WORKSPACE, workspaceRoot),
   // 聊天窗口加载 / 切换 session 时上报；附带本页面的渲染目标标识与会话模式，
@@ -691,12 +630,6 @@ const chatStoreApi = {
       IPC.CHATS_SET_ACTIVE_SESSION,
       sessionId ? { sessionId, mode, rendererTargetId } : null,
     ),
-  getActiveSession: () => ipcRenderer.invoke(IPC.CHATS_GET_ACTIVE_SESSION),
-  onActiveSessionChanged: (callback: (sessionId: string | null) => void) => {
-    const listener = (_e: Electron.IpcRendererEvent, sessionId: string | null) => callback(sessionId);
-    ipcRenderer.on(IPC.CHATS_ACTIVE_SESSION_CHANGED, listener);
-    return () => ipcRenderer.removeListener(IPC.CHATS_ACTIVE_SESSION_CHANGED, listener);
-  },
   // 任意会话变动后 main 广播；列表/聊天窗口订阅刷新
   onChanged: (callback: () => void) => {
     const listener = () => callback();
@@ -706,18 +639,8 @@ const chatStoreApi = {
   // ── 对话工作区绑定 ──────────────────────────────────────
   setWorkspace: (sessionId: string, workspaceRoot: string) =>
     ipcRenderer.invoke(IPC.CHATS_SET_WORKSPACE, { sessionId, workspaceRoot }),
-  getWorkspace: (sessionId: string) =>
-    ipcRenderer.invoke(IPC.CHATS_GET_WORKSPACE, sessionId),
-  clearWorkspace: (sessionId: string) =>
-    ipcRenderer.invoke(IPC.CHATS_CLEAR_WORKSPACE, sessionId),
   pickWorkspaceFolder: () =>
     ipcRenderer.invoke(IPC.CHATS_PICK_WORKSPACE_FOLDER),
-  onWorkspaceChanged: (callback: (payload: { sessionId: string; binding: unknown }) => void) => {
-    const listener = (_e: Electron.IpcRendererEvent, payload: { sessionId: string; binding: unknown }) =>
-      callback(payload);
-    ipcRenderer.on(IPC.CHATS_WORKSPACE_CHANGED, listener);
-    return () => ipcRenderer.removeListener(IPC.CHATS_WORKSPACE_CHANGED, listener);
-  },
   // 状态栏专用入口：要求 main 打开/复用 reactChatWindow 并加载指定 sessionId
   openInReactChatWindow: (sessionId: string) =>
     ipcRenderer.invoke(IPC.CHATS_OPEN_IN_REACT_WINDOW, sessionId),
@@ -729,8 +652,6 @@ const chatStoreApi = {
   },
   // reactChatWindow → main：ChatPage 已挂好 IPC 监听，允许 flush pending sessionId
   notifyReactReady: () => ipcRenderer.send(IPC.CHATS_REACT_READY),
-  // 本页面的渲染目标标识（页面初始化时生成一次；语音提交桥据此识别过期请求）
-  getRendererTargetId: () => rendererTargetId,
 
 };
 

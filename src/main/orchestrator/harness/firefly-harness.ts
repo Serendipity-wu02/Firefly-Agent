@@ -89,6 +89,8 @@ export interface HarnessRun {
   currentAssistantEntryId?: string;
   /** One idempotent drain shared by all terminal and unexpected-throw exits. */
   executionSettlement?: Promise<void>;
+  /** 总执行时间耗尽并已中止进行中的模型请求 / 工具；与用户取消区分，终态为 timeout。 */
+  deadlineExceeded?: boolean;
 }
 
 // ═══ 主入口 ═══════════════════════════════════════════════
@@ -103,6 +105,12 @@ export async function runFireflyHarness(input: HarnessInput): Promise<HarnessRes
     input = { ...input, transcriptSink: input.memoryRun.bindSink(input.transcriptSink) };
   }
   const run = createRun(input);
+  // 总超时要作用于进行中的工作：到期时中止当前模型请求与工具，而不是等它们自己结束再在下一轮入口检查。
+  run.clock.setDeadlineHandler(() => {
+    if (input.signal?.aborted) return; // 已被用户取消或已在收尾：保持原终态
+    run.deadlineExceeded = true;
+    input.quiesceExecution?.();
+  });
   run.clock.startActive();
   materializeInitialContext(run);
 
@@ -112,6 +120,7 @@ export async function runFireflyHarness(input: HarnessInput): Promise<HarnessRes
     loopReturned = true;
     return result;
   } finally {
+    run.clock.setDeadlineHandler(null);
     // Failure must stop this child's owned work before waiting for process close.
     // Waiting first would prevent the runtime's later abort from ever being reached.
     try { if (!loopReturned) input.quiesceExecution?.(); }
@@ -126,7 +135,7 @@ async function runHarnessLoop(run: HarnessRun): Promise<HarnessResult> {
       return finishRun(run, `执行状态保存失败：${run.checkpointFailure}`, true, "error");
     }
     // 用户取消：finalAnswer 保持为空，不生成 "最终回复被取消。" 之类的占位文案。
-    if (input.signal?.aborted) return cancelledResult(run);
+    if (input.signal?.aborted) return abortedResult(run);
     // 工具轮上限在下一次模型请求前检查：避免超限后再产生一次 LLM 调用。
     if (run.config.maxRounds > 0 && run.rounds >= run.config.maxRounds) {
       const finalAnswer = run.streamController.getBuffered() || buildMaxRoundsReply(run.state, run.config.maxRounds);
@@ -185,7 +194,7 @@ async function runHarnessLoop(run: HarnessRun): Promise<HarnessResult> {
       response = await callRoundLLM(run, promptLayers, roundId);
     } catch (err) {
       // signal abort 属于用户取消：按 cancelled 结算，不归类为 error。
-      if (input.signal?.aborted) return cancelledResult(run);
+      if (input.signal?.aborted) return abortedResult(run);
       // 失败摘要：模型名 / 请求地址 / 错误码置顶，堆栈跟在后面，定位不用翻设置。
       const errorMsg = err instanceof Error ? err.message : String(err);
       const errCode = (err as { code?: string }).code ?? "无错误码";
@@ -237,13 +246,13 @@ async function runHarnessLoop(run: HarnessRun): Promise<HarnessResult> {
       } catch (error) {
         // 调度器已闭合 transcript（合成失败结果 + not_executed）后上抛的
         // 非取消错误：统一走 finishRun 终态结算，不得冲出 runFireflyHarness。
-        if (!run.toolExecutionFailure && input.signal?.aborted) return cancelledResult(run);
+        if (!run.toolExecutionFailure && input.signal?.aborted) return abortedResult(run);
         error = run.toolExecutionFailure ? run.toolExecutionFailure.error : error;
         console.error(`${LOG_PREFIX} tool round failed:`, error);
         const errorMsg = error instanceof Error ? error.message : String(error);
         return finishRun(run, `工具执行异常：${errorMsg}`, true, "error");
       }
-      if (outcome === "cancelled") return cancelledResult(run);
+      if (outcome === "cancelled") return abortedResult(run);
       input.onEvent?.({ type: "round_end", roundId });
       run.rounds++;
       checkpoint(run);
@@ -532,6 +541,17 @@ async function settleRun(run: HarnessRun): Promise<void> {
   run.clock.stopActive();
   emitContextUsage(run, "terminal");
   checkpoint(run);
+}
+
+/**
+ * 运行被中止后的统一分流：总超时到期触发的中止按 timeout 结算（带待办/未知副作用的续跑提示），
+ * 其余（用户取消等）按 cancelled。
+ */
+function abortedResult(run: HarnessRun): Promise<HarnessResult> {
+  if (!run.deadlineExceeded) return cancelledResult(run);
+  const finalAnswer = run.streamController.getBuffered() || buildTimeoutReply(run.state);
+  run.input.onEvent?.({ type: "final_answer", content: finalAnswer });
+  return finishRun(run, finalAnswer, true, "timeout");
 }
 
 /** 用户取消的统一出口：settleRun 后返回空 finalAnswer 的 cancelled 结果。 */

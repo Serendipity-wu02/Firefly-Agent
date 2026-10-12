@@ -9,7 +9,7 @@
 //   - shutdownChannels()：停 adapter + inbound-server，并复位两个 flag
 //
 // 注意：startChannels 必须晚于 initRAG / initMcpManager / loadModelSettings。
-import { app, BrowserWindow } from "electron";
+import { BrowserWindow } from "electron";
 import { IPC } from "../../shared/ipc-channels";
 import { createIpcScope, type IpcScope } from "../application/ipc-scope";
 import {
@@ -26,7 +26,7 @@ import {
 } from "./conversation-binding-api";
 import { startInboundServer, stopInboundServer } from "./inbound-server";
 import { FeishuAdapter } from "./adapters/feishu";
-import { ILinkBotAdapter, loadCredentials } from "./adapters/wechat/ilink-bot-adapter";
+import { ILinkBotAdapter } from "./adapters/wechat/ilink-bot-adapter";
 import { NapCatAdapter } from "./adapters/qq/napcat-adapter";
 import { resolveQqListenAuthRequirement } from "./adapters/qq/onebot-reverse-ws";
 import { QqBotAdapter } from "./adapters/qqbot/qqbot-adapter";
@@ -164,8 +164,6 @@ function registerChannelsIpc(
     return getPublicChannelsSettings();
   });
 
-  ipc.handle(IPC.CHANNELS_LIST, () => channelManager.listChannels());
-
   ipc.handle(IPC.CHANNELS_GET_STATUS, () => channelManager.getAllStatus());
 
   // QQ 监听鉴权预检：渲染进程看不到网络接口，无法自行判断监听地址是否回环，
@@ -184,11 +182,6 @@ function registerChannelsIpc(
   });
 
   // ── 微信 IPC (iLink 直连版) ───────────────────────────────────────────────────────
-
-  ipc.handle(IPC.CHANNELS_WECHAT_RUNTIME_DETECT, () => {
-    // iLink Bot API 是腾讯的远程协议，不需本地安装
-    return { installed: true, version: "ilink/1.0.0" };
-  });
 
 	  // 扫码登录：Main Process 生成 PNG dataURL，推给 Renderer 显示 <img>
 	  ipc.handle(IPC.CHANNELS_WECHAT_LOGIN_START, async () => {
@@ -227,76 +220,6 @@ function registerChannelsIpc(
 	      return { ok: false, error: String(err) };
 	    }
 	  });
-
-  ipc.handle(IPC.CHANNELS_WECHAT_LOGIN_CANCEL, () => {
-    return { ok: true };
-  });
-
-  ipc.handle(IPC.CHANNELS_WECHAT_LOGIN_RESULT, async () => {
-    if (!wxAdapter) return { connected: false };
-    const status = wxAdapter.getStatus();
-    return {
-      running: status.phase === "starting",
-      connected: status.phase === "running",
-      loggedIn: wxAdapter.isLoggedIn,
-    };
-  });
-
-  ipc.handle(IPC.CHANNELS_WECHAT_PAIRING_LIST, () => {
-    // iLink 模式没有 pairing 概念
-    return [];
-  });
-
-  ipc.handle(IPC.CHANNELS_WECHAT_PAIRING_APPROVE, () => ({ ok: false, error: "iLink 模式不支持 pairing" }));
-
-  ipc.handle(IPC.CHANNELS_WECHAT_LOGOUT, async () => {
-    if (!wxAdapter) return { ok: false };
-    await wxAdapter.logout();
-    return { ok: true };
-  });
-
-  ipc.handle(IPC.CHANNELS_WECHAT_RUNTIME_INSTALL, () => ({
-    ok: true,
-    hint: "iLink Bot API 是云端协议，无需本地安装",
-  }));
-
-  ipc.handle(IPC.CHANNELS_WECHAT_RUNTIME_UPDATE, () => ({ ok: true }));
-
-  ipc.handle(IPC.CHANNELS_WECHAT_INSTALL, async () => {
-    if (!wxAdapter) return { ok: false };
-    await wxAdapter.stop();
-    await wxAdapter.start();
-    return { ok: true, phase: "ready" };
-  });
-
-  // 飞书长连接：测试连接 = 重建 LarkChannel（SDK 内部会自动跑 WSS handshake）
-  ipc.handle(IPC.CHANNELS_FEISHU_TEST_CONNECTION, async () => {
-    const adapter = channelManager.getAdapter("feishu") as FeishuAdapter | undefined;
-    if (!adapter) return { ok: false, error: "飞书 adapter 未注册" };
-    const status = adapter.getStatus();
-    if (!status.enabled) return { ok: false, error: "飞书渠道未启用" };
-    if (!loadChannelsSettings().feishu.appId || !loadChannelsSettings().feishu.appSecret) {
-      return { ok: false, error: "App ID / App Secret 未配置" };
-    }
-    try {
-      await adapter.rebuild();
-      const s = adapter.getStatus();
-      if (s.phase === "running") {
-        return { ok: true, message: "WSS 长连接已建立" };
-      }
-      return { ok: false, error: s.message ?? "握手未完成" };
-    } catch (err) {
-      return { ok: false, error: err instanceof Error ? err.message : String(err) };
-    }
-  });
-
-  // 长连接模式不需要 webhook URL —— 这个 IPC 保留但返回 ok 提示用户用长连接
-  ipc.handle(IPC.CHANNELS_FEISHU_TEST_WEBHOOK_REACHABLE, async () => {
-    return {
-      ok: true,
-      message: "长连接模式不需要公网 URL — SDK 已自动建立 WSS 连接",
-    };
-  });
 
   ipc.handle(IPC.CHANNELS_QQ_TEST_CONNECTION, async () => {
     if (!qqAdapter) return { ok: false, error: "QQ adapter 未初始化" };

@@ -25,8 +25,10 @@ vi.mock("electron", () => ({
 import {
   cancelPendingChoicesForRun,
   registerChoiceIpc,
+  requestUserChoice,
   requestUserClarification,
   setChoiceCardSender,
+  setChoiceDismissSender,
 } from "./user-choice";
 import type { AskCardPayload, AskCardSubmission } from "../shared/ask-clarification";
 
@@ -258,5 +260,67 @@ describe("requestUserClarification", () => {
     expect(secondSettled).not.toHaveBeenCalled();
 
     cancelPendingChoicesForRun("run-second");
+  });
+});
+
+describe("requestUserChoice scoped to a run", () => {
+  const options = [{ label: "确认", value: "yes" }, { label: "取消", value: "no" }];
+
+  beforeEach(() => {
+    handle.mockReset();
+  });
+
+  function setup() {
+    const cards: Array<{ id: string }> = [];
+    const dismissed = vi.fn();
+    setChoiceCardSender((card) => { if ("id" in card) cards.push(card as { id: string }); });
+    setChoiceDismissSender(dismissed);
+    registerChoiceIpc();
+    const resolve = handle.mock.calls.at(-1)?.[1] as (event: unknown, payload: { id: string; value?: string }) => unknown;
+    return { cards, dismissed, resolve };
+  }
+
+  it("settles with AbortError when its run is cancelled, clears the card, and ignores a later click", async () => {
+    const { cards, dismissed, resolve } = setup();
+    const pending = requestUserChoice("确认安装？", options, "no", { runId: "run-cancelled" });
+    const outcome = pending.then(() => "resolved", (error: Error) => error.name);
+    expect(cards).toHaveLength(1);
+
+    cancelPendingChoicesForRun("run-cancelled");
+
+    await expect(outcome).resolves.toBe("AbortError");
+    expect(dismissed).toHaveBeenCalledWith(expect.objectContaining({ id: cards[0].id, reason: "cancelled" }));
+    // 取消后用户再点“确认”：卡片已作废，不会有任何东西被放行。
+    expect(resolve({}, { id: cards[0].id, value: "yes" })).toEqual({ ok: false });
+  });
+
+  it("settles when the abort signal fires and rejects at once when it is already aborted", async () => {
+    const { cards, dismissed, resolve } = setup();
+    const controller = new AbortController();
+    const pending = requestUserChoice("确认？", options, "no", { runId: "run-signal", signal: controller.signal });
+    const outcome = pending.then(() => "resolved", (error: Error) => error.name);
+
+    controller.abort();
+
+    await expect(outcome).resolves.toBe("AbortError");
+    expect(dismissed).toHaveBeenCalledWith(expect.objectContaining({ id: cards[0].id, reason: "cancelled" }));
+    expect(resolve({}, { id: cards[0].id, value: "yes" })).toEqual({ ok: false });
+
+    const cardsBefore = cards.length;
+    await expect(requestUserChoice("确认？", options, "no", { signal: controller.signal })).rejects.toMatchObject({ name: "AbortError" });
+    expect(cards).toHaveLength(cardsBefore);
+  });
+
+  it("still resolves normally for an answer before any cancellation", async () => {
+    const { cards, resolve } = setup();
+    const controller = new AbortController();
+    const pending = requestUserChoice("确认？", options, "no", { runId: "run-ok", signal: controller.signal });
+
+    expect(resolve({}, { id: cards[0].id, value: "yes" })).toEqual({ ok: true });
+    await expect(pending).resolves.toBe("yes");
+
+    // 作答之后的取消不再影响已结算的卡片。
+    cancelPendingChoicesForRun("run-ok");
+    controller.abort();
   });
 });

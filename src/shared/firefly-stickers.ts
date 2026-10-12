@@ -1,4 +1,5 @@
-export const FIREFLY_STICKERS = [
+/** 手动选择的内置表情包（聊天输入框表情面板、表情包管理）；不参与自动发送。 */
+export const FIREFLY_MANUAL_STICKERS = [
   {"id": "firefly-hug", "file": "hug.png", "sourceFile": "抱抱.png", "description": "张开双臂，抱抱", "phrases": ["张开双臂，抱抱", "想给你一个拥抱"]},
   {"id": "firefly-meal", "file": "meal.png", "sourceFile": "吃饭.png", "description": "端着饭碗，吃饭", "phrases": ["端着饭碗，吃饭", "到吃饭时间啦"]},
   {"id": "firefly-cry", "file": "cry.png", "sourceFile": "大哭.png", "description": "流着眼泪，大哭", "phrases": ["流着眼泪，大哭", "难过得哭了"]},
@@ -21,3 +22,18 @@ export const FIREFLY_STICKERS = [
   {"id": "firefly-good-morning", "file": "good-morning.png", "sourceFile": "早安.png", "description": "挥手问候，早安", "phrases": ["挥手问候，早安", "早上好"]},
   {"id": "firefly-okay", "file": "okay.png", "sourceFile": "OK.png", "description": "做出OK手势", "phrases": ["做出OK手势", "好呀，没问题"]},
 ] as const;
+
+/** 流萤在对话中会按语义自动发送的表情包；自动匹配只使用这一组（以及用户自己加的贴图）。 */
+export const FIREFLY_AUTO_STICKERS = [
+  {"id": "firefly-pout", "mood": "negative", "file": "pout.png", "sourceFile": "pout.png", "description": "鼓着脸，指着你生气", "phrases": ["鼓着脸，指着你生气", "哼，我有点不高兴了"]},
+  {"id": "firefly-wink", "mood": "positive", "file": "wink.png", "sourceFile": "wink.png", "description": "手指点着眼角，俏皮眨眼", "phrases": ["手指点着眼角，俏皮眨眼", "悄悄地向你眨眨眼"]},
+  {"id": "firefly-amazed", "mood": "positive", "file": "amazed.png", "sourceFile": "amazed.png", "description": "星星眼，惊讶地张着嘴", "phrases": ["星星眼，惊讶地张着嘴", "哇，好厉害"]},
+  {"id": "firefly-smile-ok", "mood": "positive", "file": "smile-ok.png", "sourceFile": "smile-ok.png", "description": "微笑着比出OK手势", "phrases": ["微笑着比出OK手势", "放心，交给我吧"]},
+  {"id": "firefly-flustered", "mood": "positive", "file": "flustered.png", "sourceFile": "flustered.png", "description": "双手捧脸，脸红慌张", "phrases": ["双手捧脸，脸红慌张", "被夸得有点不好意思"]},
+  {"id": "firefly-bubble-tea", "mood": "positive", "file": "bubble-tea.png", "sourceFile": "bubble-tea.png", "description": "捧着珍珠奶茶，吸着吸管", "phrases": ["捧着珍珠奶茶，吸着吸管", "来杯奶茶放松一下"]},
+  {"id": "firefly-wink-tongue", "mood": "positive", "file": "wink-tongue.png", "sourceFile": "wink-tongue.png", "description": "眨眼吐舌，比着剪刀手", "phrases": ["眨眼吐舌，比着剪刀手", "嘿嘿，得意地比个耶"]},
+  {"id": "firefly-cake", "mood": "positive", "file": "cake.png", "sourceFile": "cake.png", "description": "端着草莓蛋糕，吃得满足", "phrases": ["端着草莓蛋糕，吃得满足", "吃甜点的时间到啦"]},
+] as const;
+
+/** 全部内置表情包（渲染、渠道发送、管理窗口按 ID 查找用）。 */
+export const FIREFLY_STICKERS = [...FIREFLY_MANUAL_STICKERS, ...FIREFLY_AUTO_STICKERS] as const;

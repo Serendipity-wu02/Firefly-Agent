@@ -156,6 +156,16 @@ body {
   overflow: hidden;
   user-select: none;
   app-region: drag;
+  animation: cy-page-in 260ms ease both;
+}
+
+/* 只淡入、不位移：工作区里的原生浏览器视图按页面元素的实际矩形定位。 */
+@keyframes cy-page-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .cy-page { animation: none; }
 }
 
 /* 最大化：贴满工作区，去掉圆角和描边。原生拖动区在此状态下拖不动还原，
