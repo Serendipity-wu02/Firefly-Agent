@@ -104,6 +104,22 @@ describe("send_email", () => {
     expect(sendMailMock).not.toHaveBeenCalled();
   });
 
+  it("确认卡归属当前 run；run 取消后即使答复“发送”也不发信", async () => {
+    const controller = new AbortController();
+    requestUserChoiceMock.mockImplementation(async () => { controller.abort(); return "send"; });
+    await expect(exec({ to: ["a@b.com"], subject: "标题", body: "正文" }, { userQuery: "", runId: "run-1", signal: controller.signal }))
+      .rejects.toMatchObject({ name: "AbortError" });
+    expect(requestUserChoiceMock.mock.calls[0]![3]).toEqual({ runId: "run-1", signal: controller.signal });
+    expect(sendMailMock).not.toHaveBeenCalled();
+  });
+
+  it("等待确认时 run 被取消 → 卡片作废，不发信", async () => {
+    requestUserChoiceMock.mockRejectedValue(Object.assign(new Error("aborted"), { name: "AbortError" }));
+    await expect(exec({ to: ["a@b.com"], subject: "标题", body: "正文" }, { userQuery: "", runId: "run-1" }))
+      .rejects.toMatchObject({ name: "AbortError" });
+    expect(sendMailMock).not.toHaveBeenCalled();
+  });
+
   it("用户确认 → 调 sendMail，参数正确（from 含 fromName 转义、cc undefined、attachments 映射）", async () => {
     const res = await exec({
       to: ["a@b.com", "c@d.com"],

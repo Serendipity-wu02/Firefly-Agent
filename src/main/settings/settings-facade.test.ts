@@ -84,6 +84,11 @@ describe("general run limit settings", () => {
     expect(normalizeGeneralSettings({ runTimeoutMinutes: 99999 } as never).runTimeoutMinutes).toBe(1440);
     expect(normalizeGeneralSettings({ maxToolRounds: -5, runTimeoutMinutes: "x" } as never)).toMatchObject({ maxToolRounds: 200, runTimeoutMinutes: 120 });
     expect(normalizeGeneralSettings({ maxToolRounds: 12.9 } as never).maxToolRounds).toBe(12);
+    // null / 空串 / 空白不是「不限」：回到默认；只有明确的 0 才关闭限制。
+    for (const blank of [null, "", "   "]) {
+      expect(normalizeGeneralSettings({ maxToolRounds: blank, runTimeoutMinutes: blank } as never)).toMatchObject({ maxToolRounds: 200, runTimeoutMinutes: 120 });
+    }
+    expect(normalizeGeneralSettings({ maxToolRounds: "0", runTimeoutMinutes: "30" } as never)).toMatchObject({ maxToolRounds: 0, runTimeoutMinutes: 30 });
   });
 });
 
