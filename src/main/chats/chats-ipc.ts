@@ -19,6 +19,7 @@ import {canonicalJson} from "../memory-core/repository-types";
 import { app, BrowserWindow, type WebContents, dialog, shell } from "electron";
 import { randomUUID } from "crypto";
 import { IPC } from "../../shared/ipc-channels";
+import { DEFAULT_CONTEXT_WINDOW_TOKENS } from "../../shared/context-window";
 import { createIpcScope, type IpcScope } from "../application/ipc-scope";
 import type { ChatMessage, ConversationMode, ConversationWorkspaceBinding, PendingChatMessage } from "../../shared/chat-types";
 import * as chatsStore from "./chats-store";
@@ -292,7 +293,7 @@ export function registerChatsIpc(
           phase: "terminal",
           contextWindowTokens: lastSnapshot?.contextWindowTokens
             ?? settings.contextWindowTokens
-            ?? 256000,
+            ?? DEFAULT_CONTEXT_WINDOW_TOKENS,
           personaContent: "",
           messages: compactModelMessages as never,
         });

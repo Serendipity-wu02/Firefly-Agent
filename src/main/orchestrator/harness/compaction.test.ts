@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import type { ChatMessage } from "../vendors/types";
 import {
+  computeTokenBudget,
   compressForAgentLoop,
   buildCompactionCheckpoint,
   findSafeCutPointForRetainedTokens,
@@ -11,6 +12,22 @@ import {
 function message(role: ChatMessage["role"], content: string): ChatMessage {
   return { role, content };
 }
+
+describe("Harness compaction trigger", () => {
+  // 约 4 字符 = 1 token：400000 个英文字符 ≈ 100000 token。
+  const filler = (tokens: number): ChatMessage[] => [message("user", "x".repeat(tokens * 4))];
+
+  it("compacts once the input reaches 85% of the context window", () => {
+    expect(computeTokenBudget("", [], filler(84_000), 100_000, 0, 0).needsCompaction).toBe(false);
+    expect(computeTokenBudget("", [], filler(86_000), 100_000, 0, 0).needsCompaction).toBe(true);
+  });
+
+  it("never waits past the usable input budget on small windows", () => {
+    // 窗口 10k、预留 8k：85% = 8.5k 高于可用输入 ~1.8k，以可用输入为准。
+    expect(computeTokenBudget("", [], filler(1_900), 10_000, 8_000, 200).needsCompaction).toBe(true);
+    expect(computeTokenBudget("", [], filler(1_000), 10_000, 8_000, 200).needsCompaction).toBe(false);
+  });
+});
 
 describe("Harness context compaction v2", () => {
   it("writes and recognizes Firefly checkpoints", () => {
