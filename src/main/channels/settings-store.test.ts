@@ -126,6 +126,15 @@ describe("channels/settings-store", () => {
     expect(loaded.feishu.appSecret).toBe("new");
   });
 
+  it("defaults to chat only and keeps an explicit all", () => {
+    expect(loadChannelsSettings().toolSandbox).toBe("off");
+    fs.writeFileSync(path.join(os.tmpdir(), "channels-settings.json"), JSON.stringify({ toolSandbox: "all" }), "utf8");
+    expect(loadChannelsSettings().toolSandbox).toBe("all");
+    // an unknown value falls back to the safe default, never to full tool access
+    fs.writeFileSync(path.join(os.tmpdir(), "channels-settings.json"), JSON.stringify({ toolSandbox: "everything" }), "utf8");
+    expect(loadChannelsSettings().toolSandbox).toBe("off");
+  });
+
   it("saveChannelsSettings: persists the off tool sandbox", () => {
     saveChannelsSettings({ toolSandbox: "off" });
     expect(loadChannelsSettings().toolSandbox).toBe("off");

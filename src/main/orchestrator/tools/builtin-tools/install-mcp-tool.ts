@@ -9,6 +9,7 @@
 
 import type { ToolDefinition } from "../registry/tool-registry";
 import { addMcpServer } from "../../mcp-manager";
+import { requestUserChoice, type ChoiceOption } from "../../../user-choice";
 
 const LOG_PREFIX = "[BuiltinTools]";
 
@@ -31,6 +32,23 @@ async function executeInstallMcp(args: Record<string, unknown>): Promise<string>
     }
   }
   const cwd = args.cwd ? String(args.cwd) : undefined;
+
+  // 安装 = 启动一条任意命令并长期保存、自动连接，所以不管当前是哪一档权限都要用户点一下确认
+  //（设置页手动添加 MCP 本来就有确认）。卡片里列出程序、参数、工作目录和环境变量名，不展示变量值。
+  const question = [
+    `确认安装并连接 MCP 服务「${name}」？`,
+    `程序：${command}`,
+    `参数：${JSON.stringify(cmdArgs)}`,
+    `工作目录：${cwd ?? "默认"}`,
+    `环境变量名称：${env ? JSON.stringify(Object.keys(env)) : "[]"}`,
+    "它会被保存下来，之后启动流萤时自动连接。",
+  ].join("\n");
+  const options: ChoiceOption[] = [
+    { label: "安装并连接", value: "install" },
+    { label: "取消", value: "cancel" },
+  ];
+  const choice = await requestUserChoice(question, options, "cancel");
+  if (choice !== "install") return "[install_mcp_server] 用户取消安装";
 
   console.log(LOG_PREFIX, "install_mcp_server:", id, name, command, JSON.stringify(cmdArgs).slice(0, 200));
   if (env) console.log(LOG_PREFIX, "  env keys:", Object.keys(env).join(","));
