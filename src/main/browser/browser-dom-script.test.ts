@@ -49,3 +49,16 @@ it("excludes login controls, disabled form submissions and fields hidden by ance
   expect(snapshot.elements.some((e: any) => ["Sign in", "Submit", "Hidden", "Download"].includes(e.name))).toBe(false);
   expect(JSON.stringify(snapshot.elements)).not.toContain("hidden secret"); f.dom.window.close();
 });
+
+it("excludes payment, identity and sign-up controls from observation and from typing or clicking", () => {
+  const f = page();
+  f.dom.window.document.body.insertAdjacentHTML("beforeend",
+    '<input name="cc-number" aria-label="Number"><input aria-label="CVV"><input placeholder="IBAN"><input autocomplete="cc-exp">'
+    + '<a href="/join">Join now</a><a href="/login.php">Member area</a><button type="button">Buy now</button><button type="button">Pay</button><button type="button">Place order</button>'
+    + '<form id="card"><input type="search" aria-label="Notes"><input autocomplete="cc-number"></form>');
+  const snapshot = f.run({ kind: "observe", snapshotId: "one", url: "https://example.com/" });
+  const names = snapshot.elements.map((e: any) => e.name);
+  for (const blocked of ["Number", "CVV", "IBAN", "Join now", "Member area", "Buy now", "Pay", "Place order", "Notes"]) expect(names).not.toContain(blocked);
+  expect(names).toContain("Count");
+  f.dom.window.close();
+});
