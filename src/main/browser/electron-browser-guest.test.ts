@@ -33,12 +33,6 @@ describe("real Electron WebContentsView adapter boundary", () => {
     preventDefault.mockClear(); expect(routeBrowserGuestNavigation(f.contents, { preventDefault }, "https://example.com/")).toBe(true); expect(preventDefault).not.toHaveBeenCalled();
     guest.destroy(); expect(routeBrowserGuestNavigation(f.contents, { preventDefault }, "https://example.com/")).toBe(true); expect(preventDefault).toHaveBeenCalledTimes(1);
   });
-  it("reports a crashed page as a failed load instead of leaving a blank view", () => {
-    const f = nativeFixture(), guest = createElectronBrowserGuest(f.session as any), failed = vi.fn();
-    guest.installCallbacks({ allowsNavigation: () => true, started: () => {}, changed: () => {}, failed, destroyed: () => {} });
-    f.contents.emit("render-process-gone", {}, { reason: "crashed", exitCode: 1 });
-    expect(failed).toHaveBeenCalledOnce();
-  });
   it("constructs an unloaded unattached view with the exact dedicated Session and no privileged preload", () => {
     const f = nativeFixture(), guest = createElectronBrowserGuest(f.session as any);
     expect(guest.contents).toBe(f.contents); expect(f.trace).toEqual(["disable_non_proxied_udp"]);

@@ -31,8 +31,6 @@ export function createElectronBrowserGuest(session: Session): BrowserGuestPort<S
   contents.on("did-finish-load", () => callbacks.changed());
   contents.on("did-navigate-in-page", (_event, _url, main) => { if (main) callbacks.changed(); });
   contents.on("did-fail-load", (_event, _code, _description, _url, main) => { if (main) callbacks.failed(); });
-  // 页面渲染进程崩溃 / 被杀：按加载失败呈现（可重新加载），而不是留下一块空白视图。
-  contents.on("render-process-gone", () => callbacks.failed());
   contents.on("destroyed", () => { offRouting(); historyWaiters.forEach(cancel => cancel()); callbacks.destroyed(); });
   function detach(): void {
     const attached = host; host = undefined;
