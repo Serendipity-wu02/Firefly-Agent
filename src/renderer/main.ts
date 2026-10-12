@@ -21,13 +21,9 @@ if (!canvas) throw new Error("Canvas #live2d-canvas not found");
 if (!window.firefly) {
   (window as unknown as { firefly: unknown }).firefly = {
     minimize: () => {},
-    hide: () => {},
-    quit: () => {},
     setInteractive: (_: boolean) => Promise.resolve(),
-    moveBy: (_dx: number, _dy: number) => {},
     moveTo: (_x: number, _y: number) => {},
     setDragging: (_isDragging: boolean) => {},
-    captureFrame: () => Promise.resolve(null),
     getCursorPosition: () => Promise.resolve(null),
     onPetZoom: (_cb: (zoom: number) => void) => () => {},
     onPetVisibilityChanged: (_cb: (visible: boolean) => void) => () => {},

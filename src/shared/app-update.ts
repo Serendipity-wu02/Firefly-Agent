@@ -21,7 +21,6 @@ export interface AppUpdateState {
 
 export interface AppUpdateApi {
   getState(): Promise<AppUpdateState>;
-  check(): Promise<AppUpdateState>;
   download(): Promise<AppUpdateState>;
   install(): Promise<boolean>;
   onStateChanged(listener: (state: AppUpdateState) => void): () => void;

@@ -7,7 +7,7 @@ import * as path from "path";
 import { IPC } from "../../shared/ipc-channels";
 import { createIpcScope, type IpcScope } from "../application/ipc-scope";
 import { getStickerManagerConfig, setStickerEnabled } from "../orchestrator/sticker-settings";
-import { addUserSticker, deleteUserSticker } from "../sticker-storage";
+import { addUserSticker } from "../sticker-storage";
 import { loadImportedDocumentPanelData, loadMemoryPanelData } from "./panel";
 import { deleteImportedDoc } from "../rag";
 import { loadUserProfile, saveUserProfile, getAvatarPath } from "../settings-store";
@@ -15,7 +15,7 @@ import { registerMcpManagementIpc } from "../orchestrator/mcp-management-ipc";
 import { toolRegistry } from "../orchestrator/tools/registry/tool-registry";
 import type { ConversationMode } from "../../shared/chat-types";
 import { loadGeneralSettings, saveGeneralSettings } from "../settings/settings-facade";
-import { listSkillsForUi, setSkillEnabled, skillRegistry, rescanSkills } from "../skills";
+import { setSkillEnabled, skillRegistry, rescanSkills } from "../skills";
 import type { SkillMode } from "../skills/types";
 import type { WindowManager } from "../windows/window-manager";
 import {
@@ -103,18 +103,6 @@ export function registerMemoryUserToolIpc(deps: MemoryUserToolIpcDependencies): 
     return getStickerManagerConfig();
   });
 
-  ipc.handle(IPC.STICKERS_DELETE, async (_event, id: string) => {
-    try {
-      await deleteUserSticker(id);
-      embeddingIndexService.invalidateStickerEmbeddingIndex();
-      embeddingIndexService.refreshStickerEmbeddingIndex("user-sticker-delete");
-    } catch (err) {
-      console.error("[stickers] delete failed:", err);
-      throw err;
-    }
-    return getStickerManagerConfig();
-  });
-
   ipc.handle(IPC.STICKERS_GET_ENABLED, () => {
     return getStickerManagerConfig().filter((s) => s.enabled);
   });
@@ -169,24 +157,6 @@ export function registerMemoryUserToolIpc(deps: MemoryUserToolIpcDependencies): 
 
   registerMcpManagementIpc({ ipc, getSettingsWindow: () => settingsWindow });
 
-  // Tool toggles
-  ipc.handle(IPC.TOOL_SET_ENABLED, (_event, payload: unknown) => {
-    const p = payload as { id?: string; enabled?: boolean };
-    if (!p.id) return { ok: false, error: "missing tool id" };
-    toolRegistry.setEnabled(p.id, p.enabled !== false);
-    console.log("[Tool] " + p.id + " enabled=" + (p.enabled !== false));
-    return { ok: true };
-  });
-
-  ipc.handle(IPC.TOOL_GET_ENABLED, () => {
-    const tools = toolRegistry.getAllTools();
-    const result: Record<string, boolean> = {};
-    for (const t of tools) {
-      result[t.id] = t.enabled;
-    }
-    return result;
-  });
-
   // 工具目录元数据（工具页展示用；只暴露可序列化字段，不含 execute/zod schema）
   ipc.handle(IPC.TOOL_GET_CATALOG, () => {
     return toolRegistry.getAllTools().map((t) => ({
@@ -219,36 +189,6 @@ export function registerMemoryUserToolIpc(deps: MemoryUserToolIpcDependencies): 
     console.log(`[Tool] override ${p.toolId}@${mode}=${p.enabled !== false}`);
     return { ok: true };
   });
-
-  ipc.handle(IPC.TOOL_CLEAR_MODE_OVERRIDE, (_event, payload: unknown) => {
-    const p = payload as { toolId?: string; mode?: string };
-    if (!p.toolId) return { ok: false, error: "missing toolId" };
-    const before = loadGeneralSettings().toolModeOverrides;
-    const next = { ...before };
-    if (p.mode) {
-      // 清除单个模式：删除该 mode 键，若工具已无任何覆盖则整个删除
-      const validModes = ["chat", "work", "code"];
-      if (!validModes.includes(p.mode)) return { ok: false, error: "invalid mode" };
-      const mode = p.mode as ConversationMode;
-      if (next[p.toolId]) {
-        const { [mode]: _removed, ...rest } = next[p.toolId];
-        if (Object.keys(rest).length > 0) {
-          next[p.toolId] = rest;
-        } else {
-          delete next[p.toolId];
-        }
-      }
-    } else {
-      // 未指定 mode：清除该工具的所有模式覆盖
-      delete next[p.toolId];
-    }
-    saveGeneralSettings({ toolModeOverrides: next });
-    console.log(`[Tool] override cleared ${p.toolId}@${p.mode ?? "all"}`);
-    return { ok: true };
-  });
-
-  // Skill toggles
-  ipc.handle(IPC.SKILL_LIST, () => listSkillsForUi());
 
   ipc.handle(IPC.SKILL_SET_ENABLED, (event: IpcMainInvokeEvent, payload: unknown) => {
     if (!payload || typeof payload !== "object" || Array.isArray(payload)) return { ok: false, error: "Invalid Skill enable request." };
@@ -308,31 +248,6 @@ export function registerMemoryUserToolIpc(deps: MemoryUserToolIpcDependencies): 
     next[p.skillId] = { ...(next[p.skillId] ?? {}), [mode]: p.enabled !== false };
     saveGeneralSettings({ skillModeOverrides: next });
     console.log(`[Skill] override ${p.skillId}@${mode}=${p.enabled !== false}`);
-    return { ok: true };
-  });
-
-  ipc.handle(IPC.SKILL_CLEAR_MODE_OVERRIDE, (_event, payload: unknown) => {
-    const p = payload as { skillId?: string; mode?: string };
-    if (!p.skillId) return { ok: false, error: "missing skillId" };
-    const before = loadGeneralSettings().skillModeOverrides;
-    const next = { ...before };
-    if (p.mode) {
-      const validModes = ["work", "code"];
-      if (!validModes.includes(p.mode)) return { ok: false, error: "invalid mode" };
-      const mode = p.mode as SkillMode;
-      if (next[p.skillId]) {
-        const { [mode]: _removed, ...rest } = next[p.skillId];
-        if (Object.keys(rest).length > 0) {
-          next[p.skillId] = rest;
-        } else {
-          delete next[p.skillId];
-        }
-      }
-    } else {
-      delete next[p.skillId];
-    }
-    saveGeneralSettings({ skillModeOverrides: next });
-    console.log(`[Skill] override cleared ${p.skillId}@${p.mode ?? "all"}`);
     return { ok: true };
   });
 

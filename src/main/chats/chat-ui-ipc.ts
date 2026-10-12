@@ -17,12 +17,6 @@ import { resolveTransport } from "../orchestrator/vendors/transport-detector";
 import { getSession } from "./chats-store";
 import { getActiveLive2dWorkRunCount } from "../orchestrator/live2d-work-signal";
 import { describePendingAttachment } from "../rag/file-ingest";
-import { processDocumentIndexRequest } from "../rag/document-index-ipc";
-import {
-  enqueueDocumentIndexJob,
-  cancelDocumentIndexJob,
-} from "../rag/document-index-queue";
-import { retrieveQueuedDocumentChunks } from "../rag/document-index-worker";
 import { captionImageSafe, buildImageCaptionPrompt, validateCaptionImagePath } from "../chat/image-caption";
 import { resolveCaptionVisionConfig, resolveImageRoute } from "../orchestrator/image-router";
 import type { WindowManager } from "../windows/window-manager";
@@ -50,12 +44,7 @@ export function getActiveChatSessionId(): string | null {
 }
 
 export function registerChatUiIpc(deps: ChatUiIpcDependencies): void {
-  const { live2dWindowLifecycle } = deps;
   const ipc = deps.ipc ?? createIpcScope();
-
-  ipc.handle(IPC.LIVE2D_GET_MAIN_DIAGNOSTICS, () => ({
-    window: live2dWindowLifecycle.getDiagnostics(),
-  }));
 
   // 桌宠只会收到“工作中”的跳变事件；窗口晚于 true 事件加载或重载时，用这个快照补上当前状态。
   ipc.handle(IPC.LIVE2D_GET_WORKING, () => getActiveLive2dWorkRunCount() > 0);
@@ -170,28 +159,6 @@ export function registerChatUiIpc(deps: ChatUiIpcDependencies): void {
     }
   });
 
-  ipc.handle(IPC.CHAT_PROCESS_DOCUMENTS, async (event, payload: unknown) => {
-    const filePaths = payload && typeof payload === "object" && Array.isArray((payload as { filePaths?: unknown }).filePaths)
-      ? (payload as { filePaths: unknown[] }).filePaths.filter((p): p is string => typeof p === "string")
-      : [];
-    if (filePaths.length === 0) return [];
-    const query = typeof (payload as { query?: unknown }).query === "string"
-      ? (payload as { query: string }).query
-      : "";
-    return processDocumentIndexRequest({
-      filePaths,
-      query,
-      sender: event.sender,
-      enqueue: enqueueDocumentIndexJob,
-      retrieve: retrieveQueuedDocumentChunks,
-    });
-  });
-
-  ipc.handle(IPC.CHAT_CANCEL_DOCUMENT_INDEX, (_event, payload: unknown) => {
-    const jobId = payload && typeof payload === "object" ? (payload as { jobId?: unknown }).jobId : undefined;
-    return typeof jobId === "string" && cancelDocumentIndexJob(jobId);
-  });
-
   ipc.handle(IPC.CHAT_CAPTION_IMAGE, async (_event, payload: unknown) => {
     const filePath = payload && typeof payload === "object"
       ? (payload as { filePath?: unknown }).filePath
@@ -268,23 +235,16 @@ export function registerChatUiIpc(deps: ChatUiIpcDependencies): void {
     if (!chatWindow || chatWindow.isDestroyed() || event.sender !== chatWindow.webContents) {
       return false;
     }
-    let activeSessionId: string | null = null;
     if (payload == null) {
       activeChatTargetRegistry.clearActive(event.sender);
     } else {
       const parsed = parseActiveTargetPayload(payload);
       if (parsed) {
         activeChatTargetRegistry.setActive({ sender: event.sender, ...parsed });
-        activeSessionId = parsed.sessionId;
       }
     }
     deps.onActiveTargetChanged?.();
-    for (const win of BrowserWindow.getAllWindows()) {
-      if (win.isDestroyed()) continue;
-      try { win.webContents.send(IPC.CHATS_ACTIVE_SESSION_CHANGED, activeSessionId); } catch { /* ignore */ }
-    }
     return true;
   });
 
-  ipc.handle(IPC.CHATS_GET_ACTIVE_SESSION, () => getActiveChatSessionId());
 }

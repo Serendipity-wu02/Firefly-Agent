@@ -17,19 +17,14 @@ export const IPC = {
   BROWSER_CHANGED: "browser:changed",
   // pet window
   WINDOW_MINIMIZE: "window:minimize",
-  WINDOW_CLOSE: "window:close",
   WINDOW_SET_INTERACTIVE: "window:set-interactive",
-  WINDOW_MOVE: "window:move",
   WINDOW_MOVE_TO: "window:move-to",
   WINDOW_SET_DRAGGING: "window:set-dragging",
-  WINDOW_CAPTURE_FRAME: "window:capture-frame",
   WINDOW_GET_CURSOR_POSITION: "window:get-cursor-position",
   PET_VISIBILITY_CHANGED: "pet:visibility-changed",
-  APP_QUIT: "app:quit",
 
   // GitHub 应用更新
   APP_UPDATE_GET_STATE: "app-update:get-state",
-  APP_UPDATE_CHECK: "app-update:check",
   APP_UPDATE_DOWNLOAD: "app-update:download",
   APP_UPDATE_INSTALL: "app-update:install",
   APP_UPDATE_STATE: "app-update:state",
@@ -48,9 +43,6 @@ export const IPC = {
   CHAT_WINDOW_DRAG_START: "chat:window-drag-start",
   CHAT_WINDOW_DRAG_END: "chat:window-drag-end",
   CHAT_INGEST_FILES: "chat:ingest-files",
-  CHAT_PROCESS_DOCUMENTS: "chat:process-documents",
-  CHAT_DOCUMENT_INDEX_PROGRESS: "chat:document-index-progress",
-  CHAT_CANCEL_DOCUMENT_INDEX: "chat:cancel-document-index",
   CHAT_CAPTION_IMAGE: "chat:caption-image",
   CHAT_GET_IMAGE_PREVIEW: "chat:get-image-preview",
   CHAT_GET_IMAGE_SEND_STRATEGY: "chat:get-image-send-strategy",
@@ -125,8 +117,6 @@ export const IPC = {
   SETTINGS_PICK_UI_FONT: "settings:pick-ui-font",
   SETTINGS_IMPORT_UI_FONT: "settings:import-ui-font",
   SETTINGS_RESET_UI_FONT: "settings:reset-ui-font",
-  SETTINGS_OPEN_SIDEBAR: "settings:open-sidebar",
-  SETTINGS_CLOSE_SIDEBAR: "settings:close-sidebar",
   SETTINGS_SET_PET_ALWAYS_ON_TOP: "settings:set-pet-always-on-top",
   SETTINGS_SET_PET_VISIBLE: "settings:set-pet-visible",
   SETTINGS_SET_PET_ZOOM: "settings:set-pet-zoom",
@@ -138,12 +128,10 @@ export const IPC = {
   CHATS_LIST: "chats:list",
   CHATS_GET: "chats:get",
   CHATS_EXPORT_WORK_MARKDOWN: "chats:export-work-markdown",
-  CHATS_GET_PAGE: "chats:get-page",
   CHATS_CREATE: "chats:create",
   CHATS_APPEND: "chats:append",
   CHATS_UPSERT: "chats:upsert",
 
-  CHATS_REPLACE_MESSAGES: "chats:replace-messages",
   CHATS_REPLACE_TAIL: "chats:replace-tail",
   // renderer → main：主动压缩会话上下文（模型窗口内旧消息摘要成一条记忆）
   CHATS_COMPACT: "chats:compact",
@@ -162,7 +150,6 @@ export const IPC = {
   CHATS_PENDING_ADJUST: "chats:pending-adjust",
   CHATS_SET_PINNED: "chats:set-pinned",
   CHATS_SET_MODEL_PROFILE: "chats:set-model-profile",
-  CHATS_OPEN_FOLDER: "chats:open-folder",
   CHATS_OPEN_WORKSPACE: "chats:open-workspace",
   // 任意会话变动后 main → 所有渲染窗口 broadcast，触发列表/标题刷新
   CHATS_CHANGED: "chats:changed",
@@ -175,21 +162,16 @@ export const IPC = {
   // 聊天窗口 → main：声明当前活跃 sessionId（用于设置面板"删除当前会话"时差异化提示）
   CHATS_SET_ACTIVE_SESSION: "chats:set-active-session",
   // renderer → main: 查询当前活跃 sessionId（设置面板初次打开时用）
-  CHATS_GET_ACTIVE_SESSION: "chats:get-active-session",
   // main → 所有窗口：活跃 sessionId 变化时广播
-  CHATS_ACTIVE_SESSION_CHANGED: "chats:active-session-changed",
   // 对话工作区绑定
   // renderer → main：设置当前对话的工作区目录
   CHATS_SET_WORKSPACE: "chats:set-workspace",
   // renderer → main：获取当前对话的工作区绑定
-  CHATS_GET_WORKSPACE: "chats:get-workspace",
   // renderer → main：清除当前对话的工作区绑定
-  CHATS_CLEAR_WORKSPACE: "chats:clear-workspace",
   // renderer → main：打开文件夹选择器
   CHATS_PICK_WORKSPACE_FOLDER: "chats:pick-workspace-folder",
   // renderer → main：显式初始化知识工作区结构（只创建缺失文件）
   // main → 所有窗口：工作区绑定变更广播
-  CHATS_WORKSPACE_CHANGED: "chats:workspace-changed",
 
   // Review 快照（不可变文件变更审查）
   // renderer → main：获取指定 Run 的 ReviewSnapshot（不存在时按 halted 补生成）
@@ -218,7 +200,6 @@ export const IPC = {
 	  STICKERS_SET_ENABLED: "stickers:set-enabled",
 	  STICKERS_PICK_FILE: "stickers:pick-file",
 	  STICKERS_ADD: "stickers:add",
-	  STICKERS_DELETE: "stickers:delete",
 	  STICKERS_GET_ENABLED: "stickers:get-enabled",
 
   // public model config updates (no API key)
@@ -229,7 +210,6 @@ export const IPC = {
 
   LIVE2D_WORKING_CHANGED: "live2d:working-changed", // 主进程 → 桌宠窗口：Agent 是否处于工作中（boolean）
   LIVE2D_GET_WORKING: "live2d:get-working", // 桌宠窗口 → 主进程：读取当前是否处于工作中（桌宠晚于“true”事件加载 / 重载时用它补上初始状态）
-  LIVE2D_GET_MAIN_DIAGNOSTICS: "live2d:get-main-diagnostics",
   // embedding model status
   EMBEDDING_SET_MODEL: "embedding:set-model",
   RERANKER_SET_MODE: "reranker:set-mode",
@@ -237,7 +217,6 @@ export const IPC = {
   // unified model install status
   MODEL_GET_INSTALL_STATUS: "model:get-install-status",
   // shell external URL
-  OPEN_EXTERNAL: "shell:open-external",
   // user profile
   USER_GET_PROFILE: "user:get-profile",
   USER_SAVE_PROFILE: "user:save-profile",
@@ -259,17 +238,13 @@ export const IPC = {
   MCP_LIST_SERVERS: "mcp:list-servers",
 
   // tool (plugin) toggle
-  TOOL_SET_ENABLED: "tool:set-enabled",
-  TOOL_GET_ENABLED: "tool:get-enabled",
   // tool-mode override (三模适配层：用户自定义工具在 chat/work/code 模式下的可见性)
   TOOL_GET_MODE_OVERRIDES: "tool:get-mode-overrides",
   TOOL_SET_MODE_OVERRIDE: "tool:set-mode-override",
-  TOOL_CLEAR_MODE_OVERRIDE: "tool:clear-mode-override",
   // tool catalog (工具页拉取工具元数据：id/name/description/modes)
   TOOL_GET_CATALOG: "tool:get-catalog",
 
   // skill toggle
-  SKILL_LIST: "skill:list",
   SKILL_SET_ENABLED: "skill:set-enabled",
   EXTERNAL_SKILLS_LIST: "external-skills:list",
   EXTERNAL_SKILLS_DETAIL: "external-skills:detail",
@@ -279,7 +254,6 @@ export const IPC = {
   // skill-mode override（用户自定义 skill 在 work/code 模式下的可见性）
   SKILL_GET_MODE_OVERRIDES: "skill:get-mode-overrides",
   SKILL_SET_MODE_OVERRIDE: "skill:set-mode-override",
-  SKILL_CLEAR_MODE_OVERRIDE: "skill:clear-mode-override",
   // skill catalog（skill 页拉取元数据：id/name/description/modes）
   SKILL_GET_CATALOG: "skill:get-catalog",
   // 重新扫描 user skills 目录，安装/删除 skill 后无需重启即可刷新 UI
@@ -338,27 +312,15 @@ export const IPC = {
   // 多渠道（微信/飞书/QQ/QQ 机器人）
   CHANNELS_GET_CONFIG: "channels:get-config",
   CHANNELS_SAVE_CONFIG: "channels:save-config",
-  CHANNELS_LIST: "channels:list",
   CHANNELS_RESTART: "channels:restart",
   CHANNELS_GET_STATUS: "channels:get-status",
   CHANNELS_INSTALL_PROGRESS: "channels:install-progress",     // main → renderer
   CHANNELS_STATUS_CHANGED: "channels:status-changed",         // main → renderer
   // 微信专属
-  CHANNELS_WECHAT_INSTALL: "channels:wechat:install",
   CHANNELS_WECHAT_LOGIN_START: "channels:wechat:login-start",
-  CHANNELS_WECHAT_LOGIN_CANCEL: "channels:wechat:login-cancel",
   CHANNELS_WECHAT_QRCODE: "channels:wechat:qrcode",        // main → renderer, payload: dataURL string
   CHANNELS_WECHAT_LOGIN_DONE: "channels:wechat:login-done", // main → renderer, payload: { ok, botId?, error? }
-  CHANNELS_WECHAT_LOGIN_RESULT: "channels:wechat:login-result",
-  CHANNELS_WECHAT_PAIRING_LIST: "channels:wechat:pairing-list",
-  CHANNELS_WECHAT_PAIRING_APPROVE: "channels:wechat:pairing-approve",
-  CHANNELS_WECHAT_LOGOUT: "channels:wechat:logout",
-  CHANNELS_WECHAT_RUNTIME_DETECT: "channels:wechat:runtime-detect",
-  CHANNELS_WECHAT_RUNTIME_INSTALL: "channels:wechat:runtime-install",
-  CHANNELS_WECHAT_RUNTIME_UPDATE: "channels:wechat:runtime-update",
   // 飞书专属
-  CHANNELS_FEISHU_TEST_CONNECTION: "channels:feishu:test-connection",
-  CHANNELS_FEISHU_TEST_WEBHOOK_REACHABLE: "channels:feishu:test-webhook-reachable",
   CHANNELS_QQ_TEST_CONNECTION: "channels:qq:test-connection",
   /**
    * QQ 监听鉴权预检：主进程按 listenMode/customHost 解析真实监听地址，并判定是否
