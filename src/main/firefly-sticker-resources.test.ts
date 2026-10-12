@@ -2,7 +2,7 @@ import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
 import { afterEach, expect, it, vi } from "vitest";
-import { BUILT_IN_STICKER_DESCRIPTIONS, BUILT_IN_STICKER_FILES } from "./sticker-descriptions";
+import { AUTO_SEND_STICKER_DESCRIPTIONS, BUILT_IN_STICKER_DESCRIPTIONS, BUILT_IN_STICKER_FILES } from "./sticker-descriptions";
 import { BUILT_IN_STICKER_IDS } from "../shared/sticker-types";
 
 const { dataDir } = vi.hoisted(() => ({ dataDir: { value: "" } }));
@@ -25,8 +25,8 @@ it("preserves an existing custom ID even when a new built-in uses the same name"
   await expect(deleteUserSticker("firefly-hug")).resolves.toBeUndefined();
 });
 
-it("loads 21 new Firefly IDs with matching PNG resources and descriptions", () => {
-  expect(BUILT_IN_STICKER_IDS).toHaveLength(21);
+it("loads 29 Firefly IDs with matching PNG resources and descriptions", () => {
+  expect(BUILT_IN_STICKER_IDS).toHaveLength(29);
   expect(Object.keys(BUILT_IN_STICKER_FILES)).toEqual([...BUILT_IN_STICKER_IDS]);
   expect(Object.keys(BUILT_IN_STICKER_DESCRIPTIONS)).toEqual([...BUILT_IN_STICKER_IDS]);
   for (const id of BUILT_IN_STICKER_IDS) {
@@ -35,7 +35,7 @@ it("loads 21 new Firefly IDs with matching PNG resources and descriptions", () =
     const bytes = fs.readFileSync(path.resolve(__dirname, "../renderer/public/stickers", BUILT_IN_STICKER_FILES[id]));
     expect(bytes.subarray(0, 8).toString("hex")).toBe("89504e470d0a1a0a");
   }
-  expect(fs.readdirSync(path.resolve(__dirname, "../renderer/public/stickers"))).toHaveLength(21);
+  expect(fs.readdirSync(path.resolve(__dirname, "../renderer/public/stickers"))).toHaveLength(29);
 });
 
 it("lists built-ins with saved toggles and preserves user GIF metadata without writes", () => {
@@ -44,7 +44,7 @@ it("lists built-ins with saved toggles and preserves user GIF metadata without w
   const original = JSON.stringify({ schemaVersion: 1, stickers: { personal: { id: "personal", file: "personal.gif", description: "公开测试", phrases: [], createdAt: 1 } } });
   fs.writeFileSync(file, original);
   const items = getAllStickerConfig({ "firefly-hug": false });
-  expect(items).toHaveLength(22);
+  expect(items).toHaveLength(30);
   expect(items.find(item => item.id === "firefly-hug")).toMatchObject({ enabled: false, builtIn: true, src: "/stickers/hug.png" });
   expect(items.find(item => item.id === "personal")).toMatchObject({ builtIn: false, enabled: true });
   expect(items.find(item => item.id === "personal")?.src).toContain("personal.gif");
@@ -52,4 +52,13 @@ it("lists built-ins with saved toggles and preserves user GIF metadata without w
   expect(fs.readFileSync(file, "utf8")).toBe(original);
   expect(resolveStickerImagePath("firefly-hug")).toMatch(/hug\.png$/);
   expect(resolveStickerImagePath("hugtight")).toBeNull();
+});
+
+it("auto-sends only the 8 dedicated stickers, never the manual built-ins", () => {
+  expect(Object.keys(AUTO_SEND_STICKER_DESCRIPTIONS)).toEqual([
+    "firefly-pout", "firefly-wink", "firefly-amazed", "firefly-smile-ok",
+    "firefly-flustered", "firefly-bubble-tea", "firefly-wink-tongue", "firefly-cake",
+  ]);
+  expect(AUTO_SEND_STICKER_DESCRIPTIONS["firefly-hug"]).toBeUndefined();
+  for (const id of Object.keys(AUTO_SEND_STICKER_DESCRIPTIONS)) expect(BUILT_IN_STICKER_FILES[id]).toBeTruthy();
 });

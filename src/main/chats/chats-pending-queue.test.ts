@@ -5,7 +5,7 @@ import fs from "fs";
 import os from "os";
 import path from "path";
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import type { PendingChatMessageInput } from "../../../shared/chat-types";
+import type { PendingChatMessageInput } from "../../shared/chat-types";
 
 const mocks = vi.hoisted(() => ({
   userDataDir: "",

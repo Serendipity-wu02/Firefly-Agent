@@ -120,7 +120,7 @@ export async function runChildSession(input: {
       memoryRun = await prepared.openMemoryRun({ settings: { ...parent.vendorConfig, contextWindowTokens: input.config.contextWindowTokens ?? DEFAULT_HARNESS_CONFIG.contextWindowTokens },
         messages: [{ role: "user", content: input.prompt }], runId: session.childRunId, conversationId: session.id,
         signal: prepared.signal, transcriptSink: prepared.transcriptSink, toolSystemContent: "", soulSystemBaseContent: input.systemPrompt,
-        timeoutMs: input.config.totalTimeoutMs ?? 0 });
+        timeoutMs: input.config.modelRequestTimeoutMs ?? DEFAULT_HARNESS_CONFIG.modelRequestTimeoutMs });
       sink = memoryRun.bindSink(prepared.transcriptSink);
       runStore = input.runStore ?? getHarnessRunStore(getStorageContext().dataRoot);
       const fingerprint = (value: unknown) => createHash("sha256").update(JSON.stringify(value)).digest("hex");

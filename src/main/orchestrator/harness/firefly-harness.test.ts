@@ -231,6 +231,33 @@ describe("FireflyHarness completion", () => {
     }));
   });
 
+  it("bounds every run by default: 200 rounds, 2 hours, and 10 minutes per model request", async () => {
+    const { DEFAULT_HARNESS_CONFIG } = await import("./types");
+    expect(DEFAULT_HARNESS_CONFIG).toMatchObject({ maxRounds: 200, totalTimeoutMs: 7_200_000, modelRequestTimeoutMs: 600_000 });
+    const { fn: fetchMock } = fakeFetchSequencer([assistantResponse({ text: "完成。" })]);
+    vi.stubGlobal("fetch", fetchMock);
+    await runFireflyHarness({
+      systemPrompt: "you are a test agent",
+      messages: [{ role: "user", content: "完成任务" }],
+      tools: [mutationTool()],
+      vendorConfig,
+    });
+    expect(fakeStreamChatWithSdk).toHaveBeenCalledWith(expect.objectContaining({ timeoutMs: 600_000 }));
+  });
+
+  it("lets the run config disable the limits with 0", async () => {
+    const { fn: fetchMock } = fakeFetchSequencer([assistantResponse({ text: "完成。" })]);
+    vi.stubGlobal("fetch", fetchMock);
+    await runFireflyHarness({
+      systemPrompt: "you are a test agent",
+      messages: [{ role: "user", content: "完成任务" }],
+      tools: [mutationTool()],
+      vendorConfig,
+      config: { maxRounds: 0, totalTimeoutMs: 0, modelRequestTimeoutMs: 0 },
+    });
+    expect(fakeStreamChatWithSdk).toHaveBeenCalledWith(expect.objectContaining({ timeoutMs: 0 }));
+  });
+
   it("keeps child builtin capabilities effective in schemas and dispatch context", async () => {
     fakeStreamChatWithSdk.mockResolvedValueOnce(assistantResponse({ toolCalls: [
       { id: "injected-plan", name: "enter_plan_mode", arguments: "{}" },

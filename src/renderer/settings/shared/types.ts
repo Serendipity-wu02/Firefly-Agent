@@ -105,6 +105,8 @@ export interface GeneralSettings extends ChatAppearanceSettings {
   asrAliyunAccessKeySecret?: string;
   asrLanguage?: "zh" | "en" | "auto";
   maxParallelToolCalls: number;
+  maxToolRounds: number;
+  runTimeoutMinutes: number;
   chatSocialContextEnabled: boolean;
   petAlwaysOnTop: boolean;
   petVisible: boolean;

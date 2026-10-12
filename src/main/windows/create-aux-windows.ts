@@ -3,6 +3,7 @@ import * as path from "path";
 import { IPC } from "../../shared/ipc-channels";
 import { isDev } from "../env";
 import { computeLayout } from "../window-layout";
+import { MARK_GLASS_SCRIPT, resolveGlassWindowOptions } from "./glass-material";
 import {
   getCurrentAppIconPath,
   reactChatSession,
@@ -139,6 +140,7 @@ export function createSettingsWindow(section?: string): void {
   const { x: dx, y: dy, width: dw, height: dh } = display.workArea;
   const width = 1060;
   const height = 920;
+  const glassOptions = resolveGlassWindowOptions(process.platform, process.getSystemVersion());
   const window = new BrowserWindow({
     x: dx + Math.max(0, Math.floor((dw - width) / 2)),
     y: dy + Math.max(0, Math.floor((dh - height) / 2)),
@@ -152,7 +154,7 @@ export function createSettingsWindow(section?: string): void {
     autoHideMenuBar: true,
     show: false,
     frame: false,
-    transparent: true,
+    ...glassOptions.options,
     resizable: true,
     webPreferences: {
       preload: path.join(app.getAppPath(), "dist", "preload", "preload", "index.js"),
@@ -162,6 +164,12 @@ export function createSettingsWindow(section?: string): void {
     },
   });
   setSettingsWindow(window);
+  if (glassOptions.glass) {
+    // 页面据此换成玻璃配色（见 settings-system.css 的 [data-glass]）；每次页面（重新）加载后都要标记一次。
+    window.webContents.on("dom-ready", () => {
+      void window.webContents.executeJavaScript(MARK_GLASS_SCRIPT).catch(() => undefined);
+    });
+  }
 
   const hash = section ? `#${section}` : "";
   if (isDev) {

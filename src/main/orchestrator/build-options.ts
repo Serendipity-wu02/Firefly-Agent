@@ -53,6 +53,8 @@ import type { SkillRouteInfo } from "./firefly-agent";
 import { filterToolsBySearchBackend, type SearchBackend } from "./search-backend-filter";
 import type { RunCapabilities } from "./run-capabilities";
 import { buildStickerEmbeddingQuery } from "../sticker-query";
+import { stickerMoodGuard } from "../sticker-mood";
+import type { StickerEmbeddingEntry } from "../sticker-embedder";
 import { isPlanReadOnly, getPlanState } from "./plan-mode";
 import { policyFor } from "../permission-policy";
 import { resolveTranscriptRetainTokens, type MaterializedTranscript } from "./conversation-transcript-context";
@@ -156,6 +158,8 @@ export interface OnRunFinishedDeps {
     threshold: number,
   ) => Promise<{ id: string } | null | undefined>;
   loadStickerSettings: () => Record<string, boolean>;
+  /** 用户自定义贴图占用了内置 ID 时返回 true；情绪守卫据此不把内置情绪套到自定义贴图上。 */
+  isCustomSticker?: (stickerId: string) => boolean;
   recordRelationshipTurn: (input: RelationshipTurnInput) => Promise<unknown> | unknown;
 }
 
@@ -180,6 +184,9 @@ export interface ModelSettingsLite {
 export interface StyleSettingsLite {
   /** Harness 安全工具并发设置；旧测试/旧配置可省略。 */
   maxParallelToolCalls?: unknown;
+  /** 一次运行最多的工具轮数 / 最长执行分钟数；0 表示不限，未提供时用 Harness 默认值。 */
+  maxToolRounds?: unknown;
+  runTimeoutMinutes?: unknown;
   chatSocialContextEnabled?: unknown;
   /** 工具-模式覆盖层（三模适配层）。未提供时按 modes 字段或全可见过滤。 */
   toolModeOverrides?: ToolModeOverrides;
@@ -842,12 +849,18 @@ export async function buildAgentRunOptions(
       maxParallelToolCalls: typeof generalSettings.maxParallelToolCalls === "number"
         ? Math.max(1, Math.min(8, Math.trunc(generalSettings.maxParallelToolCalls)))
         : 4,
+      ...(typeof generalSettings.maxToolRounds === "number" && generalSettings.maxToolRounds >= 0
+        ? { maxToolRounds: Math.trunc(generalSettings.maxToolRounds) }
+        : {}),
+      ...(typeof generalSettings.runTimeoutMinutes === "number" && generalSettings.runTimeoutMinutes >= 0
+        ? { runTimeoutMs: Math.trunc(generalSettings.runTimeoutMinutes) * 60_000 }
+        : {}),
       messages: fcMessages,
       cleanMessages: cleanFcMessages,
       conversationId,
       executionMode,
       runtimeEnvironmentContext: environmentContext,
-      // 不设整轮任务期限；用户取消才停止整个 Agent Run。
+      // 整轮任务的轮数 / 时长上限由 maxToolRounds / runTimeoutMs 控制（见 Harness 默认值），这里不再单独设期限。
       timeoutMs: 0,
       toolSystemContent,
       skillLayerContent,
@@ -931,13 +944,18 @@ export async function onAgentRunFinished(
   const stickerIndex = deps.getStickerEmbeddingIndex?.() ?? deps.stickerEmbeddingIndex;
   const stickerQuery = buildStickerEmbeddingQuery(chatContent, sideEffectUserText);
   let stickerCandidate: string | null = null;
+  const moodKey = conversationId ?? channel ?? "desktop";
+  // 情绪守卫：回复不是明确不悦、或刚发过正面表情包时，生气类表情包不参与匹配。
+  const eligibleIndex = Array.isArray(stickerIndex)
+    ? stickerMoodGuard.filterIndex(stickerIndex as StickerEmbeddingEntry[], chatContent, moodKey, { isCustom: deps.isCustomSticker })
+    : stickerIndex;
   // 只有代码/公式时 stickerQuery 为空：不请求 embedding，避免技术内容误触发表情。
-  if (settings.stickerEnabled && stickerIndex && stickerQuery) {
+  if (settings.stickerEnabled && eligibleIndex && stickerQuery) {
     const matched = await perf.track("match_sticker", () =>
       deps.matchSticker(
         stickerQuery,
         deps.getEmbeddingProvider(),
-        stickerIndex,
+        eligibleIndex,
         settings.stickerSimilarityThreshold ?? 0.55,
       ),
     );
@@ -945,6 +963,7 @@ export async function onAgentRunFinished(
   }
   const stickerSettings = deps.loadStickerSettings();
   const sticker = stickerCandidate && stickerSettings[stickerCandidate] !== false ? stickerCandidate : null;
+  if (sticker) stickerMoodGuard.recordSent(moodKey, sticker, { isCustom: deps.isCustomSticker });
 
   // 返回 sticker 决定：
   // - 桌面聊天窗由 AG-UI bridge 发到本次 run 的源窗口，避免只投递旧 chatWindow

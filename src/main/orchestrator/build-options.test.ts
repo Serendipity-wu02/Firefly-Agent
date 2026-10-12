@@ -898,6 +898,52 @@ describe("build-options", () => {
     expect(effects).toEqual({ sticker: "hugtight" })
   })
 
+  it("keeps the angry sticker out of a cheerful conversation", async () => {
+    const seen: unknown[] = []
+    const matchSticker = vi.fn(async (_text: string, _provider: unknown, index: unknown) => {
+      seen.push(index)
+      return { id: "firefly-pout" }
+    })
+    const full = [{ id: "firefly-pout", embedding: [1, 0] }, { id: "firefly-cake", embedding: [0, 1] }]
+    const deps: OnRunFinishedDeps = {
+      loadModelSettings: () => ({ provider: "test", baseUrl: "", model: "", apiKey: "", stickerEnabled: true }),
+      scheduleMemoryWrite: () => {},
+      stickerEmbeddingIndex: full,
+      getEmbeddingProvider: () => ({ embed: async () => [1, 0] }),
+      matchSticker,
+      loadStickerSettings: () => ({}),
+      recordRelationshipTurn: async () => {},
+    }
+
+    await onAgentRunFinished({ reply: "好呀，一起吃蛋糕吧，哈哈", toolResults: [] }, "你生气了吗", deps, undefined, "mood-cheerful")
+
+    expect(seen[0]).toEqual([{ id: "firefly-cake", embedding: [0, 1] }])
+  })
+
+  it("keeps a custom sticker that reuses the angry sticker id in a cheerful conversation", async () => {
+    const seen: unknown[] = []
+    const matchSticker = vi.fn(async (_text: string, _provider: unknown, index: unknown) => {
+      seen.push(index)
+      return { id: "firefly-pout" }
+    })
+    const full = [{ id: "firefly-pout", embedding: [1, 0] }, { id: "firefly-cake", embedding: [0, 1] }]
+    const deps: OnRunFinishedDeps = {
+      loadModelSettings: () => ({ provider: "test", baseUrl: "", model: "", apiKey: "", stickerEnabled: true }),
+      scheduleMemoryWrite: () => {},
+      stickerEmbeddingIndex: full,
+      getEmbeddingProvider: () => ({ embed: async () => [1, 0] }),
+      matchSticker,
+      loadStickerSettings: () => ({}),
+      isCustomSticker: (id) => id === "firefly-pout",
+      recordRelationshipTurn: async () => {},
+    }
+
+    const effects = await onAgentRunFinished({ reply: "好呀，一起吃蛋糕吧，哈哈", toolResults: [] }, "晚上好", deps, undefined, "mood-custom")
+
+    expect(seen[0]).toEqual(full)
+    expect(effects).toEqual({ sticker: "firefly-pout" })
+  })
+
   it("does not send document model context into memory or sticker embedding side effects", async () => {
     const scheduleMemoryWrite = vi.fn()
     const matchSticker = vi.fn(async () => null)

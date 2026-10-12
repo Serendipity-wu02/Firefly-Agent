@@ -700,7 +700,7 @@
         "toolPermissionOff": "关闭",
         "toolPermissionOffDesc": "使用 Chat，仅聊天，不调用任何工具。",
         "toolPermissionAll": "全部开启",
-        "toolPermissionAllDesc": "使用现有执行循环，所有手机端工具直接执行；不提供询问卡片或逐项审批。"
+        "toolPermissionAllDesc": "使用现有执行循环，所有工具直接执行，没有任何审批，也不受聊天框里的权限档位限制。任何能给机器人发消息的人都能让它读写这台电脑上的文件、运行命令；只在确定只有你自己会使用这个渠道时开启。"
       },
       "plugins": {
         "heading": "工具配置",
