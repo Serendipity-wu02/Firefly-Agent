@@ -123,8 +123,11 @@ export function normalizeGeneralSettings(
       ? Math.max(1, Math.min(8, Math.trunc(numberValue)))
       : DEFAULT_GENERAL_SETTINGS.maxParallelToolCalls;
   };
+  // 0 是「不限」的有意取值：只有真正的数字（或写明数字的字符串）才算；null / 空串 / 空白不能被 Number() 悄悄变成 0。
   const normalizeNonNegativeInt = (value: unknown, max: number, fallback: number): number => {
-    const numberValue = typeof value === "number" ? value : Number(value);
+    const numberValue = typeof value === "number"
+      ? value
+      : typeof value === "string" && value.trim() !== "" ? Number(value) : Number.NaN;
     return Number.isFinite(numberValue) && numberValue >= 0 ? Math.min(max, Math.trunc(numberValue)) : fallback;
   };
   return {

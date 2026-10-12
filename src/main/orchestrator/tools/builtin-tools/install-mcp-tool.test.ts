@@ -2,7 +2,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const mocks = vi.hoisted(() => ({
   addMcpServer: vi.fn(async () => ({ ok: true, toolIds: ["demo__echo"] })),
-  requestUserChoice: vi.fn(async (_question: string, _options: unknown, _fallback: string) => "install"),
+  requestUserChoice: vi.fn(async (_question: string, _options: unknown, _fallback: string, _scope?: unknown) => "install"),
 }));
 
 vi.mock("../../mcp-manager", () => ({ addMcpServer: mocks.addMcpServer }));
@@ -36,6 +36,26 @@ describe("install_mcp_server confirmation", () => {
     const result = await installMcpServerTool.execute(args);
     expect(mocks.addMcpServer).toHaveBeenCalledTimes(1);
     expect(result).toContain("已连接");
+  });
+
+  it("scopes the card to the run so cancelling the run voids it", async () => {
+    const controller = new AbortController();
+    await installMcpServerTool.execute(args, { userQuery: "", runId: "run-1", signal: controller.signal });
+    expect(mocks.requestUserChoice.mock.calls[0]![3]).toEqual({ runId: "run-1", signal: controller.signal });
+  });
+
+  it("never installs when the run was aborted by the time the answer arrives", async () => {
+    const controller = new AbortController();
+    mocks.requestUserChoice.mockImplementation(async () => { controller.abort(); return "install"; });
+    await expect(installMcpServerTool.execute(args, { userQuery: "", runId: "run-1", signal: controller.signal }))
+      .rejects.toMatchObject({ name: "AbortError" });
+    expect(mocks.addMcpServer).not.toHaveBeenCalled();
+  });
+
+  it("propagates the abort of a pending card without installing", async () => {
+    mocks.requestUserChoice.mockRejectedValue(Object.assign(new Error("aborted"), { name: "AbortError" }));
+    await expect(installMcpServerTool.execute(args, { userQuery: "", runId: "run-1" })).rejects.toMatchObject({ name: "AbortError" });
+    expect(mocks.addMcpServer).not.toHaveBeenCalled();
   });
 
   it("does nothing when the user cancels or the card times out", async () => {

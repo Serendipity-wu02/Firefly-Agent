@@ -8,6 +8,8 @@
 // 门禁见 built-in-tools.snapshot.test.ts）。
 
 import type { ToolDefinition } from "../registry/tool-registry";
+import type { ToolContext } from "../registry/tool-context";
+import { createAbortError } from "../../../abort-utils";
 import { addMcpServer } from "../../mcp-manager";
 import { requestUserChoice, type ChoiceOption } from "../../../user-choice";
 
@@ -17,7 +19,7 @@ const LOG_PREFIX = "[BuiltinTools]";
 // 把一个 {command, args, env} 注册成新的 MCP server。
 // agent 读完 README 的 mcpServers 配置后，调这个工具一次性写盘 + 启动 + 发现工具
 
-async function executeInstallMcp(args: Record<string, unknown>): Promise<string> {
+async function executeInstallMcp(args: Record<string, unknown>, ctx?: ToolContext): Promise<string> {
   const id = (String(args.id || "").trim()) || ("mcp-" + Date.now());
   const name = String(args.name || "").trim() || id;
   const command = String(args.command || "").trim();
@@ -47,7 +49,9 @@ async function executeInstallMcp(args: Record<string, unknown>): Promise<string>
     { label: "安装并连接", value: "install" },
     { label: "取消", value: "cancel" },
   ];
-  const choice = await requestUserChoice(question, options, "cancel");
+  // 确认卡归属当前 run：run 被取消后卡片作废（请求以 AbortError 拒绝），之后再点“安装并连接”也不会启动命令。
+  const choice = await requestUserChoice(question, options, "cancel", { runId: ctx?.runId, signal: ctx?.signal });
+  if (ctx?.signal?.aborted) throw createAbortError();
   if (choice !== "install") return "[install_mcp_server] 用户取消安装";
 
   console.log(LOG_PREFIX, "install_mcp_server:", id, name, command, JSON.stringify(cmdArgs).slice(0, 200));
