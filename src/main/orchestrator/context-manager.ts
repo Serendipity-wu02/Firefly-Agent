@@ -1,6 +1,7 @@
 import type { ChatVendorAdapter, ChatMessage, ChatRequest, OpenAIContentBlock } from "./vendors/types";
 import type { AgentLoopSettings, AgentLoopEvent } from "./firefly-agent";
 import { recordRequest, recordUsage } from "../token-usage-store";
+import { DEFAULT_CONTEXT_WINDOW_TOKENS, autoCompactTriggerTokens } from "../../shared/context-window";
 
 const COMPRESSION_PROMPT = `你正在帮"流萤"整理对话记忆。请把下面这段较早的对话历史总结成一段简洁的摘要，供后续回复参考。
 
@@ -106,8 +107,8 @@ export interface CompressOptions {
 
 export async function compressConversation(options: CompressOptions): Promise<ChatMessage[]> {
   const { messages, adapter, settings, systemContent, mode = "work", onEvent, signal } = options;
-  const contextWindow = settings.contextWindowTokens ?? 256000;
-  const threshold = Math.floor(contextWindow * 0.8);
+  const contextWindow = settings.contextWindowTokens ?? DEFAULT_CONTEXT_WINDOW_TOKENS;
+  const threshold = autoCompactTriggerTokens(contextWindow);
 
   const { systems, conversation } = splitMessages(messages);
   const keepCount = keepRecentCount(mode) * 2;

@@ -16,6 +16,6 @@ export interface ModelRuntimeProfile {
   model: string;
   apiKey: string;
   baseUrl: string;
-  /** 上下文窗口大小（Token）。默认 256000，来自 DEFAULT_CONTEXT_WINDOW_TOKENS。 */
+  /** 上下文窗口大小（Token）。默认 1M、上限 1M，来自 shared/context-window。 */
   contextWindowTokens: number;
 }

@@ -22,6 +22,7 @@ import type { TranscriptEntry } from "./conversation-transcript-types";
 import { classifySAssistantSettlement } from "./conversation-transcript-settlement";
 import type { ChatMessage, ToolCall } from "./vendors/types";
 import type { ChatMessage as StoredChatMessage } from "../../shared/chat-types";
+import { autoCompactTriggerTokens } from "../../shared/context-window";
 
 export interface TranscriptRunReader {
   get(runId: string): HarnessRunSession | null;
@@ -228,11 +229,9 @@ export async function buildModelContext(input: {
 
 /** 轨迹尾窗预算：沿用 Harness 既有 token 预算体系，不另立标准。 */
 export function resolveTranscriptRetainTokens(contextWindowTokens: number): number {
-  const usable = Math.max(
-    1,
-    contextWindowTokens
-      - DEFAULT_HARNESS_CONFIG.reservedOutputTokens
-      - DEFAULT_HARNESS_CONFIG.safetyMarginTokens,
-  );
-  return Math.max(1, Math.floor(usable * DEFAULT_HARNESS_CONFIG.compactionThreshold));
+  return autoCompactTriggerTokens(contextWindowTokens, {
+    reservedOutputTokens: DEFAULT_HARNESS_CONFIG.reservedOutputTokens,
+    safetyMarginTokens: DEFAULT_HARNESS_CONFIG.safetyMarginTokens,
+    threshold: DEFAULT_HARNESS_CONFIG.compactionThreshold,
+  });
 }

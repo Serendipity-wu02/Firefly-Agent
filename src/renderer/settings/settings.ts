@@ -2,6 +2,7 @@ import { bindDesktopAsrSettings } from "./desktop-asr-settings";
 import type {} from "../global";
 import { bindUiColorControls } from "./appearance/colors";
 import { DEFAULT_UI_COLORS } from "../../shared/ui-colors";
+import { parseContextWindowTokens } from "../../shared/context-window";
 import { renderProviderRows } from "./api/provider-rows";
 import { applyProviderEditorLayout, mountProfileEditor, placeSaveStatus, renderKeepingProfileEditor } from "./api/provider-editor";
 import { bindSettingsNavigation, resolveSettingsSection, updateSettingsNavigation } from "./shared/navigation";
@@ -1418,7 +1419,7 @@ apiForm.addEventListener("submit", async (e) => {
   setSaveStatus(t("settings.status.saving"));
   try {
     // 档案保存：editingProfileId 存在 = 更新（字段全量覆盖），否则新增。
-    // 上下文窗口跟随档案；留空/非法按 256000 兜底。
+    // 上下文窗口跟随档案；留空/非法 = 不写入，回退默认 1M；超出范围夹到 4096–1M。
     const isEditing = Boolean(apiState.editingProfileId);
     const profile = {
       id: apiState.editingProfileId,
@@ -1434,7 +1435,7 @@ apiForm.addEventListener("submit", async (e) => {
       // 输入类型：未声明（自动）= undefined，保存时清掉旧声明；厂商记录只在它对应的型号上带出（见 input-modalities.ts）
       inputModalities: inputModalities.declared()?.modalities,
       inputModalitiesSource: inputModalities.declared()?.source,
-      contextWindowTokens: Math.max(4096, parseInt(contextWindowInput.value, 10) || 256000),
+      contextWindowTokens: parseContextWindowTokens(contextWindowInput.value),
     };
     if (!await saveTimeoutSettings(true) || !isCurrentProfilePanel()) return;
     setSaveStatus(t("settings.status.saving"));

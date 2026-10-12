@@ -58,6 +58,7 @@ import type { StickerEmbeddingEntry } from "../sticker-embedder";
 import { isPlanReadOnly, getPlanState } from "./plan-mode";
 import { policyFor } from "../permission-policy";
 import { resolveTranscriptRetainTokens, type MaterializedTranscript } from "./conversation-transcript-context";
+import { DEFAULT_CONTEXT_WINDOW_TOKENS } from "../../shared/context-window";
 import type { UncertainEffect } from "./harness/types";
 
 /** index.ts 模块级符号的最小可注入子集。
@@ -447,7 +448,7 @@ export async function buildAgentRunOptions(
   }
   // 权威轨迹上下文（CTA Phase 1）：桌面端 useTranscriptContext 时模型消息来自轨迹物化，
   // 渲染端 messages 仅作回退（显式 renderer 周期或渠道/内部调用方）。
-  const retainTokens = resolveTranscriptRetainTokens(settings.contextWindowTokens ?? 256_000);
+  const retainTokens = resolveTranscriptRetainTokens(settings.contextWindowTokens ?? DEFAULT_CONTEXT_WINDOW_TOKENS);
   const transcriptContext = input.useTranscriptContext && input.sessionId
     ? await requireBuildModelContext(deps)(input.sessionId, retainTokens)
     : undefined;
@@ -844,7 +845,7 @@ export async function buildAgentRunOptions(
         explicitTransport: settings.explicitTransport,
         reasoning: settings.reasoning,
         reasoningLevels: settings.reasoningLevels,
-        contextWindowTokens: settings.contextWindowTokens ?? 256000,
+        contextWindowTokens: settings.contextWindowTokens ?? DEFAULT_CONTEXT_WINDOW_TOKENS,
       },
       maxParallelToolCalls: typeof generalSettings.maxParallelToolCalls === "number"
         ? Math.max(1, Math.min(8, Math.trunc(generalSettings.maxParallelToolCalls)))

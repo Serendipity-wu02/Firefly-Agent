@@ -16,6 +16,7 @@ import type { ToolRiskLevel } from "../../permission-policy";
 import type { ToolFileChange, ToolTaskResult } from "../../../shared/chat-types";
 import type { ContextUsageSnapshot } from "../../../shared/context-usage";
 import type { ToolOutputRef, ToolOutputStore } from "./tool-output/tool-output-store";
+import { AUTO_COMPACT_THRESHOLD, DEFAULT_CONTEXT_WINDOW_TOKENS } from "../../../shared/context-window";
 export type { ToolErrorCategory } from "../tools/registry/tool-execution-error";
 export type { TodoItem, TodoStatus } from "../../../shared/task-session";
 
@@ -128,7 +129,7 @@ export interface HarnessConfig {
   reservedOutputTokens: number;
   /** 固定安全余量（token） */
   safetyMarginTokens: number;
-  /** 压缩触发阈值比例（默认 0.7） */
+  /** 压缩触发阈值比例（默认 0.85，即用到上下文窗口的 85% 时压缩） */
   compactionThreshold: number;
   /** 压缩后原样保留的近期 transcript 占上下文窗口比例（默认 0.16）。 */
   compactionRetainRatio: number;
@@ -145,10 +146,10 @@ export const DEFAULT_HARNESS_CONFIG: HarnessConfig = {
   totalTimeoutMs: DEFAULT_RUN_TIMEOUT_MS,
   modelRequestTimeoutMs: DEFAULT_HARNESS_MODEL_REQUEST_TIMEOUT_MS,
   userWaitTimeoutMs: 120_000,
-  contextWindowTokens: 256_000,
+  contextWindowTokens: DEFAULT_CONTEXT_WINDOW_TOKENS,
   reservedOutputTokens: 8_192,
   safetyMarginTokens: 512,
-  compactionThreshold: 0.7,
+  compactionThreshold: AUTO_COMPACT_THRESHOLD,
   compactionRetainRatio: 0.16,
 };
 
