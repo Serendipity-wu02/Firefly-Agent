@@ -825,14 +825,50 @@ body { font-size: var(--cy-ui-font-size, 16px); }
   --st-main-alpha: 92%;
   --st-card-alpha: 90%;
 }
-:root[data-glass="true"][data-ui-theme="firefly-dark"] .settings-shell,
-:root[data-glass="true"][data-ui-theme="firefly-dark"] .cy-modal-overlay { --st-win-alpha: 82%; } /* 亚克力按系统的浅色着色，深色底色要压得更实，侧栏才不发灰 */
 :root[data-glass="true"] .settings-shell { border-color: color-mix(in srgb, var(--rb-border-soft) 60%, transparent); }
 :root[data-glass="true"] .settings-shell .settings-main {
   background: color-mix(in srgb, var(--rb-bg-1) var(--st-main-alpha), transparent);
   border-left: 1px solid color-mix(in srgb, var(--rb-border-soft) 70%, transparent);
 }
 :root[data-glass="true"] .settings-shell .settings-titlebar { background: transparent; }
+
+/* ── 深色：流萤墨绿 + 玻璃质感 ─────────────────────────────
+ * 选中项、描边、卡片的微光都用流萤的青绿（--rb-pink-400 在深色主题里是 #7bd8ae），不是中性灰。
+ * 玻璃模式下：窗口底是一层墨绿渐变（亚克力按系统的浅色着色，所以底色要压得更实，侧栏才不发灰），
+ * 顶边一条细高光，内容面板右上角一抹淡绿光，卡片带一层几乎看不见的绿色渐变和顶边高光。 */
+:root[data-ui-theme="firefly-dark"] .settings-shell,
+:root[data-ui-theme="firefly-dark"] .cy-modal-overlay {
+  --st-card-stroke: color-mix(in srgb, var(--rb-pink-400) 18%, var(--rb-border-soft));
+  --st-divider: color-mix(in srgb, var(--rb-pink-400) 11%, var(--rb-border-soft));
+  --st-selected-fill: color-mix(in srgb, var(--rb-pink-400) 16%, transparent);
+  --st-selected-stroke: color-mix(in srgb, var(--rb-pink-400) 32%, transparent);
+  --st-selected-text: var(--rb-pink-700);
+  --st-nav-hover: color-mix(in srgb, var(--rb-pink-400) 9%, transparent);
+}
+:root[data-glass="true"][data-ui-theme="firefly-dark"] .settings-shell,
+:root[data-glass="true"][data-ui-theme="firefly-dark"] .cy-modal-overlay {
+  --st-main-alpha: 90%;
+  --st-card-alpha: 78%;
+  --st-card-fill:
+    linear-gradient(180deg, color-mix(in srgb, var(--rb-pink-400) 8%, transparent) 0%, color-mix(in srgb, var(--rb-pink-400) 2%, transparent) 100%),
+    color-mix(in srgb, var(--rb-card-bg) var(--st-card-alpha), transparent);
+}
+:root[data-glass="true"][data-ui-theme="firefly-dark"] .settings-shell {
+  --st-win-bg: linear-gradient(165deg, rgba(27, 58, 45, .78) 0%, rgba(13, 22, 18, .88) 55%, rgba(10, 16, 14, .92) 100%);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, .07);
+}
+:root[data-glass="true"][data-ui-theme="firefly-dark"] .settings-shell .settings-main {
+  background:
+    radial-gradient(900px 420px at 100% 0%, color-mix(in srgb, var(--rb-pink-400) 8%, transparent), transparent 62%),
+    color-mix(in srgb, var(--rb-bg-1) var(--st-main-alpha), transparent);
+  border-left-color: color-mix(in srgb, var(--rb-pink-400) 14%, transparent);
+}
+:root[data-glass="true"][data-ui-theme="firefly-dark"] .settings-shell :is(
+  .plugin-card, .agent-setting-card, .scheduler-card, .channels-card, .channels-log,
+  .disclaimer-section, .panel-card, .plugin-panel-card, .ui-color-controls, .settings-list
+) {
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, .05), 0 6px 22px rgba(0, 0, 0, .16);
+}
 
 /* ── 过渡动画 ───────────────────────────────────────────
  * 窗口打开时整体淡入并轻微上浮；切换设置分区时新分区淡入上浮；导航项的悬停 / 选中渐变。
