@@ -93,7 +93,6 @@ describe("Firefly character assets", () => {
       "src/renderer/react/features/chat/components/InteractionPanel.tsx",
       "src/renderer/react/features/chat/components/ModelModePanel.tsx",
       "src/renderer/react/features/chat/components/PluginModePanel.tsx",
-      "src/renderer/react/features/chat/components/StatusFloat.tsx",
       "src/renderer/react/features/chat/components/ToolModePanel.tsx",
       "src/renderer/react/components/ui/ModelModeButton.tsx",
       "src/renderer/react/components/ui/NewTaskButton.tsx",
