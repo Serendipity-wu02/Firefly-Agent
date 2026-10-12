@@ -163,6 +163,8 @@ if (!window.settings) {
     saveConfig: (c) => Promise.resolve(c as ModelSettings),
     getGeneral: () => Promise.resolve({
       maxParallelToolCalls: 4,
+      maxToolRounds: 200,
+      runTimeoutMinutes: 120,
       petAlwaysOnTop: true,
       petVisible: true,
       petZoom: 1,
