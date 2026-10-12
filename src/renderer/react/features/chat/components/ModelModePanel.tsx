@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useTranslation } from "../../../i18n";
+import { formatContextWindowTokens } from "../../../../../shared/context-window";
 import "./ModelModePanel.css";
 
 interface ModelProfile {
@@ -188,7 +189,7 @@ export function ModelModePanel() {
                       {isDefault && <span className="model-card__badge">{t("modelPanel.badgeDefault")}</span>}
                       {profile.multimodal === true && <span className="model-card__badge">{t("modelPanel.badgeMultimodal")}</span>}
                       {profile.contextWindowTokens ? (
-                        <span className="model-card__badge">{Math.round(profile.contextWindowTokens / 1000)}k</span>
+                        <span className="model-card__badge">{formatContextWindowTokens(profile.contextWindowTokens)}</span>
                       ) : null}
                     </div>
                     <div className="model-card__meta">

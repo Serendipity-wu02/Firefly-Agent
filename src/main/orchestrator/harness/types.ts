@@ -16,6 +16,7 @@ import type { ToolRiskLevel } from "../../permission-policy";
 import type { ToolFileChange, ToolTaskResult } from "../../../shared/chat-types";
 import type { ContextUsageSnapshot } from "../../../shared/context-usage";
 import type { ToolOutputRef, ToolOutputStore } from "./tool-output/tool-output-store";
+import { AUTO_COMPACT_THRESHOLD, DEFAULT_CONTEXT_WINDOW_TOKENS } from "../../../shared/context-window";
 export type { ToolErrorCategory } from "../tools/registry/tool-execution-error";
 export type { TodoItem, TodoStatus } from "../../../shared/task-session";
 
@@ -113,8 +114,10 @@ export interface HarnessConfig {
   maxParallelToolCalls: number;
   /** 工具轮上限；0 表示不限。达到上限后不再发起下一次模型请求。 */
   maxRounds: number;
-  /** 总超时（毫秒） */
+  /** 总超时（毫秒）；0 表示不限。ask_user 等待期间不计入。 */
   totalTimeoutMs: number;
+  /** 单次模型请求（含流式）的最长时间（毫秒）；0 表示不限。 */
+  modelRequestTimeoutMs: number;
   /** 用户等待超时（毫秒，ask_user 等待期间不计入执行超时） */
   userWaitTimeoutMs: number;
   /** 上下文窗口大小（token） */
@@ -126,21 +129,27 @@ export interface HarnessConfig {
   reservedOutputTokens: number;
   /** 固定安全余量（token） */
   safetyMarginTokens: number;
-  /** 压缩触发阈值比例（默认 0.7） */
+  /** 压缩触发阈值比例（默认 0.85，即用到上下文窗口的 85% 时压缩） */
   compactionThreshold: number;
   /** 压缩后原样保留的近期 transcript 占上下文窗口比例（默认 0.16）。 */
   compactionRetainRatio: number;
 }
 
+/** 一次运行默认最多 200 轮工具调用、最长 2 小时、单次模型请求最长 10 分钟；设置里可调大，0 表示不限。 */
+export const DEFAULT_MAX_TOOL_ROUNDS = 200;
+export const DEFAULT_RUN_TIMEOUT_MS = 2 * 60 * 60 * 1000;
+export const DEFAULT_HARNESS_MODEL_REQUEST_TIMEOUT_MS = 10 * 60 * 1000;
+
 export const DEFAULT_HARNESS_CONFIG: HarnessConfig = {
   maxParallelToolCalls: 4,
-  maxRounds: 0,
-  totalTimeoutMs: 0,
+  maxRounds: DEFAULT_MAX_TOOL_ROUNDS,
+  totalTimeoutMs: DEFAULT_RUN_TIMEOUT_MS,
+  modelRequestTimeoutMs: DEFAULT_HARNESS_MODEL_REQUEST_TIMEOUT_MS,
   userWaitTimeoutMs: 120_000,
-  contextWindowTokens: 256_000,
+  contextWindowTokens: DEFAULT_CONTEXT_WINDOW_TOKENS,
   reservedOutputTokens: 8_192,
   safetyMarginTokens: 512,
-  compactionThreshold: 0.7,
+  compactionThreshold: AUTO_COMPACT_THRESHOLD,
   compactionRetainRatio: 0.16,
 };
 

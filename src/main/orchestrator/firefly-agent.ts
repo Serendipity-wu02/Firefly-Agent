@@ -109,6 +109,10 @@ export interface FireflyRunOptions {
   settings: AgentLoopSettings;
   /** 本 Run 快照的 Harness 安全工具并发上限。 */
   maxParallelToolCalls?: number;
+  /** 本 Run 最多的工具轮数；0 表示不限，缺省用 Harness 默认值。 */
+  maxToolRounds?: number;
+  /** 本 Run 最长执行时间（毫秒，ask_user 等待不计）；0 表示不限，缺省用 Harness 默认值。 */
+  runTimeoutMs?: number;
   /**
    * Canonical runId。
    * - 由 AG-UI bridge 在 IPC 入口创建，并通过本字段一路传给 Agent、Harness adapter、ToolContext、所有 AG-UI 事件。

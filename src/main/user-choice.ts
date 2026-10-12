@@ -95,20 +95,36 @@ function extractCardIdentity(card: ChoiceCardData): { cardId: string; intro: str
   return { cardId: card.id, intro: card.question };
 }
 
+/** 选择卡的归属：run 取消 / 信号中止时卡片随之作废，之后再点也不会生效。 */
+export interface ChoiceScope {
+  runId?: string;
+  signal?: AbortSignal;
+}
+
 /**
  * 发起一次用户选择请求，阻塞等待用户在聊天卡片里选一个选项。
  * 超时（userChoiceTimeout，默认 60s）返回 defaultValue 或空串，并广播 dismiss 让渲染端清卡。
+ *
+ * 会触发副作用的确认（安装 MCP、发邮件等）必须传 scope：所属 run 被取消（cancelPendingChoicesForRun）
+ * 或 signal 中止时，卡片立即作废并以 AbortError 拒绝，不会等到超时，更不会在取消后因用户点“确认”而继续执行。
  */
 export function requestUserChoice(
   question: string,
   options: ChoiceOption[],
   defaultValue?: string,
+  scope?: ChoiceScope,
 ): Promise<string> {
-  return new Promise<string>((resolve) => {
+  return new Promise<string>((resolve, reject) => {
     const id = "choice-" + (++choiceCounter) + "-" + Date.now();
     const choiceTimeout = getTimeoutSettings().userChoiceTimeout;
+    if (scope?.signal?.aborted) {
+      reject(createAbortError());
+      return;
+    }
+    let detachAbort: () => void = () => undefined;
 
     const timer = setTimeout(() => {
+      detachAbort();
       pendingChoices.delete(id);
       console.warn(LOG_PREFIX, "选择超时（" + choiceTimeout + "ms），使用默认值:", defaultValue ?? "(空)");
       // 通知渲染端清卡：超时已用默认值结算，卡片再点也只会得到 ok:false
@@ -120,15 +136,37 @@ export function requestUserChoice(
 
     pendingChoices.set(id, {
       resolve: (value) => {
+        detachAbort();
         resolve(typeof value === "string" ? value : defaultValue ?? "");
         // 注意力提醒：用户作答即结算，通知 ToastService 清 toast
         toastEvents.publishChoiceDismiss({ cardId: id, revision: 1, reason: "answered" });
         return true;
       },
+      reject,
+      // 取消结算：通知渲染端清卡（与超时同一条通道），再清 toast
+      onSettled: (settlement) => {
+        detachAbort();
+        choiceDismissSender?.({ id: settlement.id, revision: settlement.revision, reason: settlement.reason });
+        toastEvents.publishChoiceDismiss({ cardId: settlement.id, revision: settlement.revision, reason: settlement.reason });
+      },
+      revision: 1,
       timer,
       status: "open",
-      runId: undefined,
+      runId: scope?.runId,
     });
+    if (scope?.signal) {
+      const signal = scope.signal;
+      const onAbort = (): void => {
+        const pending = pendingChoices.get(id);
+        if (!pending || pending.status !== "open") return;
+        clearTimeout(pending.timer);
+        pendingChoices.delete(id);
+        pending.onSettled?.({ id, runId: scope.runId, revision: 1, reason: "cancelled" });
+        reject(createAbortError());
+      };
+      signal.addEventListener("abort", onAbort, { once: true });
+      detachAbort = () => signal.removeEventListener("abort", onAbort);
+    }
 
     const payload: ChoiceCardData = { id, question, options, default: defaultValue };
     console.log(LOG_PREFIX, "发送选择请求:", id, question);
@@ -140,6 +178,7 @@ export function requestUserChoice(
     } else {
       // 没注入回调（理论上不会发生），直接返回默认值
       clearTimeout(timer);
+      detachAbort();
       pendingChoices.delete(id);
       console.warn(LOG_PREFIX, "未注入卡片回调，使用默认值");
       resolve(defaultValue ?? "");

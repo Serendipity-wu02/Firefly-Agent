@@ -1,5 +1,5 @@
-/* 权限弹窗：三档，一档一行。图标放进有色底的小方块，当前档用主色描边 + 勾，完全访问用暖色提醒。 */
-.cy-permission-panel { width: 288px; }
+/* 权限弹窗：三档，一档一行，行高固定（说明文案只占一行，写不下就省略）。图标放进有色底的小方块，当前档用主色描边 + 勾，完全访问用暖色提醒。 */
+.cy-permission-panel { width: 296px; }
 
 .cy-permission-panel__title {
   display: block;
@@ -14,9 +14,11 @@
 .cy-permission-panel__option {
   display: flex;
   width: 100%;
+  box-sizing: border-box;
+  height: 52px;
   align-items: center;
   gap: 10px;
-  padding: 7px 10px;
+  padding: 0 10px;
   border: 1px solid transparent;
   border-radius: 12px;
   background: transparent;
@@ -40,7 +42,13 @@
 
 .cy-permission-panel__text { display: grid; min-width: 0; flex: 1; gap: 2px; }
 .cy-permission-panel__label { color: var(--cy-text); font: 600 13.5px/1.3 var(--rb-font-sans, sans-serif); }
-.cy-permission-panel__text small { color: var(--cy-text-muted); font: 400 12px/1.45 var(--rb-font-sans, sans-serif); }
+.cy-permission-panel__text small {
+  overflow: hidden;
+  color: var(--cy-text-muted);
+  font: 400 12px/1.45 var(--rb-font-sans, sans-serif);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
 
 .cy-permission-panel__check {
   width: 16px;

@@ -141,10 +141,6 @@ it("ignores preview invalidation, preserves names, and does not broadcast after 
   dispose?.(); h.contents.send.mockClear(); h.model.saveModelSettings({ modelProfiles: [] });
   expect(h.contents.send).not.toHaveBeenCalled();
 });
-it("legacy status-open does nothing", async () => {
-  const h = await setup(); h.events.get(IPC.SETTINGS_OPEN_SIDEBAR)!();
-  expect(h.createSidebarWindow).not.toHaveBeenCalled();
-});
 it("accepts reordered reasoning fields and copies a normalized preference", async () => {
   const saved = { ...config, reasoning: { mode: "on" as const, effort: "high" as const } };
   const h = await setup([{ id: "p1", ...saved }] as never);

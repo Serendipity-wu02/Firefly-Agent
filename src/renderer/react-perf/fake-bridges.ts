@@ -189,7 +189,6 @@ export function installFakeBridges(options: FakeBridgeOptions): FakeBridgeRuntim
     onChanged: () => () => {},
     onReactSwitchSession: () => () => {},
     notifyReactReady: () => {},
-    getRendererTargetId: () => "perf-harness",
 
   };
 

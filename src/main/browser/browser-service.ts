@@ -5,6 +5,7 @@ import { isPublicNetworkAddress, parseConnectAuthority } from "./public-network-
 import { localAuthorityFromUrl, localAuthorityKey, parseLocalAuthority, parseLocalBrowserUrl, sameLocalHost } from "../../shared/local-network-target";
 import { createBrowserAuthorizationDomainRegistry } from "./browser-authorization-domain";
 import { createBrowserNetworkController, type BrowserNetworkBinding, type BrowserNetworkReply } from "./browser-network-binding";
+import { isAccountPath } from "../../shared/browser-account-policy";
 import type { ProxyChallenge } from "./authenticated-connect-proxy";
 import type { BrowserDomainContext } from "./browser-authorization-domain";
 import type { BrowserNetworkDependencies, BrowserViewPort } from "./browser-network-binding";
@@ -97,7 +98,7 @@ export function createBrowserService<S extends object>(options: BrowserServiceOp
     const parsed = new URL(url);
     let pathname: string; try { pathname = decodeURIComponent(parsed.pathname); } catch { return null; }
     // Anonymous workspace: never enter account authentication flows.
-    if (/(?:^|\/)(?:login|log-in|signin|sign-in|signup|sign-up|logout|session|sessions|oauth|authorize|settings)(?:\/|$)/i.test(pathname)) return null;
+    if (isAccountPath(pathname)) return null;
     return gateOpen || owner.grant?.hosts.includes(parsed.hostname) ? url : null;
   }
   function permissionDto(owner: Owner): BrowserPermissionDto {

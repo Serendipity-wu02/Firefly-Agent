@@ -2,6 +2,7 @@ import { bindDesktopAsrSettings } from "./desktop-asr-settings";
 import type {} from "../global";
 import { bindUiColorControls } from "./appearance/colors";
 import { DEFAULT_UI_COLORS } from "../../shared/ui-colors";
+import { parseContextWindowTokens } from "../../shared/context-window";
 import { renderProviderRows } from "./api/provider-rows";
 import { applyProviderEditorLayout, mountProfileEditor, placeSaveStatus, renderKeepingProfileEditor } from "./api/provider-editor";
 import { bindSettingsNavigation, resolveSettingsSection, updateSettingsNavigation } from "./shared/navigation";
@@ -163,6 +164,8 @@ if (!window.settings) {
     saveConfig: (c) => Promise.resolve(c as ModelSettings),
     getGeneral: () => Promise.resolve({
       maxParallelToolCalls: 4,
+      maxToolRounds: 200,
+      runTimeoutMinutes: 120,
       petAlwaysOnTop: true,
       petVisible: true,
       petZoom: 1,
@@ -217,8 +220,6 @@ if (!window.settings) {
     onChannelsStatusChanged: () => () => {},
     beginScreenshotHotkeyCapture: () => Promise.resolve(true),
     endScreenshotHotkeyCapture: () => Promise.resolve(true),
-    openSidebar: () => {},
-    closeSidebar: () => {},
     setPetAlwaysOnTop: () => {},
     setPetVisible: () => {},
     setPetZoom: () => {},
@@ -228,17 +229,13 @@ if (!window.settings) {
     openStickerManager: async () => ({ ok: false, error: "settings api unavailable" }),
     stickerPickFile: async () => null,
     stickerAdd: async () => { throw new Error("settings api unavailable"); },
-    setToolEnabled: async () => ({ ok: false, error: "settings api unavailable" }),
-    getToolEnabled: async () => ({}),
     getToolCatalog: async () => [],
     getToolModeOverrides: async () => ({}),
     setToolModeOverride: async () => ({ ok: false, error: "settings api unavailable" }),
-    clearToolModeOverride: async () => ({ ok: false, error: "settings api unavailable" }),
     getSkillCatalog: async () => [],
     rescanSkills: async () => ({ ok: false, count: 0, error: "settings api unavailable" }),
     getSkillModeOverrides: async () => ({}),
     setSkillModeOverride: async () => ({ ok: false, error: "settings api unavailable" }),
-    clearSkillModeOverride: async () => ({ ok: false, error: "settings api unavailable" }),
     addMcpServer: async () => ({ ok: false, error: "settings api unavailable" }),
     removeMcpServer: async () => ({ ok: false, error: "settings api unavailable" }),
     listMcpServers: async () => [],
@@ -1422,7 +1419,7 @@ apiForm.addEventListener("submit", async (e) => {
   setSaveStatus(t("settings.status.saving"));
   try {
     // 档案保存：editingProfileId 存在 = 更新（字段全量覆盖），否则新增。
-    // 上下文窗口跟随档案；留空/非法按 256000 兜底。
+    // 上下文窗口跟随档案；留空/非法 = 不写入，回退默认 1M；超出范围夹到 4096–1M。
     const isEditing = Boolean(apiState.editingProfileId);
     const profile = {
       id: apiState.editingProfileId,
@@ -1438,7 +1435,7 @@ apiForm.addEventListener("submit", async (e) => {
       // 输入类型：未声明（自动）= undefined，保存时清掉旧声明；厂商记录只在它对应的型号上带出（见 input-modalities.ts）
       inputModalities: inputModalities.declared()?.modalities,
       inputModalitiesSource: inputModalities.declared()?.source,
-      contextWindowTokens: Math.max(4096, parseInt(contextWindowInput.value, 10) || 256000),
+      contextWindowTokens: parseContextWindowTokens(contextWindowInput.value),
     };
     if (!await saveTimeoutSettings(true) || !isCurrentProfilePanel()) return;
     setSaveStatus(t("settings.status.saving"));

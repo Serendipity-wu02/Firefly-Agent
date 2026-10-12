@@ -16,7 +16,7 @@
   border-radius: 12px;
   overflow: hidden;
   box-shadow: none;
-  animation: cy-right-inspector-slide-in 0.22s ease;
+  animation: cy-right-inspector-slide-in 0.28s ease both;
   app-region: no-drag;
 }
 
@@ -28,6 +28,7 @@
   background: var(--cy-bg-active);
 }
 
+/* 只淡入、不位移：面板里有原生浏览器视图，它的位置按面板的实际矩形计算，进入动画期间不能移动面板。 */
 @keyframes cy-right-inspector-slide-in {
   from { opacity: 0; }
   to   { opacity: 1; }

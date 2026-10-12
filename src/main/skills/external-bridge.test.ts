@@ -5,7 +5,6 @@ import type { SettingsApi } from "../../renderer/settings/shared/types";
 const m = vi.hoisted(() => ({ exposed: new Map<string, any>(), invoke: vi.fn(async () => ({ ok: true })), setEnabled: vi.fn(), chat: null as any }));
 vi.mock("electron", () => ({ contextBridge: { exposeInMainWorld: (name: string, value: any) => m.exposed.set(name, value) }, ipcRenderer: { invoke: m.invoke, on: vi.fn(), removeListener: vi.fn(), send: vi.fn() }, webUtils: { getPathForFile: vi.fn() }, dialog: {} }));
 vi.mock("../../preload/music", () => ({ exposeMusicApi: vi.fn() }));
-vi.mock("../../preload/live2d-listener-diagnostics", () => ({ getLive2DIpcListenerCounts: vi.fn() }));
 vi.mock("../skills", () => ({ listSkillsForUi: vi.fn(), setSkillEnabled: m.setEnabled, skillRegistry: { getById: () => ({ id: "external-openai-test" }) }, rescanSkills: vi.fn() }));
 vi.mock("../windows/window-state", () => ({ get reactChatWindow() { return m.chat; }, sidebarWindow: null, settingsWindow: null, stickerManagerWindow: null }));
 vi.mock("../orchestrator/sticker-settings", () => ({ getStickerManagerConfig: vi.fn(), setStickerEnabled: vi.fn() }));

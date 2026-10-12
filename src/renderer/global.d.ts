@@ -11,10 +11,6 @@ import type { PluginManagementApi, PluginPanelApi } from "../shared/plugin-manag
 import type { WorkspaceListResult, WorkspaceReadResult, WorkspaceSaveResult } from "../shared/workspace-files-types";
 import type { OpenInAppListResult, OpenInAppOpenResult } from "../shared/open-in-app-types";
 
-interface SystemApi {
-  openExternal: (url: string) => Promise<{ ok: boolean; error?: string }>;
-}
-
 interface ReviewApi {
   get: (runId: string) => Promise<ReviewSnapshot | null>;
   /** 把本次 Run 修改过的文件恢复到运行前状态 */
@@ -63,7 +59,6 @@ declare global {
     manualBrowser?: BrowserAvailabilityApi;
     manualBrowserWorkspace?: import("../shared/manual-browser").ManualBrowserWorkspaceApi;
     modelConfig?: ModelConfigApi;
-    system?: SystemApi;
     review?: ReviewApi;
     workspaceFiles?: WorkspaceFilesApi;
     openInApp?: OpenInAppApi;

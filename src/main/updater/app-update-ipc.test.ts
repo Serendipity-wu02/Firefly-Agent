@@ -28,10 +28,8 @@ describe("registerAppUpdateIpc", () => {
     });
 
     expect(await handlers.get(IPC.APP_UPDATE_GET_STATE)?.({})).toEqual(service.getState());
-    await handlers.get(IPC.APP_UPDATE_CHECK)?.({});
     await handlers.get(IPC.APP_UPDATE_DOWNLOAD)?.({});
     expect(await handlers.get(IPC.APP_UPDATE_INSTALL)?.({})).toBe(true);
-    expect(service.check).toHaveBeenCalledOnce();
     expect(service.download).toHaveBeenCalledOnce();
     expect(service.install).toHaveBeenCalledOnce();
   });

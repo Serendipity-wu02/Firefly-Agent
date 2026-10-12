@@ -1,15 +1,13 @@
 /* 设置面板统一设计层（最后加载）。
  *
- * 视觉参考 DeepSeek Harness 的设置窗口（只借结构与观感，样式为本项目自行实现）：
- *   窗口   = 大圆角（24）、近白的淡蓝渐变底；左侧导航不再另起底色，选中项是一枚柔和的浅蓝胶囊
- *   页面   = 标题 + 灰蓝说明 + 一串卡片，卡片间距固定
- *   卡片   = 圆角 16、1px 蓝灰描边、略带蓝调的填充；内部行用发丝线分隔
- *   控件   = 描边按钮带一圈暖金细线，主按钮是实心灰蓝；输入框、下拉、分段、开关在各页长得一样
+ * 配色与聊天面板一致：窗口 = 聊天的页面底，卡片 = 聊天的面板色，选中项 = 聊天侧栏的选中灰，
+ * 描边与文字也沿用同一套 --rb-*（浅色 pearl-white / 深色 firefly-dark / 自定义配色都从这里派生）。
+ * 窗口与卡片带一点透明度（窗口本身是透明窗口），数值集中在下面的 --st-win-alpha / --st-card-alpha。
  *
- * 配色走两层：
- *   1. 令牌层：浅色默认主题（pearl-white 且未启用自定义配色）在 .settings-shell 内把 --rb-* 整体换成蓝灰色阶，
- *      只作用于设置窗口，聊天窗口等其他窗口不受影响；深色主题和自定义配色保持原样。
- *   2. --st-* 派生令牌：组件只读 --st-*，--st-* 由 --rb-* 用 color-mix() 派生，所以深色 / 自定义配色也会跟着走。
+ * 结构：窗口 = 大圆角（24）；页面 = 标题 + 说明 + 一串卡片，卡片间距固定；
+ *       卡片 = 圆角 16、1px 描边，内部行用发丝线分隔；控件在各页长得一样。
+ *
+ * 组件只读 --st-*，--st-* 由 --rb-* 用 color-mix() 派生，所以深色 / 自定义配色也会跟着走。
  * 页面标记、ID 和类名一律不动，这里只写样式。
  */
 
@@ -28,20 +26,26 @@
   --st-radius-ctl: 12px;
   --st-ctl-h: 38px;
 
-  --st-win-bg: linear-gradient(160deg, var(--rb-bg-elevated) 0%, var(--rb-bg-1) 100%);
-  --st-card-fill: color-mix(in srgb, var(--rb-pink-500) 5%, var(--rb-card-bg));
-  --st-card-stroke: color-mix(in srgb, var(--rb-pink-500) 20%, var(--rb-border-soft));
-  --st-divider: color-mix(in srgb, var(--rb-pink-500) 12%, var(--rb-border-soft));
-  --st-inset-fill: var(--rb-bg-elevated);
+  /* 底色不透明度。普通模式整窗实底；玻璃模式（Windows 11 系统亚克力，见下方 [data-glass]）才让窗口底色变薄。 */
+  --st-win-alpha: 100%;
+  --st-main-alpha: 100%;
+  --st-card-alpha: 100%;
+
+  --st-win-bg: color-mix(in srgb, var(--rb-bg-1) var(--st-win-alpha), transparent);
+  --st-card-fill: color-mix(in srgb, var(--rb-card-bg) var(--st-card-alpha), transparent);
+  --st-card-stroke: var(--rb-border-soft);
+  --st-divider: color-mix(in srgb, var(--rb-border-soft) 70%, transparent);
+  --st-inset-fill: color-mix(in srgb, var(--rb-bg-0) 90%, transparent);
   --st-track: var(--rb-bg-2);
-  --st-nav-hover: var(--rb-hover-light);
-  --st-selected-fill: color-mix(in srgb, var(--rb-pink-500) 16%, transparent);
-  --st-selected-stroke: color-mix(in srgb, var(--rb-pink-500) 36%, transparent);
+  --st-nav-hover: var(--rb-bg-2);
+  /* 选中项 = 聊天侧栏的选中灰：文字色叠 11%，浅色 ≈ #dcdfe7，深色 ≈ #293b34 */
+  --st-selected-fill: color-mix(in srgb, var(--rb-text-default) 11%, transparent);
+  --st-selected-stroke: transparent;
   --st-selected-text: var(--rb-text-strong);
-  --st-nav-active-stroke: var(--st-selected-stroke);
-  --st-ghost-stroke: color-mix(in srgb, #c9a25a 55%, var(--rb-border-strong));
-  --st-ghost-fill: color-mix(in srgb, var(--rb-bg-elevated) 70%, transparent);
-  --st-ghost-hover: color-mix(in srgb, #c9a25a 12%, var(--rb-bg-elevated));
+  --st-nav-active-stroke: transparent;
+  --st-ghost-stroke: var(--rb-border-strong);
+  --st-ghost-fill: color-mix(in srgb, var(--rb-card-bg) 80%, transparent);
+  --st-ghost-hover: var(--rb-bg-2);
   --st-primary: var(--rb-pink-500);
   --st-primary-hover: var(--rb-accent-hover, var(--rb-pink-600));
   --st-on-primary: var(--rb-text-on-pink);
@@ -51,73 +55,6 @@
   --st-dot-bad: #ef4444;
   --st-dot-idle: color-mix(in srgb, var(--rb-text-muted) 55%, transparent);
   --st-focus-ring: 0 0 0 3px color-mix(in srgb, var(--st-primary) 20%, transparent);
-}
-
-/* ── 令牌：浅色默认主题改成蓝灰色阶（仅设置窗口内） ───────────
- * 带 var() 的令牌（--rb-toggle-on 等）在 :root 上已按旧值求过值，所以要在这里一并重写。 */
-:root[data-ui-theme="pearl-white"]:not([data-ui-colors]) .settings-shell,
-:root[data-ui-theme="pearl-white"]:not([data-ui-colors]) .cy-modal-overlay {
-  --rb-bg-0: #f7faff;
-  --rb-bg-1: #f1f5fc;
-  --rb-bg-2: #e6edf8;
-  --rb-bg-3: #f7faff;
-  --rb-bg-elevated: #fbfcff;
-  --rb-card-bg: #f4f7fc;
-
-  --rb-text-strong: #22304d;
-  --rb-text-default: #2d3a57;
-  --rb-text-muted: #68789a;
-  --rb-text-faint: #8793ad;
-  --rb-text-on-pink: #ffffff;
-
-  --rb-border-faint: rgba(90, 105, 166, 0.08);
-  --rb-border-soft: #d3dcee;
-  --rb-border-strong: #b5c3de;
-
-  --rb-pink-50: #eef2f9;
-  --rb-pink-100: #e3eaf7;
-  --rb-pink-200: #d3dcee;
-  --rb-pink-300: #a9b6d6;
-  --rb-pink-400: #5a69a6;
-  --rb-pink-500: #5a69a6;
-  --rb-pink-600: #4a5994;
-  --rb-pink-700: #3a4879;
-  --rb-accent-rgb: 90, 105, 166;
-  --rb-accent-hover: #6877b3;
-  --rb-accent-deep: #47548a;
-  --rb-grad-pink: linear-gradient(135deg, #5a69a6 0%, #5a69a6 100%);
-  --rb-grad-pink-hot: linear-gradient(135deg, #5a69a6 0%, #5a69a6 100%);
-  --rb-pink-fg: #4a5994;
-
-  --rb-hover-light: rgba(90, 105, 166, 0.07);
-  --rb-active-light: rgba(90, 105, 166, 0.13);
-  --rb-input-bg: #fbfcff;
-  --rb-input-border: #b9c8e4;
-  --rb-input-text: #22304d;
-  --rb-input-placeholder: #9aa6bf;
-  --rb-toggle-off: #cdd7ea;
-  --rb-toggle-on: #5a69a6;
-  --rb-slider-fill: #5a69a6;
-
-  --st-win-bg:
-    radial-gradient(120% 70% at 0% 0%, rgba(255, 255, 255, 0.95) 0%, rgba(255, 255, 255, 0) 60%),
-    linear-gradient(155deg, #fbfdff 0%, #f1f6fd 50%, #e8f0fb 100%);
-  --st-card-fill: #eef2f9;
-  --st-card-stroke: #cbd6ea;
-  --st-divider: #d8e0ef;
-  --st-inset-fill: #f7f9fd;
-  --st-track: #e4ebf6;
-  --st-nav-hover: rgba(90, 120, 180, 0.09);
-  --st-selected-fill: #dce9f8;
-  --st-selected-stroke: #b3cdee;
-  --st-selected-text: #1f3556;
-  --st-nav-active-stroke: rgba(255, 255, 255, 0.7);
-  --st-ghost-stroke: #d8c08b;
-  --st-ghost-fill: rgba(255, 255, 255, 0.72);
-  --st-ghost-hover: #fff8e6;
-  --st-primary: #5a69a6;
-  --st-primary-hover: #6877b3;
-  --st-danger: #d33a3a;
 }
 
 /* ── 窗口外壳 ─────────────────────────────────────────── */
@@ -497,13 +434,13 @@
 /* ── 开关：小一号的药丸，开启后是实心灰蓝 ──────────────────── */
 .settings-shell .switch { width: 44px; height: 24px; }
 .settings-shell .switch__track { border: 0; border-radius: 999px; background: var(--rb-toggle-off); box-shadow: none; }
-.settings-shell .switch__thumb { top: 3px; left: 3px; width: 18px; height: 18px; background: #ffffff; box-shadow: 0 1px 3px rgba(34, 48, 77, .28); }
+.settings-shell .switch__thumb { top: 3px; left: 3px; width: 18px; height: 18px; background: #ffffff; box-shadow: 0 1px 3px rgba(0, 0, 0, .24); }
 .settings-shell .switch input:checked + .switch__track { background: var(--st-primary); border-color: transparent; box-shadow: none; }
-.settings-shell .switch input:checked + .switch__track .switch__thumb { transform: translateX(20px); background: #ffffff; box-shadow: 0 1px 3px rgba(34, 48, 77, .28); }
+.settings-shell .switch input:checked + .switch__track .switch__thumb { transform: translateX(20px); background: #ffffff; box-shadow: 0 1px 3px rgba(0, 0, 0, .24); }
 .settings-shell .switch:hover .switch__track { border-color: transparent; filter: brightness(.97); }
 .settings-shell .plugin-switch { width: 44px; height: 24px; margin-top: 2px; }
 .settings-shell .plugin-switch span { border: 0; border-radius: 999px; background: var(--rb-toggle-off); box-shadow: none; }
-.settings-shell .plugin-switch span::after { top: 3px; left: 3px; width: 18px; height: 18px; background: #ffffff; box-shadow: 0 1px 3px rgba(34, 48, 77, .28); }
+.settings-shell .plugin-switch span::after { top: 3px; left: 3px; width: 18px; height: 18px; background: #ffffff; box-shadow: 0 1px 3px rgba(0, 0, 0, .24); }
 .settings-shell .plugin-switch input:checked + span { background: var(--st-primary); border-color: transparent; box-shadow: none; }
 .settings-shell .plugin-switch input:checked + span::after { transform: translateX(20px); background: #ffffff; }
 
@@ -629,7 +566,7 @@ body { font-size: var(--cy-ui-font-size, 16px); }
 }
 #appearance-form .ui-color-pill:focus-within { border-color: var(--st-primary); box-shadow: var(--st-focus-ring); }
 #appearance-form .ui-color-dot {
-  flex: none; width: 22px; height: 22px; padding: 0; border: 1px solid rgba(34, 48, 77, .18); border-radius: 50%;
+  flex: none; width: 22px; height: 22px; padding: 0; border: 1px solid var(--rb-border-strong); border-radius: 50%;
   background: none; cursor: pointer; overflow: hidden; -webkit-appearance: none; appearance: none;
 }
 #appearance-form .ui-color-dot::-webkit-color-swatch-wrapper { padding: 0; }
@@ -876,3 +813,81 @@ body { font-size: var(--cy-ui-font-size, 16px); }
 
 /* 账号卡默认头像：占位图标直接放在 44px 圆里，居中并固定 22px，避免贴左上 */
 .account-card__avatar > svg { display: block; flex: none; width: 22px; height: 22px; }
+
+/* ── 毛玻璃：Windows 11 系统亚克力（主进程确认支持后给 <html> 标 data-glass） ──────────
+ * 窗口外框和左侧导航是玻璃：底色只压一层薄薄的聊天页面色，身后桌面被系统模糊后透出来；
+ * 右侧内容区仍是接近实底的面板，文字和卡片不受背景影响。
+ * 玻璃模式用系统画的 8px 窗口圆角（亚克力铺满整个窗口矩形，CSS 圆角再大会在四角露出灰块）。 */
+:root[data-glass="true"] .settings-shell,
+:root[data-glass="true"] .cy-modal-overlay {
+  --st-radius-win: 8px;
+  --st-win-alpha: 52%;
+  --st-main-alpha: 92%;
+  --st-card-alpha: 90%;
+}
+:root[data-glass="true"] .settings-shell { border-color: color-mix(in srgb, var(--rb-border-soft) 60%, transparent); }
+:root[data-glass="true"] .settings-shell .settings-main {
+  background: color-mix(in srgb, var(--rb-bg-1) var(--st-main-alpha), transparent);
+  border-left: 1px solid color-mix(in srgb, var(--rb-border-soft) 70%, transparent);
+}
+:root[data-glass="true"] .settings-shell .settings-titlebar { background: transparent; }
+
+/* ── 深色：流萤墨绿 + 玻璃质感 ─────────────────────────────
+ * 选中项、描边、卡片的微光都用流萤的青绿（--rb-pink-400 在深色主题里是 #7bd8ae），不是中性灰。
+ * 玻璃模式下：窗口底是一层墨绿渐变（亚克力按系统的浅色着色，所以底色要压得更实，侧栏才不发灰），
+ * 顶边一条细高光，内容面板右上角一抹淡绿光，卡片带一层几乎看不见的绿色渐变和顶边高光。 */
+:root[data-ui-theme="firefly-dark"] .settings-shell,
+:root[data-ui-theme="firefly-dark"] .cy-modal-overlay {
+  --st-card-stroke: color-mix(in srgb, var(--rb-pink-400) 18%, var(--rb-border-soft));
+  --st-divider: color-mix(in srgb, var(--rb-pink-400) 11%, var(--rb-border-soft));
+  --st-selected-fill: color-mix(in srgb, var(--rb-pink-400) 16%, transparent);
+  --st-selected-stroke: color-mix(in srgb, var(--rb-pink-400) 32%, transparent);
+  --st-selected-text: var(--rb-pink-700);
+  --st-nav-hover: color-mix(in srgb, var(--rb-pink-400) 9%, transparent);
+}
+:root[data-glass="true"][data-ui-theme="firefly-dark"] .settings-shell,
+:root[data-glass="true"][data-ui-theme="firefly-dark"] .cy-modal-overlay {
+  --st-main-alpha: 90%;
+  --st-card-alpha: 78%;
+  --st-card-fill:
+    linear-gradient(180deg, color-mix(in srgb, var(--rb-pink-400) 8%, transparent) 0%, color-mix(in srgb, var(--rb-pink-400) 2%, transparent) 100%),
+    color-mix(in srgb, var(--rb-card-bg) var(--st-card-alpha), transparent);
+}
+:root[data-glass="true"][data-ui-theme="firefly-dark"] .settings-shell {
+  --st-win-bg: linear-gradient(165deg, rgba(27, 58, 45, .78) 0%, rgba(13, 22, 18, .88) 55%, rgba(10, 16, 14, .92) 100%);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, .07);
+}
+:root[data-glass="true"][data-ui-theme="firefly-dark"] .settings-shell .settings-main {
+  background:
+    radial-gradient(900px 420px at 100% 0%, color-mix(in srgb, var(--rb-pink-400) 8%, transparent), transparent 62%),
+    color-mix(in srgb, var(--rb-bg-1) var(--st-main-alpha), transparent);
+  border-left-color: color-mix(in srgb, var(--rb-pink-400) 14%, transparent);
+}
+:root[data-glass="true"][data-ui-theme="firefly-dark"] .settings-shell :is(
+  .plugin-card, .agent-setting-card, .scheduler-card, .channels-card, .channels-log,
+  .disclaimer-section, .panel-card, .plugin-panel-card, .ui-color-controls, .settings-list
+) {
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, .05), 0 6px 22px rgba(0, 0, 0, .16);
+}
+
+/* ── 过渡动画 ───────────────────────────────────────────
+ * 窗口打开时整体淡入并轻微上浮；切换设置分区时新分区淡入上浮；导航项的悬停 / 选中渐变。
+ * 分区靠 .is-hidden 切换显示，display 从 none 变回来时动画会重新播放。 */
+@keyframes st-shell-in {
+  from { opacity: 0; transform: translateY(10px) scale(.985); }
+  to { opacity: 1; transform: none; }
+}
+@keyframes st-panel-in {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: none; }
+}
+.settings-shell { animation: st-shell-in 260ms cubic-bezier(.2, .8, .2, 1) both; }
+.settings-shell .settings-panel:not(.is-hidden),
+.settings-shell #disclaimer-panel:not(.is-hidden) { animation: st-panel-in 240ms cubic-bezier(.2, .8, .2, 1) both; }
+.settings-shell .nav-item { transition: background-color 160ms ease, color 160ms ease, border-color 160ms ease; }
+@media (prefers-reduced-motion: reduce) {
+  .settings-shell,
+  .settings-shell .settings-panel:not(.is-hidden),
+  .settings-shell #disclaimer-panel:not(.is-hidden) { animation: none; }
+  .settings-shell .nav-item { transition: none; }
+}

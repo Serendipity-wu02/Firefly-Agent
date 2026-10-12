@@ -71,7 +71,7 @@ export interface ModelSettings {
   thinkingOverride?: -1 | 0 | 1;
   /** 禁用 max_tokens 注入。仅对自定义端点生效（与主进程 model-settings.ts 对齐）。 */
   disableMaxToken?: boolean;
-  /** 上下文窗口大小（Token）。默认 256000。 */
+  /** 上下文窗口大小（Token）。默认 1M（1000000），上限 1M。 */
   contextWindowTokens?: number;
 }
 
@@ -105,6 +105,8 @@ export interface GeneralSettings extends ChatAppearanceSettings {
   asrAliyunAccessKeySecret?: string;
   asrLanguage?: "zh" | "en" | "auto";
   maxParallelToolCalls: number;
+  maxToolRounds: number;
+  runTimeoutMinutes: number;
   chatSocialContextEnabled: boolean;
   petAlwaysOnTop: boolean;
   petVisible: boolean;
@@ -191,8 +193,6 @@ export interface SettingsApi {
   pickUiFont: () => Promise<string | null>;
   importUiFont: (sourcePath: string) => Promise<UiFont>;
   resetUiFont: () => Promise<UiFont>;
-  openSidebar: () => void;
-  closeSidebar: () => void;
   setPetAlwaysOnTop: (value: boolean) => void;
   setPetVisible: (value: boolean) => void;
   setPetZoom: (value: number) => void;
@@ -201,8 +201,6 @@ export interface SettingsApi {
   stickerAdd?: (payload: { sourcePath: string; id: string; description: string; phrases: string[] }) => Promise<unknown>;
   embeddingSetModel?: (model: string) => Promise<{ ok: boolean; clearedEntries?: number; error?: string }>;
   rerankerSetMode?: (mode: string) => Promise<boolean>;
-  setToolEnabled?: (id: string, enabled: boolean) => Promise<{ ok: boolean; error?: string }>;
-  getToolEnabled?: () => Promise<Record<string, boolean>>;
   // 三模适配层：工具-模式覆盖层（UI 设置面板用）
   getToolCatalog?: () => Promise<Array<{
     id: string;
@@ -214,7 +212,6 @@ export interface SettingsApi {
   }>>;
   getToolModeOverrides?: () => Promise<Record<string, Partial<Record<"chat" | "work" | "code", boolean>>>>;
   setToolModeOverride?: (toolId: string, mode: "chat" | "work" | "code", enabled: boolean) => Promise<{ ok: boolean; error?: string }>;
-  clearToolModeOverride?: (toolId: string, mode?: "chat" | "work" | "code") => Promise<{ ok: boolean; error?: string }>;
   // 三模适配层：Skill-模式覆盖层（聊天窗口用）。
   getSkillCatalog?: () => Promise<Array<{
     id: string;
@@ -229,7 +226,6 @@ export interface SettingsApi {
   rescanSkills?: () => Promise<{ ok: boolean; count: number; error?: string }>;
   getSkillModeOverrides?: () => Promise<Record<string, Partial<Record<"work" | "code", boolean>>>>;
   setSkillModeOverride?: (skillId: string, mode: "work" | "code", enabled: boolean) => Promise<{ ok: boolean; error?: string }>;
-  clearSkillModeOverride?: (skillId: string, mode?: "work" | "code") => Promise<{ ok: boolean; error?: string }>;
   addMcpServer?: (config: unknown) => Promise<{ ok: boolean; toolIds?: string[]; error?: string }>;
   removeMcpServer?: (serverId: string) => Promise<{ ok: boolean; error?: string }>;
   listMcpServers?: () => Promise<Array<{ id: string; name: string; connected: boolean; toolCount: number; toolIds: string[] }>>;

@@ -143,6 +143,7 @@ describe("model catalog", () => {
     const settings = normalizeModelSettings({
       provider: "GLM（智谱）",
       contextWindowTokens: 256000,
+      contextWindowVersion: 2,
       modelProfiles: [
         { id: "p-full", provider: "GLM（智谱）", baseUrl: "https://a.com", apiKey: "k", model: "glm-5v-turbo", contextWindowTokens: 128000 },
         { id: "p-inherited", provider: "GLM（智谱）", baseUrl: "https://b.com", apiKey: "k2", model: "glm-5.2" },

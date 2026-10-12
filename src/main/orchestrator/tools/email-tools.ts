@@ -11,6 +11,8 @@ import * as fs from "fs";
 import * as path from "path";
 import nodemailer from "nodemailer";
 import { toolRegistry } from "./registry/tool-registry";
+import type { ToolContext } from "./registry/tool-context";
+import { createAbortError } from "../../abort-utils";
 import { requestUserChoice, type ChoiceOption } from "../../user-choice";
 import { logger, LogTag } from "../../logger";
 
@@ -52,7 +54,7 @@ export function setEmailConfig(
 // 工具入口
 // ══════════════════════════════════════════════════════════
 
-async function executeSendEmail(args: Record<string, unknown>): Promise<string> {
+async function executeSendEmail(args: Record<string, unknown>, ctx?: ToolContext): Promise<string> {
   // 1. 读配置 + 启用检查
   const enabled = emailEnabledGetter?.() ?? false;
   if (!enabled) {
@@ -119,7 +121,9 @@ async function executeSendEmail(args: Record<string, unknown>): Promise<string> 
     { label: "发送", value: "send" },
     { label: "取消", value: "cancel" },
   ];
-  const choice = await requestUserChoice(question, options, "cancel");
+  // 确认卡归属当前 run：run 被取消后卡片作废，之后再点“发送”也不会发信。
+  const choice = await requestUserChoice(question, options, "cancel", { runId: ctx?.runId, signal: ctx?.signal });
+  if (ctx?.signal?.aborted) throw createAbortError();
   if (choice !== "send") {
     return "[send_email] 用户取消发送";
   }

@@ -1,6 +1,6 @@
 import { logger, LogTag } from "../../logger";
 import { getEmbeddingProvider } from "../../rag/embedding";
-import { BUILT_IN_STICKER_DESCRIPTIONS } from "../../sticker-descriptions";
+import { AUTO_SEND_STICKER_DESCRIPTIONS } from "../../sticker-descriptions";
 import { buildCachedStickerEmbeddingIndex } from "../../sticker-embedding-cache";
 import type { StickerEmbeddingEntry } from "../../sticker-embedder";
 import { loadUserStickerManifest } from "../../sticker-storage";
@@ -29,7 +29,7 @@ export function createEmbeddingIndexService(): EmbeddingIndexService {
 
         const index = await buildCachedStickerEmbeddingIndex(
           provider,
-          BUILT_IN_STICKER_DESCRIPTIONS,
+          AUTO_SEND_STICKER_DESCRIPTIONS,
           loadUserStickerManifest(),
         );
         if (seq !== stickerEmbeddingRefreshSeq) return;

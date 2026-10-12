@@ -312,22 +312,6 @@ export function getPermanentWorldbookEntries(): string[] {
   return worldbook.getPermanentEntries();
 }
 
-// ── Worldbook 关键词直查：后台轻量调用用，不经 DMAE 状态机 ──
-// 文本命中任一触发词即注入该条目，调用方自行决定合并常驻条目。
-export function getKeywordMatchedWorldbookEntries(text: string): string[] {
-  if (!worldbook) return [];
-  const t = text ?? "";
-  if (!t.trim()) return [];
-  return worldbook.getEntries()
-    .filter((e) => e.enabled && !e.permanent && e.keywords.length > 0)
-    .filter((e) => e.keywords.some((kw) => t.includes(kw)))
-    .sort((a, b) => b.priority - a.priority)
-    .map((e) => {
-      const title = e.id.replace(/^wb_[^_]+_/, "").replace(/_/g, " ");
-      return `【${title}】\n${e.content}`;
-    });
-}
-
 // ── Import document ──
 export type ImportedDocumentResult = {
   importId: string;
@@ -424,34 +408,6 @@ export async function searchImportedDocumentChunksForImportIds(
     chunkIndex: typeof result.entry.metadata?.chunkIndex === "number" ? result.entry.metadata.chunkIndex : undefined,
     importId: typeof result.entry.metadata?.importId === "string" ? result.entry.metadata.importId : undefined,
   }));
-}
-
-// ── Build memory context (legacy, kept for compatibility) ──
-// 注意：单参签名无 modelText，故 model 奖励不触发（降级行为）。
-// 主流程已改用 orchestrator 的 buildAlwaysOnContext（会传上轮模型回复）。
-export async function buildMemoryContext(userInput: string): Promise<string> {
-  const parts: string[] = [];
-
-  // 1. Worldbook（DMAE：打分 + 取 Active）
-  updateWorldbookActivation(userInput, "");
-  const wbResults = getActiveWorldbookEntries();
-  if (wbResults.length > 0) {
-    parts.push("\u3010\u76f8\u5173\u80cc\u666f\u3011\n" + wbResults.join("\n\n"));
-  }
-
-  // 2. Imported docs
-  const docResults = await searchMemory(userInput, "imported_doc", 5);
-  if (docResults.length > 0) {
-    parts.push("\u3010\u76f8\u5173\u6587\u4ef6\u7247\u6bb5\u3011\n" + docResults.map((m) => "- " + m).join("\n"));
-  }
-
-  // 3. User memory
-  const memResults = await searchMemory(userInput, "user_memory", 3);
-  if (memResults.length > 0) {
-    parts.push("\u3010\u5173\u4e8e\u7528\u6237\u7684\u8bb0\u5fc6\u3011\n" + memResults.map((m) => "- " + m).join("\n"));
-  }
-
-  return parts.join("\n\n");
 }
 
 // ── Reset ──

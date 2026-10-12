@@ -94,7 +94,7 @@ export async function callLLM(
       adapter,
       request: chatRequest,
       config: vendorConfig,
-      timeoutMs: config.totalTimeoutMs,
+      timeoutMs: config.modelRequestTimeoutMs,
       signal,
       onDelta: (delta) => {
         if (delta.type !== "usage" && (!("delta" in delta) || delta.delta.length > 0)) {
@@ -116,7 +116,7 @@ export async function callLLM(
     // prepared handle or permit. Main performs a fresh capture and validation.
     return recordResponseUsage(await memoryRun.call({
       adapter, request: fallbackRequest, config: vendorConfig,
-      timeoutMs: config.totalTimeoutMs, signal,
+      timeoutMs: config.modelRequestTimeoutMs, signal,
     }));
   }
   const http = adapter.buildRequest(fallbackRequest, vendorConfig);
@@ -124,7 +124,9 @@ export async function callLLM(
     method: "POST",
     headers: http.headers,
     body: http.body,
-    signal,
+    signal: config.modelRequestTimeoutMs > 0
+      ? AbortSignal.any([...(signal ? [signal] : []), AbortSignal.timeout(config.modelRequestTimeoutMs)])
+      : signal,
   });
   if (!response.ok) {
     // [image-send] 链路日志④：服务端拒绝时带上模型名、请求地址与完整错误体（Anthropic 400 会带具体 reason）。

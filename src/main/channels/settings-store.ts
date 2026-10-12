@@ -234,7 +234,8 @@ const DEFAULT_SETTINGS: ChannelsSettings = {
 
   stickerEnabled: false,
   mirrorToDesktop: true,
-  toolSandbox: "all",
+  // 默认只聊天、不调用工具：开启"全部"后别人发来的消息会无审批地操作这台电脑，必须由用户明确选择。
+  toolSandbox: "off",
 };
 
 function filePath(): string {

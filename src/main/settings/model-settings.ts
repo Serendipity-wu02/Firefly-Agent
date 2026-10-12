@@ -6,6 +6,7 @@ import path from "node:path";
 import { randomUUID } from "node:crypto";
 import type { RuntimeProfile } from "../runtime-profile";
 import { DEFAULT_CONTEXT_WINDOW_TOKENS } from "../orchestrator/model-config";
+import { LEGACY_DEFAULT_CONTEXT_WINDOW_TOKENS, parseContextWindowTokens, resolveContextWindowTokens } from "../../shared/context-window";
 import { foldReasoning, normalizeReasoningLevels, normalizeReasoningPreference, type ReasoningLevelsConfig, type ReasoningPreference } from "../../shared/reasoning";
 import type { StickerSize } from "../../shared/sticker-types";
 import { getSettingsPath } from "../settings-store";
@@ -42,8 +43,7 @@ export interface ProviderProfile {
    */
   reasoningLevels?: ReasoningLevelsConfig;
   /**
-   * 上下文窗口（Token）。档案级字段；未定义 = 回退顶层 ModelSettings.contextWindowTokens。
-   * 未设置时回退顶层配置。
+   * 上下文窗口（Token）。档案级字段，4096 ~ 1M；未定义 = 回退顶层 ModelSettings.contextWindowTokens（默认 1M）。
    */
   contextWindowTokens?: number;
   /**
@@ -108,8 +108,13 @@ export interface ModelSettings {
   inputModalitiesSource?: InputModalitySource;
   thinkingOverride?: -1 | 0 | 1;
   disableMaxToken?: boolean;
-  /** 上下文窗口大小（Token）。默认 256000，来自 DEFAULT_CONTEXT_WINDOW_TOKENS。唯一定义点。 */
+  /** 上下文窗口大小（Token）。默认 1M、上限 1M，来自 shared/context-window。 */
   contextWindowTokens: number;
+  /**
+   * 上下文窗口迁移标记。缺失 = 旧存档：旧设置页把「留空」固化成 256000 写进每个档案，
+   * 读取时把恰为 256000 的值视为未设置，回到默认 1M；写盘后带 2，之后用户手填的 256000 原样保留。
+   */
+  contextWindowVersion?: 2;
 }
 
 /** 当前配置文件 schema 版本。 */
@@ -163,6 +168,7 @@ function resolveProfileTransport(
 function normalizeProviderProfile(
   input: Partial<ProviderProfile> | null | undefined,
   provider = DEFAULT_MODEL_SETTINGS.provider,
+  legacyContextWindow = false,
 ): ProviderProfile {
   const explicitTransport: ProviderProfile["explicitTransport"] =
     resolveProfileTransport(input, provider);
@@ -175,10 +181,10 @@ function normalizeProviderProfile(
     explicitTransport,
     reasoning: normalizeReasoningPreference((input as { reasoning?: unknown })?.reasoning),
     reasoningLevels: normalizeReasoningLevels((input as { reasoningLevels?: unknown })?.reasoningLevels),
-    // 非法值 → undefined（回退全局）；下限 4096，与 UI 输入框 min 一致
-    contextWindowTokens: typeof rawContextWindow === "number" && Number.isFinite(rawContextWindow) && rawContextWindow >= 4096
-      ? Math.round(rawContextWindow)
-      : undefined,
+    // 非法值 → undefined（回退全局）；夹在 4096 ~ 1M，与 UI 输入框一致。旧存档里恰为 256000 的值是旧版固化的默认，按未设置处理。
+    contextWindowTokens: legacyContextWindow && rawContextWindow === LEGACY_DEFAULT_CONTEXT_WINDOW_TOKENS
+      ? undefined
+      : parseContextWindowTokens(rawContextWindow),
     // 输入模态声明：非法 → 不写入（回退内置目录）；见 normalizeDeclaredInputModalities
     ...normalizeDeclaredInputModalities(input?.inputModalities, input?.inputModalitiesSource),
   };
@@ -190,6 +196,8 @@ export function normalizeModelSettings(input: Partial<ModelSettings> | null | un
     ? input.provider.trim()
     : DEFAULT_MODEL_SETTINGS.provider;
 
+  const legacyContextWindow = (input as { contextWindowVersion?: unknown } | undefined)?.contextWindowVersion !== 2;
+
   // perProvider 清洗：跳过非对象、非法键
   const rawPerProvider = (input as ModelSettings | undefined)?.perProvider;
   const perProvider: Record<string, ProviderProfile> = {};
@@ -197,7 +205,7 @@ export function normalizeModelSettings(input: Partial<ModelSettings> | null | un
     for (const [key, value] of Object.entries(rawPerProvider)) {
       if (typeof key !== "string" || !key.trim()) continue;
       const providerName = key.trim();
-      perProvider[providerName] = normalizeProviderProfile(value as Partial<ProviderProfile>, providerName);
+      perProvider[providerName] = normalizeProviderProfile(value as Partial<ProviderProfile>, providerName, legacyContextWindow);
     }
   }
 
@@ -207,7 +215,7 @@ export function normalizeModelSettings(input: Partial<ModelSettings> | null | un
       model: typeof input?.model === "string" ? input.model : provider === DEFAULT_MODEL_SETTINGS.provider ? DEFAULT_MODEL_SETTINGS.model : "",
       apiKey: typeof input?.apiKey === "string" ? input.apiKey : "",
       explicitTransport: input?.explicitTransport,
-    }, provider);
+    }, provider, legacyContextWindow);
   }
 
   // 顶层镜像：用 perProvider[provider] 展开
@@ -223,7 +231,7 @@ export function normalizeModelSettings(input: Partial<ModelSettings> | null | un
 
   const modelProfiles: SavedModelProfile[] = Array.isArray(input?.modelProfiles)
     ? input.modelProfiles.filter((item): item is SavedModelProfile => Boolean(item && typeof item === "object" && typeof item.id === "string" && typeof item.provider === "string"))
-      .map((item) => ({ ...normalizeProviderProfile(item, item.provider), id: item.id, provider: item.provider }))
+      .map((item) => ({ ...normalizeProviderProfile(item, item.provider, legacyContextWindow), id: item.id, provider: item.provider }))
     : [];
 
   return {
@@ -263,10 +271,10 @@ export function normalizeModelSettings(input: Partial<ModelSettings> | null | un
     multimodal,
     thinkingOverride: input?.thinkingOverride,
     disableMaxToken: input?.disableMaxToken,
-    contextWindowTokens: typeof input?.contextWindowTokens === "number" && Number.isFinite(input.contextWindowTokens)
-      && input.contextWindowTokens > 0
-      ? Math.round(input.contextWindowTokens)
-      : DEFAULT_CONTEXT_WINDOW_TOKENS,
+    contextWindowTokens: legacyContextWindow && input?.contextWindowTokens === LEGACY_DEFAULT_CONTEXT_WINDOW_TOKENS
+      ? DEFAULT_CONTEXT_WINDOW_TOKENS
+      : resolveContextWindowTokens(input?.contextWindowTokens),
+    contextWindowVersion: 2,
   };
 }
 

@@ -8,6 +8,11 @@ it("binds the saved nondefault model without mutating settings or using diagnost
  expect(binding.budget).toMatchObject({admissionMode:"bounded",maxContextTokens:128000,reservedOutputTokens:8192,safetyMarginTokens:512});
  expect(binding.counter.capability.mode).toBe("estimate");expect(JSON.stringify(value)).toBe(before);
 });
+it("starts summarising S at 85% of the window, not at the usable ceiling",()=>{
+ const budget=createProductionModelRegistry({settings}).bind("luna").budget;
+ expect(budget.maxSTokens).toBe(Math.floor(128000*0.85));
+ expect(budget.maxSTokens).toBeLessThan(128000-budget.reservedOutputTokens-budget.safetyMarginTokens);
+});
 it("rejects missing profiles instead of silently falling back to top-level settings",()=>{
  const registry=createProductionModelRegistry({settings});expect(registry.profile("missing")).toBeNull();expect(()=>registry.bind("missing")).toThrow("MEMORY_RUN_PROFILE_DENIED");
 });

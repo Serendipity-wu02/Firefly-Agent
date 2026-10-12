@@ -219,8 +219,8 @@
 
             <label class="field field--full">
               <span><span data-i18n="panel.api.field.model.contextWindow">上下文窗口（Token）</span></span>
-              <input id="context-window-input" type="number" min="4096" step="1" placeholder="256000" autocomplete="off" data-i18n-placeholder="panel.api.field.model.contextWindowPlaceholder" />
-              <span class="form-hint"><span data-i18n="panel.api.field.model.contextWindowHint">按档案保存；留空按 256000。</span></span>
+              <input id="context-window-input" type="number" min="4096" max="1000000" step="1" placeholder="1000000" autocomplete="off" data-i18n-placeholder="panel.api.field.model.contextWindowPlaceholder" />
+              <span class="form-hint"><span data-i18n="panel.api.field.model.contextWindowHint">按档案保存；留空按默认 1M（1000000），可填 4096–1000000。上下文用到窗口的 85% 时自动压缩。</span></span>
             </label>
 
             <div class="field field--full reasoning-levels-field">
@@ -358,6 +358,16 @@
               <span>工具并发数</span>
               <input id="max-parallel-tool-calls" type="number" min="1" max="8" step="1" placeholder="4" autocomplete="off" />
               <span class="field-hint">同时执行的安全工具数量。范围：1~8；设为 1 时完全串行。保存后从下一个任务生效。</span>
+            </label>
+            <label class="field field--full">
+              <span>单次任务最多工具轮数</span>
+              <input id="max-tool-rounds" type="number" min="0" max="10000" step="1" placeholder="200" autocomplete="off" />
+              <span class="field-hint">达到后任务会停下并告诉你原因，避免卡住或循环的模型一直运行。默认 200；填 0 表示不限。保存后从下一个任务生效。</span>
+            </label>
+            <label class="field field--full">
+              <span>单次任务最长运行时间（分钟）</span>
+              <input id="run-timeout-minutes" type="number" min="0" max="1440" step="1" placeholder="120" autocomplete="off" />
+              <span class="field-hint">只计执行时间，等你回答问题的时间不算。默认 120 分钟；填 0 表示不限。保存后从下一个任务生效。</span>
             </label>
           </div>
           <div class="form-actions">
@@ -1065,7 +1075,7 @@
                     <input type="radio" name="channels-tool-sandbox" value="all" id="channels-tool-sandbox-all" />
                     <div class="tool-permission-option__text">
                       <span class="tool-permission-option__title"><span data-i18n="panel.channels.toolPermissionAll">全部开启</span></span>
-                      <span class="tool-permission-option__desc"><span data-i18n="panel.channels.toolPermissionAllDesc">使用现有执行循环，所有手机端工具直接执行；不提供询问卡片或逐项审批。</span></span>
+                      <span class="tool-permission-option__desc"><span data-i18n="panel.channels.toolPermissionAllDesc">使用现有执行循环，所有工具直接执行，没有任何审批，也不受聊天框里的权限档位限制。任何能给机器人发消息的人都能让它读写这台电脑上的文件、运行命令；只在确定只有你自己会使用这个渠道时开启。</span></span>
                     </div>
                   </label>
                 </div>

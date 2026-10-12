@@ -15,6 +15,7 @@ import {
 import { normalizeWindowVisibilitySettings } from "../window-visibility-settings";
 import { getGeneralSettingsPath } from "../settings-store";
 import type { GeneralSettings } from "./general-settings";
+import { DEFAULT_MAX_TOOL_ROUNDS, DEFAULT_RUN_TIMEOUT_MS } from "../orchestrator/harness/types";
 
 import type { ToolModeOverrides } from "../orchestrator/tools/registry/tool-registry";
 import type { ConversationMode } from "../../shared/chat-types";
@@ -28,6 +29,8 @@ import {
 const DEFAULT_GENERAL_SETTINGS: GeneralSettings = {
   plugins: {},
   maxParallelToolCalls: 4,
+  maxToolRounds: DEFAULT_MAX_TOOL_ROUNDS,
+  runTimeoutMinutes: DEFAULT_RUN_TIMEOUT_MS / 60_000,
   chatSocialContextEnabled: false,
   petAlwaysOnTop: true,
   petVisible: true,
@@ -120,6 +123,13 @@ export function normalizeGeneralSettings(
       ? Math.max(1, Math.min(8, Math.trunc(numberValue)))
       : DEFAULT_GENERAL_SETTINGS.maxParallelToolCalls;
   };
+  // 0 是「不限」的有意取值：只有真正的数字（或写明数字的字符串）才算；null / 空串 / 空白不能被 Number() 悄悄变成 0。
+  const normalizeNonNegativeInt = (value: unknown, max: number, fallback: number): number => {
+    const numberValue = typeof value === "number"
+      ? value
+      : typeof value === "string" && value.trim() !== "" ? Number(value) : Number.NaN;
+    return Number.isFinite(numberValue) && numberValue >= 0 ? Math.min(max, Math.trunc(numberValue)) : fallback;
+  };
   return {
     plugins: Object.fromEntries(
       Object.entries(input?.plugins ?? {}).filter(
@@ -127,6 +137,8 @@ export function normalizeGeneralSettings(
       ),
     ),
     maxParallelToolCalls: normalizeMaxParallelToolCalls(input?.maxParallelToolCalls),
+    maxToolRounds: normalizeNonNegativeInt(input?.maxToolRounds, 10_000, DEFAULT_GENERAL_SETTINGS.maxToolRounds),
+    runTimeoutMinutes: normalizeNonNegativeInt(input?.runTimeoutMinutes, 24 * 60, DEFAULT_GENERAL_SETTINGS.runTimeoutMinutes),
     chatSocialContextEnabled: normalizeChatSocialContextEnabled(input?.chatSocialContextEnabled),
     petAlwaysOnTop: input?.petAlwaysOnTop === undefined
       ? DEFAULT_GENERAL_SETTINGS.petAlwaysOnTop

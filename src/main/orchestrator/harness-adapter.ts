@@ -83,8 +83,9 @@ export async function runHarnessWithAdapter(
     vendorConfig,
     config: {
       maxParallelToolCalls: options.maxParallelToolCalls,
-      // 0 表示禁用整轮执行时钟；单次模型/工具超时仍由各自策略处理。
-      totalTimeoutMs: 0,
+      // 缺省走 Harness 默认值（200 轮 / 2 小时）；设置里调成 0 表示不限。
+      ...(options.maxToolRounds !== undefined ? { maxRounds: options.maxToolRounds } : {}),
+      ...(options.runTimeoutMs !== undefined ? { totalTimeoutMs: options.runTimeoutMs } : {}),
       contextWindowTokens: options.settings.contextWindowTokens,
     },
     signal: toolRuntime.signal,
