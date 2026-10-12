@@ -1,4 +1,4 @@
-import { app, BrowserWindow, dialog, shell, type IpcMainInvokeEvent } from "electron";
+import { app, dialog, type IpcMainInvokeEvent } from "electron";
 import { pathToFileURL } from "node:url";
 import { isDev } from "../env";
 import { getModelConnectionSnapshot, onModelConnectionChanged, testModelConnection } from "./model-settings";
@@ -210,14 +210,6 @@ export function registerSettingsIpc(deps: SettingsIpcDependencies): () => void {
     return saved;
   });
 
-  ipc.on(IPC.SETTINGS_OPEN_SIDEBAR, () => {
-    // Retired standalone status window: legacy messages are harmless.
-  });
-
-  ipc.on(IPC.SETTINGS_CLOSE_SIDEBAR, async () => {
-    sidebarWindow?.close();
-  });
-
   ipc.on(IPC.SETTINGS_SET_PET_ALWAYS_ON_TOP, (_event, value: boolean) => {
     const saved = saveGeneralSettings({ ...getGeneralSettings(), petAlwaysOnTop: Boolean(value) });
     deps.windowManager?.setPetWindowAlwaysOnTop(saved.petAlwaysOnTop);
@@ -322,18 +314,6 @@ export function registerSettingsIpc(deps: SettingsIpcDependencies): () => void {
   ipc.handle(IPC.MODEL_GET_INSTALL_STATUS, () => {
     const { getModelInstallStatus } = require("../rag/model-status");
     return getModelInstallStatus();
-  });
-
-  ipc.handle(IPC.OPEN_EXTERNAL, async (_event, url: string) => {
-    if (!url.startsWith("http://") && !url.startsWith("https://")) {
-      return { ok: false, error: "Invalid URL" };
-    }
-    try {
-      await shell.openExternal(url);
-      return { ok: true };
-    } catch (err) {
-      return { ok: false, error: String(err) };
-    }
   });
 
   return unsubscribeConnections;

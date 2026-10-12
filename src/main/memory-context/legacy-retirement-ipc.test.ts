@@ -75,13 +75,12 @@ describe("Main SMH legacy IPC retirement", () => {
     for (const fn of Object.values(mocks.memory)) expect(fn).not.toHaveBeenCalled();
     expect(fs.readFileSync(mocks.path, "utf8")).toBe(original);
   });
-  it("preserves imported documents, sticker, skill and MCP management", async () => {
-    mocks.deleteDoc.mockReturnValue(2); mocks.stickers.mockReturnValue([{ id: "smile", enabled: true }]); mocks.skills.mockReturnValue([{ id: "skill" }]); mocks.mcp.mockReturnValue([{ id: "server" }]);
+  it("preserves imported documents, sticker and MCP management", async () => {
+    mocks.deleteDoc.mockReturnValue(2); mocks.stickers.mockReturnValue([{ id: "smile", enabled: true }]); mocks.mcp.mockReturnValue([{ id: "server" }]);
     const invoke = register();
     expect(await invoke(IPC.MEMORY_PANEL_DELETE_IMPORTED_DOC, { importId: "doc-1", fileName: "book.md" })).toEqual({ ok: true, deleted: 2 });
     expect(mocks.deleteDoc).toHaveBeenCalledWith("doc-1", "book.md");
     expect(await invoke(IPC.STICKERS_GET_CONFIG)).toEqual([{ id: "smile", enabled: true }]);
-    expect(await invoke(IPC.SKILL_LIST)).toEqual([{ id: "skill" }]);
     const url = pathToFileURL(path.join(process.cwd(), "dist/renderer/settings/index.html")).href;
     const sender = { mainFrame: { url }, getURL: () => url, isDestroyed: () => false };
     mocks.settingsWindow = { webContents: sender, isDestroyed: () => false };

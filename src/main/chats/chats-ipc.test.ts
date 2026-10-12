@@ -37,7 +37,7 @@ vi.mock("electron", () => ({
 }));
 
 describe("chats IPC mode filtering", () => {
-  it("GET and paged recovery use canonical settlement without rewriting either cache or transcript",async()=>{
+  it("GET recovery uses canonical settlement without rewriting either cache or transcript",async()=>{
     const {registerChatsIpc}=await import("./chats-ipc"),cache=await import("./chats-store"),{getConversationTranscriptStore}=await import("../orchestrator/conversation-transcript-store"),{createTranscriptSink}=await import("../orchestrator/transcript-sink");
     registerChatsIpc();const session=cache.createSession({mode:"chat"}),store=getConversationTranscriptStore(mocks.userDataDir);
     cache.appendMessage(session.id,{id:"u",role:"user",content:"synthetic",at:1});
@@ -47,15 +47,13 @@ describe("chats IPC mode filtering", () => {
     const assistantEntryId=await sink.appendSAssistant({message:{role:"assistant",content:"RAW"},binding});
     const before=JSON.stringify((await store.read(session.id)).entries),cacheBefore=JSON.stringify(cache.getSession(session.id));
     mocks.userDataLookupDenied=true;
-    const get=mocks.handlers.get(IPC.CHATS_GET)!,page=mocks.handlers.get(IPC.CHATS_GET_PAGE)!;
-    const pending=await get({},session.id) as any,paged=await page({},{id:session.id,limit:1}) as any;
+    const get=mocks.handlers.get(IPC.CHATS_GET)!;
+    const pending=await get({},session.id) as any;
     expect(pending.messages.find((m:any)=>m.id==="a")).toMatchObject({content:"",sSettlement:{state:"pending",originalText:"RAW"}});
-    expect(paged.messages[0]).toMatchObject({id:"a",content:"",sSettlement:{state:"pending",originalText:"RAW"}});
     expect(JSON.stringify((await store.read(session.id)).entries)).toBe(before);expect(JSON.stringify(cache.getSession(session.id))).toBe(cacheBefore);
     await sink.settleSAssistant({binding:{...binding,assistantEntryId},result:"success",safeReason:"synthetic"});
     const success=await get({},session.id) as any;expect(success.messages.find((m:any)=>m.id==="a")).toMatchObject({content:"RAW",sSettlement:{state:"success"},runSnapshot:{status:"terminal",terminalStatus:"success"}});
     expect(JSON.stringify(cache.getSession(session.id))).toBe(cacheBefore);
-    expect((await page({},{id:session.id,limit:1}) as any).messages[0]).toMatchObject({id:"a",content:"RAW",sSettlement:{state:"success",runId:"r"},runSnapshot:{runId:"r",terminalStatus:"success"}});
     // A fresh disk-backed cache read and repeated opening must recover the canonical run.
     expect(cache.getSession(session.id)!.messages.find(m=>m.id==="a")!.runSnapshot!.runId).toBe("stale-cache-run");
     expect((await get({},session.id) as any).messages.find((m:any)=>m.id==="a")).toMatchObject({content:"RAW",sSettlement:{state:"success"},runSnapshot:{runId:"r"}});
@@ -377,11 +375,6 @@ describe("chats IPC mode filtering", () => {
   await expect(mocks.handlers.get(IPC.CHATS_APPEND)!({sender:{}},{id:session.id,message:{id:'u',role:'user',content:'synthetic',at:1}})).rejects.toThrow('MEMORY_DESKTOP_SESSION_DENIED');expect(cache.getSession(session.id)?.messages).toEqual([]);expect(appendUser).toHaveBeenCalledTimes(1);
  });
 
- it("controlled bulk user removal is rejected before cache writes because it has no canonical rewind",async()=>{
-  const {registerChatsIpc}=await import('./chats-ipc'),cache=await import('./chats-store'),mutate=vi.fn(async(_event,_id,_ids,commit)=>commit());
-  registerChatsIpc(undefined,{memory:{ownsSession:()=>true,appendUser:vi.fn(),mutate} as any});const session=cache.createSession({mode:'chat'});cache.appendMessage(session.id,{id:'u',role:'user',content:'synthetic',at:1});
-  await expect(mocks.handlers.get(IPC.CHATS_REPLACE_MESSAGES)!({sender:{}},{id:session.id,messages:[]})).rejects.toThrow('MEMORY_CONTEXT_TRANSCRIPT_EDIT_UNSUPPORTED');expect(cache.getSession(session.id)?.messages.map(m=>m.id)).toEqual(['u']);expect(mutate).not.toHaveBeenCalled();
- });
  it("admits a queued user through Main before changing metadata and preserves document readScope",async()=>{
   const {registerChatsIpc}=await import("./chats-ipc"),cache=await import("./chats-store");
   const event={sender:{}},seen:any[]=[];

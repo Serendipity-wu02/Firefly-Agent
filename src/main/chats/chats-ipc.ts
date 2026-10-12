@@ -135,10 +135,6 @@ export function registerChatsIpc(
     await fs.promises.writeFile(result.filePath, markdown, "utf8");
     return { ok: true };
   });
-  ipc.handle(IPC.CHATS_GET_PAGE, (_event, payload: { id: string; before?: number | null; limit?: number }) => {
-    if (!payload?.id) return null;
-    return project(payload.id,chatsStore.getSessionPage(payload.id, payload.before ?? null, payload.limit ?? 80));
-  });
 
   ipc.handle(
     IPC.CHATS_CREATE,
@@ -189,16 +185,6 @@ export function registerChatsIpc(
     },
   );
 
-  ipc.handle(
-    IPC.CHATS_REPLACE_MESSAGES,
-    async (event, payload: { id: string; messages: ChatMessage[] }) => {
-      if (!payload || !payload.id || !Array.isArray(payload.messages)) return null;
-      if(options.memory?.ownsSession?.(payload.id)&&changedUsers(payload.id,payload.messages).length)throw Error("MEMORY_CONTEXT_TRANSCRIPT_EDIT_UNSUPPORTED");
-      const session = await mutate(event,payload.id,changedUsers(payload.id,payload.messages),()=>chatsStore.replaceMessages(payload.id, payload.messages.map(stripSProjection)));
-      if (session) broadcastChanged(event.sender);
-      return session;
-    },
-  );
   ipc.handle(
     IPC.CHATS_REPLACE_TAIL,
     async (event, payload: { id: string; startIndex: number; messages: ChatMessage[] }) => {
@@ -535,11 +521,6 @@ export function registerChatsIpc(
     return session;
   });
 
-  ipc.handle(IPC.CHATS_OPEN_FOLDER, async () => {
-    await chatsStore.openStorageFolder();
-    return true;
-  });
-
   ipc.handle(IPC.CHATS_OPEN_WORKSPACE, async (_event, workspaceRoot: unknown) => {
     if (typeof workspaceRoot !== "string" || !workspaceRoot.trim()) {
       return { ok: false, error: "missing workspaceRoot" };
@@ -586,49 +567,11 @@ export function registerChatsIpc(
           "sessionId=" + payload.sessionId.slice(0, 8) + "...",
           "workspaceRoot=" + resolved,
         );
-        // 广播工作区变更
-        for (const win of BrowserWindow.getAllWindows()) {
-          if (win.isDestroyed()) continue;
-          try {
-            win.webContents.send(IPC.CHATS_WORKSPACE_CHANGED, {
-              sessionId: payload.sessionId,
-              binding,
-            });
-          } catch { /* ignore */ }
-        }
         return { ok: true, binding };
       } catch (err) {
         const msg = err instanceof Error ? err.message : String(err);
         return { ok: false, error: msg };
       }
-    },
-  );
-
-  ipc.handle(
-    IPC.CHATS_GET_WORKSPACE,
-    (_event, sessionId: string) => {
-      if (!sessionId) return null;
-      return chatsStore.getWorkspaceBinding(sessionId) ?? null;
-    },
-  );
-
-  ipc.handle(
-    IPC.CHATS_CLEAR_WORKSPACE,
-    (event, sessionId: string) => {
-      if (!sessionId) return { ok: false, error: "missing sessionId" };
-      const session = chatsStore.clearWorkspaceBinding(sessionId);
-      if (!session) return { ok: false, error: "session not found" };
-      // 广播工作区变更
-      for (const win of BrowserWindow.getAllWindows()) {
-        if (win.isDestroyed()) continue;
-        try {
-          win.webContents.send(IPC.CHATS_WORKSPACE_CHANGED, {
-            sessionId,
-            binding: null,
-          });
-        } catch { /* ignore */ }
-      }
-      return { ok: true };
     },
   );
 

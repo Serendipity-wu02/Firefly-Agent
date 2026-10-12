@@ -75,8 +75,6 @@ export interface ChatStoreApi {
   onChanged: (callback: () => void) => () => void;
   onReactSwitchSession: (callback: (sessionId: string) => void) => () => void;
   notifyReactReady: () => void;
-  // 本页面的渲染目标标识；语音提交桥据此识别过期请求
-  getRendererTargetId: () => string;
   // main → ChatPage：外部语音文本提交请求（携带租约冻结的目标）
 
   // ChatPage → main：提交结果（必须回显 requestId 与 rendererTargetId）
