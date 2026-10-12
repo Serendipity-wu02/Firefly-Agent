@@ -183,9 +183,11 @@ describe("buildModelContext", () => {
 // ── 预算计算 ─────────────────────────────────────────────
 
 describe("resolveTranscriptRetainTokens", () => {
-  it("derives the retain window from the harness budget constants", () => {
-    expect(resolveTranscriptRetainTokens(256_000))
-      .toBe(Math.floor((256_000 - 8_192 - 512) * 0.7));
+  it("derives the retain window from the 85% auto-compact trigger", () => {
+    expect(resolveTranscriptRetainTokens(256_000)).toBe(Math.floor(256_000 * 0.85));
+    expect(resolveTranscriptRetainTokens(1_000_000)).toBe(850_000);
+    // 窗口很小时触发线不超过扣除预留输出与余量后的可用输入
+    expect(resolveTranscriptRetainTokens(8_800)).toBe(8_800 - 8_192 - 512);
     expect(resolveTranscriptRetainTokens(0)).toBe(1);
   });
 });

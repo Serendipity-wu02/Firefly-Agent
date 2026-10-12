@@ -221,7 +221,7 @@
           "model": {
             "label": "模型名",
             "contextWindow": "上下文窗口（Token）",
-            "contextWindowHint": "按档案保存；留空按 256000。",
+            "contextWindowHint": "按档案保存；留空按默认 1M（1000000），可填 4096–1000000。上下文用到窗口的 85% 时自动压缩。",
             "fetch": {
               "button": "从厂商获取模型列表",
               "loading": "正在向厂商获取…",

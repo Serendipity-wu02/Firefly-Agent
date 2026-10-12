@@ -5,6 +5,7 @@ import { getAdapterForConfig } from "../orchestrator/vendors";
 import { resolveTransport } from "../orchestrator/vendors/transport-detector";
 import type { VendorConfig } from "../orchestrator/vendors/types";
 import { DEFAULT_HARNESS_CONFIG } from "../orchestrator/harness/types";
+import { autoCompactTriggerTokens } from "../../shared/context-window";
 import type { MainMemoryModelBinding } from "./main-memory-runtime";
 import { resolveMemoryCounter } from "./model-counting";
 interface Options {
@@ -38,7 +39,8 @@ export function createProductionModelRegistry(options:Options) {
   const safetyMarginTokens=options.safetyMarginTokens??DEFAULT_HARNESS_CONFIG.safetyMarginTokens;
   if(!Number.isSafeInteger(reservedOutputTokens)||reservedOutputTokens<1||!Number.isSafeInteger(safetyMarginTokens)||safetyMarginTokens<0||reservedOutputTokens+safetyMarginTokens>=value.window)return denied();
   const assertCurrent=()=>{const current=read(id);if(!current||current.fingerprint!==value.fingerprint||current.revision!==value.revision)throw new Error("MEMORY_RUN_PROFILE_CHANGED")};
-  const budget=Object.freeze({admissionMode:"bounded" as const,maxContextTokens:value.window,reservedOutputTokens,safetyMarginTokens,maxSTokens:value.window-reservedOutputTokens-safetyMarginTokens,minRecentCompleteTurns:1});
+  // S 超过窗口的 85%（且不超过扣除预留后的可用输入）就进入摘要，不等到顶才压缩。
+  const budget=Object.freeze({admissionMode:"bounded" as const,maxContextTokens:value.window,reservedOutputTokens,safetyMarginTokens,maxSTokens:autoCompactTriggerTokens(value.window,{reservedOutputTokens,safetyMarginTokens}),minRecentCompleteTurns:1});
   // No verified output-limit contract is inferred from a model name. Exact adapters
   // remain available separately; production defaults to honestly labeled estimates.
   return Object.freeze({profileId:id,revision:value.revision,config,adapter:getAdapterForConfig(config),budget,

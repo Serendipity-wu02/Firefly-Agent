@@ -71,7 +71,7 @@ export interface ModelSettings {
   thinkingOverride?: -1 | 0 | 1;
   /** 禁用 max_tokens 注入。仅对自定义端点生效（与主进程 model-settings.ts 对齐）。 */
   disableMaxToken?: boolean;
-  /** 上下文窗口大小（Token）。默认 256000。 */
+  /** 上下文窗口大小（Token）。默认 1M（1000000），上限 1M。 */
   contextWindowTokens?: number;
 }
 
