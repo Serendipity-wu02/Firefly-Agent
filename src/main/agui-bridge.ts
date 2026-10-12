@@ -978,8 +978,9 @@ export function registerAgUiIpc(
             }
             // 历史召回用：把这轮对话存入向量库（异步，不阻塞，失败不影响主流程）
             // 放在 onFinished 之后，确保记忆/sticker 等副作用先跑完
-            // 受控 S/M/H 运行由自己的记忆链路负责，不能旁路写入旧历史索引。
-            if (!controlledRun) {
+            // S/M/H（默认或受控）由自己的记忆链路负责，不能旁路写入旧历史索引；
+            // 只有没有接入记忆链路的旧装配才写旧向量库，否则每轮都会白跑一次并打印 BGE-M3 警告。
+            if (!controlledRun && !memory) {
               void indexConversationTurn(
                 input.sessionId || "default",
                 latestUserText,
