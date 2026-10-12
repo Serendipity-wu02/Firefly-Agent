@@ -55,7 +55,7 @@ describe("Main SMH legacy IPC retirement", () => {
       const channels = register(mode).channels();
       expect(channels.filter((name) => /obsidian|save-l[01]|panel-save/i.test(name))).toEqual([]);
     }
-    for (const fn of [...Object.values(mocks.memory), mocks.open, mocks.exportVault, mocks.syncVault, mocks.saveVault, mocks.unbindVault, mocks.stopWatcher]) expect(fn).not.toHaveBeenCalled();
+    for (const fn of [...Object.values(mocks.memory), mocks.open, mocks.exportVault, mocks.syncVault, mocks.saveVault, mocks.unbindVault, mocks.startWatcher, mocks.stopWatcher, mocks.loadVault]) expect(fn).not.toHaveBeenCalled();
   });
   it("loads only imported document rows from the mixed RAG file without L0/L1/L2 reads", async () => {
     const mixed = [

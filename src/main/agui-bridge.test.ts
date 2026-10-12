@@ -2236,6 +2236,37 @@ describe("agui-bridge legacy history indexing boundary", () => {
       expect(indexConversationTurn).not.toHaveBeenCalled();
     }
   });
+
+  it.each([
+    { retires: true, indexed: false },
+    { retires: false, indexed: true },
+  ])("keeps the legacy history index only for sessions a memory owner does not retire it for (retires=$retires)", async ({ retires, indexed }) => {
+    const { registerAgUiIpc, __getSessionActiveRunForTest } = await import("./agui-bridge");
+    const { indexConversationTurn } = await import("./orchestrator/tools/history-tools");
+    vi.mocked(indexConversationTurn).mockClear();
+    mocks.skipDefaultRunFinished = false;
+    mocks.runFinishedResult = { status: "success", externalEffectsMayContinue: false };
+    const memory = { authorizeRun: vi.fn(() => undefined), afterTranscript: vi.fn(async () => undefined), ...(retires ? { retiresLegacyHistoryIndex: true } : {}) };
+    registerAgUiIpc(async () => ({
+      options: {
+        settings: { provider: "test", baseUrl: "", model: "", apiKey: "", contextWindowTokens: 256000 },
+        messages: [],
+        timeoutMs: 1000,
+        toolSystemContent: "TOOL",
+        soulSystemBaseContent: "SOUL",
+      },
+      latestUserText: "synthetic question",
+    }), vi.fn(async () => ({})), () => null, undefined, undefined, undefined, memory as never);
+    await mocks.handlers.get(IPC.AGUI_RUN)!({ sender: { isDestroyed: () => false, send: vi.fn() } }, {
+      sessionId: "history-owner",
+      userTurnId: "user",
+      assistantTurnId: "assistant",
+      messages: [],
+    });
+    await vi.waitFor(() => expect(__getSessionActiveRunForTest("history-owner")).toBeUndefined());
+    if (indexed) expect(indexConversationTurn).toHaveBeenCalledExactlyOnceWith("history-owner", "synthetic question", "抱抱你");
+    else expect(indexConversationTurn).not.toHaveBeenCalled();
+  });
 });
 it.each(["denied","revoked"])("does not inspect Work attachment bytes for a %s Main attachment grant",async state=>{
  vi.resetModules();mocks.handlers.clear();mocks.runFireflyAgent.mockClear();

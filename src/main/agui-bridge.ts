@@ -373,6 +373,7 @@ export function registerAgUiIpc(
   pendingTurns?: PendingTurnLifecycle,
   memory?:Pick<MainDesktopMemory,"authorizeRun"|"afterTranscript"> & {
     readonly usesCanonicalUserContent?:boolean;
+    readonly retiresLegacyHistoryIndex?:boolean;
     prepareAttachmentGrant?:(event:Electron.IpcMainInvokeEvent,sessionId:string,input:{userTurnId:string})=>Promise<MainAttachmentGrant|undefined>;
   },
 ): void {
@@ -978,9 +979,9 @@ export function registerAgUiIpc(
             }
             // 历史召回用：把这轮对话存入向量库（异步，不阻塞，失败不影响主流程）
             // 放在 onFinished 之后，确保记忆/sticker 等副作用先跑完
-            // S/M/H（默认或受控）由自己的记忆链路负责，不能旁路写入旧历史索引；
-            // 只有没有接入记忆链路的旧装配才写旧向量库，否则每轮都会白跑一次并打印 BGE-M3 警告。
-            if (!controlledRun && !memory) {
+            // 受控 run 与默认 S/M/H 由自己的记忆链路负责，不能旁路写入旧历史索引；
+            // 受控模式下未被接管的会话仍带旧 recall_history，必须继续写旧向量库。
+            if (!controlledRun && memory?.retiresLegacyHistoryIndex !== true) {
               void indexConversationTurn(
                 input.sessionId || "default",
                 latestUserText,
