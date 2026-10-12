@@ -4,7 +4,6 @@ import { resolve } from "node:path";
 import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it, vi } from "vitest";
 
-vi.mock("../../../assets/status-moods/工作中.png?url", () => ({ default: "working.png" }));
 vi.mock("./ChatMessageList", () => ({ MarkdownContent: () => null }));
 
 import { CodeGitPanel } from "./CodeGitPanel";
