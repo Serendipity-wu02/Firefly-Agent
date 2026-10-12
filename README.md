@@ -12,16 +12,11 @@
   <img src="./readme-assets/sqlite.svg" alt="sqlite 技术标签" height="22" />
 </p>
 
-<p align="center"><b>一个会陪你聊天、也能陪你把事情做完的桌面流萤。</b></p>
-
-<p align="center">
-  <a href="./README.en.md">English</a> ·
-  <a href="https://github.com/Serendipity-wu02/Firefly_Agent/issues">问题反馈</a>
-</p>
-
 ---
 
-Firefly_Agent 是以《崩坏：星穹铁道》流萤为角色的 **Windows 桌面伴侣与 AI 工作台**。
+Firefly_Agent 是以《崩坏：星穹铁道》流萤为角色的 **Windows Live2D 桌面伴侣与 AI 工作台**。与她交流、整理资料、学习和开发项目，让对话中的想法成为可以继续的行动。
+
+[项目仓库](https://github.com/Serendipity-wu02/Firefly_Agent) · [问题反馈](https://github.com/Serendipity-wu02/Firefly_Agent/issues) · [English](./README.en.md)
 
 她住在你的桌面上：会眨眼、会应你的双击、聊到合适的时候还会自己丢一张表情包过来。需要干活的时候，同一个她可以读文件、改代码、查资料、整理文档，做完把结果摆回你面前，而不是只丢一句“好的”。
 

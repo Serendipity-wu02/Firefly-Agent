@@ -12,17 +12,16 @@
   <img src="./readme-assets/sqlite.svg" alt="SQLite technology badge" height="22" />
 </p>
 
-<p align="center"><b>A desktop Firefly who chats with you, and helps you finish the work too.</b></p>
 
 <p align="center">
-  <a href="./README.md">中文</a> ·
-  <strong>English</strong> ·
-  <a href="https://github.com/Serendipity-wu02/Firefly_Agent/issues">Issues</a>
+  <a href="./README.md">中文</a> | <strong>English</strong>
 </p>
 
 ---
 
-Firefly_Agent is a **Windows desktop companion and AI workspace** featuring Firefly from *Honkai: Star Rail*.
+Firefly_Agent is a **Windows Live2D desktop companion and AI workspace** featuring Firefly from *Honkai: Star Rail*. Talk with her, organize materials, learn, and develop projects—then turn ideas from your conversations into actions you can build on.
+
+[Repository](https://github.com/Serendipity-wu02/Firefly_Agent) · [Issues](https://github.com/Serendipity-wu02/Firefly_Agent/issues)
 
 She lives on your desktop: she blinks, answers a double-click, and now and then sends a sticker on her own when the mood fits. When there is work to do, the same Firefly can read files, edit code, look things up and organize documents, then put the result in front of you instead of just saying "done".
 
