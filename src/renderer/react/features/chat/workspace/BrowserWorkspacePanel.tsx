@@ -50,9 +50,9 @@ export function BrowserWorkspacePanel({
   const busy = page.loading || commandPending;
   const canSubmit = addressAvailable && address.trim().length > 0;
   return (
-    <section className="cy-browser-workspace" aria-label={labels.panel} data-browser-command-pending={commandPending || undefined}>
-      <div className="cy-browser-workspace__toolbar" data-browser-busy={busy && !page.closed || undefined}>
-        <div className="cy-browser-workspace__nav" role="group" aria-label={labels.panel}>
+    <section className="ff-browser-workspace" aria-label={labels.panel} data-browser-command-pending={commandPending || undefined}>
+      <div className="ff-browser-workspace__toolbar" data-browser-busy={busy && !page.closed || undefined}>
+        <div className="ff-browser-workspace__nav" role="group" aria-label={labels.panel}>
           <button type="button" aria-label={labels.back} title={labels.back}
             disabled={!navigationAvailable || page.closed || !page.canGoBack} onClick={() => onCommand("back")}>
             <ArrowLeft size={16} aria-hidden="true" />
@@ -61,7 +61,6 @@ export function BrowserWorkspacePanel({
             disabled={!navigationAvailable || page.closed || !page.canGoForward} onClick={() => onCommand("forward")}>
             <ArrowRight size={16} aria-hidden="true" />
           </button>
-          <span className="cy-browser-workspace__nav-divider" aria-hidden="true" />
           {busy ? <button type="button" aria-label={labels.stop} title={labels.stop}
             disabled={!navigationAvailable || page.closed || page.requestId === 0} onClick={() => onCommand("stop")}>
             <Square size={14} aria-hidden="true" />
@@ -70,7 +69,7 @@ export function BrowserWorkspacePanel({
             <RotateCw size={16} aria-hidden="true" />
           </button>}
         </div>
-        <form className="cy-browser-workspace__address" onSubmit={(event) => {
+        <form className="ff-browser-workspace__address" onSubmit={(event) => {
           event.preventDefault();
           if (canSubmit) onNavigate(address.trim());
         }}>
@@ -85,21 +84,21 @@ export function BrowserWorkspacePanel({
           <X size={16} aria-hidden="true" />
         </button>
       </div>
-      {page.url && !page.closed && <div className="cy-browser-workspace__location" aria-label={labels.committedUrl}>
-        <span className="cy-browser-workspace__location-dot" aria-hidden="true" />
+      {page.url && !page.closed && <div className="ff-browser-workspace__location" aria-label={labels.committedUrl}>
+        <span className="ff-browser-workspace__location-dot" aria-hidden="true" />
         <span data-browser-committed-url title={page.url}>{page.url}</span>
       </div>}
       {page.closed
-        ? <p className="cy-browser-workspace__notice" role="status">{labels.closed}</p>
+        ? <p className="ff-browser-workspace__notice" role="status">{labels.closed}</p>
         : <>
-          {busy && <p className="cy-browser-workspace__notice" role="status">{labels.loading}</p>}
-          {page.error && <p className="cy-browser-workspace__notice is-error" role="alert">
+          {busy && <p className="ff-browser-workspace__notice" role="status">{labels.loading}</p>}
+          {page.error && <p className="ff-browser-workspace__notice is-error" role="alert">
             {page.error === "blocked" ? labels.blocked : labels.loadFailed}
           </p>}
-          <div className="cy-browser-workspace__viewport" ref={viewportRef} role="region"
+          <div className="ff-browser-workspace__viewport" ref={viewportRef} role="region"
             aria-label={labels.viewport} aria-busy={busy}>
             {children ?? (!page.url && !page.loading
-              ? emptyContent ?? <p className="cy-browser-workspace__empty">{labels.empty}</p>
+              ? emptyContent ?? <p className="ff-browser-workspace__empty">{labels.empty}</p>
               : null)}
           </div>
         </>}

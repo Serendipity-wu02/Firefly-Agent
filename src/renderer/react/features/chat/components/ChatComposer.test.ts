@@ -150,6 +150,6 @@ describe("ChatComposer Code sticker policy", () => {
     const html = renderToStaticMarkup(senderProps?.prefix as React.ReactElement);
 
     expect(html).toContain("计划模式 · off");
-    expect(html).toContain("cy-plan-control");
+    expect(html).toContain("ff-plan-control");
   });
 });

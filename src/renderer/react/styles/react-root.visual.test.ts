@@ -9,18 +9,18 @@ describe("chat workspace surface", () => {
   it("uses the Codex-reference neutral light reading surface", () => {
     const dom = new JSDOM(`
       <style>${stylesheet}</style>
-      <main class="cy-page">
-        <section class="cy-workspace is-empty"></section>
+      <main class="ff-page">
+        <section class="ff-workspace is-empty"></section>
       </main>
     `, { pretendToBeVisual: true });
     const { document } = dom.window;
     const rootStyle = dom.window.getComputedStyle(document.documentElement);
     const rules = Array.from(document.styleSheets[0].cssRules) as CSSStyleRule[];
-    const emptyPattern = rules.find((rule) => rule.selectorText === ".cy-workspace::before");
-    const filledPattern = rules.find((rule) => rule.selectorText === ".cy-workspace.has-messages::before");
+    const emptyPattern = rules.find((rule) => rule.selectorText === ".ff-workspace::before");
+    const filledPattern = rules.find((rule) => rule.selectorText === ".ff-workspace.has-messages::before");
 
-    expect(rootStyle.getPropertyValue("--cy-bg-page").trim()).toBe("#eff1f5");
-    expect(rootStyle.getPropertyValue("--cy-bg-workspace").trim()).toBe("#f5f6f9");
+    expect(rootStyle.getPropertyValue("--ff-bg-page").trim()).toBe("#eff1f5");
+    expect(rootStyle.getPropertyValue("--ff-bg-workspace").trim()).toBe("#f5f6f9");
     expect(emptyPattern).toBeUndefined();
     expect(filledPattern).toBeUndefined();
   });
@@ -29,7 +29,7 @@ describe("chat workspace surface", () => {
  it("overlaps both edges of the eight-pixel sidebar gap with its owned pointer corridor", () => {
   const dom = new JSDOM(`<style>${stylesheet}</style>`);
   const rules = Array.from(dom.window.document.styleSheets[0].cssRules) as CSSStyleRule[];
-  const corridor = rules.find(rule => rule.selectorText === ".cy-sidebar-hover-corridor");
+  const corridor = rules.find(rule => rule.selectorText === ".ff-sidebar-hover-corridor");
   expect(corridor?.style.position).toBe("absolute");
   expect(corridor?.style.left).toBe("-10px");
   expect(corridor?.style.width).toBe("10px");

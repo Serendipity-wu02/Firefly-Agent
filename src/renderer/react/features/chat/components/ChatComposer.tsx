@@ -12,6 +12,8 @@ import { PermissionControl } from "./PermissionControl";
 import { PlanModeToggle } from "./PlanModeToggle";
 import { ModelEffortControl } from "./ModelEffortControl";
 import { PendingQueueDock, type PendingQueueDockItem } from "./PendingQueueDock";
+import { StepProgressPill } from "./StepProgressPill";
+import type { StepProgressSummary } from "./step-progress";
 
 interface ChatComposerProps {
   value: string;
@@ -46,6 +48,8 @@ interface ChatComposerProps {
   onSelectModelProfile?: (id: string) => void;
   /** 上下文容量快照：运行中实时刷新，空闲时为最近一次终态快照；无快照不渲染圆环。 */
   contextUsage?: ContextUsageSnapshot;
+  /** 工作步骤胶囊数据：运行中且有计划时显示在输入框上方；由父级汇总 todo 与本轮文件变更。 */
+  stepProgress?: StepProgressSummary;
 }
 
 export interface ComposerAttachment {
@@ -125,8 +129,8 @@ function StickerGrid({ onChoose }: { onChoose: (id: string) => void }) {
   }, []);
 
   return (
-    <div className="cy-sticker-picker" aria-label={t("composer.stickerList")}>
-      {stickers.length === 0 && <span className="cy-sticker-picker__empty">{t("composer.stickerEmpty")}</span>}
+    <div className="ff-sticker-picker" aria-label={t("composer.stickerList")}>
+      {stickers.length === 0 && <span className="ff-sticker-picker__empty">{t("composer.stickerEmpty")}</span>}
       {stickers.map((sticker) => (
         <button type="button" key={sticker.id} title={sticker.description ?? sticker.id} onClick={() => onChoose(sticker.id)}>
           <img src={stickerUrl(sticker.src)} alt={sticker.description ?? sticker.id} draggable={false} />
@@ -168,20 +172,20 @@ function ComposerAddMenu({ supportsStickers, attachmentBusy, onUpload, onScreens
   const entries = composerAddMenuEntries(supportsStickers);
 
   const menu = (
-    <div className="cy-add-menu">
-      <span className="cy-add-menu__title">{t("composer.addMenuTitle")}</span>
+    <div className="ff-add-menu">
+      <span className="ff-add-menu__title">{t("composer.addMenuTitle")}</span>
       {entries.includes("upload") && (
-        <button type="button" className="cy-add-menu__item" aria-label={t("composer.uploadFile")} disabled={attachmentBusy} onClick={() => { close(); onUpload(); }}>
+        <button type="button" className="ff-add-menu__item" aria-label={t("composer.uploadFile")} disabled={attachmentBusy} onClick={() => { close(); onUpload(); }}>
           <PaperclipIcon /><span>{t("composer.uploadFile")}</span>
         </button>
       )}
       {entries.includes("screenshot") && (
-        <button type="button" className="cy-add-menu__item" aria-label={t("composer.screenshot")} onClick={() => { close(); onScreenshot(); }}>
+        <button type="button" className="ff-add-menu__item" aria-label={t("composer.screenshot")} onClick={() => { close(); onScreenshot(); }}>
           <CameraFrameIcon /><span>{t("composer.screenshot")}</span><small>Alt+Shift+S</small>
         </button>
       )}
       {entries.includes("sticker") && (
-        <button type="button" className="cy-add-menu__item" aria-label={t("composer.stickerPicker")} onClick={() => setView("stickers")}>
+        <button type="button" className="ff-add-menu__item" aria-label={t("composer.stickerPicker")} onClick={() => setView("stickers")}>
           <SmileIcon /><span>{t("composer.stickerPicker")}</span>
         </button>
       )}
@@ -194,15 +198,15 @@ function ComposerAddMenu({ supportsStickers, attachmentBusy, onUpload, onScreens
       onOpenChange={(next) => { setOpen(next); if (!next) setView("menu"); }}
       trigger="click"
       placement="topLeft"
-      rootClassName="cy-add-popover"
+      rootClassName="ff-add-popover"
       content={view === "stickers" ? (
-        <div className="cy-add-menu">
-          <button type="button" className="cy-add-menu__back" onClick={() => setView("menu")}><span aria-hidden="true">‹</span><span>{t("composer.stickerPicker")}</span></button>
+        <div className="ff-add-menu">
+          <button type="button" className="ff-add-menu__back" onClick={() => setView("menu")}><span aria-hidden="true">‹</span><span>{t("composer.stickerPicker")}</span></button>
           <StickerGrid onChoose={(id) => { onChooseSticker(id); close(); }} />
         </div>
       ) : menu}
     >
-      <button type="button" className="cy-composer__icon-button cy-composer__add-button" aria-label={t("composer.addMenuTitle")} title={t("composer.addMenuTitle")}>
+      <button type="button" className="ff-composer__icon-button ff-composer__add-button" aria-label={t("composer.addMenuTitle")} title={t("composer.addMenuTitle")}>
         <PlusIcon />
       </button>
     </Popover>
@@ -211,7 +215,7 @@ function ComposerAddMenu({ supportsStickers, attachmentBusy, onUpload, onScreens
 
 function FolderIcon() {
   return (
-    <svg className="cy-composer__terminal-folder-icon" width="24" height="24" viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+    <svg className="ff-composer__terminal-folder-icon" width="24" height="24" viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
       <path d="M5 8C5 6.89543 5.89543 6 7 6H19L24 12H41C42.1046 12 43 12.8954 43 14V40C43 41.1046 42.1046 42 41 42H7C5.89543 42 5 41.1046 5 40V8Z" />
       <path d="M14 22L19 27L14 32" />
       <path d="M26 32H34" />
@@ -221,7 +225,7 @@ function FolderIcon() {
 
 function CodeFolderIcon() {
   return (
-    <svg className="cy-composer__code-folder-icon" width="24" height="24" viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+    <svg className="ff-composer__code-folder-icon" width="24" height="24" viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
       <path d="M43 23V14C43 12.8954 42.1046 12 41 12H24L19 6H7C5.89543 6 5 6.89543 5 8V40C5 41.1046 5.89543 42 7 42H22" />
       <path d="M38 29L43 34L38 39" />
       <path d="M30 29L25 34L30 39" />
@@ -262,6 +266,7 @@ export function ChatComposer({
   activeModelProfileId,
   onSelectModelProfile,
   contextUsage,
+  stepProgress,
 }: ChatComposerProps) {
   const { t } = useTranslation();
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -352,10 +357,11 @@ export function ChatComposer({
 
   return (
     <div
-      className={`cy-composer-stack ${docked ? "is-docked" : "is-centered"}`}
+      className={`ff-composer-stack ${docked ? "is-docked" : "is-centered"}`}
       onCompositionStartCapture={() => { compositionActiveRef.current = true; }}
       onCompositionEndCapture={() => { compositionActiveRef.current = false; }}
     >
+      {stepProgress && <StepProgressPill {...stepProgress} />}
       <PendingQueueDock
         items={pendingQueue}
         adjustmentAvailable={modelBusy}
@@ -364,18 +370,18 @@ export function ChatComposer({
         onRemove={onRemoveQueuedMessage}
       />
       {supportsWorkFiles && (
-        <div className="cy-composer__project-strip">
-          <button type="button" className="cy-composer__footer-button" aria-label={t("composer.workspaceChoose")} onClick={onChooseWorkspace}>
+        <div className="ff-composer__project-strip">
+          <button type="button" className="ff-composer__footer-button" aria-label={t("composer.workspaceChoose")} onClick={onChooseWorkspace}>
             {mode === "code" ? <CodeFolderIcon /> : <FolderIcon />}
             <span>{workspaceName ?? (docked ? t("composer.workspaceFolder") : t("composer.workspaceEnter"))}</span>
             <ChevronIcon />
           </button>
         </div>
       )}
-      <div className="cy-composer-shell">
+      <div className="ff-composer-shell">
         <input
           ref={fileInputRef}
-          className="cy-composer__file-input"
+          className="ff-composer__file-input"
           type="file"
           accept=".txt,.md,.json,.csv,.log,.png,.jpg,.jpeg,.webp,.gif,.bmp"
           multiple
@@ -386,7 +392,7 @@ export function ChatComposer({
           }}
         />
         <Sender
-        rootClassName="cy-composer"
+        rootClassName="ff-composer"
         value={visibleValue}
         placeholder={modelBusy ? t("composer.placeholderBusy") : placeholder}
         // 忙态使用 Sender 自带的停止按钮；Enter 入队由 onKeyDown 在内建提交前处理。
@@ -410,10 +416,10 @@ export function ChatComposer({
             />
           ) : hiddenMarkers.length > 0 && !visibleValue.trim() ? (
             // A sticker alone is a complete message even though the text box is empty.
-            <span className="cy-composer__send-sticker"><components.SendButton disabled={false} /></span>
+            <span className="ff-composer__send-sticker"><components.SendButton disabled={false} /></span>
           ) : actionNode;
           return (
-            <div className="cy-composer__suffix">
+            <div className="ff-composer__suffix">
               <ContextUsageRing usage={contextUsage} sessionId={conversationId} busy={modelBusy} />
               {onSelectModelProfile && (
                 <ModelEffortControl sessionId={conversationId} activeProfileId={activeModelProfileId} onSelectModelProfile={onSelectModelProfile} />
@@ -424,9 +430,9 @@ export function ChatComposer({
           );
         }}
         header={hasComposerHeader ? (
-          <div className="cy-composer__attachments" aria-label={t("composer.attachmentsLabel")}>
+          <div className="ff-composer__attachments" aria-label={t("composer.attachmentsLabel")}>
             {attachments.map((attachment, index) => (
-              <div className={`cy-composer__attachment ${attachment.kind === "image" && attachment.previewUrl ? "is-image" : ""}`} key={`${attachment.filePath ?? attachment.name}-${index}`}>
+              <div className={`ff-composer__attachment ${attachment.kind === "image" && attachment.previewUrl ? "is-image" : ""}`} key={`${attachment.filePath ?? attachment.name}-${index}`}>
                 {attachment.kind === "image" && attachment.previewUrl ? (
                   <img src={attachment.previewUrl} alt="" draggable={false} />
                 ) : (
@@ -436,7 +442,7 @@ export function ChatComposer({
               </div>
             ))}
             {selectedStickers.map(({ id, occurrence, sticker }) => (
-              <div className="cy-composer__attachment cy-composer__attachment--sticker" key={`${id}-${occurrence}`}>
+              <div className="ff-composer__attachment ff-composer__attachment--sticker" key={`${id}-${occurrence}`}>
                 <img src={stickerUrl(sticker.src)} alt={sticker.description ?? t("composer.stickerSelected")} draggable={false} />
                 <button type="button" aria-label={t("composer.removeSticker")} onClick={() => removeSelectedSticker(id, occurrence)}>×</button>
               </div>
@@ -444,7 +450,7 @@ export function ChatComposer({
           </div>
         ) : undefined}
         prefix={
-          <div className="cy-composer__prefix-actions">
+          <div className="ff-composer__prefix-actions">
             <ComposerAddMenu
               supportsStickers={supportsStickers}
               attachmentBusy={attachmentBusy}
@@ -460,8 +466,8 @@ export function ChatComposer({
         }
         />
         {mode === "work" && attachments.some((attachment) => attachment.kind === "document") && (
-          <div className="cy-composer__footer">
-            <label className="cy-composer__read-requirement">
+          <div className="ff-composer__footer">
+            <label className="ff-composer__read-requirement">
               <input type="checkbox" checked={requireDocumentRead} onChange={(event) => onRequireDocumentReadChange?.(event.target.checked)} />
               {t("composer.requireDocumentRead")}
             </label>

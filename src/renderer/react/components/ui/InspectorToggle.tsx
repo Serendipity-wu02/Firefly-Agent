@@ -18,7 +18,7 @@ export function InspectorToggle({ open, onToggle }: InspectorToggleProps) {
 
   return (
     <button
-      className={`cy-inspector-toggle ${open ? "is-open" : ""} ${hovered ? "is-hovered" : ""}`}
+      className={`ff-inspector-toggle ${open ? "is-open" : ""} ${hovered ? "is-hovered" : ""}`}
       onClick={onToggle}
       onMouseEnter={() => setHovered(true)}
       onMouseLeave={() => setHovered(false)}
@@ -31,7 +31,7 @@ export function InspectorToggle({ open, onToggle }: InspectorToggleProps) {
 
         {/* 竖线（代表右侧面板的分隔边） */}
         <path
-          className="cy-inspector-line"
+          className="ff-inspector-line"
           d="M24 6V42"
           stroke="currentColor"
           strokeWidth="3.5"
@@ -46,7 +46,7 @@ export function InspectorToggle({ open, onToggle }: InspectorToggleProps) {
 
         {/* Chevron：展开时朝右（收起方向），收起时翻转朝左（展开方向） */}
         <path
-          className="cy-inspector-chevron"
+          className="ff-inspector-chevron"
           d="M16 20L20 24L16 28"
           stroke="currentColor"
           strokeWidth="3.5"

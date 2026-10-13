@@ -46,7 +46,7 @@ describe("public delegated-task disclosure", () => {
     render({ ...running, status: "cancelled" });
     expect(disclosure().getAttribute("aria-expanded")).toBe("true");
     expect(host.querySelector('[role="status"]')?.textContent).toBe("已取消");
-    expect(host.querySelector(".cy-task-delegation")?.classList.contains("is-running")).toBe(false);
+    expect(host.querySelector(".ff-task-delegation")?.classList.contains("is-running")).toBe(false);
     act(() => disclosure().dispatchEvent(new KeyboardEvent("keydown", { key: "Escape", bubbles: true })));
     expect(disclosure().getAttribute("aria-expanded")).toBe("false");
     expect(document.activeElement).toBe(disclosure());
@@ -65,7 +65,7 @@ describe("public delegated-task disclosure", () => {
     act(() => trigger.click());
     render({ ...running, invocationId: "child-2", taskId: "task-2" });
     expect(disclosure().getAttribute("aria-expanded")).toBe("false");
-    expect(host.querySelectorAll(".cy-task-delegation__details")).toHaveLength(1);
+    expect(host.querySelectorAll(".ff-task-delegation__details")).toHaveLength(1);
   });
 
   it("uses distinct disclosure targets even when the same historical task is rendered twice", () => {
@@ -80,10 +80,10 @@ describe("public delegated-task disclosure", () => {
     const open = vi.fn();
     act(() => root.render(createElement(ChatInspectorActionsContext.Provider, { value: { openDelegation: open } },
       createElement(TaskDelegationRow, { delegation: running }))));
-    const trigger = host.querySelector<HTMLButtonElement>("button.cy-task-delegation__summary")!;
+    const trigger = host.querySelector<HTMLButtonElement>("button.ff-task-delegation__summary")!;
     expect(trigger.hasAttribute("aria-expanded")).toBe(false);
     act(() => trigger.click());
     expect(open).toHaveBeenCalledExactlyOnceWith("task-1");
-    expect(host.querySelector(".cy-task-delegation__details")).toBeNull();
+    expect(host.querySelector(".ff-task-delegation__details")).toBeNull();
   });
 });

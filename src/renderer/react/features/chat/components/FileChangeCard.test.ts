@@ -63,9 +63,9 @@ describe("FileChangeCard", () => {
     expect(html).toContain("2 个文件变更");
     expect(html).toContain("+13");
     expect(html).toContain("−1");
-    expect(html).toContain("cy-file-change-card__kind is-modified");
-    expect(html).toContain("cy-file-change-card__kind is-added");
-    expect(html).toContain("cy-file-change-card__dir");
+    expect(html).toContain("ff-file-change-card__kind is-modified");
+    expect(html).toContain("ff-file-change-card__kind is-added");
+    expect(html).toContain("ff-file-change-card__dir");
     expect(html).toContain("life-tools.ts");
     expect(html).toContain("new-file.md");
     expect(html).toContain("+3");
@@ -75,8 +75,8 @@ describe("FileChangeCard", () => {
     const changes = extractFileChanges(SAMPLE_RESULT)!;
     const html = renderToStaticMarkup(React.createElement(FileChangeCard, { changes }));
 
-    expect(html).toContain("cy-file-change-card__row is-expandable");
-    expect(html).not.toContain("cy-file-change-card__diff");
+    expect(html).toContain("ff-file-change-card__row is-expandable");
+    expect(html).not.toContain("ff-file-change-card__diff");
     expect(html).not.toContain("const b = 20;");
     // 无 diff 的文件行不可展开
     expect(html.match(/aria-expanded="false"/g)).toHaveLength(1);

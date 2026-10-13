@@ -153,7 +153,7 @@ export function AssistantMessageFooter({ content, messageId, streaming, conversa
   const canRegenerate = Boolean(messageId && messageId === lastTurnIds.assistantMessageId);
   if (streaming || (!cleanText && !canRegenerate)) return null;
   return (
-    <div className="cy-message-actions">
+    <div className="ff-message-actions">
 
       {cleanText && <CopyButton text={cleanText} />}
       {canRegenerate && (
@@ -186,7 +186,7 @@ class MarkdownRenderBoundary extends Component<{
 
   render(): ReactNode {
     if (this.state.failed) {
-      return <pre className="cy-message-markdown-fallback">{this.props.content}</pre>;
+      return <pre className="ff-message-markdown-fallback">{this.props.content}</pre>;
     }
     return this.props.children;
   }
@@ -240,10 +240,10 @@ function AssistantContent({
   channelSource?: ChatMessageChannelSource;
 }) {
   return (
-    <div className="cy-message__assistant-body">
+    <div className="ff-message__assistant-body">
       {channelSource && <ChannelSourceLabel source={channelSource} direction="outgoing" />}
       {content && <MarkdownContent content={content} streaming={streaming} />}
-      <StickerImage src={stickerUrl} unavailable={stickerUnavailable} alt={t("messageList.assistantStickerAlt")} className="cy-message__sticker" />
+      <StickerImage src={stickerUrl} unavailable={stickerUnavailable} alt={t("messageList.assistantStickerAlt")} className="ff-message__sticker" />
     </div>
   );
 }
@@ -263,7 +263,7 @@ function ChannelSourceLabel({
   direction: "incoming" | "outgoing";
 }) {
   const label = formatChannelSourceLabel(source, direction);
-  return label ? <span className="cy-message__channel-source">{label}</span> : null;
+  return label ? <span className="ff-message__channel-source">{label}</span> : null;
 }
 
 export function formatChannelSourceLabel(
@@ -297,8 +297,8 @@ export function resolveChannelConversationLabel(
 function DotSpinner() {
   const { t } = useTranslation();
   return (
-    <span className="cy-dot-spinner" aria-label={t("messageList.loadingAria")} role="status">
-      {Array.from({ length: 8 }, (_, index) => <span className="cy-dot-spinner__dot" key={index} />)}
+    <span className="ff-dot-spinner" aria-label={t("messageList.loadingAria")} role="status">
+      {Array.from({ length: 8 }, (_, index) => <span className="ff-dot-spinner__dot" key={index} />)}
     </span>
   );
 }
@@ -306,8 +306,8 @@ function DotSpinner() {
 function ModelWaitContent() {
   const { t } = useTranslation();
   return (
-    <section className="cy-model-wait" aria-label={t("messageList.modelWaitAria")}>
-      <span className="cy-model-wait__art" aria-hidden="true">
+    <section className="ff-model-wait" aria-label={t("messageList.modelWaitAria")}>
+      <span className="ff-model-wait__art" aria-hidden="true">
         <DotSpinner />
       </span>
       <span>{t("messageList.modelWaitText")}</span>
@@ -329,10 +329,10 @@ function ReasoningContent({
   const { t } = useTranslation();
   return (
     <Think
-      rootClassName="cy-message-reasoning"
+      rootClassName="ff-message-reasoning"
       title={loading ? t("messageList.thinkingTitle") : t("messageList.thinkingDoneTitle")}
       icon={
-        <span className={`cy-reasoning-status-art${loading ? " is-thinking" : " is-complete"}`} aria-hidden="true">
+        <span className={`ff-reasoning-status-art${loading ? " is-thinking" : " is-complete"}`} aria-hidden="true">
           {loading && <DotSpinner />}
         </span>
       }
@@ -397,11 +397,11 @@ function AgentRoundGroup({
   }, [running]);
 
   return (
-    <section className={`cy-agent-round${running ? " is-running" : " is-complete"}`}>
+    <section className={`ff-agent-round${running ? " is-running" : " is-complete"}`}>
       {processMessages.filter((message) => message.content.trim()).map((message) => (
-        <div className="cy-run-activity__process" key={message.id}>
+        <div className="ff-run-activity__process" key={message.id}>
           {message.interrupted && (
-            <div className="cy-run-activity__process-label">{t("messageList.interruptedCandidate")}</div>
+            <div className="ff-run-activity__process-label">{t("messageList.interruptedCandidate")}</div>
           )}
           <MarkdownContent content={message.content} />
         </div>
@@ -411,22 +411,22 @@ function AgentRoundGroup({
       ))}
       <button
         type="button"
-        className="cy-agent-round__header"
+        className="ff-agent-round__header"
         aria-expanded={expanded}
         onClick={() => setExpanded((current) => !current)}
       >
-        <span className="cy-agent-round__title">
+        <span className="ff-agent-round__title">
           {resolveAgentRoundTitle(round, tools, interrupted)}
           {!interrupted && round.status !== "running" && countRoundChangedFiles(tools) > 0 && (
-            <span className="cy-agent-round__files"> · {t("messageList.roundChangedFiles", { count: countRoundChangedFiles(tools) })}</span>
+            <span className="ff-agent-round__files"> · {t("messageList.roundChangedFiles", { count: countRoundChangedFiles(tools) })}</span>
           )}
         </span>
-        <svg className={`cy-agent-round__chevron${expanded ? " is-expanded" : ""}`} viewBox="0 0 16 16" aria-hidden="true">
+        <svg className={`ff-agent-round__chevron${expanded ? " is-expanded" : ""}`} viewBox="0 0 16 16" aria-hidden="true">
           <path d="m4 6 4 4 4-4" fill="none" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.75" />
         </svg>
       </button>
       {expanded && (
-        <div className="cy-agent-round__body">
+        <div className="ff-agent-round__body">
           {reasoningBlocks.filter((block) => block.content.trim()).map((block) => (
             <RunActivityReasoningBlock block={block} key={block.id} />
           ))}
@@ -441,9 +441,9 @@ function AgentRoundGroup({
 function FlatTimelineProcess({ message }: { message: ProcessMessageRecord }) {
   const { t } = useTranslation();
   return (
-    <div className="cy-run-activity__process">
+    <div className="ff-run-activity__process">
       {message.interrupted && (
-        <div className="cy-run-activity__process-label">{t("messageList.interruptedCandidate")}</div>
+        <div className="ff-run-activity__process-label">{t("messageList.interruptedCandidate")}</div>
       )}
       <MarkdownContent content={message.content} />
     </div>
@@ -489,8 +489,8 @@ export function RunActivityDetail({
       return [];
     });
     return timeline.length
-      ? <div className="cy-run-activity__detail">{timeline}</div>
-      : <div className="cy-run-activity__empty">{t("messageList.organizingReply")}</div>;
+      ? <div className="ff-run-activity__detail">{timeline}</div>
+      : <div className="ff-run-activity__empty">{t("messageList.organizingReply")}</div>;
   }
   if (agentRounds.length > 0) {
     const visibleRounds = agentRounds.filter((round) =>
@@ -499,10 +499,10 @@ export function RunActivityDetail({
       || taskDelegations.some((delegation) => delegation.roundId === round.id)
       || tools.some((tool) => tool.roundId === round.id));
     if (visibleRounds.length === 0) {
-      return <div className="cy-run-activity__empty">{t("messageList.organizingReply")}</div>;
+      return <div className="ff-run-activity__empty">{t("messageList.organizingReply")}</div>;
     }
     return (
-      <div className="cy-run-activity__detail">
+      <div className="ff-run-activity__detail">
         {visibleRounds.map((round) => (
           <AgentRoundGroup
             key={round.id}
@@ -527,9 +527,9 @@ export function RunActivityDetail({
       .forEach((message) => {
         if (!message.content.trim()) return;
         timeline.push(
-          <div className="cy-run-activity__process" key={`process-${message.id}`}>
+          <div className="ff-run-activity__process" key={`process-${message.id}`}>
             {message.interrupted && (
-              <div className="cy-run-activity__process-label">{t("messageList.interruptedCandidate")}</div>
+              <div className="ff-run-activity__process-label">{t("messageList.interruptedCandidate")}</div>
             )}
             <MarkdownContent content={message.content} />
           </div>,
@@ -551,8 +551,8 @@ export function RunActivityDetail({
     }
   }
   return timeline.length
-    ? <div className="cy-run-activity__detail">{timeline}</div>
-    : <div className="cy-run-activity__empty">{t("messageList.organizingReply")}</div>;
+    ? <div className="ff-run-activity__detail">{timeline}</div>
+    : <div className="ff-run-activity__empty">{t("messageList.organizingReply")}</div>;
 }
 
 function RunActivityContent({
@@ -593,31 +593,31 @@ function RunActivityContent({
     ? t("messageList.activityProcessingTitle", { elapsed: formatElapsed(snapshot.processingMs) })
     : t("messageList.activityProcessedTitle", { elapsed: formatElapsed(snapshot.processingMs) });
   return (
-    <section className={`cy-run-activity${snapshot.processing ? " is-processing" : " is-complete"}`}>
+    <section className={`ff-run-activity${snapshot.processing ? " is-processing" : " is-complete"}`}>
       <button
         type="button"
-        className="cy-run-activity__header"
+        className="ff-run-activity__header"
         onClick={() => onExpand(!expanded)}
         aria-expanded={expanded}
         aria-controls={`${activityId}-details`}
       >
-        <span className="cy-run-activity__title">
+        <span className="ff-run-activity__title">
             {snapshot.processing && (
-              <span className="cy-run-activity__art" aria-hidden="true">
+              <span className="ff-run-activity__art" aria-hidden="true">
                 <DotSpinner />
               </span>
             )}
             <span>{title}</span>
             {stage && <RunStageIndicator stage={stage} />}
         </span>
-        <svg className={`cy-run-activity__chevron${expanded ? " is-expanded" : ""}`} viewBox="0 0 16 16" aria-hidden="true">
+        <svg className={`ff-run-activity__chevron${expanded ? " is-expanded" : ""}`} viewBox="0 0 16 16" aria-hidden="true">
           <path d="m4 6 4 4 4-4" fill="none" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.75" />
         </svg>
       </button>
       {expanded && (
-        <div className="cy-run-activity__expanded" id={`${activityId}-details`}>
+        <div className="ff-run-activity__expanded" id={`${activityId}-details`}>
           {taskPlan && <TaskPlanCard plan={taskPlan} />}
-          <div className="cy-run-activity__divider" />
+          <div className="ff-run-activity__divider" />
           <RunActivityDetail
             live={snapshot.processing}
             agentRounds={agentRounds}
@@ -627,7 +627,7 @@ function RunActivityContent({
             tools={tools}
             interrupted={Boolean(activity.keepExpanded && activity.completedAt !== undefined)}
           />
-          <div className="cy-run-activity__divider" />
+          <div className="ff-run-activity__divider" />
         </div>
       )}
     </section>
@@ -637,9 +637,9 @@ function RunActivityContent({
 function ToolExecutionContent({ tools }: { tools: ToolExecutionRecord[] }) {
   const { t } = useTranslation();
   return (
-    <section className="cy-tool-executions" aria-label={t("messageList.toolExecutionsAria")}>
+    <section className="ff-tool-executions" aria-label={t("messageList.toolExecutionsAria")}>
       <ThoughtChain
-        rootClassName="cy-tool-executions__chain"
+        rootClassName="ff-tool-executions__chain"
         line="dashed"
         items={tools.map((tool) => {
           const presentation = describeToolExecution(tool);
@@ -647,9 +647,9 @@ function ToolExecutionContent({ tools }: { tools: ToolExecutionRecord[] }) {
             key: tool.id,
             title: presentation.label,
             description: (
-              <span className="cy-tool-executions__description">
-                <span className="cy-tool-executions__status">{presentation.statusText}</span>
-                {presentation.detail && <code className="cy-tool-executions__detail">{presentation.detail}</code>}
+              <span className="ff-tool-executions__description">
+                <span className="ff-tool-executions__status">{presentation.statusText}</span>
+                {presentation.detail && <code className="ff-tool-executions__detail">{presentation.detail}</code>}
               </span>
             ),
             status: tool.status === "running" ? "loading" : tool.status === "error" ? "error" : "success",
@@ -668,15 +668,15 @@ function ToolExecutionContent({ tools }: { tools: ToolExecutionRecord[] }) {
 /** ask_user 问答配对展示：问题 + 用户回答成对出现，不展示原始 JSON。 */
 function AskUserQaContent({ rows }: { rows: string[] }) {
   return (
-    <ul className="cy-ask-user-qa">
+    <ul className="ff-ask-user-qa">
       {rows.map((row) => {
         const separator = row.indexOf("→");
         const question = separator >= 0 ? row.slice(0, separator).trim() : row;
         const answer = separator >= 0 ? row.slice(separator + 1).trim() : "";
         return (
-          <li className="cy-ask-user-qa__row" key={row}>
-            <span className="cy-ask-user-qa__question">{question}</span>
-            <span className="cy-ask-user-qa__answer">{answer}</span>
+          <li className="ff-ask-user-qa__row" key={row}>
+            <span className="ff-ask-user-qa__question">{question}</span>
+            <span className="ff-ask-user-qa__answer">{answer}</span>
           </li>
         );
       })}
@@ -694,7 +694,7 @@ function ToolResultContent({ tool, result, changes }: { tool?: ToolExecutionReco
   if (result) {
     const parsed = extractFileChanges(result);
     if (parsed) return <FileChangeCard changes={parsed} />;
-    return <pre className="cy-tool-executions__result">{result}</pre>;
+    return <pre className="ff-tool-executions__result">{result}</pre>;
   }
   return null;
 }
@@ -711,18 +711,18 @@ function UserAttachments({ attachments }: { attachments: ChatMessageAttachment[]
   useTranslation();
   if (attachments.length === 0) return null;
   return (
-    <div className="cy-message__attachments">
+    <div className="ff-message__attachments">
       {attachments.map((attachment, index) => {
         const status = attachmentStatus(attachment);
         if (attachment.kind === "image" && (attachment.previewUrl || attachment.filePath)) {
           return (
-            <figure className="cy-message__image-attachment" key={`${attachment.filePath ?? attachment.name}-${index}`}>
+            <figure className="ff-message__image-attachment" key={`${attachment.filePath ?? attachment.name}-${index}`}>
               <AttachmentImage attachment={attachment} />
               {status && <figcaption className={attachment.status === "error" ? "is-error" : ""}>{status}</figcaption>}
             </figure>
           );
         }
-        return <span className="cy-message__file-attachment" key={`${attachment.filePath ?? attachment.name}-${index}`}>{attachment.name}</span>;
+        return <span className="ff-message__file-attachment" key={`${attachment.filePath ?? attachment.name}-${index}`}>{attachment.name}</span>;
       })}
     </div>
   );
@@ -778,11 +778,11 @@ function UserContent({
 }) {
   const { t } = useTranslation();
   return (
-    <div className="cy-message__user-body">
+    <div className="ff-message__user-body">
       {channelSource && <ChannelSourceLabel source={channelSource} direction="incoming" />}
       <UserAttachments attachments={attachments} />
       {content && <MarkdownContent content={content} />}
-      <StickerImage src={stickerUrl} unavailable={stickerUnavailable} alt={t("messageList.userStickerAlt")} className="cy-message__sticker" />
+      <StickerImage src={stickerUrl} unavailable={stickerUnavailable} alt={t("messageList.userStickerAlt")} className="ff-message__sticker" />
     </div>
   );
 }
@@ -811,7 +811,7 @@ function LastUserMessageEditor({
     }
   };
   return (
-    <div className="cy-last-message-editor">
+    <div className="ff-last-message-editor">
       <textarea
         autoFocus
         value={value}
@@ -820,7 +820,7 @@ function LastUserMessageEditor({
         onChange={(event) => onChange(event.target.value)}
         onKeyDown={handleKeyDown}
       />
-      <div className="cy-last-message-editor__actions">
+      <div className="ff-last-message-editor__actions">
         <button type="button" disabled={busy} onClick={onCancel}>{t("common.cancel")}</button>
         <button type="button" className="is-primary" disabled={busy || !value.trim()} onClick={onSubmit}>
           {t("messageList.saveAndRegenerate")}
@@ -832,13 +832,13 @@ function LastUserMessageEditor({
 
 function FireflyMessageAvatar() {
   const { t } = useTranslation();
-  return <img className="cy-message-avatar__image" src={fireflyAvatarUrl} alt={t("messageList.fireflyAvatarAlt")} draggable={false} />;
+  return <img className="ff-message-avatar__image" src={fireflyAvatarUrl} alt={t("messageList.fireflyAvatarAlt")} draggable={false} />;
 }
 
 function UserMessageAvatar({ src }: { src: string | null }) {
   const { t } = useTranslation();
-  if (src) return <img className="cy-message-avatar__image" src={src} alt={t("messageList.userAvatarAlt")} draggable={false} />;
-  return <span className="cy-message-avatar__user" role="img" aria-label={t("messageList.userAvatarAlt")}>U</span>;
+  if (src) return <img className="ff-message-avatar__image" src={src} alt={t("messageList.userAvatarAlt")} draggable={false} />;
+  return <span className="ff-message-avatar__user" role="img" aria-label={t("messageList.userAvatarAlt")}>U</span>;
 }
 
 function createRoles(
@@ -862,7 +862,7 @@ function createRoles(
   user: {
     placement: "end" as const,
     variant: "filled" as const,
-    rootClassName: "cy-message cy-message--user",
+    rootClassName: "ff-message ff-message--user",
     avatar: <UserMessageAvatar src={userAvatarUrl} />,
     contentRender: (content: string, info: { extraInfo?: { messageId?: string; stickerUrl?: string; stickerUnavailable?: string; attachments?: ChatMessageAttachment[]; channelSource?: ChatMessageChannelSource } }) => (
       info.extraInfo?.messageId === editingMessageId
@@ -886,7 +886,7 @@ function createRoles(
       const messageId = info.extraInfo?.messageId;
       if (!cleanText || messageId === editingMessageId) return null;
       return (
-        <div className="cy-message-actions">
+        <div className="ff-message-actions">
           <LastTurnEditAction messageId={messageId} content={cleanText} disabled={revisionBusy} onBeginEdit={onBeginEdit} />
           <CopyButton text={cleanText} />
         </div>
@@ -896,7 +896,7 @@ function createRoles(
   assistant: {
     placement: "start" as const,
     variant: "filled" as const,
-    rootClassName: "cy-message cy-message--assistant",
+    rootClassName: "ff-message ff-message--assistant",
     avatar: <FireflyMessageAvatar />,
     contentRender: (content: string, info: { extraInfo?: { streaming?: boolean; stickerUrl?: string; stickerUnavailable?: string; channelSource?: ChatMessageChannelSource } }) => (
       <AssistantContent
@@ -924,7 +924,7 @@ function createRoles(
   reasoning: {
     placement: "start" as const,
     variant: "borderless" as const,
-    rootClassName: "cy-message cy-message--reasoning",
+    rootClassName: "ff-message ff-message--reasoning",
     contentRender: (_content: string, info: { extraInfo?: { reasoningId?: string; reasoning?: string; reasoningStreaming?: boolean } }) => (
       <ReasoningContent
         content={info.extraInfo?.reasoning ?? ""}
@@ -948,7 +948,7 @@ function createRoles(
     placement: "start" as const,
     variant: "borderless" as const,
     avatar: null,
-    rootClassName: "cy-message cy-message--activity",
+    rootClassName: "ff-message ff-message--activity",
     contentRender: (_content: string, info: {
       extraInfo?: {
         activityId?: string;
@@ -986,7 +986,7 @@ function createRoles(
     placement: "start" as const,
     variant: "borderless" as const,
     avatar: null,
-    rootClassName: "cy-message cy-message--tool",
+    rootClassName: "ff-message ff-message--tool",
     contentRender: (_content: string, info: { extraInfo?: { tools?: ToolExecutionRecord[] } }) => (
       info.extraInfo?.tools?.length ? <ToolExecutionContent tools={info.extraInfo.tools} /> : null
     ),
@@ -995,14 +995,14 @@ function createRoles(
     placement: "start" as const,
     variant: "borderless" as const,
     avatar: null,
-    rootClassName: "cy-message cy-message--waiting",
+    rootClassName: "ff-message ff-message--waiting",
     contentRender: () => <ModelWaitContent />,
   },
   weather: {
     placement: "start" as const,
     variant: "borderless" as const,
     avatar: null,
-    rootClassName: "cy-message cy-message--weather",
+    rootClassName: "ff-message ff-message--weather",
     contentRender: (_content: string, info: { extraInfo?: { weather?: WeatherData } }) => (
       info.extraInfo?.weather ? <WeatherCard data={info.extraInfo.weather} /> : null
     ),
@@ -1011,7 +1011,7 @@ function createRoles(
     placement: "start" as const,
     variant: "borderless" as const,
     avatar: null,
-    rootClassName: "cy-message cy-message--review",
+    rootClassName: "ff-message ff-message--review",
     contentRender: (_content: string, info: { extraInfo?: { runId?: string } }) => (
       info.extraInfo?.runId
         ? <ReviewPanel runId={info.extraInfo.runId} onOpenInspector={onOpenReviewInspector} />
@@ -1021,7 +1021,7 @@ function createRoles(
   system: {
     placement: "start" as const,
     variant: "borderless" as const,
-    rootClassName: "cy-message cy-message--system",
+    rootClassName: "ff-message ff-message--system",
   },
   };
 }
@@ -1134,7 +1134,7 @@ function convertMessage(message: ChatMessageItem, enabledStickers: readonly Enab
       role: "assistant",
       content: message.transientText ?? message.content,
       streaming: message.streaming,
-      ...(hideAvatar ? { rootClassName: "cy-message cy-message--assistant cy-message--assistant-run" } : {}),
+      ...(hideAvatar ? { rootClassName: "ff-message ff-message--assistant ff-message--assistant-run" } : {}),
       extraInfo: {
         messageId: message.id,
         streaming: message.streaming,
@@ -1153,7 +1153,7 @@ function convertMessage(message: ChatMessageItem, enabledStickers: readonly Enab
       content: "",
       // Review 面板属于运行块：头像占位隐藏（头像钉在活动卡头部），面板与正文/时间线内容左对齐
       avatar: createElement(FireflyMessageAvatar),
-      rootClassName: "cy-message cy-message--review cy-message--review-run",
+      rootClassName: "ff-message ff-message--review ff-message--review-run",
       extraInfo: { runId: message.runId },
     });
   }
@@ -1352,13 +1352,13 @@ export function ChatMessageList({
       <LastTurnIdsContext.Provider value={lastTurnIds}>
         <div
           ref={containerRef}
-          className={`cy-message-list cy-message-list--stickers-${stickerSize}`}
+          className={`ff-message-list ff-message-list--stickers-${stickerSize}`}
           aria-live="polite"
           onScroll={updateScrollState}
         >
           {channelConversationLabel && (
-            <div className="cy-message-list__channel-context" role="note" aria-label={channelConversationLabel}>
-              <span className="cy-message-list__channel-dot" aria-hidden="true" />
+            <div className="ff-message-list__channel-context" role="note" aria-label={channelConversationLabel}>
+              <span className="ff-message-list__channel-dot" aria-hidden="true" />
               <span>{channelConversationLabel}</span>
             </div>
           )}

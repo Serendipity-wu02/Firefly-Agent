@@ -154,7 +154,7 @@ export const ChatPageNavigation = React.memo(function ChatPageNavigation({
     moreRef.current?.focus();
   };
 
-  const resizeHandle = <div className={`cy-sidebar-resizer ${sidebar.isResizing ? "is-resizing" : ""}`} role="separator" tabIndex={0}
+  const resizeHandle = <div className={`ff-sidebar-resizer ${sidebar.isResizing ? "is-resizing" : ""}`} role="separator" tabIndex={0}
         aria-label={t("workspace.resizeSidebar")} aria-orientation="vertical"
         aria-controls="firefly-context-sidebar" aria-valuemin={sidebar.min}
         aria-valuemax={sidebar.max} aria-valuenow={sidebar.width}
@@ -171,40 +171,40 @@ export const ChatPageNavigation = React.memo(function ChatPageNavigation({
   const morePanelActive = activePanel === "tool" || activePanel === "skill" || activePanel === "model";
   return (
     <>
-      <header className="cy-page-titlebar">
-        <div className="cy-page-toggle">
+      <header className="ff-page-titlebar">
+        <div className="ff-page-toggle">
           <SidebarToggle collapsed={collapsed} onToggle={onToggleCollapsed} />
-          <div className="cy-page-role">
-            <img className="cy-page-role-avatar" src={resolveAsset("avatars/firefly-avatar.png")} alt="Firefly" draggable={false} />
+          <div className="ff-page-role">
+            <img className="ff-page-role-avatar" src={resolveAsset("avatars/firefly-avatar.png")} alt="Firefly" draggable={false} />
             <ModelConnectionIndicator activeProfileId={activeModelProfileId} onOpenSettings={onOpenApiSettings ?? onOpenSettings} />
           </div>
           {/* 侧栏折叠时顶部那一行不可见，模式入口改放在头像旁，保证随时能切换。 */}
           {collapsed && <ModeMenu variant="compact" value={mode} onChange={onModeChange} />}
         </div>
-        <div className="cy-page-windows">
+        <div className="ff-page-windows">
           <WindowControls onMinimize={onMinimize} onMaximize={onMaximize} onClose={onCloseWindow} />
         </div>
       </header>
-      {collapsed && <nav ref={edgeRef} onPointerEnter={enter} onPointerLeave={leave} className="cy-page-edge" aria-label={t("ui.navigation")} />}
-      <aside ref={contextRef} onPointerEnter={enter} onPointerLeave={leave} id="firefly-context-sidebar" className={`cy-page-sidebar ${collapsed ? "is-floating" : ""} ${peeking ? "is-peeking" : ""}`} style={{ width: sidebar.width }} inert={hidden} aria-hidden={hidden} aria-label={t("ui.contextSidebar")}>
-        {collapsed && <span className="cy-sidebar-hover-corridor" aria-hidden="true" />}
+      {collapsed && <nav ref={edgeRef} onPointerEnter={enter} onPointerLeave={leave} className="ff-page-edge" aria-label={t("ui.navigation")} />}
+      <aside ref={contextRef} onPointerEnter={enter} onPointerLeave={leave} id="firefly-context-sidebar" className={`ff-page-sidebar ${collapsed ? "is-floating" : ""} ${peeking ? "is-peeking" : ""}`} style={{ width: sidebar.width }} inert={hidden} aria-hidden={hidden} aria-label={t("ui.contextSidebar")}>
+        {collapsed && <span className="ff-sidebar-hover-corridor" aria-hidden="true" />}
         {!collapsed && (
-          <div className="cy-page-mode">
+          <div className="ff-page-mode">
             <ModeMenu value={mode} onChange={onModeChange} />
           </div>
         )}
-        <div className="cy-page-newtask">
+        <div className="ff-page-newtask">
           <NewTaskButton label={mode === "chat" ? undefined : t("ui.newTaskButton")} onClick={onNewTask} />
-          <button type="button" className="cy-side-action cy-side-action--search" onClick={() => setSearchOpen(true)} aria-label={t("sidebar.searchAction")} aria-keyshortcuts="Control+K">
-            <span className="cy-side-action-icon"><Search size={16} strokeWidth={1.8} aria-hidden="true" /></span>
-            <span className="cy-side-action-label">{t("sidebar.searchAction")}</span>
+          <button type="button" className="ff-side-action ff-side-action--search" onClick={() => setSearchOpen(true)} aria-label={t("sidebar.searchAction")} aria-keyshortcuts="Control+K">
+            <span className="ff-side-action-icon"><Search size={16} strokeWidth={1.8} aria-hidden="true" /></span>
+            <span className="ff-side-action-label">{t("sidebar.searchAction")}</span>
             <kbd>Ctrl K</kbd>
           </button>
           <PluginModeButton active={activePanel === "plugin"} onClick={() => onTogglePanel("plugin")} />
           <Popover trigger={["hover", "click"]} mouseEnterDelay={0.08} mouseLeaveDelay={0.2} placement="rightTop" open={moreOpen} onOpenChange={setMoreOpen}
             getPopupContainer={() => contextRef.current!}
             content={(
-              <div className="cy-page-more" onKeyDown={(event) => {
+              <div className="ff-page-more" onKeyDown={(event) => {
                 if (event.key === "Escape") {
                   event.stopPropagation(); setMoreOpen(false); moreRef.current?.focus();
                 }
@@ -212,20 +212,20 @@ export const ChatPageNavigation = React.memo(function ChatPageNavigation({
                 <ToolModeButton active={activePanel === "tool"} onClick={() => chooseMorePanel("tool")} />
                 <SkillModeButton active={activePanel === "skill"} onClick={() => chooseMorePanel("skill")} />
                 <ModelModeButton active={activePanel === "model"} onClick={() => chooseMorePanel("model")} />
-                <button type="button" className="cy-side-action" onClick={chooseScheduledTasks} title={t("ui.scheduledTasks")} aria-label={t("ui.scheduledTasks")}>
-                  <span className="cy-side-action-icon"><ClockCircleOutlined aria-hidden="true" /></span>
-                  <span className="cy-side-action-label">{t("ui.scheduledTasks")}</span>
+                <button type="button" className="ff-side-action" onClick={chooseScheduledTasks} title={t("ui.scheduledTasks")} aria-label={t("ui.scheduledTasks")}>
+                  <span className="ff-side-action-icon"><ClockCircleOutlined aria-hidden="true" /></span>
+                  <span className="ff-side-action-label">{t("ui.scheduledTasks")}</span>
                 </button>
               </div>
             )}>
-            <button ref={moreRef} type="button" className={`cy-side-action ${moreOpen || morePanelActive ? "is-active" : ""}`}
+            <button ref={moreRef} type="button" className={`ff-side-action ${moreOpen || morePanelActive ? "is-active" : ""}`}
               title={t("ui.more")} aria-label={t("ui.more")} aria-expanded={moreOpen}>
-              <span className="cy-side-action-icon"><Ellipsis size={18} aria-hidden="true" /></span>
-              <span className="cy-side-action-label">{t("ui.more")}</span>
+              <span className="ff-side-action-icon"><Ellipsis size={18} aria-hidden="true" /></span>
+              <span className="ff-side-action-label">{t("ui.more")}</span>
             </button>
           </Popover>
         </div>
-        <div className="cy-page-conversations">
+        <div className="ff-page-conversations">
           <ConversationSidebar
             mode={mode}
             sessions={sessions}

@@ -9,11 +9,11 @@ interface NewTaskButtonProps {
 export function NewTaskButton({ label, onClick }: NewTaskButtonProps) {
   const { t } = useTranslation();
   return (
-    <button className="cy-side-action" onClick={onClick} type="button">
-      <span className="cy-side-action-icon">
+    <button className="ff-side-action" onClick={onClick} type="button">
+      <span className="ff-side-action-icon">
         <SquarePen size={16} strokeWidth={1.8} aria-hidden="true" />
       </span>
-      <span className="cy-side-action-label">{label ?? t("ui.newButton")}</span>
+      <span className="ff-side-action-label">{label ?? t("ui.newButton")}</span>
     </button>
   );
 }

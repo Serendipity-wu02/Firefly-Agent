@@ -71,7 +71,7 @@ export function PlanModeToggle({ conversationId, workspaceRoot }: PlanModeToggle
   const label = t("planToggle.label", { state: active ? "on" : "off" });
 
   const panel = (
-    <div className="cy-plan-panel">
+    <div className="ff-plan-panel">
       <strong>{t("planToggle.title")}</strong>
       <span>{t("planToggle.desc")}</span>
       <Segmented
@@ -94,9 +94,9 @@ export function PlanModeToggle({ conversationId, workspaceRoot }: PlanModeToggle
       placement="topRight"
       open={open}
       onOpenChange={setOpen}
-      overlayClassName="cy-plan-popover"
+      overlayClassName="ff-plan-popover"
     >
-      <button type="button" className={`cy-composer__agent-button cy-plan-control ${active ? "is-active" : ""}`} aria-pressed={active}>
+      <button type="button" className={`ff-composer__agent-button ff-plan-control ${active ? "is-active" : ""}`} aria-pressed={active}>
         <span>{label}</span>
         <ChevronIcon />
       </button>

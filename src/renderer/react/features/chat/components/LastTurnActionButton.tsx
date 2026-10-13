@@ -12,7 +12,7 @@ export function LastTurnActionButton({ kind, disabled = false, onClick }: LastTu
   return (
     <button
       type="button"
-      className={`cy-last-turn-action cy-last-turn-action--${kind}`}
+      className={`ff-last-turn-action ff-last-turn-action--${kind}`}
       aria-label={label}
       title={label}
       disabled={disabled}
@@ -24,7 +24,7 @@ export function LastTurnActionButton({ kind, disabled = false, onClick }: LastTu
           <path d="M27.5 13.5L34.5 20.5" stroke="currentColor" strokeWidth="4" strokeLinecap="round" />
         </svg>
       ) : (
-        <svg className="cy-last-turn-action__regenerate-icon" width="16" height="16" viewBox="0 0 48 48" fill="none" aria-hidden="true">
+        <svg className="ff-last-turn-action__regenerate-icon" width="16" height="16" viewBox="0 0 48 48" fill="none" aria-hidden="true">
           <path d="M40 17A18 18 0 1 0 41 29" stroke="currentColor" strokeWidth="4" strokeLinecap="round" />
           <path d="M40 7V17H30" stroke="currentColor" strokeWidth="4" strokeLinecap="round" strokeLinejoin="round" />
         </svg>

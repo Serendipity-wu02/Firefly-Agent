@@ -134,63 +134,63 @@ export function ReviewPanel({
   if (!snapshot) return null;
 
   return (
-    <section className={`cy-review-panel${expanded ? " is-expanded" : ""}`} aria-label={t("review.panelAria")}>
+    <section className={`ff-review-panel${expanded ? " is-expanded" : ""}`} aria-label={t("review.panelAria")}>
       <button
         type="button"
-        className="cy-review-panel__header"
+        className="ff-review-panel__header"
         onClick={() => setExpanded((v) => !v)}
         aria-expanded={expanded}
       >
-        <span className="cy-review-panel__title">
+        <span className="ff-review-panel__title">
           {t("review.fileCount", { count: snapshot.files.length })}
         </span>
-        <span className="cy-review-panel__stats">
+        <span className="ff-review-panel__stats">
           {totalAdd > 0 && <span className="is-add">+{totalAdd}</span>}
           {totalDel > 0 && <span className="is-remove">−{totalDel}</span>}
         </span>
-        <svg className="cy-review-panel__chevron" viewBox="0 0 16 16" aria-hidden="true">
+        <svg className="ff-review-panel__chevron" viewBox="0 0 16 16" aria-hidden="true">
           <path d="m4 6 4 4 4-4" fill="none" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.75" />
         </svg>
       </button>
       {expanded && (
-        <div className="cy-review-panel__list">
+        <div className="ff-review-panel__list">
           {snapshot.files.map((file, index) => {
             const { dir, base } = splitPath(file.newPath);
             return (
               <button
                 key={`${file.kind}:${file.oldPath}:${file.newPath}:${index}`}
                 type="button"
-                className="cy-review-panel__file-item"
+                className="ff-review-panel__file-item"
                 onClick={() => onOpenInspector?.(runId, index, file.newPath)}
                 title={file.newPath}
               >
-                <span className={`cy-review-panel__kind ${KIND_CLASS[file.kind]}`}>
+                <span className={`ff-review-panel__kind ${KIND_CLASS[file.kind]}`}>
                   {t(KIND_LABEL_KEYS[file.kind])}
                 </span>
-                <span className="cy-review-panel__file-path">
-                  {dir && <span className="cy-review-panel__dir">{dir}</span>}
-                  <span className="cy-review-panel__base">{base}</span>
+                <span className="ff-review-panel__file-path">
+                  {dir && <span className="ff-review-panel__dir">{dir}</span>}
+                  <span className="ff-review-panel__base">{base}</span>
                 </span>
-                <span className="cy-review-panel__file-stats">
+                <span className="ff-review-panel__file-stats">
                   {file.additions > 0 && <span className="is-add">+{file.additions}</span>}
                   {file.deletions > 0 && <span className="is-remove">−{file.deletions}</span>}
                 </span>
-                <svg className="cy-review-panel__arrow" viewBox="0 0 16 16" aria-hidden="true">
+                <svg className="ff-review-panel__arrow" viewBox="0 0 16 16" aria-hidden="true">
                   <path d="m6 4 4 4-4 4" fill="none" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.75" />
                 </svg>
               </button>
             );
           })}
           {/* 恢复入口：两步确认，恢复后展示结果摘要 */}
-          <div className="cy-review-panel__restore">
+          <div className="ff-review-panel__restore">
             {restoreSummary ? (
-              <span className={`cy-review-panel__restore-summary${restoreOutcome?.ok === false ? " is-error" : ""}`}>
+              <span className={`ff-review-panel__restore-summary${restoreOutcome?.ok === false ? " is-error" : ""}`}>
                 {restoreSummary}
               </span>
             ) : (
               <button
                 type="button"
-                className={`cy-review-panel__restore-btn${restoreConfirming ? " is-confirming" : ""}`}
+                className={`ff-review-panel__restore-btn${restoreConfirming ? " is-confirming" : ""}`}
                 onClick={() => void handleRestoreClick()}
                 disabled={restoring}
               >

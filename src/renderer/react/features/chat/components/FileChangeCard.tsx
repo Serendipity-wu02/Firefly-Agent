@@ -54,13 +54,13 @@ export function FileChangeCard({ changes }: { changes: ToolFileChange[] }) {
   const totalAdd = changes.reduce((sum, c) => sum + c.insertions, 0);
   const totalDel = changes.reduce((sum, c) => sum + c.deletions, 0);
   return (
-    <section className="cy-file-change-card" aria-label={t("fileChange.panelAria")}>
-      <header className="cy-file-change-card__summary">
-        <span className="cy-file-change-card__title">
+    <section className="ff-file-change-card" aria-label={t("fileChange.panelAria")}>
+      <header className="ff-file-change-card__summary">
+        <span className="ff-file-change-card__title">
           {t("fileChange.summary", { count: changes.length })}
         </span>
-        <span className="cy-file-change-card__stat is-add">+{totalAdd}</span>
-        <span className="cy-file-change-card__stat is-remove">−{totalDel}</span>
+        <span className="ff-file-change-card__stat is-add">+{totalAdd}</span>
+        <span className="ff-file-change-card__stat is-remove">−{totalDel}</span>
       </header>
       {changes.map((change) => (
         <FileChangeRow key={`${change.kind}:${change.file}`} change={change} />
@@ -79,14 +79,14 @@ function FileChangeRow({ change }: { change: ToolFileChange }) {
 
   const rowBody = (
     <>
-      <span className={`cy-file-change-card__kind ${KIND_CLASS[change.kind]}`}>
+      <span className={`ff-file-change-card__kind ${KIND_CLASS[change.kind]}`}>
         {t(KIND_LABEL_KEYS[change.kind])}
       </span>
-      <span className="cy-file-change-card__path" title={change.file}>
-        {dir && <span className="cy-file-change-card__dir">{dir}</span>}
-        <span className="cy-file-change-card__base">{base}</span>
+      <span className="ff-file-change-card__path" title={change.file}>
+        {dir && <span className="ff-file-change-card__dir">{dir}</span>}
+        <span className="ff-file-change-card__base">{base}</span>
       </span>
-      <span className="cy-file-change-card__row-stats">
+      <span className="ff-file-change-card__row-stats">
         {change.insertions > 0 && <span className="is-add">+{change.insertions}</span>}
         {change.deletions > 0 && <span className="is-remove">−{change.deletions}</span>}
       </span>
@@ -94,29 +94,29 @@ function FileChangeRow({ change }: { change: ToolFileChange }) {
   );
 
   return (
-    <div className="cy-file-change-card__row-wrapper">
+    <div className="ff-file-change-card__row-wrapper">
       {hasDiff ? (
         <button
           type="button"
-          className={`cy-file-change-card__row is-expandable${expanded ? " is-expanded" : ""}`}
+          className={`ff-file-change-card__row is-expandable${expanded ? " is-expanded" : ""}`}
           onClick={() => setExpanded(!expanded)}
           aria-expanded={expanded}
         >
           {rowBody}
-          <svg className="cy-file-change-card__chevron" viewBox="0 0 16 16" aria-hidden="true">
+          <svg className="ff-file-change-card__chevron" viewBox="0 0 16 16" aria-hidden="true">
             <path d="m4 6 4 4 4-4" fill="none" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.75" />
           </svg>
         </button>
       ) : (
-        <div className="cy-file-change-card__row">{rowBody}</div>
+        <div className="ff-file-change-card__row">{rowBody}</div>
       )}
       {hasDiff && expanded && (
-        <div className="cy-file-change-card__diff">
+        <div className="ff-file-change-card__diff">
           {change.diff!.map((line, index) => (
             <DiffLineView key={index} line={line} />
           ))}
           {change.truncated && (
-            <div className="cy-file-change-card__truncated">{t("fileChange.truncated")}</div>
+            <div className="ff-file-change-card__truncated">{t("fileChange.truncated")}</div>
           )}
         </div>
       )}
@@ -127,9 +127,9 @@ function FileChangeRow({ change }: { change: ToolFileChange }) {
 function DiffLineView({ line }: { line: ToolDiffLine }) {
   const marker = line.type === "add" ? "+" : line.type === "remove" ? "−" : line.type === "hunk" ? "@" : " ";
   return (
-    <div className={`cy-file-change-card__line is-${line.type}`}>
-      <span className="cy-file-change-card__marker" aria-hidden="true">{marker}</span>
-      <span className="cy-file-change-card__text">{line.text || " "}</span>
+    <div className={`ff-file-change-card__line is-${line.type}`}>
+      <span className="ff-file-change-card__marker" aria-hidden="true">{marker}</span>
+      <span className="ff-file-change-card__text">{line.text || " "}</span>
     </div>
   );
 }

@@ -1,19 +1,19 @@
-.cy-composer-stack {
+.ff-composer-stack {
   display: flex;
-  width: min(100%, var(--cy-reading-width));
+  width: min(100%, var(--ff-reading-width));
   flex-direction: column;
   transition: transform 240ms ease, width 320ms ease;
 }
 
-.cy-composer-stack.is-centered {
+.ff-composer-stack.is-centered {
   transform: translateY(45px);
 }
 
-.cy-composer-stack.is-docked {
-  width: min(100%, var(--cy-reading-width));
+.ff-composer-stack.is-docked {
+  width: min(100%, var(--ff-reading-width));
 }
 
-.cy-composer-welcome {
+.ff-composer-welcome {
   display: block;
   width: min(100%, 520px);
   height: auto;
@@ -22,78 +22,78 @@
   object-fit: contain;
 }
 
-.cy-composer-shell {
+.ff-composer-shell {
   position: relative;
   display: flex;
   width: 100%;
   flex-direction: column;
   overflow: hidden;
   border-radius: 12px;
-  background: var(--cy-bg-subtle);
-  box-shadow: var(--cy-shadow-bubble-neutral);
+  background: var(--ff-bg-subtle);
+  box-shadow: var(--ff-shadow-bubble-neutral);
 }
 
-.cy-composer-stack.is-centered .cy-composer-shell {
+.ff-composer-stack.is-centered .ff-composer-shell {
   transform: translateY(-15px);
 }
 
-.cy-composer.ant-sender {
+.ff-composer.ant-sender {
   position: relative;
   z-index: 1;
-  border: 1px solid var(--cy-border);
+  border: 1px solid var(--ff-border);
   border-radius: 12px;
-  background: var(--cy-surface);
-  box-shadow: var(--cy-shadow-bubble-neutral);
+  background: var(--ff-surface);
+  box-shadow: var(--ff-shadow-bubble-neutral);
   transition:
     border-color 160ms ease,
     box-shadow 160ms ease;
 }
 
-.cy-composer.ant-sender:hover {
-  border-color: var(--cy-border);
-  box-shadow: var(--cy-shadow-control-hover);
+.ff-composer.ant-sender:hover {
+  border-color: var(--ff-border);
+  box-shadow: var(--ff-shadow-control-hover);
 }
 
-.cy-composer.ant-sender:focus-within {
-  border-color: rgba(var(--cy-accent-rgb), 0.32);
-  box-shadow: var(--cy-shadow-control-focus);
+.ff-composer.ant-sender:focus-within {
+  border-color: rgba(var(--ff-accent-rgb), 0.32);
+  box-shadow: var(--ff-shadow-control-focus);
 }
 
-.cy-composer .ant-sender-content {
+.ff-composer .ant-sender-content {
   min-height: 100px;
   padding: 16px 16px 9px;
   align-items: flex-end;
 }
 
-.cy-composer .ant-sender-input {
+.ff-composer .ant-sender-input {
   min-height: 70px;
-  color: var(--cy-text);
+  color: var(--ff-text);
   font: 400 15px/1.6 var(--rb-font-sans, sans-serif);
   resize: none;
 }
 
-.cy-composer .ant-sender-input::placeholder {
-  color: var(--cy-text-muted);
+.ff-composer .ant-sender-input::placeholder {
+  color: var(--ff-text-muted);
 }
 
-.cy-composer .ant-sender-actions-list {
+.ff-composer .ant-sender-actions-list {
   align-self: flex-end;
 }
 
-.cy-composer .ant-sender-actions-btn {
+.ff-composer .ant-sender-actions-btn {
   width: 38px;
   height: 38px;
   border-radius: 50%;
   color: #fff;
-  background: var(--cy-accent);
+  background: var(--ff-accent);
 }
 
-.cy-composer .ant-sender-actions-btn:disabled {
-  color: var(--cy-text-muted);
-  background: var(--cy-bg-active);
+.ff-composer .ant-sender-actions-btn:disabled {
+  color: var(--ff-text-muted);
+  background: var(--ff-bg-active);
 }
 
-.cy-queue-dock {
+.ff-queue-dock {
   position: relative;
   z-index: 0;
   box-sizing: border-box;
@@ -101,22 +101,22 @@
   margin: 0 auto -5px;
   padding: 3px 6px 8px;
   overflow: hidden;
-  border: 1px solid var(--cy-border);
+  border: 1px solid var(--ff-border);
   border-bottom: 0;
   border-radius: 12px;
-  background: var(--cy-bg-hover);
-  color: var(--cy-text);
+  background: var(--ff-bg-hover);
+  color: var(--ff-text);
 }
 
-.cy-queue-dock__header,
-.cy-queue-dock__row {
+.ff-queue-dock__header,
+.ff-queue-dock__row {
   display: flex;
   align-items: center;
   width: 100%;
   min-height: 34px;
 }
 
-.cy-queue-dock__header {
+.ff-queue-dock__header {
   gap: 9px;
   padding: 4px 7px;
   appearance: none;
@@ -129,11 +129,11 @@
   cursor: pointer;
 }
 
-.cy-queue-dock__header span:nth-child(2) {
+.ff-queue-dock__header span:nth-child(2) {
   flex: 1;
 }
 
-.cy-composer__read-requirement {
+.ff-composer__read-requirement {
   display: inline-flex;
   align-items: center;
   gap: 5px;
@@ -142,32 +142,32 @@
   cursor: pointer;
 }
 
-.cy-queue-dock__header:hover {
-  background: var(--cy-bg-active);
-  color: var(--cy-accent);
+.ff-queue-dock__header:hover {
+  background: var(--ff-bg-active);
+  color: var(--ff-accent);
 }
 
-.cy-queue-dock__list {
+.ff-queue-dock__list {
   max-height: 154px;
   overflow-y: auto;
 }
 
-.cy-queue-dock__row {
+.ff-queue-dock__row {
   gap: 7px;
   padding: 3px 4px 3px 7px;
   border-radius: 12px;
 }
 
-.cy-queue-dock__row + .cy-queue-dock__row {
-  border-top: 1px solid var(--cy-border);
+.ff-queue-dock__row + .ff-queue-dock__row {
+  border-top: 1px solid var(--ff-border);
 }
 
-.cy-queue-dock__lead {
+.ff-queue-dock__lead {
   flex: none;
-  color: var(--cy-text-muted);
+  color: var(--ff-text-muted);
 }
 
-.cy-queue-dock__content {
+.ff-queue-dock__content {
   display: flex;
   flex: 1;
   align-items: center;
@@ -183,44 +183,44 @@
   cursor: text;
 }
 
-.cy-queue-dock__content > span {
+.ff-queue-dock__content > span {
   min-width: 0;
   overflow: hidden;
   white-space: nowrap;
   text-overflow: ellipsis;
 }
 
-.cy-queue-dock__content small {
+.ff-queue-dock__content small {
   display: inline-flex;
   flex: none;
   align-items: center;
   gap: 3px;
-  color: var(--cy-text-muted);
+  color: var(--ff-text-muted);
   font-size: 11px;
 }
 
-.cy-queue-dock__editor {
+.ff-queue-dock__editor {
   flex: 1;
   min-width: 0;
   height: 28px;
   padding: 3px 8px;
-  border: 1px solid rgba(var(--cy-accent-rgb), 0.38);
+  border: 1px solid rgba(var(--ff-accent-rgb), 0.38);
   border-radius: 12px;
   outline: none;
-  background: var(--cy-surface);
-  color: var(--cy-text);
+  background: var(--ff-surface);
+  color: var(--ff-text);
   font: 400 13px/1.4 var(--rb-font-sans, sans-serif);
-  box-shadow: 0 0 0 2px rgba(var(--cy-accent-rgb), 0.08);
+  box-shadow: 0 0 0 2px rgba(var(--ff-accent-rgb), 0.08);
 }
 
-.cy-queue-dock__actions {
+.ff-queue-dock__actions {
   display: flex;
   flex: none;
   align-items: center;
   gap: 2px;
 }
 
-.cy-queue-dock__actions button {
+.ff-queue-dock__actions button {
   flex: none;
   width: 27px;
   height: 27px;
@@ -231,33 +231,33 @@
   border-radius: 12px;
   padding: 0;
   background: transparent;
-  color: var(--cy-text-muted);
+  color: var(--ff-text-muted);
   cursor: pointer;
 }
 
-.cy-queue-dock__actions button:hover:not(:disabled) {
-  background: var(--cy-bg-active);
-  color: var(--cy-accent);
+.ff-queue-dock__actions button:hover:not(:disabled) {
+  background: var(--ff-bg-active);
+  color: var(--ff-accent);
 }
 
-.cy-queue-dock__actions button:disabled,
-.cy-queue-dock__content:disabled {
+.ff-queue-dock__actions button:disabled,
+.ff-queue-dock__content:disabled {
   cursor: default;
   opacity: 0.38;
 }
 
-.cy-composer__icon-button,
-.cy-composer__footer-button,
-.cy-composer__agent-button {
+.ff-composer__icon-button,
+.ff-composer__footer-button,
+.ff-composer__agent-button {
   appearance: none;
   border: 0;
   background: transparent;
-  color: var(--cy-text);
+  color: var(--ff-text);
   font: 500 13px/1 var(--rb-font-sans, sans-serif);
   cursor: pointer;
 }
 
-.cy-composer__icon-button {
+.ff-composer__icon-button {
   display: grid;
   width: 28px;
   height: 38px;
@@ -265,22 +265,22 @@
   padding: 0;
 }
 
-.cy-composer__file-input {
+.ff-composer__file-input {
   display: none;
 }
 
-.cy-composer__prefix-actions {
+.ff-composer__prefix-actions {
   display: flex;
   align-items: center;
   gap: 3px;
 }
 
-.cy-composer__icon-button:disabled {
-  color: var(--cy-text-muted);
+.ff-composer__icon-button:disabled {
+  color: var(--ff-text-muted);
   cursor: wait;
 }
 
-.cy-composer__icon-button svg {
+.ff-composer__icon-button svg {
   width: 20px;
   fill: none;
   stroke: currentColor;
@@ -288,44 +288,44 @@
   stroke-linecap: round;
 }
 
-.cy-composer__icon-button .cy-composer__screenshot-icon {
+.ff-composer__icon-button .ff-composer__screenshot-icon {
   width: 20px;
   height: 20px;
   fill: none;
-  stroke: var(--cy-text);
+  stroke: var(--ff-text);
   stroke-width: 3;
   stroke-linecap: round;
   stroke-linejoin: round;
 }
 
-.cy-composer__sticker-button img {
+.ff-composer__sticker-button img {
   width: 22px;
   height: 22px;
   object-fit: contain;
 }
 
-.cy-composer__attachments {
+.ff-composer__attachments {
   display: flex;
   flex-wrap: wrap;
   gap: 8px;
   padding: 10px 12px 0;
 }
 
-.cy-composer__attachment {
+.ff-composer__attachment {
   display: inline-flex;
   min-width: 0;
   max-width: 240px;
   align-items: center;
   gap: 7px;
   padding: 5px 8px;
-  border: 1px solid var(--cy-border);
+  border: 1px solid var(--ff-border);
   border-radius: 12px;
-  background: var(--cy-bg-subtle);
-  color: var(--cy-text);
+  background: var(--ff-bg-subtle);
+  color: var(--ff-text);
   font: 500 12px/1.2 var(--rb-font-sans, sans-serif);
 }
 
-.cy-composer__attachment img {
+.ff-composer__attachment img {
   width: 36px;
   height: 30px;
   flex: none;
@@ -333,34 +333,34 @@
   object-fit: cover;
 }
 
-.cy-composer__attachment.is-image {
+.ff-composer__attachment.is-image {
   position: relative;
   display: block;
   width: 76px;
   height: 58px;
   padding: 0;
   overflow: hidden;
-  background: var(--cy-bg-hover);
+  background: var(--ff-bg-hover);
 }
 
-.cy-composer__attachment--sticker {
+.ff-composer__attachment--sticker {
   position: relative;
   display: block;
   width: 62px;
   height: 58px;
   padding: 0;
   overflow: hidden;
-  background: var(--cy-bg-page);
+  background: var(--ff-bg-page);
 }
 
-.cy-composer__attachment--sticker img {
+.ff-composer__attachment--sticker img {
   width: 100%;
   height: 100%;
   border-radius: 12px;
   object-fit: contain;
 }
 
-.cy-composer__attachment--sticker button {
+.ff-composer__attachment--sticker button {
   position: absolute;
   top: 3px;
   right: 3px;
@@ -369,13 +369,13 @@
   color: #fff;
 }
 
-.cy-composer__attachment.is-image img {
+.ff-composer__attachment.is-image img {
   width: 100%;
   height: 100%;
   border-radius: 12px;
 }
 
-.cy-composer__attachment.is-image button {
+.ff-composer__attachment.is-image button {
   position: absolute;
   top: 3px;
   right: 3px;
@@ -384,35 +384,35 @@
   color: #fff;
 }
 
-.cy-composer__attachment span {
+.ff-composer__attachment span {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 
-.cy-composer__attachment button {
+.ff-composer__attachment button {
   width: 18px;
   height: 18px;
   flex: none;
   padding: 0;
   border: 0;
   background: transparent;
-  color: var(--cy-text-muted);
+  color: var(--ff-text-muted);
   font: 500 16px/18px sans-serif;
   cursor: pointer;
 }
 
-.cy-composer__attachment button:hover {
-  color: var(--cy-accent);
+.ff-composer__attachment button:hover {
+  color: var(--ff-accent);
 }
 
-.cy-sticker-popover .ant-popover-inner {
+.ff-sticker-popover .ant-popover-inner {
   padding: 10px;
-  border: 1px solid var(--cy-border);
+  border: 1px solid var(--ff-border);
   border-radius: 12px;
 }
 
-.cy-sticker-picker {
+.ff-sticker-picker {
   display: grid;
   width: min(360px, 70vw);
   max-height: 270px;
@@ -421,37 +421,37 @@
   overflow-y: auto;
 }
 
-.cy-sticker-picker button {
+.ff-sticker-picker button {
   display: grid;
   aspect-ratio: 1;
   place-items: center;
   padding: 5px;
   border: 1px solid transparent;
   border-radius: 12px;
-  background: var(--cy-bg-subtle);
+  background: var(--ff-bg-subtle);
   cursor: pointer;
 }
 
-.cy-sticker-picker button:hover {
-  border-color: rgba(var(--cy-accent-rgb), 0.45);
-  background: var(--cy-bg-hover);
+.ff-sticker-picker button:hover {
+  border-color: rgba(var(--ff-accent-rgb), 0.45);
+  background: var(--ff-bg-hover);
 }
 
-.cy-sticker-picker img {
+.ff-sticker-picker img {
   max-width: 100%;
   max-height: 100%;
   object-fit: contain;
   -webkit-user-drag: none;
 }
 
-.cy-sticker-picker__empty {
+.ff-sticker-picker__empty {
   grid-column: 1 / -1;
   padding: 24px;
-  color: var(--cy-text-muted);
+  color: var(--ff-text-muted);
   text-align: center;
 }
 
-.cy-composer__footer {
+.ff-composer__footer {
   display: flex;
   flex-wrap: wrap;
   position: relative;
@@ -464,8 +464,8 @@
 }
 
 
-.cy-composer__footer-button,
-.cy-composer__agent-button {
+.ff-composer__footer-button,
+.ff-composer__agent-button {
   display: inline-flex;
   align-items: center;
   gap: 6px;
@@ -473,28 +473,28 @@
   padding: 0 4px;
 }
 
-.cy-composer__footer-button:hover,
-.cy-composer__agent-button:hover,
-.cy-composer__icon-button:hover {
-  color: var(--cy-accent);
+.ff-composer__footer-button:hover,
+.ff-composer__agent-button:hover,
+.ff-composer__icon-button:hover {
+  color: var(--ff-accent);
 }
 
-.cy-composer__footer-button:disabled {
-  color: var(--cy-text-muted);
+.ff-composer__footer-button:disabled {
+  color: var(--ff-text-muted);
   cursor: default;
 }
 
-.cy-composer__footer-button--placeholder small {
+.ff-composer__footer-button--placeholder small {
   padding: 2px 4px;
   border-radius: 12px;
-  background: var(--cy-bg-hover);
-  color: var(--cy-text-muted);
+  background: var(--ff-bg-hover);
+  color: var(--ff-text-muted);
   font: 600 9px/1 var(--rb-font-sans, sans-serif);
   letter-spacing: .04em;
 }
 
-.cy-composer__footer svg,
-.cy-composer__agent-button svg {
+.ff-composer__footer svg,
+.ff-composer__agent-button svg {
   width: 16px;
   height: 16px;
   flex: none;
@@ -505,145 +505,145 @@
   stroke-linejoin: round;
 }
 
-.cy-composer__footer .cy-composer__code-folder-icon,
-.cy-composer__footer .cy-composer__terminal-folder-icon {
+.ff-composer__footer .ff-composer__code-folder-icon,
+.ff-composer__footer .ff-composer__terminal-folder-icon {
   fill: none;
-  stroke: var(--cy-text);
+  stroke: var(--ff-text);
   stroke-width: 4;
   stroke-linecap: round;
   stroke-linejoin: round;
 }
 
-.cy-composer__footer .cy-composer__footer-button svg:last-child,
-.cy-composer__agent-button svg {
+.ff-composer__footer .ff-composer__footer-button svg:last-child,
+.ff-composer__agent-button svg {
   width: 13px;
   height: 13px;
 }
 
-.cy-composer__footer-separator {
+.ff-composer__footer-separator {
   width: 1px;
   height: 16px;
   margin: 0 2px;
-  background: var(--cy-bg-active);
+  background: var(--ff-bg-active);
 }
 
 /* 弹性空白：把右侧控件组（上下文环/思考控制）推到 footer 最右端。 */
-.cy-composer__footer-spacer {
+.ff-composer__footer-spacer {
   flex: 1;
 }
 
 /* Pair custom foregrounds with custom surfaces; keep the default theme unchanged. */
-:root[data-ui-colors] .cy-composer-shell { background: var(--cy-bg-page); }
-:root[data-ui-colors] .cy-composer.ant-sender,
-:root[data-ui-colors] .cy-queue-dock__editor {
-  background: var(--cy-surface);
-  border-color: var(--cy-border);
-  color: var(--cy-text);
+:root[data-ui-colors] .ff-composer-shell { background: var(--ff-bg-page); }
+:root[data-ui-colors] .ff-composer.ant-sender,
+:root[data-ui-colors] .ff-queue-dock__editor {
+  background: var(--ff-surface);
+  border-color: var(--ff-border);
+  color: var(--ff-text);
 }
-:root[data-ui-colors] .cy-composer .ant-sender-input::placeholder { color: var(--cy-text-muted); }
-:root[data-ui-colors] .cy-composer .ant-sender-actions-btn { color: var(--rb-text-on-pink); }
-:root[data-ui-colors] .cy-composer .ant-sender-actions-btn:disabled {
-  color: var(--cy-text-muted);
-  background: var(--cy-bg-hover);
+:root[data-ui-colors] .ff-composer .ant-sender-input::placeholder { color: var(--ff-text-muted); }
+:root[data-ui-colors] .ff-composer .ant-sender-actions-btn { color: var(--rb-text-on-pink); }
+:root[data-ui-colors] .ff-composer .ant-sender-actions-btn:disabled {
+  color: var(--ff-text-muted);
+  background: var(--ff-bg-hover);
 }
-:root[data-ui-colors] .cy-queue-dock { background: var(--cy-bg-page); color: var(--cy-text); border-color: var(--cy-border); }
-:root[data-ui-colors] .cy-composer__attachment { background: var(--cy-bg-page); }
+:root[data-ui-colors] .ff-queue-dock { background: var(--ff-bg-page); color: var(--ff-text); border-color: var(--ff-border); }
+:root[data-ui-colors] .ff-composer__attachment { background: var(--ff-bg-page); }
 
 /* One rounded card, like the ChatGPT and Codex desktop composers: the controls sit inside it, not on a grey strip below. */
-.cy-composer-stack.is-centered,
-.cy-composer-stack.is-centered .cy-composer-shell { transform: none; }
-.cy-composer-shell {
-  border: 1px solid var(--cy-border, rgba(31, 35, 48, 0.09));
+.ff-composer-stack.is-centered,
+.ff-composer-stack.is-centered .ff-composer-shell { transform: none; }
+.ff-composer-shell {
+  border: 1px solid var(--ff-border, rgba(31, 35, 48, 0.09));
   border-radius: 22px;
-  background: var(--cy-surface, var(--cy-surface));
+  background: var(--ff-surface, var(--ff-surface));
   box-shadow: 0 2px 16px rgba(31, 35, 48, 0.06);
   transition: border-color 160ms ease, box-shadow 160ms ease;
 }
-.cy-composer-shell:hover { border-color: var(--cy-text-muted); }
-.cy-composer-shell:focus-within { border-color: var(--cy-text-secondary); box-shadow: 0 6px 26px rgba(31, 35, 48, 0.1); }
-.cy-composer.ant-sender,
-.cy-composer.ant-sender:hover,
-.cy-composer.ant-sender:focus-within { border: 0; border-radius: 22px 22px 0 0; background: transparent; box-shadow: none; }
+.ff-composer-shell:hover { border-color: var(--ff-text-muted); }
+.ff-composer-shell:focus-within { border-color: var(--ff-text-secondary); box-shadow: 0 6px 26px rgba(31, 35, 48, 0.1); }
+.ff-composer.ant-sender,
+.ff-composer.ant-sender:hover,
+.ff-composer.ant-sender:focus-within { border: 0; border-radius: 22px 22px 0 0; background: transparent; box-shadow: none; }
 /* Text first, full width; attach/screenshot/sticker and send share the row beneath it. */
-.cy-composer .ant-sender-content { flex-wrap: wrap; align-items: center; min-height: 84px; padding: 16px 18px 4px; row-gap: 2px; }
-.cy-composer .ant-sender-input { order: 0; flex: 1 0 100%; width: 100%; min-height: 56px; padding-inline: 0; font-size: 15px; }
-.cy-composer .ant-sender-prefix { order: 1; margin-right: auto; }
-.cy-composer .ant-sender-actions-list { order: 2; align-self: center; }
-.cy-composer__footer { min-height: 0; margin-top: 0; padding: 2px 14px 10px; gap: 4px 6px; }
-.cy-composer__footer-button,
-.cy-composer__agent-button { padding: 0 8px; border-radius: 8px; color: var(--cy-text-secondary, var(--cy-text-secondary)); font-weight: 500; }
-.cy-composer__footer-button:hover:not(:disabled),
-.cy-composer__agent-button:hover { background: var(--cy-bg-hover, rgba(0, 0, 0, 0.05)); }
-.cy-composer__icon-button { border-radius: 8px; }
-.cy-composer .ant-sender-actions-btn { width: 34px; height: 34px; }
-:root[data-ui-colors] .cy-composer-shell { background: var(--cy-surface); border-color: var(--cy-border); }
-:root[data-ui-colors] .cy-composer.ant-sender { background: transparent; border-color: transparent; }
+.ff-composer .ant-sender-content { flex-wrap: wrap; align-items: center; min-height: 84px; padding: 16px 18px 4px; row-gap: 2px; }
+.ff-composer .ant-sender-input { order: 0; flex: 1 0 100%; width: 100%; min-height: 56px; padding-inline: 0; font-size: 15px; }
+.ff-composer .ant-sender-prefix { order: 1; margin-right: auto; }
+.ff-composer .ant-sender-actions-list { order: 2; align-self: center; }
+.ff-composer__footer { min-height: 0; margin-top: 0; padding: 2px 14px 10px; gap: 4px 6px; }
+.ff-composer__footer-button,
+.ff-composer__agent-button { padding: 0 8px; border-radius: 8px; color: var(--ff-text-secondary, var(--ff-text-secondary)); font-weight: 500; }
+.ff-composer__footer-button:hover:not(:disabled),
+.ff-composer__agent-button:hover { background: var(--ff-bg-hover, rgba(0, 0, 0, 0.05)); }
+.ff-composer__icon-button { border-radius: 8px; }
+.ff-composer .ant-sender-actions-btn { width: 34px; height: 34px; }
+:root[data-ui-colors] .ff-composer-shell { background: var(--ff-surface); border-color: var(--ff-border); }
+:root[data-ui-colors] .ff-composer.ant-sender { background: transparent; border-color: transparent; }
 
 /* Dictation is explicit and writes only to the draft. */
-.cy-composer__dictation { display: inline-flex; align-items: center; flex-wrap: wrap; gap: 4px; min-width: 0; }
-.cy-composer__dictation-error { color: var(--color-danger, #bf3d3d); font-size: 12px; max-width: 260px; overflow-wrap: anywhere; }
-.cy-composer__dictation-status { font-size: 11px; opacity: .7; max-width: 230px; }
-.cy-composer__dictation [aria-pressed="true"] { color: var(--color-danger, #bf3d3d); }
+.ff-composer__dictation { display: inline-flex; align-items: center; flex-wrap: wrap; gap: 4px; min-width: 0; }
+.ff-composer__dictation-error { color: var(--color-danger, #bf3d3d); font-size: 12px; max-width: 260px; overflow-wrap: anywhere; }
+.ff-composer__dictation-status { font-size: 11px; opacity: .7; max-width: 230px; }
+.ff-composer__dictation [aria-pressed="true"] { color: var(--color-danger, #bf3d3d); }
 
 /* ===== One-row composer: [+] [permission] .... [context] [model · effort] [mic] [send] ===== */
-.cy-composer__prefix-actions { flex-wrap: nowrap; gap: 2px; min-width: 0; }
-.cy-composer__prefix-actions .cy-composer__footer-button,
-.cy-composer__prefix-actions .cy-composer__agent-button { min-height: 30px; padding: 0 8px; }
-.cy-composer__suffix { display: flex; align-items: center; gap: 4px; min-width: 0; }
-.cy-composer__add-button { width: 32px; height: 32px; border-radius: 8px; color: var(--cy-text-secondary); }
-.cy-composer__add-button:hover:not(:disabled) { background: var(--cy-bg-hover); color: var(--cy-text); }
-.cy-composer__add-button svg { width: 18px; stroke-width: 2; }
-.cy-composer .ant-sender-content { min-height: 96px; padding-bottom: 8px; }
+.ff-composer__prefix-actions { flex-wrap: nowrap; gap: 2px; min-width: 0; }
+.ff-composer__prefix-actions .ff-composer__footer-button,
+.ff-composer__prefix-actions .ff-composer__agent-button { min-height: 30px; padding: 0 8px; }
+.ff-composer__suffix { display: flex; align-items: center; gap: 4px; min-width: 0; }
+.ff-composer__add-button { width: 32px; height: 32px; border-radius: 8px; color: var(--ff-text-secondary); }
+.ff-composer__add-button:hover:not(:disabled) { background: var(--ff-bg-hover); color: var(--ff-text); }
+.ff-composer__add-button svg { width: 18px; stroke-width: 2; }
+.ff-composer .ant-sender-content { min-height: 96px; padding-bottom: 8px; }
 
-.cy-composer__mic {
+.ff-composer__mic {
   display: grid; width: 32px; height: 32px; place-items: center; padding: 0; border: 0; border-radius: 50%;
-  background: transparent; color: var(--cy-text-secondary); cursor: pointer;
+  background: transparent; color: var(--ff-text-secondary); cursor: pointer;
 }
-.cy-composer__mic:hover:not(:disabled) { background: var(--cy-bg-hover); color: var(--cy-text); }
-.cy-composer__mic:disabled { color: var(--cy-text-muted); cursor: default; }
-.cy-composer__mic[aria-pressed="true"] { background: rgba(var(--cy-accent-rgb), 0.16); color: var(--cy-accent); animation: cy-mic-pulse 1.4s ease-in-out infinite; }
-.cy-composer__mic-cancel { height: 28px; padding: 0 8px; border: 0; border-radius: 8px; background: transparent; color: var(--cy-text-muted); font: 500 12px/1 var(--rb-font-sans, sans-serif); cursor: pointer; }
-.cy-composer__mic-cancel:hover { background: var(--cy-bg-hover); color: var(--cy-text); }
-@keyframes cy-mic-pulse { 0%, 100% { box-shadow: 0 0 0 0 rgba(var(--cy-accent-rgb), 0.35); } 50% { box-shadow: 0 0 0 5px rgba(var(--cy-accent-rgb), 0); } }
-.cy-composer__dictation { flex-wrap: nowrap; }
-.cy-composer__dictation-error { position: absolute; right: 18px; bottom: calc(100% + 6px); max-width: 260px; padding: 4px 8px; border-radius: 8px; background: var(--cy-surface); box-shadow: var(--cy-shadow-popover); }
-.cy-composer__dictation { position: static; }
-.cy-sr-only { position: absolute; width: 1px; height: 1px; margin: -1px; padding: 0; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0; }
+.ff-composer__mic:hover:not(:disabled) { background: var(--ff-bg-hover); color: var(--ff-text); }
+.ff-composer__mic:disabled { color: var(--ff-text-muted); cursor: default; }
+.ff-composer__mic[aria-pressed="true"] { background: rgba(var(--ff-accent-rgb), 0.16); color: var(--ff-accent); animation: ff-mic-pulse 1.4s ease-in-out infinite; }
+.ff-composer__mic-cancel { height: 28px; padding: 0 8px; border: 0; border-radius: 8px; background: transparent; color: var(--ff-text-muted); font: 500 12px/1 var(--rb-font-sans, sans-serif); cursor: pointer; }
+.ff-composer__mic-cancel:hover { background: var(--ff-bg-hover); color: var(--ff-text); }
+@keyframes ff-mic-pulse { 0%, 100% { box-shadow: 0 0 0 0 rgba(var(--ff-accent-rgb), 0.35); } 50% { box-shadow: 0 0 0 5px rgba(var(--ff-accent-rgb), 0); } }
+.ff-composer__dictation { flex-wrap: nowrap; }
+.ff-composer__dictation-error { position: absolute; right: 18px; bottom: calc(100% + 6px); max-width: 260px; padding: 4px 8px; border-radius: 8px; background: var(--ff-surface); box-shadow: var(--ff-shadow-popover); }
+.ff-composer__dictation { position: static; }
+.ff-sr-only { position: absolute; width: 1px; height: 1px; margin: -1px; padding: 0; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0; }
 
 /* Project strip: tucked behind the top edge of the card, like the Codex desktop composer. */
-.cy-composer__project-strip {
+.ff-composer__project-strip {
   position: relative; z-index: 0; display: flex; align-items: center; margin: 0 16px -12px; padding: 5px 8px 16px;
-  border: 1px solid var(--cy-border); border-bottom: 0; border-radius: 14px 14px 0 0; background: var(--cy-bg-hover);
+  border: 1px solid var(--ff-border); border-bottom: 0; border-radius: 14px 14px 0 0; background: var(--ff-bg-hover);
 }
-.cy-composer__project-strip .cy-composer__footer-button { min-height: 28px; padding: 0 8px; color: var(--cy-text-secondary); font-size: 12.5px; }
-.cy-composer-shell { position: relative; z-index: 1; }
-.cy-composer__footer { padding: 0 16px 10px; min-height: 0; margin: 0; }
+.ff-composer__project-strip .ff-composer__footer-button { min-height: 28px; padding: 0 8px; color: var(--ff-text-secondary); font-size: 12.5px; }
+.ff-composer-shell { position: relative; z-index: 1; }
+.ff-composer__footer { padding: 0 16px 10px; min-height: 0; margin: 0; }
 
 /* "+" menu */
-.cy-add-popover .ant-popover-inner { padding: 6px; border: 1px solid var(--cy-border); border-radius: 14px; background: var(--cy-popover); box-shadow: var(--cy-shadow-popover); }
-.cy-add-menu { display: grid; width: 260px; gap: 1px; }
-.cy-add-menu__title { padding: 6px 10px 4px; color: var(--cy-text-muted); font: 500 12px/1.3 var(--rb-font-sans, sans-serif); }
-.cy-add-menu__item, .cy-add-menu__back {
+.ff-add-popover .ant-popover-inner { padding: 6px; border: 1px solid var(--ff-border); border-radius: 14px; background: var(--ff-popover); box-shadow: var(--ff-shadow-popover); }
+.ff-add-menu { display: grid; width: 260px; gap: 1px; }
+.ff-add-menu__title { padding: 6px 10px 4px; color: var(--ff-text-muted); font: 500 12px/1.3 var(--rb-font-sans, sans-serif); }
+.ff-add-menu__item, .ff-add-menu__back {
   display: flex; width: 100%; align-items: center; gap: 10px; padding: 8px 10px; border: 0; border-radius: 10px;
-  background: transparent; color: var(--cy-text); font: 500 13px/1.3 var(--rb-font-sans, sans-serif); text-align: left; cursor: pointer;
+  background: transparent; color: var(--ff-text); font: 500 13px/1.3 var(--rb-font-sans, sans-serif); text-align: left; cursor: pointer;
 }
-.cy-add-menu__item:hover:not(:disabled), .cy-add-menu__back:hover { background: var(--cy-bg-hover); }
-.cy-add-menu__item:disabled { color: var(--cy-text-muted); cursor: default; }
-.cy-add-menu__item svg { width: 17px; height: 17px; flex: none; fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round; color: var(--cy-text-secondary); }
-.cy-add-menu__item small { margin-left: auto; color: var(--cy-text-muted); font-weight: 400; font-size: 11.5px; }
-.cy-add-menu__back { color: var(--cy-text-muted); font-size: 12px; }
-.cy-add-menu .cy-sticker-picker { width: 100%; padding: 4px; }
+.ff-add-menu__item:hover:not(:disabled), .ff-add-menu__back:hover { background: var(--ff-bg-hover); }
+.ff-add-menu__item:disabled { color: var(--ff-text-muted); cursor: default; }
+.ff-add-menu__item svg { width: 17px; height: 17px; flex: none; fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round; color: var(--ff-text-secondary); }
+.ff-add-menu__item small { margin-left: auto; color: var(--ff-text-muted); font-weight: 400; font-size: 11.5px; }
+.ff-add-menu__back { color: var(--ff-text-muted); font-size: 12px; }
+.ff-add-menu .ff-sticker-picker { width: 100%; padding: 4px; }
 
 /* Permission chip: neutral by default, warm when the agent has full access. */
-.cy-permission-control { border-radius: 8px; }
-.cy-permission-control.is-full { background: rgba(217, 101, 43, 0.1); }
-.cy-permission-control.is-full:hover:not(:disabled) { background: rgba(217, 101, 43, 0.16); color: #d9652b; }
-.cy-composer__project-strip svg { width: 16px; height: 16px; flex: none; fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round; }
-.cy-composer__project-strip .cy-composer__code-folder-icon,
-.cy-composer__project-strip .cy-composer__terminal-folder-icon { stroke-width: 3.4; }
-.cy-composer__project-strip .cy-composer__footer-button > svg:last-child { width: 12px; height: 12px; }
+.ff-permission-control { border-radius: 8px; }
+.ff-permission-control.is-full { background: rgba(217, 101, 43, 0.1); }
+.ff-permission-control.is-full:hover:not(:disabled) { background: rgba(217, 101, 43, 0.16); color: #d9652b; }
+.ff-composer__project-strip svg { width: 16px; height: 16px; flex: none; fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round; }
+.ff-composer__project-strip .ff-composer__code-folder-icon,
+.ff-composer__project-strip .ff-composer__terminal-folder-icon { stroke-width: 3.4; }
+.ff-composer__project-strip .ff-composer__footer-button > svg:last-child { width: 12px; height: 12px; }
 
 /* 输入框上下留白收紧：空输入框不再占一大块高度，多行时仍随内容增高 */
-.cy-composer .ant-sender-content { min-height: 76px; padding: 12px 16px 6px; row-gap: 0; }
-.cy-composer .ant-sender-input { min-height: 40px; }
-.cy-composer__footer { padding: 0 12px 8px; }
+.ff-composer .ant-sender-content { min-height: 76px; padding: 12px 16px 6px; row-gap: 0; }
+.ff-composer .ant-sender-input { min-height: 40px; }
+.ff-composer__footer { padding: 0 12px 8px; }

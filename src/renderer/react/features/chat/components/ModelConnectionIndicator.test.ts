@@ -53,7 +53,7 @@ async function render(activeModelProfileId?: string) {
   })));
 }
 function lamp() {
-  const node = host.querySelector<HTMLButtonElement>(".cy-model-connection");
+  const node = host.querySelector<HTMLButtonElement>(".ff-model-connection");
   expect(node, "a real snapshot indicator remains in the persistent rail").not.toBeNull();
   return node!;
 }
@@ -62,7 +62,7 @@ it("uses the selected saved profile, then the effective default or first fallbac
   await render("selected");
   expect(lamp().dataset.state).toBe("unverified");
   expect(lamp().title).toContain(t("ui.connectionUnverified"));
-  expect(host.querySelector(".cy-page-sidebar")?.contains(lamp())).toBe(false);
+  expect(host.querySelector(".ff-page-sidebar")?.contains(lamp())).toBe(false);
   await render("default");
   expect(lamp().dataset.state).toBe("connected");
   await render("deleted-selection");

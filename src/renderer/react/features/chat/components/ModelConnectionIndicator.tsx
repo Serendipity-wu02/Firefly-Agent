@@ -44,10 +44,10 @@ export function ModelConnectionIndicator({ activeProfileId, onOpenSettings }: {
   details.push(t("ui.connectionOpenSettings"));
 
   return (
-    <button type="button" className="cy-model-connection" data-state={state}
+    <button type="button" className="ff-model-connection" data-state={state}
       aria-label={label} title={details.join("\n")} onClick={onOpenSettings}>
-      <span className="cy-model-connection__dot" aria-hidden="true" />
-      <span className="cy-model-connection__text" role="status">{label}</span>
+      <span className="ff-model-connection__dot" aria-hidden="true" />
+      <span className="ff-model-connection__text" role="status">{label}</span>
     </button>
   );
 }

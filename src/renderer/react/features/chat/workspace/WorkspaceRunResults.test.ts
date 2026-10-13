@@ -93,9 +93,9 @@ it("shows the delegated agent and its task above a rendered conclusion, and scro
   act(() => root.render(React.createElement(WorkspaceRunResults, props)));
   const article = host.querySelector<HTMLElement>('[data-task-id="child"]')!;
   expect(article.querySelector("header strong")?.textContent).toBe("艾利欧");
-  expect(article.querySelector(".cy-workspace-run-results__task")?.textContent).toBe("检查取消链路");
-  expect(article.querySelector(".cy-workspace-run-results__text")?.textContent).toContain("已核对");
-  expect(article.querySelector(".cy-workspace-run-results__text")?.textContent).not.toContain("**");
+  expect(article.querySelector(".ff-workspace-run-results__task")?.textContent).toBe("检查取消链路");
+  expect(article.querySelector(".ff-workspace-run-results__text")?.textContent).toContain("已核对");
+  expect(article.querySelector(".ff-workspace-run-results__text")?.textContent).not.toContain("**");
   expect(scroll).not.toHaveBeenCalled();
   act(() => root.render(React.createElement(WorkspaceRunResults, { ...props, focusTask: { taskId: "child", seq: 1 } })));
   expect(scroll).toHaveBeenCalledOnce();

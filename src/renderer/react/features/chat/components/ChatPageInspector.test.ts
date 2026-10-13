@@ -41,7 +41,7 @@ describe("ChatPageInspector", () => {
       onChooseWorkspace: () => undefined,
     }));
     expect(html).toContain('role="tab"');
-    expect(html).toContain('class="cy-workspace-empty"');
+    expect(html).toContain('class="ff-workspace-empty"');
     expect(html).toContain('data-workspace-choose="true"');
   });
   it("interpolates the selected workspace name in the welcome file state", () => {
@@ -62,7 +62,7 @@ describe("ChatPageInspector", () => {
       tasksTabOpen: true, taskPanel: createElement("div", { "data-task-fixture": true }, "Task fixture"),
     }));
     expect(html).toContain('data-task-fixture="true"');
-    expect(html).toContain('class="cy-right-inspector');
+    expect(html).toContain('class="ff-right-inspector');
   });
   it("renders nothing when no inspector tab is available", () => {
     const html = renderToStaticMarkup(createElement(ChatPageInspector, {
@@ -82,5 +82,18 @@ describe("ChatPageInspector", () => {
     }));
 
     expect(html).toBe("");
+  });
+  it("marks a browser-only pane so its own strip becomes the top row, and only then offers the pane close", () => {
+    const props = {
+      sessionId: "session-a", browserTabOpen: true, filesTabOpen: false, filesTabPinned: false,
+      fileTabs: [], diffTabs: [], activePlan: null, planDrawerOpen: false, planTabId: "plan:session-a",
+      activeTabId: "browser", onTabChange: () => undefined, onCloseTab: () => undefined, onOpenFile: () => undefined,
+    };
+    const alone = renderToStaticMarkup(createElement(ChatPageInspector, props));
+    expect(alone).toContain("is-browser-only");
+    expect(alone).toContain("data-browser-close-pane");
+    const shared = renderToStaticMarkup(createElement(ChatPageInspector, { ...props, filesTabOpen: true }));
+    expect(shared).not.toContain("is-browser-only");
+    expect(shared).not.toContain("data-browser-close-pane");
   });
 });

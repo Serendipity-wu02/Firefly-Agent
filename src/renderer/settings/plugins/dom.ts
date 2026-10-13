@@ -9,6 +9,7 @@ export const amapKeyInput = document.getElementById("amap-key") as HTMLInputElem
 export const travelEnabledCheckbox = document.getElementById("plugin-travel-enabled") as HTMLInputElement | null;
 export const travelConfig = document.getElementById("plugin-travel-config") as HTMLElement | null;
 export const travelAmapKeyInput = document.getElementById("travel-amap-key") as HTMLInputElement | null;
+export const musicEnabledCheckbox = document.getElementById("plugin-music-enabled") as HTMLInputElement | null;
 export const playwrightMcpCheckbox = document.getElementById("plugin-playwright-mcp-enabled") as HTMLInputElement | null;
 export const pluginAddBtn = document.querySelector(".plugin-add-btn") as HTMLButtonElement | null;
 export const permissionBlocksWrap = document.getElementById("plugin-file-permission") as HTMLElement | null;

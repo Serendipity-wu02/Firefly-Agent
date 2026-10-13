@@ -64,29 +64,29 @@ export function WorkspaceTextEditor({ editorKey, sessionId, relPath, snapshot, e
   };
   if (!draft) {
     if (!snapshot) return null;
-    return <div className="cy-file-editor__toolbar">
+    return <div className="ff-file-editor__toolbar">
       {snapshot.editVersion && window.workspaceFiles?.save
-        ? <button type="button" className="cy-file-refresh" aria-label={t("fileTree.edit")} onClick={() => update(editorKey, { draft: { text: snapshot.content, original: snapshot.content, editVersion: snapshot.editVersion!, size: snapshot.size, saving: false } })}>{t("fileTree.edit")}</button>
+        ? <button type="button" className="ff-file-refresh" aria-label={t("fileTree.edit")} onClick={() => update(editorKey, { draft: { text: snapshot.content, original: snapshot.content, editVersion: snapshot.editVersion!, size: snapshot.size, saving: false } })}>{t("fileTree.edit")}</button>
         : <span role="status">{errorText(snapshot.readOnlyReason ?? "READ_ONLY")}</span>}
     </div>;
   }
-  return <div className="cy-file-editor">
-    <div className="cy-file-editor__toolbar">
-      <button type="button" className="cy-file-refresh" aria-label={t("fileTree.save")} disabled={draft.saving || !dirty(draft)} onClick={() => void save()}>{t(draft.saving ? "fileTree.saving" : "fileTree.save")}</button>
-      <button type="button" className="cy-file-refresh" aria-label={t("fileTree.cancelEdit")} disabled={draft.saving} onClick={() => {
+  return <div className="ff-file-editor">
+    <div className="ff-file-editor__toolbar">
+      <button type="button" className="ff-file-refresh" aria-label={t("fileTree.save")} disabled={draft.saving || !dirty(draft)} onClick={() => void save()}>{t(draft.saving ? "fileTree.saving" : "fileTree.save")}</button>
+      <button type="button" className="ff-file-refresh" aria-label={t("fileTree.cancelEdit")} disabled={draft.saving} onClick={() => {
         if (dirty(draft)) update(editorKey, { draft: { ...draft, discardRequested: true, afterDiscard: undefined } });
         else update(editorKey);
       }}>{t("fileTree.cancelEdit")}</button>
-      {dirty(draft) && <span className="cy-file-editor__dirty" role="status">{t("fileTree.unsaved")}</span>}
+      {dirty(draft) && <span className="ff-file-editor__dirty" role="status">{t("fileTree.unsaved")}</span>}
     </div>
-    <p className="cy-file-editor__hint">{t("fileTree.saveConfirmation")}</p>
-    {draft.error && <p className="cy-file-editor__error" role="alert">{errorText(draft.error)}</p>}
-    {draft.discardRequested && <div className="cy-file-editor__decision" role="alert">
+    <p className="ff-file-editor__hint">{t("fileTree.saveConfirmation")}</p>
+    {draft.error && <p className="ff-file-editor__error" role="alert">{errorText(draft.error)}</p>}
+    {draft.discardRequested && <div className="ff-file-editor__decision" role="alert">
       <span>{t("fileTree.discardPrompt")}</span>
-      <button type="button" className="cy-file-refresh" aria-label={t("fileTree.keepEditing")} onClick={() => update(editorKey, { draft: { ...draft, discardRequested: false, afterDiscard: undefined } })}>{t("fileTree.keepEditing")}</button>
-      <button type="button" className="cy-file-refresh" aria-label={t("fileTree.discard")} onClick={() => { update(editorKey); draft.afterDiscard?.(); }}>{t("fileTree.discard")}</button>
+      <button type="button" className="ff-file-refresh" aria-label={t("fileTree.keepEditing")} onClick={() => update(editorKey, { draft: { ...draft, discardRequested: false, afterDiscard: undefined } })}>{t("fileTree.keepEditing")}</button>
+      <button type="button" className="ff-file-refresh" aria-label={t("fileTree.discard")} onClick={() => { update(editorKey); draft.afterDiscard?.(); }}>{t("fileTree.discard")}</button>
     </div>}
-    <textarea className="cy-file-editor__input" aria-label={t("fileTree.editorLabel", { path: relPath })} value={draft.text} spellCheck={false} disabled={draft.saving}
+    <textarea className="ff-file-editor__input" aria-label={t("fileTree.editorLabel", { path: relPath })} value={draft.text} spellCheck={false} disabled={draft.saving}
       onInput={event => update(editorKey, { draft: { ...draft, text: preserveTextLineEndings(draft.text, event.currentTarget.value), error: undefined } })}
       onKeyDown={event => { if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === "s") { event.preventDefault(); void save(); } }} />
   </div>;

@@ -47,7 +47,7 @@ describe("RAG settings panel", () => {
     expect(first.classList.contains("is-active")).toBe(true);
     expect(second.classList.contains("is-active")).toBe(false);
     // 共享错误模态框出现并带异常详情
-    const dialog = document.getElementById("cy-modal-overlay");
+    const dialog = document.getElementById("ff-modal-overlay");
     expect(dialog).not.toBeNull();
     expect(dialog!.textContent).toContain("模型切换失败");
     expect(dialog!.textContent).toContain("维度不兼容");

@@ -1158,7 +1158,7 @@
 }
 
 [data-ui-theme="pearl-white"] .scheduler-editor__card,
-[data-ui-theme="pearl-white"] .cy-modal {
+[data-ui-theme="pearl-white"] .ff-modal {
   color: var(--rb-text-default);
   background: var(--rb-feedback-surface);
   border-color: var(--rb-feedback-border);
@@ -1174,7 +1174,7 @@
 
 [data-ui-theme="pearl-white"] .scheduler-card__title,
 [data-ui-theme="pearl-white"] .scheduler-editor__header h2,
-[data-ui-theme="pearl-white"] .cy-modal__title {
+[data-ui-theme="pearl-white"] .ff-modal__title {
   color: var(--rb-text-strong);
 }
 
@@ -1188,13 +1188,13 @@
 [data-ui-theme="pearl-white"] .scheduler-editor .setting-row span,
 [data-ui-theme="pearl-white"] .scheduler-history,
 [data-ui-theme="pearl-white"] .scheduler-tool-hint,
-[data-ui-theme="pearl-white"] .cy-modal__body {
+[data-ui-theme="pearl-white"] .ff-modal__body {
   color: var(--rb-text-muted);
   opacity: 1;
 }
 
 [data-ui-theme="pearl-white"] .scheduler-history,
-[data-ui-theme="pearl-white"] .cy-modal__divider {
+[data-ui-theme="pearl-white"] .ff-modal__divider {
   border-color: var(--rb-border-soft);
 }
 
@@ -1240,11 +1240,11 @@
   background: var(--rb-scroll-thumb);
 }
 
-[data-ui-theme="pearl-white"] .cy-modal-overlay {
+[data-ui-theme="pearl-white"] .ff-modal-overlay {
   background: rgba(29, 29, 31, 0.22);
 }
 
-[data-ui-theme="pearl-white"] .cy-modal__icon {
+[data-ui-theme="pearl-white"] .ff-modal__icon {
   display: grid;
   place-items: center;
   width: 30px;
@@ -1253,18 +1253,18 @@
   border-radius: 12px;
 }
 
-[data-ui-theme="pearl-white"] #cy-input-field {
+[data-ui-theme="pearl-white"] #ff-input-field {
   color: var(--rb-input-text);
   background: var(--rb-input-bg);
   border-color: var(--rb-input-border);
   box-shadow: none;
 }
 
-[data-ui-theme="pearl-white"] #cy-input-field::placeholder {
+[data-ui-theme="pearl-white"] #ff-input-field::placeholder {
   color: var(--rb-input-placeholder);
 }
 
-[data-ui-theme="pearl-white"] #cy-input-field:focus {
+[data-ui-theme="pearl-white"] #ff-input-field:focus {
   border-color: var(--rb-pink-500);
   box-shadow: 0 0 0 3px var(--rb-pink-100);
 }

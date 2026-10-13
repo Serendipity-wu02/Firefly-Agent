@@ -43,5 +43,5 @@ it("keeps the arrangement controls folded behind one heading button", async () =
   await act(async () => toggle.click());
   expect(panel.hidden).toBe(false);
   expect(toggle.getAttribute("aria-expanded")).toBe("true");
-  expect(host.querySelector(".cy-conversation-sidebar__title")?.textContent).toBe("Section title");
+  expect(host.querySelector(".ff-conversation-sidebar__title")?.textContent).toBe("Section title");
 });
