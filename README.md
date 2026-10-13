@@ -1,25 +1,58 @@
+<p align="center"><b>简体中文</b> · <a href="./README.en.md">English</a></p>
+
 <p align="center">
-  <img src="./readme-assets/firefly-live2d-banner.gif" alt="Firefly_Agent — 流萤桌面伴侣与 AI 工作台" width="880" />
-</p>
-<p align="center">
-  <img src="./readme-assets/firefly-motto.svg" alt="与流萤交流，把想法变成可继续的行动。" width="720" />
-</p>
-<p align="center">
-  <img src="./readme-assets/electron.svg" alt="electron 技术标签" height="22" />
-  <img src="./readme-assets/typescript.svg" alt="typescript 技术标签" height="22" />
-  <img src="./readme-assets/react.svg" alt="react 技术标签" height="22" />
-  <img src="./readme-assets/rust.svg" alt="rust 技术标签" height="22" />
-  <img src="./readme-assets/sqlite.svg" alt="sqlite 技术标签" height="22" />
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="./readme-assets/firefly-banner-dark.gif">
+    <source media="(prefers-color-scheme: light)" srcset="./readme-assets/firefly-banner-light.gif">
+    <img src="./readme-assets/firefly-banner-light.gif" alt="Firefly_Agent — 流萤桌面伴侣与 AI 工作台；原模型动作与猫耳表情动画" width="896">
+  </picture>
 </p>
 
----
+<p align="center"><b>与流萤交流，把想法变成可以继续的行动。</b></p>
 
+<p align="center">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="./readme-assets/electron-dark.svg">
+    <source media="(prefers-color-scheme: light)" srcset="./readme-assets/electron-light.svg">
+    <img src="./readme-assets/electron-light.svg" alt="Electron 技术标签" height="30">
+  </picture>
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="./readme-assets/typescript-dark.svg">
+    <source media="(prefers-color-scheme: light)" srcset="./readme-assets/typescript-light.svg">
+    <img src="./readme-assets/typescript-light.svg" alt="TypeScript 技术标签" height="30">
+  </picture>
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="./readme-assets/react-dark.svg">
+    <source media="(prefers-color-scheme: light)" srcset="./readme-assets/react-light.svg">
+    <img src="./readme-assets/react-light.svg" alt="React 技术标签" height="30">
+  </picture>
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="./readme-assets/rust-dark.svg">
+    <source media="(prefers-color-scheme: light)" srcset="./readme-assets/rust-light.svg">
+    <img src="./readme-assets/rust-light.svg" alt="Rust 技术标签" height="30">
+  </picture>
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="./readme-assets/sqlite-dark.svg">
+    <source media="(prefers-color-scheme: light)" srcset="./readme-assets/sqlite-light.svg">
+    <img src="./readme-assets/sqlite-light.svg" alt="SQLite 技术标签" height="30">
+  </picture>
+</p>
 
-Firefly_Agent 是以《崩坏：星穹铁道》流萤为角色的 **Windows Live2D 桌面伴侣与 AI 工作台**。与她交流、整理资料、学习和开发项目，让对话中的想法成为可以继续的行动。
+<p align="center">以《崩坏：星穹铁道》流萤为角色的 Windows Live2D 桌面伴侣与 AI 工作台。</p>
 
-[项目仓库](https://github.com/Serendipity-wu02/Firefly_Agent) · [问题反馈](https://github.com/Serendipity-wu02/Firefly_Agent/issues) · [English](./README.en.md)
+<p align="center">
+  <a href="#安装与运行">安装与运行</a> · <a href="#主要能力">主要能力</a> · <a href="#界面展示">界面展示</a> · <a href="#配置与使用">配置与使用</a> · <a href="#当前状态与限制">状态与限制</a><br>
+  <a href="https://github.com/Serendipity-wu02/Firefly_Agent">项目仓库</a> · <a href="https://github.com/Serendipity-wu02/Firefly_Agent/issues">问题反馈</a>
+</p>
 
 ## 主要能力
+
+| Chat · 桌面陪伴 | Work · 推进任务 | Code · 代码工作区 |
+| --- | --- | --- |
+| 角色化对话、流式回复与会话历史。<br>保留 Live2D 互动表情与待机动作。 | 处理文件与知识资料，调用工具、Skills，并与专业 Agent 协作。 | 在绑定工作区中使用 Git、LSP、AST、文件与命令工具。 |
+
+<details>
+<summary>查看完整能力与使用边界</summary>
 
 - **桌面流萤与 Chat**：Live2D 角色、双击互动表情、拖动与待机动作；角色化对话、模型档案、流式回复与会话历史。
 - **Work**：处理文件、文档与知识资料，调用工具和 Skills，通过专业 Agent 协作推进任务；展示工具执行、审批与取消过程。已结束的 Work 任务可导出 Markdown，任务完成与文件完整读取分别展示。
@@ -31,11 +64,19 @@ Firefly_Agent 是以《崩坏：星穹铁道》流萤为角色的 **Windows Live
 
 当前会话模式为 **Chat / Work / Code**。Chat 不委派专业 Agent，通用工具增强需显式开启并勾选；内置角色工具保留自身开关。专业 Agent 用于 Work / Code，需要在设置中绑定可用模型档案；角色、Skills 和头像不会自动扩大工具权限。
 
+</details>
+
+Chat 不委派专业 Agent；Work / Code 需为专业 Agent 绑定可用模型档案。角色、Skills 和头像不会自动扩大工具权限。
+
 ## 界面展示
 
-![真实电脑端界面截图待补充：桌面流萤与 Chat、Work 任务与工具；此图仅标示展示位置](./readme-assets/screenshots-pending.svg)
+<picture>
+    <source media="(prefers-color-scheme: dark)" srcset="./readme-assets/screenshots-pending-dark.svg">
+    <source media="(prefers-color-scheme: light)" srcset="./readme-assets/screenshots-pending-light.svg">
+    <img src="./readme-assets/screenshots-pending-light.svg" alt="真实电脑端界面截图待补充：桌面流萤与 Chat、Work 任务与工具；此图仅标示展示位置" width="896">
+  </picture>
 
-**真实界面截图待补充**：桌面流萤与 Chat、Work 任务及审批、Code 与知识工作区。顶部 GIF 为现有 Live2D 模型的渲染展示，不能代替真实产品界面截图。
+**真实界面截图待补充**：桌面流萤与 Chat、Work 任务及审批、Code 与知识工作区。顶部角色来自现有 Live2D 模型渲染画面，不能代替真实产品界面截图。
 
 ## 环境要求
 
@@ -143,4 +184,4 @@ npm run package:win:dir
 
 流萤及《崩坏：星穹铁道》相关角色形象与知识产权归 HoYoverse / 米哈游及相应权利人所有，本项目为非官方项目。
 
-横幅使用仓库现有模型的渲染画面。五枚技术徽章使用 Shields 官方生成图形与 Simple Icons 标志，来源及许可见 [图标说明](./readme-assets/ICON_SOURCES.md)；技术标签不表示实测通过或官方关联。
+横幅使用仓库现有模型的渲染画面。本版五枚技术徽章保留 Shields / Simple Icons 原始品牌矢量图标，使用适配明暗主题的底板，仅说明技术栈，不表示实测通过或官方关联。图标来源及许可见 [图标说明](./readme-assets/ICON_SOURCES.md)。

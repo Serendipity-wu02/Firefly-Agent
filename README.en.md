@@ -1,29 +1,58 @@
-<p align="center">
-  <img src="./readme-assets/firefly-live2d-banner.en.gif" alt="Firefly_Agent — Firefly desktop companion and AI workbench" width="880" />
-</p>
-<p align="center">
-  <img src="./readme-assets/firefly-motto.en.svg" alt="Talk with Firefly. Turn ideas into actions you can build on." width="720" />
-</p>
-<p align="center">
-  <img src="./readme-assets/electron.svg" alt="Electron technology badge" height="22" />
-  <img src="./readme-assets/typescript.svg" alt="TypeScript technology badge" height="22" />
-  <img src="./readme-assets/react.svg" alt="React technology badge" height="22" />
-  <img src="./readme-assets/rust.svg" alt="Rust technology badge" height="22" />
-  <img src="./readme-assets/sqlite.svg" alt="SQLite technology badge" height="22" />
-</p>
-
+<p align="center"><a href="./README.md">简体中文</a> · <b>English</b></p>
 
 <p align="center">
-  <a href="./README.md">中文</a> | <strong>English</strong>
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="./readme-assets/firefly-banner-dark.en.gif">
+    <source media="(prefers-color-scheme: light)" srcset="./readme-assets/firefly-banner-light.en.gif">
+    <img src="./readme-assets/firefly-banner-light.en.gif" alt="Firefly_Agent — Firefly desktop companion and AI workbench; original Live2D motion and cat-ear animation" width="896">
+  </picture>
 </p>
 
----
+<p align="center"><b>Talk with Firefly. Turn ideas into actions you can build on.</b></p>
 
-Firefly_Agent is a **Windows Live2D desktop companion and AI workspace** featuring Firefly from *Honkai: Star Rail*. Talk with her, organize materials, learn, and develop projects—then turn ideas from your conversations into actions you can build on.
+<p align="center">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="./readme-assets/electron-dark.svg">
+    <source media="(prefers-color-scheme: light)" srcset="./readme-assets/electron-light.svg">
+    <img src="./readme-assets/electron-light.svg" alt="Electron technology badge" height="30">
+  </picture>
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="./readme-assets/typescript-dark.svg">
+    <source media="(prefers-color-scheme: light)" srcset="./readme-assets/typescript-light.svg">
+    <img src="./readme-assets/typescript-light.svg" alt="TypeScript technology badge" height="30">
+  </picture>
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="./readme-assets/react-dark.svg">
+    <source media="(prefers-color-scheme: light)" srcset="./readme-assets/react-light.svg">
+    <img src="./readme-assets/react-light.svg" alt="React technology badge" height="30">
+  </picture>
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="./readme-assets/rust-dark.svg">
+    <source media="(prefers-color-scheme: light)" srcset="./readme-assets/rust-light.svg">
+    <img src="./readme-assets/rust-light.svg" alt="Rust technology badge" height="30">
+  </picture>
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="./readme-assets/sqlite-dark.svg">
+    <source media="(prefers-color-scheme: light)" srcset="./readme-assets/sqlite-light.svg">
+    <img src="./readme-assets/sqlite-light.svg" alt="SQLite technology badge" height="30">
+  </picture>
+</p>
 
-[Repository](https://github.com/Serendipity-wu02/Firefly_Agent) · [Issues](https://github.com/Serendipity-wu02/Firefly_Agent/issues)
+<p align="center">A Windows Live2D desktop companion and AI workbench featuring Firefly from Honkai: Star Rail.</p>
+
+<p align="center">
+  <a href="#install-and-run">Install and run</a> · <a href="#features">Features</a> · <a href="#interface-preview">Interface preview</a> · <a href="#configure-and-use">Configure and use</a> · <a href="#status-and-limitations">Status and limitations</a><br>
+  <a href="https://github.com/Serendipity-wu02/Firefly_Agent">Repository</a> · <a href="https://github.com/Serendipity-wu02/Firefly_Agent/issues">Issues</a>
+</p>
 
 ## Features
+
+| Chat · Desktop companion | Work · Move tasks forward | Code · Code workspace |
+| --- | --- | --- |
+| Character conversations, streamed replies, and history.<br>Live2D expressions and idle motion. | Process files and knowledge, use tools and Skills, and collaborate with specialist Agents. | Use Git, LSP, AST, file and command tools in a linked workspace. |
+
+<details>
+<summary>View the full capabilities and usage boundaries</summary>
 
 - **Desktop Firefly and Chat**: a Live2D character with double-click expressions, dragging, and idle animations; character conversations, model profiles, streamed replies, and conversation history.
 - **Work**: process files, documents, and knowledge materials, use tools and Skills, and collaborate with specialist Agents. Tool execution, approvals, and cancellation are visible. Finished Work tasks can be exported as Markdown; task completion and complete file reading are reported separately.
@@ -35,11 +64,19 @@ Firefly_Agent is a **Windows Live2D desktop companion and AI workspace** featuri
 
 The current conversation modes are **Chat / Work / Code**. Chat does not delegate to specialist Agents. General tool enhancement requires explicit enablement and selection; built-in character tools retain their own switches. Specialist Agents are available in Work / Code and need a usable model profile assigned in settings. Characters, Skills, and portraits do not automatically expand tool permissions.
 
+</details>
+
+Chat does not delegate to specialist Agents. Work / Code require usable model profiles assigned to specialist Agents. Characters, Skills, and portraits do not automatically expand tool permissions.
+
 ## Interface preview
 
-![Real desktop screenshots are pending: Firefly and Chat, Work tasks and tools. This image only marks the intended placement.](./readme-assets/screenshots-pending.en.svg)
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="./readme-assets/screenshots-pending-dark.en.svg">
+    <source media="(prefers-color-scheme: light)" srcset="./readme-assets/screenshots-pending-light.en.svg">
+    <img src="./readme-assets/screenshots-pending-light.en.svg" alt="Real desktop screenshots are pending: Firefly and Chat, Work tasks and tools. This image only marks the intended placement." width="896">
+  </picture>
 
-**Real interface screenshots are still needed**: desktop Firefly and Chat, Work tasks and approvals, and Code and knowledge workspaces. The banner GIF is a render of the existing Live2D model, not a substitute for a real application screenshot.
+**Real interface screenshots are still needed**: desktop Firefly and Chat, Work tasks and approvals, and Code and knowledge workspaces. The banner renders the existing Live2D model and does not replace real application screenshots.
 
 ## Requirements
 
@@ -147,4 +184,4 @@ The project owner confirms authorization from the original creator of the Firefl
 
 Firefly and *Honkai: Star Rail* character imagery and related intellectual property belong to HoYoverse / miHoYo and the respective rights holders. This is an unofficial project.
 
-The banner uses renders of the repository's existing model. The five technology badges use official Shields graphics and Simple Icons marks; see the [icon sources and licenses](./readme-assets/ICON_SOURCES.md). Technology labels do not indicate successful validation or an official affiliation.
+The banner renders the repository's original Live2D model. The five technology badges preserve the original Shields / Simple Icons vector marks and brand colors on theme-aware backgrounds. They identify the technology stack and do not indicate successful validation or an official affiliation. See the [icon sources and licenses](./readme-assets/ICON_SOURCES.md).
