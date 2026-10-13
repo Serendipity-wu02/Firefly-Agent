@@ -61,7 +61,6 @@ export function BrowserWorkspacePanel({
             disabled={!navigationAvailable || page.closed || !page.canGoForward} onClick={() => onCommand("forward")}>
             <ArrowRight size={16} aria-hidden="true" />
           </button>
-          <span className="cy-browser-workspace__nav-divider" aria-hidden="true" />
           {busy ? <button type="button" aria-label={labels.stop} title={labels.stop}
             disabled={!navigationAvailable || page.closed || page.requestId === 0} onClick={() => onCommand("stop")}>
             <Square size={14} aria-hidden="true" />

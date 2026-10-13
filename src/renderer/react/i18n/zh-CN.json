@@ -567,6 +567,15 @@
     "entryFailed": "计划执行失败 · 点击查看",
     "entryCancelled": "计划已取消 · 点击查看"
   },
+  "stepProgress": {
+    "panelAria": "工作步骤",
+    "position": "第 {{current}} / {{total}} 步",
+    "allDone": "已完成 {{total}} 步",
+    "filesChanged": "{{count}} 个文件已更改",
+    "statusDone": "完成",
+    "statusRunning": "进行中",
+    "statusPending": "待办"
+  },
   "todo": {
     "modeWork": "工作",
     "modeLearn": "学习",
@@ -828,8 +837,8 @@
     "cleanupFailed": "浏览器清理失败，浏览已禁用。请手动重启 Firefly_Agent 后再试。",
     "ready": "输入网址或搜索内容开始浏览。",
     "newTabTitle": "新标签页",
-    "newTabSites": "常用站点",
-    "newTabRecent": "最近访问",
+    "newTabSites": "推荐",
+    "newTabRecent": "最近",
     "newTabLocalHint": "本机或内网地址（如 localhost:5173、192.168.1.5:3000）直接输入即可，打开前会单独确认。",
     "sessionRequired": "开始或选择一个会话后即可浏览。",
     "title": "浏览器",
@@ -840,6 +849,7 @@
     "forward": "前进",
     "reload": "刷新",
     "close": "关闭浏览器",
+    "closePanel": "关闭浏览器面板",
     "checking": "正在检查浏览器状态…",
     "unavailable": "浏览器服务当前不可用。",
     "closed": "浏览器已关闭。",

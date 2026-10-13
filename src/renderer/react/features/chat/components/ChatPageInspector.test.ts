@@ -83,4 +83,17 @@ describe("ChatPageInspector", () => {
 
     expect(html).toBe("");
   });
+  it("marks a browser-only pane so its own strip becomes the top row, and only then offers the pane close", () => {
+    const props = {
+      sessionId: "session-a", browserTabOpen: true, filesTabOpen: false, filesTabPinned: false,
+      fileTabs: [], diffTabs: [], activePlan: null, planDrawerOpen: false, planTabId: "plan:session-a",
+      activeTabId: "browser", onTabChange: () => undefined, onCloseTab: () => undefined, onOpenFile: () => undefined,
+    };
+    const alone = renderToStaticMarkup(createElement(ChatPageInspector, props));
+    expect(alone).toContain("is-browser-only");
+    expect(alone).toContain("data-browser-close-pane");
+    const shared = renderToStaticMarkup(createElement(ChatPageInspector, { ...props, filesTabOpen: true }));
+    expect(shared).not.toContain("is-browser-only");
+    expect(shared).not.toContain("data-browser-close-pane");
+  });
 });

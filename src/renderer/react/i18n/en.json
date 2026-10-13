@@ -567,6 +567,15 @@
     "entryFailed": "Plan failed · Click to view",
     "entryCancelled": "Plan cancelled · Click to view"
   },
+  "stepProgress": {
+    "panelAria": "Work steps",
+    "position": "Step {{current}} / {{total}}",
+    "allDone": "All {{total}} steps done",
+    "filesChanged": "{{count}} files changed",
+    "statusDone": "Done",
+    "statusRunning": "In progress",
+    "statusPending": "To do"
+  },
   "todo": {
     "modeWork": "Work",
     "modeLearn": "Learn",
@@ -827,8 +836,8 @@
     "loadFailed": "Page could not be loaded.",
     "cleanupFailed": "Browser cleanup failed. Browsing is disabled. Please restart Firefly_Agent manually to recover.",
     "newTabTitle": "New tab",
-    "newTabSites": "Popular sites",
-    "newTabRecent": "Recently visited",
+    "newTabSites": "Recommended",
+    "newTabRecent": "Recent",
     "newTabLocalHint": "Type a local or private-network address such as localhost:5173 or 192.168.1.5:3000; it is confirmed separately before opening.",
     "ready": "Enter a HTTPS page address to browse.",
     "sessionRequired": "Start or select a conversation to browse.",
@@ -840,6 +849,7 @@
     "forward": "Forward",
     "reload": "Reload",
     "close": "Close browser",
+    "closePanel": "Close browser panel",
     "checking": "Checking browser availability…",
     "unavailable": "The browser service is currently unavailable.",
     "closed": "Browser closed.",

@@ -5,13 +5,18 @@ import { useTranslation } from "../../../i18n";
 import { ManualBrowserTab, type ManualBrowserTabHandle } from "./ManualBrowserTab";
 import "./BrowserWorkspaceTabs.css";
 
+/** A closed tab collapses for this long before Main is asked to remove it. Matches the CSS exit time. */
+const TAB_EXIT_MS = 150;
+
 /** Window tabs stay mounted when conversation or inspector selection changes.
- * Main supplies every workspace/tab ID and owns the cap and native attachment. */
-export function BrowserWorkspaceTabs({ sessionId, active = true, onClose, ref }: { sessionId?: string; active?: boolean; onClose(): void; ref?: Ref<ManualBrowserTabHandle> }) {
+ * Main supplies every workspace/tab ID and owns the cap and native attachment.
+ * `paneClose` adds the pane's own close control, used when the browser is the only inspector tab. */
+export function BrowserWorkspaceTabs({ sessionId, active = true, onClose, paneClose = false, ref }: { sessionId?: string; active?: boolean; onClose(): void; paneClose?: boolean; ref?: Ref<ManualBrowserTabHandle> }) {
   const { t } = useTranslation();
   const [state, setState] = useState<BrowserWorkspaceStateDto | null>(null);
   const [error, setError] = useState<string | null>(null), [pending, setPending] = useState(false);
   const [agent, setAgent] = useState(false);
+  const [exiting, setExiting] = useState<string | null>(null);
   const current = useRef<BrowserWorkspaceStateDto | null>(null), busy = useRef(false);
   const scopeRef = useRef<object | null>(null), agentRef = useRef<ManualBrowserTabHandle>(null);
   const api = typeof window === "undefined" ? undefined : window.manualBrowserWorkspace;
@@ -71,29 +76,49 @@ export function BrowserWorkspaceTabs({ sessionId, active = true, onClose, ref }:
     } catch { if (scopeRef.current === scope) setError("cleanup_failed"); return false; }
     finally { busy.current = false; if (scopeRef.current) setPending(false); }
   }
+  /** Closing plays the tab's exit first and only then asks Main. A refused close brings the tab back. */
+  function closeTab(tabId: string) {
+    const target = api;
+    if (!target || exiting) return;
+    setExiting(tabId);
+    window.setTimeout(() => {
+      void mutate(() => target.closeTab(tabId)).finally(() => setExiting(now => now === tabId ? null : now));
+    }, TAB_EXIT_MS);
+  }
   useImperativeHandle(ref, () => ({ close }));
   // Compatibility for an older preload and static rendering. No window grant is
   // translated into a conversation identity; production uses the dedicated API.
-  if (!api) return <ManualBrowserTab ref={agentRef} sessionId={sessionId} active={active} onClose={onClose} />;
+  if (!api) return <div className="cy-browser-window">
+    {paneClose && <div className="cy-browser-window__strip">
+      <span className="cy-browser-window__strip-spacer" aria-hidden="true" />
+      <button type="button" aria-label={t("browserWorkspace.closePanel")} title={t("browserWorkspace.closePanel")} data-browser-close-pane disabled={pending}
+        onClick={() => void close()}><X size={15} aria-hidden="true" /></button>
+    </div>}
+    <ManualBrowserTab ref={agentRef} sessionId={sessionId} active={active} onClose={onClose} />
+  </div>;
   return <div className="cy-browser-window">
-    <div className="cy-browser-window__tabs" role="tablist" aria-label={t("browserWorkspace.tabs")}>
-      {state?.tabs.map((tab, index) => <div className="cy-browser-window__tab" key={tab.tabId}>
-        <button type="button" role="tab" aria-selected={!agent && state.activeTabId === tab.tabId} disabled={pending} data-browser-select-tab={tab.tabId}
-          title={tab.page?.url || undefined} onClick={() => api && void mutate(() => api.selectTab(tab.tabId))}>
-          <Globe size={14} aria-hidden="true" />
-          <span className="cy-browser-window__tab-title">{tab.page?.url ? new URL(tab.page.url).hostname : index === 0 && state.tabs.length === 1 ? t("browserWorkspace.newTabTitle") : `${t("browserWorkspace.newTabTitle")} ${index + 1}`}</span>
-        </button>
-        <button type="button" aria-label={t("browserWorkspace.closeTab")} disabled={pending} data-browser-close-tab={tab.tabId}
-          onClick={() => api && void mutate(() => api.closeTab(tab.tabId))}><X size={13} aria-hidden="true" /></button>
-      </div>)}
-      <button type="button" aria-label={t("browserWorkspace.newTab")} data-browser-new-tab disabled={pending || !api || !state || state.tabs.length >= 8}
+    <div className="cy-browser-window__strip">
+      <div className="cy-browser-window__tabs" role="tablist" aria-label={t("browserWorkspace.tabs")}>
+        {state?.tabs.map((tab, index) => <div className={`cy-browser-window__tab${exiting === tab.tabId ? " is-closing" : ""}`} key={tab.tabId}>
+          <button type="button" role="tab" aria-selected={!agent && state.activeTabId === tab.tabId} disabled={pending} data-browser-select-tab={tab.tabId}
+            title={tab.page?.url || undefined} onClick={() => api && void mutate(() => api.selectTab(tab.tabId))}>
+            <Globe size={14} aria-hidden="true" />
+            <span className="cy-browser-window__tab-title">{tab.page?.url ? new URL(tab.page.url).hostname : index === 0 && state.tabs.length === 1 ? t("browserWorkspace.newTabTitle") : `${t("browserWorkspace.newTabTitle")} ${index + 1}`}</span>
+          </button>
+          <button type="button" aria-label={t("browserWorkspace.closeTab")} disabled={pending || exiting !== null} data-browser-close-tab={tab.tabId}
+            onClick={() => closeTab(tab.tabId)}><X size={13} aria-hidden="true" /></button>
+        </div>)}
+        {sessionId && <button type="button" role="tab" className="cy-browser-window__agent" aria-selected={agent} disabled={pending} onClick={() => setAgent(true)}>{t("browserWorkspace.agentMode")}</button>}
+      </div>
+      <button type="button" aria-label={t("browserWorkspace.newTab")} title={t("browserWorkspace.newTab")} data-browser-new-tab disabled={pending || !api || !state || state.tabs.length >= 8}
         onClick={() => api && void mutate(() => api.newTab())}><Plus size={15} aria-hidden="true" /></button>
-      {sessionId && <button type="button" role="tab" aria-selected={agent} disabled={pending} onClick={() => setAgent(true)}>{t("browserWorkspace.agentMode")}</button>}
+      {paneClose && <button type="button" aria-label={t("browserWorkspace.closePanel")} title={t("browserWorkspace.closePanel")} data-browser-close-pane disabled={pending}
+        onClick={() => void close()}><X size={15} aria-hidden="true" /></button>}
     </div>
-    {error && <p role="alert">{t(error === "tab_limit" ? "browserWorkspace.tabLimit" : error === "cleanup_failed" ? "browserWorkspace.cleanupFailed" : "browserWorkspace.stateUnavailable")}</p>}
+    {error && <p className="cy-browser-window__alert" role="alert">{t(error === "tab_limit" ? "browserWorkspace.tabLimit" : error === "cleanup_failed" ? "browserWorkspace.cleanupFailed" : "browserWorkspace.stateUnavailable")}</p>}
     {state?.tabs.map(tab => <div key={tab.tabId} hidden={agent || state.activeTabId !== tab.tabId} className="cy-browser-window__page">
       <ManualBrowserTab workspaceId={state.workspaceId} tabId={tab.tabId} active={active && !agent && state.activeTabId === tab.tabId}
-        onClose={() => api && void mutate(() => api.closeTab(tab.tabId))} />
+        onClose={() => closeTab(tab.tabId)} />
     </div>)}
     {sessionId && <div hidden={!agent} className="cy-browser-window__page"><ManualBrowserTab key={sessionId} ref={agentRef} sessionId={sessionId} active={active && agent} onClose={() => setAgent(false)} /></div>}
   </div>;

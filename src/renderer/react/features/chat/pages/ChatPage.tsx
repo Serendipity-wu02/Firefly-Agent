@@ -9,6 +9,7 @@ import { WorkspaceResultsIndex } from "../workspace/WorkspaceRunResults";
 import { useBrowserWorkspaceActivation } from "../workspace/useBrowserWorkspaceActivation";
 import { ChatComposer, parseComposerMessage } from "../components/ChatComposer";
 import { ComposerSlot } from "../components/ComposerSlot";
+import { buildStepProgressSummary } from "../components/step-progress";
 import { CodeGitPanel } from "../components/CodeGitPanel";
 import type { PlanReviewPhase } from "../components/PlanReviewPanel";
 import { ChatPageInspector, type ChatPageInspectorDiffTab } from "../components/ChatPageInspector";
@@ -1255,6 +1256,16 @@ export function ChatPage() {
       attachmentCount: item.attachments?.length,
     }))
     : [];
+  // 工作步骤胶囊：步骤来自 update_todo（firefly.todo → todoStateBySession），文件统计取本轮助手消息的工具变更；
+  // 胶囊本身只在运行中且有计划时显示。
+  const stepProgress = useMemo(() => {
+    const runAssistantId = activeSessionId ? activeRunsBySession.current[activeSessionId]?.assistantId : undefined;
+    return buildStepProgressSummary({
+      todos: activeSessionId ? todoStateBySession[activeSessionId]?.todos : undefined,
+      toolExecutions: messages.find((message) => message.id === runAssistantId)?.toolExecutions,
+      running: isCurrentScopeRunning,
+    });
+  }, [activeSessionId, isCurrentScopeRunning, messages, runRegistryVersion, todoStateBySession]);
   // 上下文容量圆环：session 级快照优先（手动压缩等不产生新消息的操作也即时刷新），
   // 消息级快照兜底兼容旧数据；无快照不渲染。
   const latestContextUsage = (activeSessionId ? sessionContextUsageBySession[activeSessionId] : undefined)
@@ -1656,6 +1667,7 @@ export function ChatPage() {
             }}
             activeModelProfileId={selectedModelProfileId}
             contextUsage={latestContextUsage}
+            stepProgress={stepProgress}
             onSelectModelProfile={(modelProfileId) => {
               // 欢迎页（无会话）：暂存选择，ensureSession 建会话后落地；不再静默丢弃。
               if (!activeSessionId) {

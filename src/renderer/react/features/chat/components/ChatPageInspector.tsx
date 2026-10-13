@@ -4,7 +4,7 @@
 import type { ToolFileChange } from "../../../../../shared/chat-types";
 import { WorkspaceChangeDiff, WorkspaceRunResults } from "../workspace/WorkspaceRunResults";
 import type { WorkspaceChangedFile, WorkspaceRunOutput } from "../workspace/workspace-artifacts";
-import { useRef, type ReactNode } from "react";
+import { useEffect, useRef, useState, type ReactNode } from "react";
 import { useTranslation } from "../../../i18n";
 import { FileTreePanel, FilePreviewContent } from "./FileTreePanel";
 import { requestWorkspaceEditorClose, workspaceEditorKey, useWorkspaceEditorState } from "./WorkspaceTextEditor";
@@ -13,6 +13,38 @@ import { ReviewDiffContent } from "./ReviewInspector";
 import { RightInspector, type InspectorTab } from "./RightInspector";
 import type { ManualBrowserTabHandle } from "../workspace/ManualBrowserTab";
 import { BrowserWorkspaceTabs } from "../workspace/BrowserWorkspaceTabs";
+import "./ChatPageInspector.css";
+
+/** Open and close length of the docked pane. ChatPageInspector.css animates the width for the same time. */
+const MOTION_MS = 220;
+
+function prefersReducedMotion(): boolean {
+  try {
+    return typeof window !== "undefined" && typeof window.matchMedia === "function"
+      && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+  } catch { return false; }
+}
+
+/**
+ * CSS animates the panel width. This reports only whether that width is moving: while it is, the native
+ * browser stays detached (its bounds are not animated) and reattaches once the pane has settled.
+ * The state is adjusted during render, so the first commit after a toggle already reports the motion.
+ */
+function useInspectorMotion(visible: boolean): boolean {
+  const [seen, setSeen] = useState(visible);
+  const [motion, setMotion] = useState(() => ({ moving: visible, id: 0 }));
+  if (seen !== visible) {
+    setSeen(visible);
+    setMotion(current => ({ moving: !prefersReducedMotion(), id: current.id + 1 }));
+  }
+  useEffect(() => {
+    if (!motion.moving) return;
+    const timer = window.setTimeout(() => setMotion(current => current.id === motion.id
+      ? { ...current, moving: false } : current), MOTION_MS);
+    return () => window.clearTimeout(timer);
+  }, [motion]);
+  return motion.moving;
+}
 
 function FileDraftMarker({ editorKey }: { editorKey: string }) {
   const { t } = useTranslation();
@@ -104,6 +136,7 @@ export function ChatPageInspector({
 }: ChatPageInspectorProps) {
   const { t } = useTranslation();
   const browserRef = useRef<ManualBrowserTabHandle>(null);
+  const moving = useInspectorMotion(visible);
   const tabs: InspectorTab[] = [];
 
   if (tasksTabOpen) {
@@ -172,30 +205,38 @@ export function ChatPageInspector({
     });
   }
   if (browserTabOpen) {
+    // The browser is appended last, so it is the only inspector tab exactly when nothing else was added.
+    const soleTab = tabs.length === 0;
     tabs.push({
       id: "browser",
       kind: "browser",
       label: t("browserWorkspace.title"),
-      content: <BrowserWorkspaceTabs ref={browserRef} sessionId={sessionId} active={visible && (activeTabId === "browser" || (!tabs.some(tab => tab.id === activeTabId) && tabs.length === 0))} onClose={() => onCloseTab("browser")} />,
+      content: <BrowserWorkspaceTabs ref={browserRef} sessionId={sessionId} paneClose={soleTab}
+        active={visible && !moving && (activeTabId === "browser" || (!tabs.some(tab => tab.id === activeTabId) && tabs.length === 0))}
+        onClose={() => onCloseTab("browser")} />,
     });
   }
   if (tabs.length === 0) return null;
 
+  const browserOnly = tabs.length === 1 && tabs[0].id === "browser";
   return (
-    <RightInspector
-      tabs={tabs}
-      visible={visible}
-      activeTabId={activeTabId}
-      onTabChange={onTabChange}
-      onCloseTab={id => {
-        if (id === "browser" && browserRef.current) { onTabChange(id); browserRef.current.close(); return; }
-        const file = fileTabs.find(tab => tab.id === id);
-        if (file && sessionId && !requestWorkspaceEditorClose(workspaceEditorKey(sessionId, workspaceRoot, file.relPath), () => onCloseTab(id))) {
-          onTabChange(id);
-          return;
-        }
-        onCloseTab(id);
-      }}
-    />
+    <div className={`cy-chat-inspector${browserOnly ? " is-browser-only" : ""}${visible ? "" : " is-closed"}`}
+      data-dock-motion={moving || undefined} inert={!visible || undefined}>
+      <RightInspector
+        tabs={tabs}
+        visible={visible}
+        activeTabId={activeTabId}
+        onTabChange={onTabChange}
+        onCloseTab={id => {
+          if (id === "browser" && browserRef.current) { onTabChange(id); browserRef.current.close(); return; }
+          const file = fileTabs.find(tab => tab.id === id);
+          if (file && sessionId && !requestWorkspaceEditorClose(workspaceEditorKey(sessionId, workspaceRoot, file.relPath), () => onCloseTab(id))) {
+            onTabChange(id);
+            return;
+          }
+          onCloseTab(id);
+        }}
+      />
+    </div>
   );
 }

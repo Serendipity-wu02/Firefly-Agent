@@ -71,3 +71,23 @@ it("uses the user's contrast tokens for browser error and keyboard-focus surface
   expect(property(":root[data-ui-colors] .cy-browser-workspace__notice.is-error", "background")).toBe("var(--cy-bg-hover)");
   expect(property(".cy-browser-permission button:focus-visible", "outline")).toContain("var(--cy-accent");
 });
+
+it("sets the toolbar as one 44px row whose address is a full pill", () => {
+  expect(property(".cy-browser-workspace__toolbar", "height")).toBe("44px");
+  expect(property(".cy-browser-workspace__address", "border-radius")).toBe("16px");
+  expect(property(".cy-browser-workspace__address", "height")).toBe("32px");
+  expect(property(".cy-browser-workspace__toolbar button", "border-radius")).toBe("8px");
+});
+
+it("opens and closes a tab in about 150ms, collapsing its width and fading it", () => {
+  expect(tabsProperty(".cy-browser-window__tab", "animation")).toContain("cy-browser-tab-in 150ms");
+  expect(tabsProperty(".cy-browser-window__tab.is-closing", "opacity")).toBe("0");
+  expect(tabsProperty(".cy-browser-window__tab.is-closing", "max-width")).toBe("0px");
+  expect(tabsProperty(".cy-browser-window__tab", "transition")).toContain("150ms");
+});
+
+it("aligns the tab strip with the chat header's shared 48px row", () => {
+  expect(tabsProperty(".cy-browser-window__strip", "height")).toBe("var(--cy-workspace-header-height, 48px)");
+  expect(tabsProperty(".cy-browser-window__strip", "border-bottom")).toContain("var(--cy-border)");
+  expect(tabsProperty(".cy-browser-window__tab > button[role=\"tab\"]", "border-radius")).toBe("16px");
+});

@@ -12,6 +12,8 @@ import { PermissionControl } from "./PermissionControl";
 import { PlanModeToggle } from "./PlanModeToggle";
 import { ModelEffortControl } from "./ModelEffortControl";
 import { PendingQueueDock, type PendingQueueDockItem } from "./PendingQueueDock";
+import { StepProgressPill } from "./StepProgressPill";
+import type { StepProgressSummary } from "./step-progress";
 
 interface ChatComposerProps {
   value: string;
@@ -46,6 +48,8 @@ interface ChatComposerProps {
   onSelectModelProfile?: (id: string) => void;
   /** 上下文容量快照：运行中实时刷新，空闲时为最近一次终态快照；无快照不渲染圆环。 */
   contextUsage?: ContextUsageSnapshot;
+  /** 工作步骤胶囊数据：运行中且有计划时显示在输入框上方；由父级汇总 todo 与本轮文件变更。 */
+  stepProgress?: StepProgressSummary;
 }
 
 export interface ComposerAttachment {
@@ -262,6 +266,7 @@ export function ChatComposer({
   activeModelProfileId,
   onSelectModelProfile,
   contextUsage,
+  stepProgress,
 }: ChatComposerProps) {
   const { t } = useTranslation();
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -356,6 +361,7 @@ export function ChatComposer({
       onCompositionStartCapture={() => { compositionActiveRef.current = true; }}
       onCompositionEndCapture={() => { compositionActiveRef.current = false; }}
     >
+      {stepProgress && <StepProgressPill {...stepProgress} />}
       <PendingQueueDock
         items={pendingQueue}
         adjustmentAvailable={modelBusy}

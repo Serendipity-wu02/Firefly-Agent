@@ -10,6 +10,8 @@ vi.mock("./ReviewInspector", () => ({ ReviewDiffContent: () => null }));
 import { ChatPageInspector, type ChatPageInspectorProps } from "./ChatPageInspector";
 let root: ReturnType<typeof createRoot>, host: HTMLDivElement, execute: ReturnType<typeof vi.fn>;
 const props: ChatPageInspectorProps = { sessionId: "s", browserTabOpen: true, filesTabOpen: false, filesTabPinned: false, fileTabs: [], diffTabs: [], activePlan: null, planDrawerOpen: false, planTabId: "plan:s", activeTabId: "browser", onTabChange: vi.fn(), onCloseTab: vi.fn(), onOpenFile: vi.fn() };
+/** Longer than the 220ms pane motion, so the settled state is observed. */
+const settle = () => act(async () => { await new Promise(resolve => setTimeout(resolve, 260)); });
 beforeEach(() => {
   vi.stubGlobal("React", React);
   globalThis.IS_REACT_ACT_ENVIRONMENT = true; vi.stubGlobal("ResizeObserver", class { observe() {} unobserve() {} disconnect() {} });
@@ -24,12 +26,47 @@ async function render(extra: Partial<ChatPageInspectorProps> = {}) { await act(a
 it("hides the inspector without disposing its browser and resumes the same page on expand", async () => {
   await render(); const input = host.querySelector("input");
   await render({ visible: false });
+  await settle();
   expect(host.querySelector("aside")!.hasAttribute("hidden")).toBe(true);
   expect(host.querySelector("input")).toBe(input);
   expect(execute).toHaveBeenCalledWith({ kind: "layout", browserId: "b", bounds: null });
   expect(execute.mock.calls.some(([c]) => c.kind === "close")).toBe(false);
   await render({ visible: true }); expect(host.querySelector("input")).toBe(input);
   expect(host.querySelector("aside")!.hasAttribute("hidden")).toBe(false);
+});
+it("fades the closing pane out while its width moves, and settles the motion afterwards", async () => {
+  await render(); await settle();
+  await render({ visible: false });
+  // The hidden state is immediate; CSS keeps the pane painted until the width motion ends.
+  expect(host.querySelector("aside")!.hasAttribute("hidden")).toBe(true);
+  expect(host.querySelector(".cy-chat-inspector")!.classList.contains("is-closed")).toBe(true);
+  expect(host.querySelector(".cy-chat-inspector")!.hasAttribute("inert")).toBe(true);
+  expect(host.querySelector(".cy-chat-inspector")!.hasAttribute("data-dock-motion")).toBe(true);
+  await settle();
+  expect(host.querySelector(".cy-chat-inspector")!.hasAttribute("data-dock-motion")).toBe(false);
+  expect(host.querySelector(".cy-chat-inspector")!.classList.contains("is-closed")).toBe(true);
+});
+it("keeps the native page detached while the pane opens and reattaches it once the width has settled", async () => {
+  await render({ visible: false }); await settle();
+  execute.mockClear();
+  await render({ visible: true });
+  expect(host.querySelector(".cy-chat-inspector")!.hasAttribute("data-dock-motion")).toBe(true);
+  expect(execute.mock.calls.some(([c]) => c.kind === "layout" && c.bounds !== null)).toBe(false);
+  await settle();
+  expect(host.querySelector(".cy-chat-inspector")!.hasAttribute("data-dock-motion")).toBe(false);
+  expect(execute).toHaveBeenLastCalledWith(expect.objectContaining({ kind: "layout", browserId: "b", bounds: expect.any(Object) }));
+});
+it("skips the motion and the delay under reduced motion", async () => {
+  window.matchMedia = vi.fn().mockReturnValue({ matches: true, addListener() {}, removeListener() {} });
+  await render(); await render({ visible: false });
+  expect(host.querySelector("aside")!.hasAttribute("hidden")).toBe(true);
+  expect(host.querySelector(".cy-chat-inspector")!.hasAttribute("data-dock-motion")).toBe(false);
+  expect(host.querySelector(".cy-chat-inspector")!.classList.contains("is-closed")).toBe(true);
+});
+it("does not show the content for a pane that starts closed", async () => {
+  await render({ visible: false });
+  expect(host.querySelector("aside")!.hasAttribute("hidden")).toBe(true);
+  expect(host.querySelector(".cy-chat-inspector")!.hasAttribute("data-dock-motion")).toBe(false);
 });
 it("mounts a nonactive browser for Main recovery without drawing it over another tab", async () => {
   await render({ filesTabOpen: true, activeTabId: "files" });
@@ -82,4 +119,22 @@ it("routes the outer browser tab close through confirmed Main cleanup and keeps 
   expect(onCloseTab).not.toHaveBeenCalled();
   expect(revoke).toHaveBeenCalledExactlyOnceWith("s");
   expect(host.querySelector(".cy-browser-workspace__notice")?.textContent).toMatch(/手动重启|restart.*manually/i);
+});
+
+it("marks a browser-only pane and closes it from the browser's own strip through Main cleanup", async () => {
+  const onCloseTab = vi.fn();
+  const revoke = vi.fn(async () => ({ ok: true, value: { conversationId: "s", status: "required", scope: BROWSER_PUBLIC_SCOPE, requestId: null } }));
+  window.manualBrowser!.revokePermission = revoke;
+  await render({ onCloseTab });
+  expect(host.querySelector(".cy-chat-inspector")!.classList.contains("is-browser-only")).toBe(true);
+  await act(async () => host.querySelector<HTMLButtonElement>("[data-browser-close-pane]")!.click());
+  expect(revoke).toHaveBeenCalledExactlyOnceWith("s");
+  expect(onCloseTab).toHaveBeenCalledExactlyOnceWith("browser");
+});
+
+it("keeps the inspector's own tab bar when another tab shares the pane", async () => {
+  await render({ filesTabOpen: true, activeTabId: "browser" });
+  expect(host.querySelector(".cy-chat-inspector")!.classList.contains("is-browser-only")).toBe(false);
+  expect(host.querySelector("[data-browser-close-pane]")).toBeNull();
+  expect(host.querySelector(".cy-right-inspector__tabs")).not.toBeNull();
 });
