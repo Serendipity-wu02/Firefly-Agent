@@ -829,9 +829,10 @@ export function applyPreset(
 
   setActivePresetCard(preset.providerName);
 
-  // 昵称：优先用传入的（用户自定义过）；否则用厂商 shortName 作默认。
-  // 留空显示厂商短名——但这里主动填 shortName 让用户看到默认值，可改可清。
-  displayNameInput.value = preferredDisplayName ?? preset.shortName;
+  // 昵称：只有用户自己起过名才写进输入框；默认的厂商短名以灰色占位提示显示，
+  // 保存时留空会回落到这个短名（见 saveProfile 的 displayName）。
+  displayNameInput.value = preferredDisplayName && preferredDisplayName !== preset.shortName ? preferredDisplayName : "";
+  displayNameInput.placeholder = preset.shortName;
 
   // baseUrl：仅对官方已确认的 A 口预设做协议配套切换；自定义 URL 永远不猜、不覆盖。
   const selectedTransport = preferredExplicitTransport ?? preset.transport;
@@ -1425,7 +1426,7 @@ apiForm.addEventListener("submit", async (e) => {
     const profile = {
       id: apiState.editingProfileId,
       provider: apiState.activeProvider,
-      displayName: displayNameInput.value.trim(),
+      displayName: displayNameInput.value.trim() || findPreset(apiState.activeProvider).shortName,
       baseUrl: baseUrlInput.value.trim(),
       model: getCurrentModelValue().trim(),
       apiKey: getApiKeyForRequest(),

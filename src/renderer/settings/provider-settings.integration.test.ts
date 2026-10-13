@@ -69,6 +69,18 @@ it("adds through the existing save bridge and reports save rejection while retai
   expect(saveProfile.mock.calls.at(-1)?.[0]).toMatchObject({ apiKey: "entered-key", model: expect.any(String) });
 });
 
+it("shows the default profile name as a grey placeholder, and stores it when the field is left empty", async () => {
+  element<HTMLButtonElement>("add-profile-btn").click();
+  const name = element<HTMLInputElement>("display-name");
+  expect(name.value).toBe("");
+  expect(name.placeholder).not.toBe("");
+  const defaultName = name.placeholder;
+  element<HTMLInputElement>("api-key").value = "entered-key";
+  element<HTMLFormElement>("api-form").dispatchEvent(new Event("submit", { bubbles: true, cancelable: true }));
+  await vi.waitFor(() => expect(element("save-status").classList.contains("is-ok")).toBe(true));
+  expect(saveProfile.mock.calls.at(-1)?.[0]).toMatchObject({ displayName: defaultName });
+});
+
 it("loads an existing model and protocol for editing without showing new-provider tabs", () => {
   const edit = document.querySelector<HTMLButtonElement>('[data-profile-action="edit"]')!;
   edit.focus();
