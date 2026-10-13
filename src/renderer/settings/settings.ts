@@ -8,7 +8,6 @@ import { applyProviderEditorLayout, mountProfileEditor, placeSaveStatus, renderK
 import { bindSettingsNavigation, resolveSettingsSection, updateSettingsNavigation } from "./shared/navigation";
 /* 标记！AI写的超大技术债，延期重构*/
 import "../ui/base.css";
-import "./settings.css";
 import "../ui/theme";
 import {
   normalizeChatSocialContextEnabled,

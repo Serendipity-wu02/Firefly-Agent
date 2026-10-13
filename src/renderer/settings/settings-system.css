@@ -248,40 +248,31 @@
 }
 .settings-shell .channels-log__entry { border-bottom-color: var(--st-divider); }
 
-/* ── 分段选择：偏好 / 通用语言 / 其他页共用 ──────────────── */
-.option-blocks,
-.language-options {
-  display: grid;
-  grid-auto-flow: column;
-  grid-auto-columns: minmax(0, 1fr);
-  grid-template-columns: none;
+/* ── 分段选择：偏好 / 通用语言 / 表情包 / 记忆筛选 / 本地文件权限共用这一套定义 ──────────
+ * 按内容宽度，行内控件靠右；整条与输入框同高（38px），段与段等高，没有空列；窄窗口折到标题下面、靠左。 */
+.settings-shell :is(.option-blocks, .language-options, .plugin-perm-capsule) {
+  display: inline-flex;
+  flex: none;
   align-items: stretch;
+  box-sizing: border-box;
   gap: 2px;
-  width: 100%;
+  max-width: 100%;
   min-width: 0;
-  max-width: none;
   padding: 3px;
+  border: 0;
   border-radius: var(--st-radius-inner);
   background: var(--st-track);
 }
-/* 行右侧的控件：按内容收紧、靠右 */
-#preferences-form .setting-row .option-blocks,
-.setting-row .option-blocks,
-.setting-row .language-options {
+.settings-shell .setting-row > :is(.option-blocks, .language-options, .plugin-perm-capsule) { margin-left: auto; }
+.settings-shell :is(.option-block, .language-option, .perm-seg) {
+  box-sizing: border-box;
   display: inline-flex;
-  flex-wrap: nowrap;
-  width: auto;
-  margin-left: auto;
-  justify-content: flex-start;
-}
-#preferences-form .setting-row .option-blocks > :first-child:nth-last-child(2),
-#preferences-form .setting-row .option-blocks > :last-child:nth-child(2) { grid-column: auto; }
-.settings-shell .option-block,
-.settings-shell .language-option,
-#preferences-form .setting-row .option-blocks > .option-block {
   flex: 0 0 auto;
+  align-items: center;
+  justify-content: center;
   min-width: 56px;
-  padding: 6px 14px;
+  min-height: 32px;
+  padding: 0 14px;
   border: 1px solid transparent;
   border-radius: 9px;
   background: transparent;
@@ -291,32 +282,33 @@
   line-height: 1.4;
   white-space: nowrap;
   box-shadow: none;
+  cursor: pointer;
+  transition: background-color .15s ease, color .15s ease, border-color .15s ease;
 }
-.settings-shell .option-block:not(:disabled):not(.is-active):hover,
-.settings-shell .language-option:not(:disabled):not(.is-active):hover { background: var(--st-nav-hover); color: var(--rb-text-strong); border-color: transparent; }
-.settings-shell .option-block.is-active,
-.settings-shell .language-option.is-active,
-#preferences-form .setting-row .option-blocks > .option-block.is-active,
-.settings-shell .option-block.is-active:not(:disabled):hover,
-.settings-shell .language-option.is-active:not(:disabled):hover {
+/* 同一组里的段等宽：本地文件权限四段、中英文两段各自取最宽的标签作为最小宽度 */
+.settings-shell .perm-seg { min-width: 68px; }
+.settings-shell .language-option { min-width: 80px; }
+.settings-shell :is(.option-block, .language-option, .perm-seg):not(:disabled):not(.is-active):hover { background: var(--st-nav-hover); border-color: transparent; color: var(--rb-text-strong); }
+.settings-shell :is(.option-block, .language-option, .perm-seg):not(:disabled):not(.is-active):active { background: var(--rb-active-light); }
+.settings-shell :is(.option-block, .language-option, .perm-seg).is-active,
+.settings-shell :is(.option-block, .language-option, .perm-seg).is-active:not(:disabled):hover {
   background: var(--st-selected-fill);
   border-color: var(--st-selected-stroke);
   color: var(--st-selected-text);
   box-shadow: none;
 }
-/* 被锁定的当前值仍要看得出“选中了谁” */
-.settings-shell .option-block:disabled,
-.settings-shell .language-option:disabled { opacity: .5; }
-.settings-shell .option-block.is-active:disabled,
-.settings-shell .language-option.is-active:disabled,
-#preferences-form .setting-row .option-blocks > .option-block.is-active:disabled { opacity: .78; }
-
-/* 权限胶囊（本地文件）、Token 时间范围：同一套分段外观 */
-.settings-shell .plugin-perm-capsule { padding: 3px; gap: 2px; border: 0; border-radius: var(--st-radius-inner); background: var(--st-track); }
-.settings-shell .perm-seg { border-radius: 9px; border: 1px solid transparent; font-size: 13px; }
-.settings-shell .perm-seg + .perm-seg { border-left: 1px solid transparent; }
-.settings-shell .perm-seg:not(.is-active):hover { color: var(--rb-text-strong); background: var(--st-nav-hover); }
-.settings-shell .perm-seg.is-active { color: var(--st-selected-text); background: var(--st-selected-fill); border-color: var(--st-selected-stroke); box-shadow: none; }
+/* 禁用（如尚未开放的选项）：文字保持清楚、不随悬停变化，也不整体变淡；当前值仍用选中底色标出。 */
+.settings-shell :is(.option-block, .language-option, .perm-seg):disabled,
+.settings-shell :is(.option-block, .language-option, .perm-seg):disabled:not(.is-active):hover {
+  background: transparent;
+  border-color: transparent;
+  color: var(--rb-text-muted);
+  cursor: not-allowed;
+}
+.settings-shell :is(.option-block, .language-option, .perm-seg).is-active:disabled { background: var(--st-selected-fill); color: var(--st-selected-text); }
+@media (max-width: 780px) {
+  .settings-shell .setting-row > :is(.option-blocks, .language-options, .plugin-perm-capsule) { margin-left: 0; }
+}
 
 
 .settings-shell .gender-select__btn.is-active { background: var(--st-selected-fill); border-color: var(--st-selected-stroke); color: var(--st-selected-text); }
@@ -414,22 +406,31 @@
   background: var(--rb-input-bg);
   box-shadow: var(--st-focus-ring);
 }
-.settings-shell :is(.field, .panel-body) :is(input, select, textarea):disabled { opacity: .6; cursor: not-allowed; }
+/* 禁用的文本框 / 下拉变淡；复选框与开关由各自组件定义，这里不把隐藏的复选框重新显示出来 */
+.settings-shell :is(.field, .panel-body) :is(input:not([type=checkbox]):not([type=radio]), select, textarea):disabled { opacity: .6; cursor: not-allowed; }
 
-/* 超时这类“输入框 + 重置”一行 */
+/* 超时 / Base URL 这类“输入框 + 重置图标”一行：图标按钮与输入框同高、同圆角，悬停只换底色（不旋转） */
 .timeout-row { display: flex; align-items: center; gap: 8px; }
 .timeout-row > input { flex: 1 1 auto; min-width: 0; }
 .settings-shell :is(.timeout-reset, .base-url-reset) {
+  display: inline-flex;
   flex: none;
+  align-items: center;
+  justify-content: center;
+  box-sizing: border-box;
   width: var(--st-ctl-h);
   height: var(--st-ctl-h);
+  padding: 0;
   border: 1px solid var(--st-ghost-stroke);
   border-radius: var(--st-radius-ctl);
   background: var(--st-ghost-fill);
   color: var(--rb-text-muted);
   cursor: pointer;
+  transition: background-color .15s ease, color .15s ease;
 }
-.settings-shell :is(.timeout-reset, .base-url-reset):hover { background: var(--st-ghost-hover); color: var(--rb-text-strong); }
+.settings-shell :is(.timeout-reset, .base-url-reset) svg { display: block; flex: none; }
+.settings-shell :is(.timeout-reset, .base-url-reset):hover:not(:disabled) { background: var(--st-ghost-hover); color: var(--rb-text-strong); }
+.settings-shell :is(.timeout-reset, .base-url-reset):disabled { opacity: .45; cursor: not-allowed; }
 
 /* ── 开关：小一号的药丸，开启后是实心灰蓝 ──────────────────── */
 .settings-shell .switch { width: 44px; height: 24px; }
@@ -445,7 +446,7 @@
 .settings-shell .plugin-switch input:checked + span::after { transform: translateX(20px); background: #ffffff; }
 
 /* ── 标签 / 状态点 ───────────────────────────────────────── */
-.settings-shell :is(.profile-card__badge, .plugin-placeholder-tag, .tts-engine__tag) {
+.settings-shell :is(.profile-card__badge, .plugin-placeholder-tag, .tts-engine__tag, .setting-row__tag) {
   padding: 1px 8px;
   border: 1px solid var(--st-card-stroke);
   border-radius: 6px;
@@ -454,6 +455,7 @@
   font-size: 11px;
   line-height: 16px;
 }
+.settings-shell .setting-row__tag { margin-left: 8px; font-weight: 500; vertical-align: 1px; }
 .settings-shell .channels-status__dot { width: 8px; height: 8px; border-radius: 50%; box-shadow: none; }
 .settings-shell .channels-status__dot { background: var(--st-dot-idle); }
 .settings-shell .channels-status__dot--running { background: var(--st-dot-ok); }
@@ -493,10 +495,11 @@
 /* 卡片内的次级文字按钮（音乐工具的"状态与控制"） */
 .settings-shell .plugin-card__link {
   margin-top: 6px; padding: 0; border: 0; background: transparent; cursor: pointer;
-  font: inherit; font-size: 12px; line-height: 18px; color: var(--st-selected-text);
-  text-decoration: underline; text-decoration-color: transparent; text-underline-offset: 3px;
+  font: inherit; font-size: 12px; line-height: 18px; color: rgb(var(--rb-accent-rgb));
+  text-decoration: underline; text-decoration-color: rgba(var(--rb-accent-rgb), .35); text-underline-offset: 3px;
   transition: text-decoration-color .15s ease, color .15s ease;
 }
+.settings-shell .plugin-card__link::after { content: " ›"; }
 .settings-shell .plugin-card__link:hover { text-decoration-color: currentColor; }
 .settings-shell .plugin-card__link:focus-visible { outline: 2px solid var(--st-selected-stroke); outline-offset: 2px; border-radius: 4px; }
 /* 通用页里的"左说明 + 右控件"行：控件不被说明文字挤压，窄屏折到下一行 */
@@ -750,7 +753,18 @@ body { font-size: var(--cy-ui-font-size, 16px); }
 }
 #user-panel .user-avatar > span { display: flex; align-items: center; justify-content: center; width: 100%; height: 100%; }
 #user-panel .user-avatar > span > svg { display: block; flex: none; width: 22px; height: 22px; }
-#user-panel .user-panel-hint { margin: 12px 0 0; padding: 0 4px; }
+#user-panel .user-panel-hint { margin: 12px 0 0; padding: 0 4px; font-size: 12px; }
+/* 时区下拉：边框、圆角、高度与其他输入一致；原生箭头换成同色的细箭头，聚焦环沿用输入框的规则 */
+#user-panel select#user-timezone {
+  -webkit-appearance: none;
+  appearance: none;
+  padding-right: 34px;
+  cursor: pointer;
+  background-image: linear-gradient(45deg, transparent 50%, var(--rb-text-muted) 50%), linear-gradient(135deg, var(--rb-text-muted) 50%, transparent 50%);
+  background-position: calc(100% - 17px) center, calc(100% - 12px) center;
+  background-size: 5px 5px, 5px 5px;
+  background-repeat: no-repeat;
+}
 
 /* 账号卡片：未登录 / 已登录两行只显示一行 */
 .account-card__identity { display: flex; align-items: center; gap: 14px; flex: 1 1 auto; min-width: 0; }

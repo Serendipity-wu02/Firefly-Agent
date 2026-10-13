@@ -138,17 +138,6 @@
 .settings-group-title { margin: 32px 0 4px; color: var(--rb-text-strong); font-size: 18px; font-weight: 500; line-height: 1.4; }
 .settings-group-title:first-child { margin-top: 0; }
 
-#preferences-form .setting-row .option-blocks {
-  width: auto;
-  min-width: 0;
-  max-width: 50%;
-  display: flex;
-  flex-wrap: wrap;
-  justify-content: flex-end;
-}
-#preferences-form .setting-row .option-blocks > .option-block { flex: 0 1 auto; min-width: 64px; }
-.setting-row .language-options { flex-wrap: wrap; justify-content: flex-end; }
-.setting-row .option-blocks { min-width: 0; flex-wrap: wrap; }
 .form-actions { flex-wrap: wrap; margin-top: 24px; }
 
 @media (max-width: 780px) {
@@ -162,7 +151,6 @@
   .setting-row:has(> :is(.option-blocks, .language-options, input[type="range"])) > div:first-child {
     flex-basis: 100%;
   }
-  #preferences-form .setting-row .option-blocks { max-width: 100%; margin-left: 0; justify-content: flex-start; }
 }
 
 @media (max-width: 560px) {

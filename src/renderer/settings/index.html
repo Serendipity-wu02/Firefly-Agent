@@ -168,7 +168,7 @@
               <span><span data-i18n="panel.api.field.baseUrl.label">Base URL</span></span>
               <div class="base-url-row">
                 <input id="base-url" aria-describedby="endpoint-preview" type="url" placeholder="https://api.deepseek.com" autocomplete="off" data-i18n-placeholder="panel.api.field.baseUrl.placeholder" />
-                <button type="button" class="base-url-reset" id="base-url-reset-btn" title="重置为厂商默认 URL" data-i18n-title="panel.api.field.baseUrl.resetTitle">↻</button>
+                <button type="button" class="base-url-reset" id="base-url-reset-btn" title="重置为厂商默认 URL" data-i18n-title="panel.api.field.baseUrl.resetTitle"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 12a8 8 0 1 1-2.34-5.66"/><path d="M20 4v4h-4"/></svg></button>
               </div>
               <span class="form-hint endpoint-preview" id="endpoint-preview" aria-live="polite"></span>
             </label>
@@ -276,7 +276,7 @@
               <span><span data-i18n="panel.api.field.timeout.label">测试超时（ms，1s=1000ms）</span></span>
               <div class="timeout-row">
                 <input id="timeout-test" type="number" placeholder="单位ms（1s=1000ms）" autocomplete="off" data-i18n-placeholder="panel.api.field.timeout.placeholder" />
-                <button type="button" class="timeout-reset" id="timeout-test-reset-btn" title="重置为默认（15s）" data-i18n-title="panel.api.field.timeout.resetTitle">↻</button>
+                <button type="button" class="timeout-reset" id="timeout-test-reset-btn" title="重置为默认（15s）" data-i18n-title="panel.api.field.timeout.resetTitle"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 12a8 8 0 1 1-2.34-5.66"/><path d="M20 4v4h-4"/></svg></button>
               </div>
             </label>
           </div>
@@ -342,7 +342,7 @@
               <span>模型请求超时（秒）</span>
               <div class="timeout-row">
                 <input id="model-request-timeout-sec" type="number" min="10" max="600" step="5" placeholder="60" autocomplete="off" />
-                <button type="button" class="timeout-reset" id="model-request-timeout-sec-reset-btn" title="重置为默认（60秒）">↻</button>
+                <button type="button" class="timeout-reset" id="model-request-timeout-sec-reset-btn" title="重置为默认（60秒）"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 12a8 8 0 1 1-2.34-5.66"/><path d="M20 4v4h-4"/></svg></button>
               </div>
               <span class="field-hint">范围：10~600 秒，默认 60 秒。用于非流式模型请求。</span>
             </label>
@@ -350,7 +350,7 @@
               <span>询问等待时间（秒）</span>
               <div class="timeout-row">
                 <input id="timeout-user-choice" type="number" min="1" step="1" placeholder="60" autocomplete="off" />
-                <button type="button" class="timeout-reset" id="timeout-user-choice-reset-btn" title="重置为默认（60s）">↻</button>
+                <button type="button" class="timeout-reset" id="timeout-user-choice-reset-btn" title="重置为默认（60s）"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 12a8 8 0 1 1-2.34-5.66"/><path d="M20 4v4h-4"/></svg></button>
               </div>
               <span class="field-hint">流萤向用户提问后等待回答的最长时间。</span>
             </label>
@@ -388,10 +388,10 @@
           <div class="settings-list">
             <div class="setting-row">
               <div>
-                <strong><span data-i18n="panel.preferences.segmented.title">分段输出</span></strong>
+                <strong><span data-i18n="panel.preferences.segmented.title">分段输出</span><span class="setting-row__tag" data-i18n="panel.preferences.segmented.unavailable">暂不可用</span></strong>
                 <span><span data-i18n="panel.preferences.segmented.desc">控制流萤回复在聊天气泡中的分段显示；不会改变模型实际回复内容。</span></span>
               </div>
-              <div class="option-blocks option-blocks--wide" id="segmented-output-select" role="radiogroup" aria-label="分段输出">
+              <div class="option-blocks" id="segmented-output-select" role="radiogroup" aria-label="分段输出">
                 <button type="button" class="option-block" data-value="all" aria-pressed="false" disabled><span data-i18n="panel.preferences.segmented.option.all">所有</span></button>
                 <button type="button" class="option-block" data-value="chat" aria-pressed="false" disabled><span data-i18n="panel.preferences.segmented.option.chat">聊天</span></button>
                 <button type="button" class="option-block is-active" data-value="off" aria-pressed="true" disabled><span data-i18n="panel.preferences.segmented.option.off">关闭</span></button>
@@ -403,7 +403,7 @@
                 <strong><span data-i18n="panel.preferences.proactive.title">主动聊天</span></strong>
                 <span><span data-i18n="panel.preferences.proactive.desc">流萤会在合适的时间主动发起对话；深夜无操作、正常聊天中和连续两次未回复时不会打扰。</span></span>
               </div>
-              <div class="option-blocks option-blocks--wide" id="proactive-chat-select" role="radiogroup" aria-label="主动聊天">
+              <div class="option-blocks" id="proactive-chat-select" role="radiogroup" aria-label="主动聊天">
                 <button type="button" class="option-block is-active" data-value="off" aria-pressed="true"><span data-i18n="panel.preferences.proactive.option.off">关闭</span></button>
                 <button type="button" class="option-block" data-value="on" aria-pressed="false"><span data-i18n="panel.preferences.proactive.option.on">开启</span></button>
               </div>
@@ -414,7 +414,7 @@
                 <strong><span data-i18n="panel.preferences.proactive.delivery.title">主动消息发送到</span></strong>
                 <span><span data-i18n="panel.preferences.proactive.delivery.desc">手机渠道不可用时，本次主动消息会取消，不会改发到本地。</span></span>
               </div>
-              <div class="option-blocks option-blocks--wide" id="proactive-delivery-select" role="radiogroup" aria-label="主动消息发送到">
+              <div class="option-blocks" id="proactive-delivery-select" role="radiogroup" aria-label="主动消息发送到">
                 <button type="button" class="option-block is-active" data-value="local" aria-pressed="true"><span data-i18n="panel.preferences.proactive.delivery.option.local">仅本地</span></button>
                 <button type="button" class="option-block" data-value="wechat" aria-pressed="false"><span data-i18n="panel.preferences.proactive.delivery.option.wechat">仅微信</span></button>
                 <button type="button" class="option-block" data-value="feishu" aria-pressed="false"><span data-i18n="panel.preferences.proactive.delivery.option.feishu">仅飞书</span></button>
@@ -690,7 +690,7 @@
               </label>
               <div class="agent-setting-subgroup">
                 <strong><span data-i18n="panel.firefly.sticker.size.title">表情包显示大小</span></strong>
-                <div class="option-blocks option-blocks--wide" id="sticker-size" role="radiogroup" aria-label="表情包显示大小">
+                <div class="option-blocks" id="sticker-size" role="radiogroup" aria-label="表情包显示大小">
                   <button type="button" class="option-block" data-value="small" aria-pressed="false"><span data-i18n="panel.firefly.sticker.size.option.small">小图</span></button>
                   <button type="button" class="option-block is-active" data-value="standard" aria-pressed="true"><span data-i18n="panel.firefly.sticker.size.option.standard">标准</span></button>
                   <button type="button" class="option-block" data-value="large" aria-pressed="false"><span data-i18n="panel.firefly.sticker.size.option.large">大图</span></button>
@@ -827,7 +827,7 @@
             <div class="settings-list account-card" id="account-card">
               <div class="setting-row" id="account-signed-out">
                 <div class="account-card__identity">
-                  <span class="account-card__avatar" aria-hidden="true"><svg width="22" height="22" viewBox="0 0 48 48" fill="none" aria-hidden="true"><path d="M44 8H4V38H19L24 43L29 38H44V8Z" stroke="currentColor" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/><circle cx="24" cy="19" r="5" fill="none" stroke="currentColor" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/><path d="M33 32C33 27.5817 28.9706 24 24 24C19.0294 24 15 27.5817 15 32" stroke="currentColor" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/></svg></span>
+                  <span class="account-card__avatar" aria-hidden="true"><svg width="22" height="22" viewBox="0 0 48 48" fill="none" aria-hidden="true"><circle cx="24" cy="14" r="7" stroke="currentColor" stroke-width="4"/><path d="M8 41C8 33.268 15.268 27 24 27C32.732 27 40 33.268 40 41" stroke="currentColor" stroke-width="4" stroke-linecap="round"/></svg></span>
                   <div>
                     <strong><span data-i18n="panel.user.account.signedOutTitle">未登录</span></strong>
                     <span><span data-i18n="panel.user.account.signedOutDesc">登录后可在多台设备间同步你的资料与设置（即将支持）</span></span>
@@ -842,7 +842,7 @@
                 <div class="account-card__identity">
                   <span class="account-card__avatar">
                     <img id="account-avatar-img" alt="" hidden />
-                    <span id="account-avatar-placeholder"><svg width="22" height="22" viewBox="0 0 48 48" fill="none" aria-hidden="true"><path d="M44 8H4V38H19L24 43L29 38H44V8Z" stroke="currentColor" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/><circle cx="24" cy="19" r="5" fill="none" stroke="currentColor" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/><path d="M33 32C33 27.5817 28.9706 24 24 24C19.0294 24 15 27.5817 15 32" stroke="currentColor" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/></svg></span>
+                    <span id="account-avatar-placeholder"><svg width="22" height="22" viewBox="0 0 48 48" fill="none" aria-hidden="true"><circle cx="24" cy="14" r="7" stroke="currentColor" stroke-width="4"/><path d="M8 41C8 33.268 15.268 27 24 27C32.732 27 40 33.268 40 41" stroke="currentColor" stroke-width="4" stroke-linecap="round"/></svg></span>
                   </span>
                   <div>
                     <strong id="account-display-name"></strong>
@@ -864,7 +864,7 @@
                 </div>
                 <div class="user-avatar-actions">
                   <div class="user-avatar" id="user-avatar-el">
-                    <span><svg width="22" height="22" viewBox="0 0 48 48" fill="none" aria-hidden="true"><path d="M44 8H4V38H19L24 43L29 38H44V8Z" stroke="currentColor" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/><circle cx="24" cy="19" r="5" fill="none" stroke="currentColor" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/><path d="M33 32C33 27.5817 28.9706 24 24 24C19.0294 24 15 27.5817 15 32" stroke="currentColor" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/></svg></span>
+                    <span><svg width="22" height="22" viewBox="0 0 48 48" fill="none" aria-hidden="true"><circle cx="24" cy="14" r="7" stroke="currentColor" stroke-width="4"/><path d="M8 41C8 33.268 15.268 27 24 27C32.732 27 40 33.268 40 41" stroke="currentColor" stroke-width="4" stroke-linecap="round"/></svg></span>
                   </div>
                   <button type="button" class="ghost-btn" id="upload-avatar-btn"><svg width="16" height="16" viewBox="0 0 48 48" fill="none" aria-hidden="true" style="vertical-align:-3px; margin-right:4px"><circle cx="24" cy="24" r="20" stroke="currentColor" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/><path d="M9 37L17 28L33 41" stroke="currentColor" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/><circle cx="18" cy="17" r="4" fill="none" stroke="currentColor" stroke-width="4"/><path d="M24 33L32 23L42 31" stroke="currentColor" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/></svg><span data-i18n="panel.user.uploadAvatarButton">上传头像</span></button>
                 </div>
@@ -884,7 +884,7 @@
                 <div class="gender-select" id="user-gender">
                     <button type="button" class="gender-select__btn is-active" data-gender="secret"><svg width="16" height="16" viewBox="0 0 48 48" fill="none" aria-hidden="true" style="vertical-align:-2px"><path d="M6 8.25564L24.0086 3L42 8.25564V19.0337C42 30.3622 34.7502 40.4194 24.0026 44.0005C13.2521 40.4195 6 30.36 6 19.0287V8.25564Z" fill="none" stroke="currentColor" stroke-width="4" stroke-linejoin="round"/></svg> <span data-i18n="panel.user.genderSecret">保密</span></button>
                     <button type="button" class="gender-select__btn" data-gender="male"><svg width="16" height="16" viewBox="0 0 48 48" fill="none" aria-hidden="true" style="vertical-align:-2px"><path d="M41.9517 15.0483V6.04834H32.9517" stroke="#4A9EFF" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/><path d="M10.4135 38.0007C15.8808 43.4681 24.7451 43.4681 30.2125 38.0007C32.9462 35.2671 34.313 31.6841 34.313 28.1012C34.313 24.5183 32.9462 20.9354 30.2125 18.2017C24.7451 12.7344 15.8808 12.7344 10.4135 18.2017C4.94615 23.6691 4.94615 32.5334 10.4135 38.0007Z" fill="none" stroke="#4A9EFF" stroke-width="4" stroke-linejoin="round"/><path d="M30.0002 17.9999L39.9517 8.04838" stroke="#4A9EFF" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/></svg> <span data-i18n="panel.user.genderMale">男生</span></button>
-                    <button type="button" class="gender-select__btn" data-gender="female"><svg width="16" height="16" viewBox="0 0 48 48" fill="none" aria-hidden="true" style="vertical-align:-2px"><g clip-path="url(#icon-gender-female)"><path d="M38.3785 9.85132C32.9112 4.38398 24.0468 4.38398 18.5795 9.85132C15.8458 12.585 14.479 16.1679 14.479 19.7508C14.479 23.3337 15.8458 26.9166 18.5795 29.6503C24.0468 35.1176 32.9112 35.1176 38.3785 29.6503C43.8458 24.183 43.8458 15.3187 38.3785 9.85132Z" fill="none" stroke="currentColor" stroke-width="4" stroke-linejoin="round"/><path d="M18.4642 29.5353L5.73633 42.2632" stroke="currentColor" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/><path d="M19.1714 41.5562L6.44346 28.8282" stroke="currentColor" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/></g><defs><clipPath id="icon-gender-female"><rect width="48" height="48" fill="currentColor"/></clipPath></defs></svg> <span data-i18n="panel.user.genderFemale">女生</span></button>
+                    <button type="button" class="gender-select__btn" data-gender="female"><svg width="16" height="16" viewBox="0 0 48 48" fill="none" aria-hidden="true" style="vertical-align:-2px"><g clip-path="url(#icon-gender-female)"><path d="M38.3785 9.85132C32.9112 4.38398 24.0468 4.38398 18.5795 9.85132C15.8458 12.585 14.479 16.1679 14.479 19.7508C14.479 23.3337 15.8458 26.9166 18.5795 29.6503C24.0468 35.1176 32.9112 35.1176 38.3785 29.6503C43.8458 24.183 43.8458 15.3187 38.3785 9.85132Z" fill="none" stroke="#FF7EB3" stroke-width="4" stroke-linejoin="round"/><path d="M18.4642 29.5353L5.73633 42.2632" stroke="#FF7EB3" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/><path d="M19.1714 41.5562L6.44346 28.8282" stroke="#FF7EB3" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/></g><defs><clipPath id="icon-gender-female"><rect width="48" height="48" fill="currentColor"/></clipPath></defs></svg> <span data-i18n="panel.user.genderFemale">女生</span></button>
                   </div>
               </div>
               <label class="setting-row" for="user-call-pref">

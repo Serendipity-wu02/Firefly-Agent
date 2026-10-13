@@ -600,10 +600,7 @@ body {
   box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.06);
 }
 
-/* 偏好设置面板：每行右侧按钮组固定 3 列宽度且右边界对齐到同一条竖线。
-   - 覆盖默认 setting-row 的 space-between，改用 flex-start + margin-left: auto，避免按钮少的行被拉宽。
-   - .option-blocks 固定为 3 列 grid：所有行的按钮组宽度恒定，最后一个按钮右边界自然对齐。
-   - 利用 grid-column 让按钮从右往左落位：3 个按钮占第 1/2/3 列，2 个按钮占第 2/3 列（最左列留空）。 */
+/* 偏好设置面板：行右侧的开关靠右；分段选择的样式只在 settings-system.css 定义一次。 */
 #preferences-form .setting-row {
   justify-content: flex-start;
 }
@@ -611,27 +608,6 @@ body {
 #preferences-form .setting-row .switch,
 #preferences-form .setting-row .hotkey-input {
   margin-left: auto;
-}
-
-#preferences-form .setting-row .option-blocks {
-  margin-left: auto;
-  display: grid;
-  width: 360px;
-  min-width: 360px;
-  max-width: 360px;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 8px;
-}
-
-/* 区分总子元素数：
-   - 3 个按钮：默认 auto-placement 占第 1/2/3 列（无需额外规则）。
-   - 2 个按钮：第一个锚定到第 2 列，第二个放到第 3 列，第 1 列留空。
-     用 :first-child:nth-last-child(2) 精确选中只有 2 个子元素时的第一个孩子。 */
-#preferences-form .setting-row .option-blocks > :first-child:nth-last-child(2) {
-  grid-column-start: 2;
-}
-#preferences-form .setting-row .option-blocks > :last-child:nth-child(2) {
-  grid-column-start: 3;
 }
 
 .proactive-delivery-row[hidden] {
@@ -717,53 +693,6 @@ body {
   justify-content: flex-start;
 }
 
-
-.language-options,
-.option-blocks {
-  display: grid;
-  grid-template-columns: repeat(4, minmax(56px, 1fr));
-  gap: 8px;
-  min-width: 260px;
-}
-
-.language-option,
-.option-block {
-  padding: 9px 12px;
-  border-radius: 12px;
-  color: var(--rb-text-muted);
-  background: rgba(255, 255, 255, 0.055);
-  border: 1px solid rgba(var(--rb-accent-rgb), 0.14);
-  font: var(--rb-text-small-em);
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.05);
-  transition: transform 120ms ease, border-color 160ms ease, background 160ms ease, box-shadow 160ms ease;
-}
-
-.language-option.is-active,
-.option-block.is-active {
-  color: var(--rb-text-on-pink);
-  background: linear-gradient(135deg, var(--rb-pink-500), var(--rb-accent-deep));
-  border-color: rgba(255, 255, 255, 0.26);
-  box-shadow: 0 0 22px rgba(var(--rb-accent-rgb), 0.30), inset 0 1px 0 rgba(255, 255, 255, 0.20);
-}
-
-.language-option:not(:disabled):hover,
-.option-block:not(:disabled):hover {
-  transform: translateY(-1px);
-  border-color: rgba(var(--rb-accent-rgb), 0.34);
-  background: rgba(255, 255, 255, 0.10);
-}
-
-.language-option:disabled,
-.option-block:disabled {
-  cursor: not-allowed;
-  opacity: 0.46;
-}
-
-
-.option-blocks {
-  grid-template-columns: repeat(3, minmax(80px, 1fr));
-  min-width: 190px;
-}
 
 .theme-options {
   grid-template-columns: repeat(2, minmax(96px, 1fr));
@@ -981,11 +910,6 @@ body {
   vertical-align: middle;
 }
 
-.language-options {
-  grid-template-columns: repeat(4, minmax(56px, 1fr));
-  min-width: 260px;
-}
-
 
 .switch {
   position: relative;
@@ -1187,11 +1111,6 @@ body {
 .agent-actions-row {
   grid-template-columns: repeat(3, minmax(0, 1fr));
   margin-top: 10px;
-}
-
-.option-blocks--wide {
-  grid-template-columns: repeat(3, minmax(80px, 1fr));
-  min-width: 0;
 }
 
 @media (max-width: 780px) {
@@ -1726,10 +1645,11 @@ body {
   gap: 4px;
   flex: 1;
   justify-content: center;
-  padding: 7px 8px;
+  min-height: var(--st-ctl-h);
+  padding: 0 8px;
   border-radius: 12px;
-  font-size: 12px;
-  font-weight: 600;
+  font-size: 13px;
+  font-weight: 500;
   color: var(--rb-text-default);
   background: transparent;
   border: 1px solid rgba(var(--rb-accent-rgb), 0.18);
@@ -1939,37 +1859,6 @@ body {
   background: var(--rb-text-on-pink);
 }
 
-/* 本地文件权限胶囊（分段选择器） */
-.plugin-perm-capsule {
-  display: inline-flex;
-  flex-shrink: 0;
-  border-radius: 12px;
-  border: 1px solid rgba(var(--rb-accent-rgb), 0.16);
-  background: rgba(255, 255, 255, 0.05);
-  overflow: hidden;
-}
-.perm-seg {
-  padding: 6px 12px;
-  border: none;
-  background: transparent;
-  color: var(--rb-text-muted);
-  font: var(--rb-text-small-em);
-  cursor: pointer;
-  transition: color 140ms ease, background 140ms ease, box-shadow 140ms ease;
-}
-.perm-seg + .perm-seg {
-  border-left: 1px solid rgba(var(--rb-accent-rgb), 0.12);
-}
-.perm-seg:not(.is-active):hover {
-  color: rgba(255, 255, 255, 0.85);
-  background: rgba(255, 255, 255, 0.06);
-}
-.perm-seg.is-active {
-  color: var(--rb-text-on-pink);
-  background: linear-gradient(135deg, var(--rb-pink-500), var(--rb-accent-deep));
-  box-shadow: 0 0 14px rgba(var(--rb-accent-rgb), 0.26);
-}
-
 /* 插件手风琴（音乐工具等可折叠插件卡） */
 .plugin-card--accordion {
   display: block;
@@ -2070,7 +1959,7 @@ body {
 }
 #advanced-fields-wrap[hidden] { display: none; }
 
-/* Base URL 重置按钮 */
+/* Base URL 输入行；重置图标按钮的样式见 settings-system.css */
 .base-url-row {
   display: flex;
   gap: 8px;
@@ -2082,24 +1971,6 @@ body {
 }
 .endpoint-preview {
   overflow-wrap: anywhere;
-}
-.base-url-reset {
-  flex-shrink: 0;
-  width: 36px;
-  padding: 0;
-  border-radius: 12px;
-  color: var(--rb-text-muted);
-  background: rgba(255, 255, 255, 0.055);
-  border: 1px solid rgba(var(--rb-accent-rgb), 0.14);
-  font-size: 16px;
-  cursor: pointer;
-  transition: transform 120ms ease, border-color 160ms ease, background 160ms ease;
-}
-.base-url-reset:hover {
-  transform: rotate(120deg);
-  border-color: rgba(var(--rb-accent-rgb), 0.34);
-  background: rgba(255, 255, 255, 0.10);
-  color: var(--rb-text-on-pink);
 }
 .timeout-row {
   display: flex;
@@ -4229,10 +4100,6 @@ input[type="checkbox"], input[type="radio"], input[type="range"] { accent-color:
 .save-status.is-ok { color: var(--rb-success); }
 .save-status.is-error { color: var(--rb-danger); }
 
-.language-option, .option-block { border-radius: 10px; color: var(--rb-text-default); background: var(--rb-card-bg); border: 1px solid var(--rb-border-soft); box-shadow: none; }
-.language-option:not(:disabled):hover, .option-block:not(:disabled):hover { transform: none; background: var(--rb-hover-light); border-color: var(--rb-border-strong); }
-.language-option.is-active, .option-block.is-active { color: var(--rb-text-on-pink); background: var(--rb-pink-500); border-color: var(--rb-pink-500); box-shadow: none; }
-.language-option:focus-visible, .option-block:focus-visible { outline: 2px solid rgba(var(--rb-accent-rgb), 0.38); outline-offset: 2px; }
 .ghost-btn { border-radius: 10px; color: var(--rb-text-strong); background: var(--rb-card-bg); border: 1px solid var(--rb-border-strong); }
 .ghost-btn:hover:not(:disabled) { background: var(--rb-hover-light); }
 
@@ -4248,11 +4115,9 @@ input[type="checkbox"], input[type="radio"], input[type="range"] { accent-color:
 .nav-item:active { background: var(--rb-active-light); }
 .save-btn--ghost:hover:not(:disabled), .ghost-btn:hover:not(:disabled) { box-shadow: none; transform: none; }
 .save-btn--ghost:active:not(:disabled), .ghost-btn:active:not(:disabled), #ui-colors-reset:active { background: var(--rb-active-light); }
-.option-block:not(:disabled):active, .language-option:not(:disabled):active { background: var(--rb-active-light); }
-.option-block.is-active:not(:disabled):hover, .language-option.is-active:not(:disabled):hover { color: var(--rb-text-on-pink); background: var(--rb-accent-hover); border-color: var(--rb-accent-hover); }
 .appearance-icon-option:hover, .plugin-add-btn:hover, .preset-card:hover:not(.is-disabled), .profile-card:hover { transform: none; box-shadow: none; background: var(--rb-hover-light); border-color: var(--rb-border-strong); }
 button:disabled, .save-btn:disabled, .ghost-btn:disabled { cursor: not-allowed; }
-.save-btn:disabled, .ghost-btn:disabled, .option-block:disabled { opacity: 0.45; }
+.save-btn:disabled, .ghost-btn:disabled { opacity: 0.45; }
 
 /* ===== Theme picker: two cards with a small palette preview ===== */
 .appearance-theme-options { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
@@ -4306,25 +4171,33 @@ button:disabled, .save-btn:disabled, .ghost-btn:disabled { cursor: not-allowed; 
 .memory-list__empty > span { display: inline-flex; color: var(--rb-text-muted); }
 .memory-list__empty > span { color: var(--rb-text-faint); opacity: 1; }
 
-/* 推理强度档位：自动开关下面一排可勾选的档位小标签；自动时整排置灰不可点。 */
+/* 推理强度档位：自动开关下面一排可勾选的档位小标签。
+   自动（锁定）时整排不可点：勾选的档位柔和铺底，未勾选的弱化描边；切换时颜色渐变，不整体置灰。 */
 .reasoning-levels-field { display: grid; gap: 8px; }
 .reasoning-levels { display: flex; flex-wrap: wrap; gap: 8px; }
-.reasoning-levels.is-locked { opacity: 0.45; }
 .reasoning-levels__chip { position: relative; display: inline-flex; cursor: pointer; }
 .reasoning-levels__chip input { position: absolute; inset: 0; margin: 0; opacity: 0; cursor: pointer; }
 .reasoning-levels__chip span {
   padding: 5px 12px; border: 1px solid var(--rb-border-soft); border-radius: 999px;
   background: transparent; color: var(--rb-text-muted); font-size: 13px; line-height: 1.3;
-  transition: background-color .15s ease, border-color .15s ease, color .15s ease;
+  transition: background-color .18s ease, border-color .18s ease, color .18s ease;
 }
 .reasoning-levels__chip:hover input:not(:disabled) + span { border-color: rgb(var(--rb-accent-rgb)); }
 .reasoning-levels__chip input:checked + span {
   border-color: rgb(var(--rb-accent-rgb)); background: rgb(var(--rb-accent-rgb)); color: #fff; font-weight: 600;
 }
 .reasoning-levels__chip input:focus-visible + span { outline: 2px solid rgb(var(--rb-accent-rgb)); outline-offset: 2px; }
-.reasoning-levels__chip input:disabled,
-.reasoning-levels.is-locked .reasoning-levels__chip { cursor: not-allowed; }
 .reasoning-levels__chip--flag span { border-style: dashed; }
+.reasoning-levels.is-locked .reasoning-levels__chip,
+.reasoning-levels.is-locked .reasoning-levels__chip input { cursor: not-allowed; }
+.reasoning-levels.is-locked .reasoning-levels__chip span {
+  color: var(--rb-text-muted); border-color: color-mix(in srgb, var(--rb-border-soft) 80%, transparent);
+}
+.reasoning-levels.is-locked .reasoning-levels__chip input:checked + span {
+  color: var(--st-selected-text); font-weight: 500;
+  border-color: color-mix(in srgb, rgb(var(--rb-accent-rgb)) 34%, transparent);
+  background: color-mix(in srgb, rgb(var(--rb-accent-rgb)) 14%, transparent);
+}
 
 /* 模型名下面的"从厂商获取模型列表"：按钮 + 一行结果提示。 */
 .model-fetch-row { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px; margin-top: 8px; }
