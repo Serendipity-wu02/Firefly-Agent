@@ -441,7 +441,7 @@ export function createDefaultApplicationDependencies(): ApplicationDependencies 
           ipc: shell.ipc,
         });
 
-        const music = bootstrapMusicService();
+        const music = bootstrapMusicService({ enabled: initialSettings.musicEnabled });
 
         // 应用更新服务（检查/下载按需；安装必须先走受控退出）
         const update = createGitHubAppUpdateService({

@@ -17,9 +17,11 @@ export function resolveQqMusicScriptPath(): string {
     : path.join(app.getAppPath(), "src", "main", "music", "scripts", "qqmusic_gsmtc.ps1");
 }
 
-export function bootstrapMusicService(): MusicBootstrap {
+export function bootstrapMusicService(options: { enabled?: boolean } = {}): MusicBootstrap {
   const service = new QqMusicService(createQqMusicExecutor(resolveQqMusicScriptPath()));
   const tools = buildMusicTools(service);
+  // 工具在设置同步之后才注册，这里按当前开关落位，避免关闭后重启又变回可用。
+  for (const tool of tools) tool.enabled = options.enabled ?? true;
   for (const tool of tools) toolRegistry.register(tool);
   ipcMain.handle(IPC.MUSIC_QQ_GET_STATUS, () => service.getState());
   ipcMain.handle(IPC.MUSIC_QQ_CONTROL, (_event, action: QqMusicAction) => {

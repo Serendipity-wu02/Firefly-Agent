@@ -20,10 +20,12 @@ import { registerCodeGitTools } from "../git-tools";
 import type { LspManager } from "../../../lsp/manager";
 import { registerLspTool } from "../lsp-tool";
 import "../built-in-tools";
+import { MUSIC_TOOL_IDS } from "../music-tools";
 
 export function syncBuiltInToolToggles(settings: GeneralSettings): void {
   toolRegistry.setEnabled("weather", settings.weatherEnabled);
   toolRegistry.setEnabled("plan_trip", settings.travelEnabled);
+  for (const id of MUSIC_TOOL_IDS) toolRegistry.setEnabled(id, settings.musicEnabled);
 }
 
 export function registerAllTools(deps: { codeGitService: GitService; lspManager: LspManager; browserWorkspace?: BrowserWorkspaceExecutor; personalMemoryMode?: "legacy" | "smh" }): void {

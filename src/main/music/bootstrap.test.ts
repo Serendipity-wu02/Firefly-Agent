@@ -19,7 +19,7 @@ vi.mock("./qqmusic-service", () => ({
   createQqMusicExecutor: vi.fn(() => vi.fn()),
 }));
 
-const tools = vi.hoisted(() => [{ id: "music_get_playback_status" }, { id: "music_control" }]);
+const tools = vi.hoisted(() => [{ id: "music_get_playback_status", enabled: true }, { id: "music_control", enabled: true }]);
 vi.mock("../orchestrator/tools/music-tools", () => ({ buildMusicTools: vi.fn(() => tools) }));
 const registry = vi.hoisted(() => ({ register: vi.fn(), unregister: vi.fn() }));
 vi.mock("../orchestrator/tools/registry/tool-registry", () => ({ toolRegistry: registry }));
@@ -30,6 +30,7 @@ import { IPC } from "../../shared/ipc-channels";
 beforeEach(() => {
   handlers.clear();
   vi.clearAllMocks();
+  for (const tool of tools) tool.enabled = true;
 });
 
 describe("QQ Music bootstrap", () => {
@@ -39,6 +40,18 @@ describe("QQ Music bootstrap", () => {
     expect([...handlers.keys()].sort()).toEqual([IPC.MUSIC_QQ_CONTROL, IPC.MUSIC_QQ_GET_STATUS].sort());
     expect(registry.register.mock.calls.map(([tool]) => tool.id)).toEqual(tools.map((tool) => tool.id));
     expect(handlers.has(IPC.MUSIC_BEGIN_LOGIN)).toBe(false);
+  });
+
+  it("registers the tools switched off when the user has turned the music tool off", () => {
+    bootstrapMusicService({ enabled: false });
+    expect(tools.map((tool) => tool.enabled)).toEqual([false, false]);
+    // 状态面板仍可读取，开关只管 Agent 能否调用
+    expect(handlers.has(IPC.MUSIC_QQ_GET_STATUS)).toBe(true);
+  });
+
+  it("keeps the tools available by default", () => {
+    bootstrapMusicService();
+    expect(tools.map((tool) => tool.enabled)).toEqual([true, true]);
   });
 
   it("rejects invalid actions before calling the service", async () => {

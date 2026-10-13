@@ -602,7 +602,7 @@
             <div class="panel-heading__icon"><svg width="24" height="24" viewBox="0 0 48 48" fill="none" aria-hidden="true"><title>通用设置</title><path d="M18.2838 43.1713C14.9327 42.1736 11.9498 40.3213 9.58787 37.867C10.469 36.8227 11 35.4734 11 34.0001C11 30.6864 8.31371 28.0001 5 28.0001C4.79955 28.0001 4.60139 28.01 4.40599 28.0292C4.13979 26.7277 4 25.3803 4 24.0001C4 21.9095 4.32077 19.8938 4.91579 17.9995C4.94381 17.9999 4.97188 18.0001 5 18.0001C8.31371 18.0001 11 15.3138 11 12.0001C11 11.0488 10.7786 10.1493 10.3846 9.35011C12.6975 7.1995 15.5205 5.59002 18.6521 4.72314C19.6444 6.66819 21.6667 8.00013 24 8.00013C26.3333 8.00013 28.3556 6.66819 29.3479 4.72314C32.4795 5.59002 35.3025 7.1995 37.6154 9.35011C37.2214 10.1493 37 11.0488 37 12.0001C37 15.3138 39.6863 18.0001 43 18.0001C43.0281 18.0001 43.0562 17.9999 43.0842 17.9995C43.6792 19.8938 44 21.9095 44 24.0001C44 25.3803 43.8602 26.7277 43.594 28.0292C43.3986 28.01 43.2005 28.0001 43 28.0001C39.6863 28.0001 37 30.6864 37 34.0001C37 35.4734 37.531 36.8227 38.4121 37.867C36.0502 40.3213 33.0673 42.1736 29.7162 43.1713C28.9428 40.752 26.676 39.0001 24 39.0001C21.324 39.0001 19.0572 40.752 18.2838 43.1713Z" fill="none" stroke="currentColor" stroke-width="4" stroke-linejoin="round"/><path d="M24 31C27.866 31 31 27.866 31 24C31 20.134 27.866 17 24 17C20.134 17 17 20.134 17 24C17 27.866 20.134 31 24 31Z" fill="none" stroke="currentColor" stroke-width="4" stroke-linejoin="round"/></svg></div>
             <div>
               <h1><span data-i18n="panel.general.heading">通用设置</span></h1>
-              <p><span data-i18n="panel.general.subheading">选择流萤的界面语言，切换后立即保存。</span></p>
+              <p><span data-i18n="panel.general.subheading">界面语言、本地文件权限与桌面行为，切换后立即保存。</span></p>
             </div>
           </div>
 
@@ -615,6 +615,22 @@
               <div class="language-options" id="language-select" role="radiogroup" aria-label="语言" data-i18n-aria-label="panel.general.language.groupLabel">
                 <button type="button" class="language-option is-active" data-lang="zh-CN" aria-pressed="true"><span data-i18n="panel.general.language.option.zh">中文</span></button>
                 <button type="button" class="language-option" data-lang="en" aria-pressed="false">English</button>
+              </div>
+            </div>
+          </div>
+
+          <h2 class="settings-group-title"><span data-i18n="panel.general.groups.files">本地文件</span></h2>
+          <div class="settings-list">
+            <div class="setting-row setting-row--control" id="plugin-file-card">
+              <div>
+                <strong><span data-i18n="panel.plugins.file.title">文件访问权限</span></strong>
+                <span><span id="plugin-file-note">只读：流萤不会修改本地任何文件。</span></span>
+              </div>
+              <div class="plugin-perm-capsule" id="plugin-file-permission" role="group" aria-label="本地文件权限">
+                <button type="button" class="perm-seg" data-level="project-read-only" title="完全只读：只能在项目目录内只读" data-i18n-title="panel.plugins.file.permProjectReadTitle"><span data-i18n="panel.plugins.file.permProjectRead">全只读</span></button>
+                <button type="button" class="perm-seg is-active" data-level="read-only" title="允许访问：可读取但不修改" data-i18n-title="panel.plugins.file.permReadTitle"><span data-i18n="panel.plugins.file.permRead">只读</span></button>
+                <button type="button" class="perm-seg" data-level="per-action" title="每次审批" data-i18n-title="panel.plugins.file.permActionTitle"><span data-i18n="panel.plugins.file.permAction">审批</span></button>
+                <button type="button" class="perm-seg" data-level="full" title="完全访问" data-i18n-title="panel.plugins.file.permFullTitle"><span data-i18n="panel.plugins.file.permFull">完全</span></button>
               </div>
             </div>
           </div>
@@ -1448,20 +1464,6 @@
               </label>
             </article>
 
-            <article class="plugin-card" id="plugin-file-card">
-              <div class="plugin-card__icon"><svg width="22" height="22" viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><path d="M4 9V41L9 21H39.5V15C39.5 13.8954 38.6046 13 37.5 13H24L19 7H6C4.89543 7 4 7.89543 4 9Z" stroke="currentColor" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/><path d="M40 41L44 21H8.8125L4 41H40Z" fill="none" stroke="currentColor" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
-              <div class="plugin-card__body">
-                <h2><span data-i18n="panel.plugins.file.title">本地文件</span></h2>
-                <p id="plugin-file-note"><span data-i18n="panel.plugins.file.note">只读：流萤不会修改本地任何文件。</span></p>
-              </div>
-              <div class="plugin-perm-capsule" id="plugin-file-permission" role="group" aria-label="本地文件权限">
-                <button type="button" class="perm-seg" data-level="project-read-only" title="完全只读：只能在项目目录内只读" data-i18n-title="panel.plugins.file.permProjectReadTitle"><span data-i18n="panel.plugins.file.permProjectRead">全只读</span></button>
-                <button type="button" class="perm-seg is-active" data-level="read-only" title="允许访问：可读取但不修改" data-i18n-title="panel.plugins.file.permReadTitle"><span data-i18n="panel.plugins.file.permRead">只读</span></button>
-                <button type="button" class="perm-seg" data-level="per-action" title="每次审批" data-i18n-title="panel.plugins.file.permActionTitle"><span data-i18n="panel.plugins.file.permAction">审批</span></button>
-                <button type="button" class="perm-seg" data-level="full" title="完全访问" data-i18n-title="panel.plugins.file.permFullTitle"><span data-i18n="panel.plugins.file.permFull">完全</span></button>
-              </div>
-            </article>
-
             <article class="plugin-card" id="plugin-playwright-mcp-card">
               <div class="plugin-card__icon"><svg width="22" height="22" viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><rect x="19" y="32" width="10" height="9" stroke="currentColor" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/><rect x="5" y="8" width="38" height="24" rx="2" fill="none" stroke="currentColor" stroke-width="4"/><path d="M22 27H26" stroke="currentColor" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/><path d="M14 41L34 41" stroke="currentColor" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
               <div class="plugin-card__body">
@@ -1474,23 +1476,17 @@
               </label>
             </article>
 
-            <article class="plugin-card plugin-card--accordion plugin-card--music" id="plugin-music-card">
-              <div class="plugin-accordion-header">
-                <div class="plugin-card__icon"><svg width="22" height="22" viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><path d="M24 4C12.9543 4 4 12.9543 4 24C4 35.0457 12.9543 44 24 44C35.0457 44 44 35.0457 44 24C44 21.2883 43.4603 18.7026 42.4825 16.3446C42.2308 15.7376 41.9501 15.1457 41.6421 14.5707" stroke="currentColor" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/><path d="M35 10C37.2091 10 39 8.65685 39 7C39 5.34315 37.2091 4 35 4C32.7909 4 31 5.34315 31 7C31 8.65685 32.7909 10 35 10Z" fill="none" stroke="currentColor" stroke-width="4" stroke-linejoin="round"/><path d="M24 31C27.866 31 31 27.866 31 24C31 20.134 27.866 17 24 17C20.134 17 17 20.134 17 24C17 27.866 20.134 31 24 31Z" fill="none" stroke="currentColor" stroke-width="4" stroke-linejoin="round"/><path d="M31 6.5V24" stroke="currentColor" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
-                <div class="plugin-card__body">
-                  <h2><span data-i18n="panel.plugins.music.title">音乐工具</span></h2>
-                  <p>读取并控制已运行的 QQ Music 桌面客户端。</p>
-                </div>
-                <button type="button" class="accordion-toggle" id="plugin-music-toggle" aria-label="展开音乐工具" aria-expanded="false">▾</button>
+            <article class="plugin-card plugin-card--music" id="plugin-music-card">
+              <div class="plugin-card__icon"><svg width="22" height="22" viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><path d="M24 4C12.9543 4 4 12.9543 4 24C4 35.0457 12.9543 44 24 44C35.0457 44 44 35.0457 44 24C44 21.2883 43.4603 18.7026 42.4825 16.3446C42.2308 15.7376 41.9501 15.1457 41.6421 14.5707" stroke="currentColor" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/><path d="M35 10C37.2091 10 39 8.65685 39 7C39 5.34315 37.2091 4 35 4C32.7909 4 31 5.34315 31 7C31 8.65685 32.7909 10 35 10Z" fill="none" stroke="currentColor" stroke-width="4" stroke-linejoin="round"/><path d="M24 31C27.866 31 31 27.866 31 24C31 20.134 27.866 17 24 17C20.134 17 17 20.134 17 24C17 27.866 20.134 31 24 31Z" fill="none" stroke="currentColor" stroke-width="4" stroke-linejoin="round"/><path d="M31 6.5V24" stroke="currentColor" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+              <div class="plugin-card__body">
+                <h2><span data-i18n="panel.plugins.music.title">音乐工具</span></h2>
+                <p><span data-i18n="panel.plugins.music.desc">读取并控制已运行的 QQ Music 桌面客户端：状态、播放、暂停与切歌。</span></p>
+                <button type="button" class="plugin-card__link" id="music-platform-qq" data-platform="qqmusic"><span data-i18n="panel.plugins.music.open">状态与控制</span></button>
               </div>
-              <div class="plugin-accordion-body is-collapsed" id="plugin-music-body">
-                <div class="music-platform-grid" id="music-platform-list">
-                  <button type="button" class="plugin-card plugin-card--sub music-platform" id="music-platform-qq" data-platform="qqmusic">
-                    <div class="plugin-card__icon" aria-hidden="true">♫</div>
-                    <div class="plugin-card__body"><h2>QQ Music</h2><p>读取状态、播放、暂停与切歌；仅控制 QQMusic.exe。</p></div>
-                  </button>
-                </div>
-              </div>
+              <label class="plugin-switch" aria-label="启用音乐工具">
+                <input type="checkbox" id="plugin-music-enabled" />
+                <span></span>
+              </label>
             </article>
           </div>
           <!-- 插件设置面板（settingsSection: plugins，缺省分区）动态挂载点 -->

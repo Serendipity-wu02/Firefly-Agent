@@ -59,6 +59,8 @@ export interface GeneralSettings extends ChatAppearanceSettings {
   amapKey: string;
   /** 🚗出行工具是否启用 */
   travelEnabled: boolean;
+  /** 🎵 音乐工具（QQ Music 状态读取与播放控制）是否启用。升级前已有的行为是始终可用，所以默认 true。 */
+  musicEnabled: boolean;
   /** 🖥️ 浏览器自动化（Playwright MCP）是否启用。默认 false，需用户手动开启。 */
   playwrightMcpEnabled: boolean;
   // 联网搜索：选哪个搜索源 + 对应 key

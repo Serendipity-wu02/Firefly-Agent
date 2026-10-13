@@ -54,7 +54,6 @@ import type {
   ScheduledTask,
   ScheduledTaskHistoryEntry,
 } from "./scheduler/types";
-import { musicToggle, musicAccordionCard, musicAccordionBody } from "./music/dom";
 import { channelsState } from "./channels/state";
 import { mountPluginPanels } from "./plugin-panels";
 import { channelsWechatEnabledEl, channelsFeishuEnabledEl, channelsWechatStatusEl, channelsFeishuStatusEl, channelsRateUserEl, channelsRateChannelEl, channelsStickerEl, channelsMirrorEl, channelsToolSandboxOffEl, channelsToolSandboxAllEl, channelsFeishuAppIdEl, channelsFeishuAppSecretEl, channelsFeishuAppSecretRevealBtn, channelsFeishuSaveBtn, channelsWechatLoginBtn, channelsWechatRestartBtn, channelsWechatFeedbackEl, channelsFeishuFeedbackEl, channelsLogListEl, channelsLogRefreshBtn, channelsLogClearBtn } from "./channels/dom";
@@ -185,6 +184,7 @@ if (!window.settings) {
       weatherEnabled: false,
       amapKey: "",
       travelEnabled: false,
+      musicEnabled: true,
       playwrightMcpEnabled: false,
       searchEngine: "off",
       searchBochaKey: "",
@@ -1647,14 +1647,6 @@ memoryImportedList?.addEventListener("click", async (event) => {
 });
 
 void loadMemoryPanel();
-
-// ── 音乐工具手风琴 ─────────────────────────────────────────
-musicToggle?.addEventListener("click", () => {
-  const expanded = musicToggle?.getAttribute("aria-expanded") === "true";
-  musicToggle?.setAttribute("aria-expanded", String(!expanded));
-  musicAccordionCard?.classList.toggle("is-expanded", !expanded);
-  musicAccordionBody?.classList.toggle("is-collapsed", expanded);
-});
 
 // ── 音乐工具路由 ──────────────────────────────────────────────
 document.getElementById("music-platform-qq")?.addEventListener("click", () => {

@@ -51,6 +51,7 @@ const DEFAULT_GENERAL_SETTINGS: GeneralSettings = {
   weatherEnabled: false,
   amapKey: "",
   travelEnabled: false,
+  musicEnabled: true,
   playwrightMcpEnabled: false,
   searchEngine: "off",
   searchBochaKey: "",
@@ -175,6 +176,7 @@ export function normalizeGeneralSettings(
     weatherEnabled: Boolean(input?.weatherEnabled),
     amapKey: typeof input?.amapKey === "string" ? input.amapKey : "",
     travelEnabled: Boolean(input?.travelEnabled),
+    musicEnabled: input?.musicEnabled === undefined ? true : Boolean(input.musicEnabled),
     playwrightMcpEnabled: Boolean(input?.playwrightMcpEnabled),
     searchEngine: ["off", "bocha", "tavily", "minimax", "anySearch"].includes(String(input?.searchEngine))
       ? (input!.searchEngine as "off" | "bocha" | "tavily" | "minimax" | "anySearch")

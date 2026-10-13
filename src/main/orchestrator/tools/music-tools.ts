@@ -1,6 +1,9 @@
 import type { QqMusicService } from "../../music/qqmusic-service";
 import type { ToolDefinition } from "./registry/tool-registry";
 
+/** 音乐工具开关控制的全部工具 id。 */
+export const MUSIC_TOOL_IDS = ["music_get_playback_status", "music_control"] as const;
+
 export function buildMusicTools(service: QqMusicService): ToolDefinition[] {
   return [
     {

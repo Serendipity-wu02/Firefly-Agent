@@ -477,7 +477,7 @@
 }
 .settings-shell .plugin-list > .mcp-server-card { grid-template-columns: minmax(0, 1fr) auto; align-items: center; }
 .settings-shell .plugin-list > .plugin-card--accordion { display: block; }
-.settings-shell .plugin-list > :is(.plugin-card--accordion, #plugin-file-card, .plugin-card:has(.plugin-config[style*="block"])) { grid-column: 1 / -1; }
+.settings-shell .plugin-list > :is(.plugin-card--accordion, .plugin-card:has(.plugin-config[style*="block"])) { grid-column: 1 / -1; }
 .settings-shell .plugin-card__icon,
 .settings-shell .plugin-accordion-header .plugin-card__icon { width: 36px; height: 36px; border-radius: var(--st-radius-inner); border: 1px solid var(--st-divider); background: var(--st-inset-fill); font-size: 18px; }
 .settings-shell .plugin-card__icon svg { width: 20px; height: 20px; }
@@ -490,8 +490,23 @@
 .settings-shell .plugin-card.is-muted { opacity: .6; }
 .settings-shell .accordion-toggle { width: 28px; height: 28px; border: 0; border-radius: 8px; background: transparent; color: var(--rb-text-muted); }
 .settings-shell .accordion-toggle:hover { background: var(--st-nav-hover); color: var(--rb-text-strong); }
-.settings-shell .plugin-list > #plugin-file-card { align-items: center; }
-.settings-shell .plugin-list > #plugin-file-card .plugin-perm-capsule { align-self: center; }
+/* 卡片内的次级文字按钮（音乐工具的"状态与控制"） */
+.settings-shell .plugin-card__link {
+  margin-top: 6px; padding: 0; border: 0; background: transparent; cursor: pointer;
+  font: inherit; font-size: 12px; line-height: 18px; color: var(--st-selected-text);
+  text-decoration: underline; text-decoration-color: transparent; text-underline-offset: 3px;
+  transition: text-decoration-color .15s ease, color .15s ease;
+}
+.settings-shell .plugin-card__link:hover { text-decoration-color: currentColor; }
+.settings-shell .plugin-card__link:focus-visible { outline: 2px solid var(--st-selected-stroke); outline-offset: 2px; border-radius: 4px; }
+/* 通用页里的"左说明 + 右控件"行：控件不被说明文字挤压，窄屏折到下一行 */
+.settings-shell .setting-row--control { gap: 16px; align-items: center; }
+.settings-shell .setting-row--control > div:first-child { min-width: 0; flex: 1 1 220px; }
+.settings-shell .setting-row--control > .plugin-perm-capsule { flex: 0 0 auto; }
+@media (max-width: 780px) {
+  .settings-shell .setting-row--control { flex-wrap: wrap; }
+  .settings-shell .setting-row--control > .plugin-perm-capsule { margin-left: auto; }
+}
 
 /* ── ASR 页：原来没有任何样式 ────────────────────────────── */
 #desktop-asr-form .panel-body {

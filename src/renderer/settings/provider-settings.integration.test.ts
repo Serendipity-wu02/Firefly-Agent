@@ -144,7 +144,8 @@ it("places the desktop card between the language and about cards with both switc
   const form = element("general-form");
   const toast = element<HTMLInputElement>("toast-sound-enabled");
   const launch = element<HTMLInputElement>("launch-at-login");
-  expect(form.querySelector(".settings-group-title")?.textContent).toBe("桌面与系统");
+  const groupTitles = Array.from(form.querySelectorAll(".settings-group-title"), (node) => node.textContent);
+  expect(groupTitles).toEqual(["本地文件", "桌面与系统"]);
   expect(toast.type).toBe("checkbox");
   expect(toast.closest("label")?.textContent).toContain("提醒音效");
   expect(launch.closest("label")?.textContent).toContain("开机自启");
@@ -152,6 +153,14 @@ it("places the desktop card between the language and about cards with both switc
   const about = form.querySelector(".setting-row--about")!;
   expect(language.compareDocumentPosition(toast) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
   expect(launch.compareDocumentPosition(about) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+});
+
+it("puts the local file permission control in the general settings, not in the tools panel", () => {
+  const form = element("general-form");
+  expect(form.querySelector("#plugin-file-permission")).not.toBeNull();
+  expect(form.querySelectorAll("#plugin-file-permission button[data-level]")).toHaveLength(4);
+  expect(element("plugin-file-note")).toBeTruthy();
+  expect(document.querySelector(".plugin-list #plugin-file-card")).toBeNull();
 });
 
 it("loads both desktop switches from the saved general settings", async () => {

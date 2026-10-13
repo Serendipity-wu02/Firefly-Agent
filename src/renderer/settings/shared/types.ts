@@ -135,6 +135,7 @@ export interface GeneralSettings extends ChatAppearanceSettings {
   weatherEnabled: boolean;
   amapKey: string;
   travelEnabled: boolean;
+  musicEnabled: boolean;
   playwrightMcpEnabled: boolean;
   searchEngine: "off" | "bocha" | "tavily" | "minimax" | "anySearch";
   searchBochaKey: string;
