@@ -248,6 +248,7 @@ export interface SettingsApi {
   channelsGetConfig: () => Promise<any>;
   channelsSaveConfig: (patch: unknown) => Promise<any>;
   channelsRestart: () => Promise<{ ok: boolean }>;
+  channelsSenderResolve: (payload: { channel: string; senderId: string; action: "approve" | "dismiss" }) => Promise<{ ok: boolean; error?: string }>;
   channelsQqTestConnection: () => Promise<{ ok: boolean; error?: string; detail?: Record<string, unknown> }>;
   /**
    * QQ 监听鉴权预检（renderer → main）：主进程按参数解析真实监听地址并判定是否

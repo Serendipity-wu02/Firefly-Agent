@@ -51,6 +51,32 @@ describe("channels/settings-store", () => {
     decryptCalls = 0;
   });
 
+  it("发送者白名单: 新配置默认只放行白名单", () => {
+    const cfg = loadChannelsSettings();
+    expect(cfg.wechat).toMatchObject({ allowAnyPrivate: false, allowedSenderIds: [] });
+    expect(cfg.feishu).toMatchObject({ allowAnyPrivate: false, allowedSenderIds: [] });
+  });
+
+  it("发送者白名单: 升级前已启用且无放行字段的渠道保持放行所有人", () => {
+    const p = path.join(os.tmpdir(), "channels-settings.json");
+    fs.writeFileSync(p, JSON.stringify({ wechat: { enabled: true }, feishu: { enabled: false } }));
+    const cfg = loadChannelsSettings();
+    expect(cfg.wechat.allowAnyPrivate).toBe(true);
+    expect(cfg.feishu.allowAnyPrivate).toBe(false);
+  });
+
+  it("发送者白名单: 保存后固定为显式值，非法标识被丢弃", () => {
+    const p = path.join(os.tmpdir(), "channels-settings.json");
+    fs.writeFileSync(p, JSON.stringify({ wechat: { enabled: true } }));
+    saveChannelsSettings({ wechat: { allowAnyPrivate: false, allowedSenderIds: ["a@im.wechat", "bad id", "a@im.wechat"] } as never });
+    const cfg = loadChannelsSettings();
+    expect(cfg.wechat.allowAnyPrivate).toBe(false);
+    expect(cfg.wechat.allowedSenderIds).toEqual(["a@im.wechat"]);
+    // 只改开关的补丁不会把已有白名单清空，也不会重新放开
+    saveChannelsSettings({ wechat: { enabled: true } as never });
+    expect(loadChannelsSettings().wechat).toMatchObject({ allowAnyPrivate: false, allowedSenderIds: ["a@im.wechat"] });
+  });
+
   it("loadChannelsSettings: 不存在时返回默认值", () => {
     const cfg = loadChannelsSettings();
     expect(cfg.wechat.enabled).toBe(false);

@@ -23,6 +23,7 @@ import * as path from "path";
 import { app, safeStorage } from "electron";
 import type { ChannelId } from "./types";
 import { normalizeQqListenMode, type QqListenMode } from "../../shared/qq-listen";
+import { normalizeSenderIds } from "./sender-gate";
 
 /** safeStorage 加密后的前缀。读取时遇到这个前缀就解密 */
 const ENC_PREFIX = "enc:";
@@ -130,13 +131,20 @@ export interface ChannelRuntimeConfig {
   publicWebhookUrl?: string;
 }
 
-export interface WechatChannelConfig extends ChannelRuntimeConfig {
+/** 微信、飞书的发送者放行规则。陌生人先进入待批准列表，批准后才写入 allowedSenderIds。 */
+export interface SenderAllowlistConfig {
+  /** 放行所有私聊。新配置默认关闭；升级前已启用的渠道保持开启，设置页会提示风险。 */
+  allowAnyPrivate: boolean;
+  allowedSenderIds: string[];
+}
+
+export interface WechatChannelConfig extends ChannelRuntimeConfig, SenderAllowlistConfig {
   /** 待审批用户列表。TODO：当前微信 iLink 模式无 pairing 概念（pairing IPC 为空实现），字段暂未使用，保留给将来需要审批流的接入。 */
   pairingPending?: Array<{ code: string; senderId: string; createdAt: number }>;
   /** 当前扫码登录二维码（base64 PNG），会话级不持久化 */
 }
 
-export interface FeishuChannelConfig extends ChannelRuntimeConfig {
+export interface FeishuChannelConfig extends ChannelRuntimeConfig, SenderAllowlistConfig {
   appId?: string;
   /**
    * AppSecret。**已用 safeStorage 加密**。读取时直接用，不要再 decrypt。
@@ -208,8 +216,8 @@ export interface ChannelsSettings {
 }
 
 const DEFAULT_SETTINGS: ChannelsSettings = {
-  wechat: { enabled: false },
-  feishu: { enabled: false },
+  wechat: { enabled: false, allowAnyPrivate: false, allowedSenderIds: [] },
+  feishu: { enabled: false, allowAnyPrivate: false, allowedSenderIds: [] },
   qq: {
     enabled: false,
     listenMode: "auto",
@@ -258,6 +266,16 @@ function normalize(input: Partial<ChannelsSettings> | null | undefined): Channel
     return DEFAULT_SETTINGS.toolSandbox;
   };
 
+  // 升级兼容：没有任何放行字段的旧配置若已启用，保持原来的"所有人可发"，避免升级后突然收不到消息。
+  const senderRules = (config: Partial<SenderAllowlistConfig & { enabled: boolean }> | undefined): SenderAllowlistConfig => {
+    const legacyOpen = config?.enabled === true
+      && typeof config.allowAnyPrivate !== "boolean"
+      && !Array.isArray(config.allowedSenderIds);
+    return {
+      allowAnyPrivate: safeBool(config?.allowAnyPrivate, legacyOpen),
+      allowedSenderIds: normalizeSenderIds(config?.allowedSenderIds),
+    };
+  };
   const w: Partial<WechatChannelConfig> | undefined = input?.wechat;
   const f: Partial<FeishuChannelConfig> | undefined = input?.feishu;
   const q: Partial<QqChannelConfig> | undefined = input?.qq;
@@ -281,6 +299,7 @@ function normalize(input: Partial<ChannelsSettings> | null | undefined): Channel
   return {
     wechat: {
       enabled: safeBool(w?.enabled, false),
+      ...senderRules(w),
       manualCliPath: typeof w?.manualCliPath === "string" ? w.manualCliPath : undefined,
       publicWebhookUrl: typeof w?.publicWebhookUrl === "string" ? w.publicWebhookUrl : undefined,
       pairingPending: Array.isArray(w?.pairingPending)
@@ -293,6 +312,7 @@ function normalize(input: Partial<ChannelsSettings> | null | undefined): Channel
     },
 feishu: {
       enabled: safeBool(f?.enabled, false),
+      ...senderRules(f),
       manualCliPath: typeof f?.manualCliPath === "string" ? f?.manualCliPath : undefined,
       publicWebhookUrl: typeof f?.publicWebhookUrl === "string" ? f?.publicWebhookUrl : undefined,
       appId: typeof f?.appId === "string" ? f?.appId : undefined,

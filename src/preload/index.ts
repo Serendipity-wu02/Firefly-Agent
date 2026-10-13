@@ -333,6 +333,8 @@ const settingsApi = {
   channelsSaveConfig: (patch: unknown) => ipcRenderer.invoke(IPC.CHANNELS_SAVE_CONFIG, patch),
   channelsGetStatus: () => ipcRenderer.invoke(IPC.CHANNELS_GET_STATUS),
   channelsRestart: () => ipcRenderer.invoke(IPC.CHANNELS_RESTART),
+  channelsSenderResolve: (payload: { channel: string; senderId: string; action: "approve" | "dismiss" }) =>
+    ipcRenderer.invoke(IPC.CHANNELS_SENDER_RESOLVE, payload),
   channelsWechatLoginStart: () => ipcRenderer.invoke(IPC.CHANNELS_WECHAT_LOGIN_START),
   channelsQqTestConnection: () => ipcRenderer.invoke(IPC.CHANNELS_QQ_TEST_CONNECTION),
   // 权威鉴权预检：监听地址能否解析、是否必须配 token 只有主进程知道

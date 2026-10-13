@@ -3,7 +3,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type { ChannelAdapter } from "../base";
 import { FeishuAdapter } from "./index";
 
-const fixture = vi.hoisted(() => ({ createChannel: vi.fn(), settings: { enabled: true, appId: "app-a", appSecret: "synthetic" } }));
+const fixture = vi.hoisted(() => ({ createChannel: vi.fn(), settings: { enabled: true, appId: "app-a", appSecret: "synthetic", allowAnyPrivate: true, allowedSenderIds: [] as string[] } }));
 vi.mock("@larksuiteoapi/node-sdk", () => ({ createLarkChannel: fixture.createChannel, Domain: { Feishu: "feishu" }, LoggerLevel: { warn: 1 } }));
 vi.mock("../../settings-store", () => ({ loadChannelsSettings: () => ({ feishu: fixture.settings }) }));
 vi.mock("electron", () => ({ app: { getPath: () => "/synthetic/feishu-memory" } }));

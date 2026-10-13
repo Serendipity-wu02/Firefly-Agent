@@ -33,6 +33,7 @@ import { normalizeProactiveDeliveryTarget } from "../../../shared/preferences";
 import { isProactiveDeliveryTargetSelectable } from "../../../shared/proactive-delivery";
 import type { QqListenAuthRequirement } from "../../../shared/qq-listen";
 import { showConfirm } from "../shared/modal";
+import { initSenderPanels } from "./sender-panel";
 
 // 通用：根据渠道状态更新"主动投递目标"选项的可选择性
 // （从 settings.ts 移过来；settings.ts 反向 import 此函数以保持其他面板调用不变）
@@ -310,6 +311,7 @@ export async function loadChannelsPanel(): Promise<void> {
   }
   channelsState.initialized = true;
   applyAppChannelCard();
+  const senderPanels = initSenderPanels(settings);
   // 必须在 try 之外声明：同函数内的保存处理器位于 try 之外，却要读它。
   // 原先是 try 块内的 let，导致「需要补 token」这条路径抛 ReferenceError
   // （该路径此前没有任何测试覆盖，所以一直没暴露）。
@@ -318,6 +320,7 @@ export async function loadChannelsPanel(): Promise<void> {
     const cfg = await settings.channelsGetConfig();
     if (channelsWechatEnabledEl) channelsWechatEnabledEl.checked = !!cfg.wechat.enabled;
     if (channelsFeishuEnabledEl) channelsFeishuEnabledEl.checked = !!cfg.feishu.enabled;
+    senderPanels.fillConfig(cfg);
     if (channelsQqEnabledEl) channelsQqEnabledEl.checked = !!cfg.qq?.enabled;
     if (channelsRateUserEl) channelsRateUserEl.value = String(cfg.rateLimitPerUser ?? 10);
     if (channelsRateChannelEl) channelsRateChannelEl.value = String(cfg.rateLimitPerChannel ?? 100);
@@ -362,6 +365,7 @@ export async function loadChannelsPanel(): Promise<void> {
     // 拉一次渠道状态
     const status = (await settings.channelsGetStatus()) as Record<string, { phase: string; message?: string; detail?: Record<string, unknown> }>;
     renderProactiveDeliveryAvailability(status);
+    senderPanels.renderStatus(status);
     renderChannelStatus(channelsWechatStatusEl, status.wechat?.phase ?? "offline", status.wechat?.message);
     renderChannelStatus(channelsFeishuStatusEl, status.feishu?.phase ?? "offline", status.feishu?.message);
     renderChannelStatus(channelsQqStatusEl, status.qq?.phase ?? "offline", status.qq?.message);
@@ -437,6 +441,7 @@ export async function loadChannelsPanel(): Promise<void> {
   settings.onChannelsStatusChanged((status) => {
     const s = status as Record<string, { phase: string; message?: string; detail?: Record<string, unknown> }>;
     renderProactiveDeliveryAvailability(s);
+    senderPanels.renderStatus(s);
     renderChannelStatus(channelsWechatStatusEl, s.wechat?.phase ?? "offline", s.wechat?.message);
     renderChannelStatus(channelsFeishuStatusEl, s.feishu?.phase ?? "offline", s.feishu?.message);
     renderChannelStatus(channelsQqStatusEl, s.qq?.phase ?? "offline", s.qq?.message);

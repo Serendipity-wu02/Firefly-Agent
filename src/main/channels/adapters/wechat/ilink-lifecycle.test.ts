@@ -3,6 +3,10 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { ILinkBotAdapter } from "./ilink-bot-adapter";
 import { ILinkClient, type WeixinMessage } from "./ilink-protocol-client";
 
+vi.mock("../../settings-store", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("../../settings-store")>()),
+  loadChannelsSettings: () => ({ wechat: { enabled: true, allowAnyPrivate: true, allowedSenderIds: [] } }),
+}));
 vi.mock("electron", () => ({ app: { getPath: () => "/synthetic/firefly-wechat-lifecycle" } }));
 vi.mock("../../../logger", () => ({ logger: { info() {}, warn() {}, error() {} }, LogTag: {} }));
 

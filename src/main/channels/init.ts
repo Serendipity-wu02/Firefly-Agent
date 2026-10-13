@@ -32,6 +32,8 @@ import { resolveQqListenAuthRequirement } from "./adapters/qq/onebot-reverse-ws"
 import { QqBotAdapter } from "./adapters/qqbot/qqbot-adapter";
 import { getRecentLog, clearLog, reloadLogFromDisk } from "./message-log";
 import { logger, LogTag } from "../logger";
+import { pendingSenders } from "./sender-gate";
+import { resolvePendingSender, withPendingSenders } from "./sender-approval";
 
 const LOG = "[ChannelsInit]";
 
@@ -95,6 +97,9 @@ export function initializeChannels(options: InitializeChannelsOptions): void {
 
   // 注册全局 IPC
   registerChannelsIpc(options.ipc, options.reloadDispatcherSettings);
+
+  // 陌生人来信 → 立即刷新设置页的待批准列表
+  pendingSenders.onChange(() => broadcastChannelsStatus());
 
   logger.info(LogTag.Channels, "channels module initialized");
 }
@@ -164,7 +169,17 @@ function registerChannelsIpc(
     return getPublicChannelsSettings();
   });
 
-  ipc.handle(IPC.CHANNELS_GET_STATUS, () => channelManager.getAllStatus());
+  ipc.handle(IPC.CHANNELS_GET_STATUS, () => currentChannelsStatus());
+
+  ipc.handle(IPC.CHANNELS_SENDER_RESOLVE, (_e, payload: unknown) => {
+    const result = resolvePendingSender(payload, {
+      registry: pendingSenders,
+      load: loadChannelsSettings,
+      save: saveChannelsSettings,
+    });
+    broadcastChannelsStatus();
+    return result;
+  });
 
   // QQ 监听鉴权预检：渲染进程看不到网络接口，无法自行判断监听地址是否回环，
   // 因此「是否需要 Access Token」只能由主进程给出（与启动时的硬校验同一实现）。
@@ -259,9 +274,14 @@ function registerChannelsIpc(
   });
 }
 
+/** 渠道状态 + 微信/飞书的待批准发送者。 */
+function currentChannelsStatus() {
+  return withPendingSenders(channelManager.getAllStatus(), pendingSenders);
+}
+
 /** 工具：把所有 BrowserWindow 广播 channels 状态变更（UI 轮询用）。 */
 export function broadcastChannelsStatus(): void {
-  const status = channelManager.getAllStatus();
+  const status = currentChannelsStatus();
   for (const win of BrowserWindow.getAllWindows()) {
     if (win.isDestroyed()) continue;
     try {

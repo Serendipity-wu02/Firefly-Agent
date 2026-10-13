@@ -53,6 +53,8 @@ import type {
 } from "../../types";
 import { createChannelMemoryAccountIdentity, type ChannelAdapter, type ChannelMemoryAccountIdentity } from "../base";
 import { logger, LogTag } from "../../../logger";
+import { loadChannelsSettings } from "../../settings-store";
+import { admitSender } from "../../sender-gate";
 
 const LOG_PREFIX = "[WechatBot]";
 const USER_PROFILE_FILE = "user-profile.json";
@@ -359,6 +361,17 @@ export class ILinkBotAdapter implements ChannelAdapter {
     if (signal?.aborted) return;
     if (!this.onMessage) {
       console.warn(LOG_PREFIX, "onMessage 未注入，跳过消息");
+      return;
+    }
+    // 先判定发送者，再做去重、语音转写和媒体下载，陌生人的消息不触发任何处理。
+    let senderRules: ReturnType<typeof loadChannelsSettings>["wechat"] | null = null;
+    try {
+      senderRules = loadChannelsSettings().wechat;
+    } catch (err) {
+      console.warn(LOG_PREFIX, "读取发送者白名单失败，按拒绝处理:", err);
+    }
+    if (!admitSender("wechat", senderRules, msg.fromUserId)) {
+      console.warn(LOG_PREFIX, "陌生发送者已拦截，等待在设置中批准");
       return;
     }
     if (msg.msgId) {
