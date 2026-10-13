@@ -164,7 +164,7 @@ export function registerObsidianTools(): void {
       return (
         result.content +
         headingList +
-        `\n\n---\ncontentHash: ${result.contentHash.slice(0, 12)}...`
+        `\n\n---\ncontentHash: ${result.contentHash}`
       );
     },
   });
@@ -294,7 +294,7 @@ export function registerObsidianTools(): void {
         `操作成功 [${result.operation}]\n` +
         `文件: ${result.path}\n` +
         `写入: ${result.bytesWritten} 字节\n` +
-        `contentHash: ${result.newContentHash.slice(0, 12)}...`
+        `contentHash: ${result.newContentHash}`
       );
     },
   });
