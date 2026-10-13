@@ -45,7 +45,7 @@ export function RightInspector({
   if (tabs.length === 0) return null;
   const active = tabs.find((tab) => tab.id === activeTabId) ?? tabs[0];
   return (
-    <aside className="cy-right-inspector" hidden={!visible} inert={!visible} aria-label={t("rightInspector.panelAria")}
+    <aside className="ff-right-inspector" hidden={!visible} inert={!visible} aria-label={t("rightInspector.panelAria")}
       onKeyDownCapture={event => {
         // Tab-header Delete follows the same discard/cleanup path as the close button.
         // Text-editor keys and browser shortcuts keep their own meaning.
@@ -59,7 +59,7 @@ export function RightInspector({
         type="editable-card"
         hideAdd
         size="small"
-        className="cy-right-inspector__tabs"
+        className="ff-right-inspector__tabs"
         activeKey={active.id}
         onChange={onTabChange}
         onEdit={(key, action) => {
@@ -72,12 +72,12 @@ export function RightInspector({
           forceRender: true,
           closable: tab.closable !== false,
           label: (
-            <span className="cy-right-inspector__label" data-inspector-kind={tab.kind}>
+            <span className="ff-right-inspector__label" data-inspector-kind={tab.kind}>
               {Icon && <Icon size={14} aria-hidden="true" />}
               {tab.dotClass && (
-                <span className={`cy-right-inspector__dot ${tab.dotClass}`} aria-hidden="true" />
+                <span className={`ff-right-inspector__dot ${tab.dotClass}`} aria-hidden="true" />
               )}
-              <span className="cy-right-inspector__label-text" title={tab.title ?? tab.label}>{tab.label}</span>
+              <span className="ff-right-inspector__label-text" title={tab.title ?? tab.label}>{tab.label}</span>
               {tab.status}
             </span>
           ),
@@ -88,7 +88,7 @@ export function RightInspector({
             active.closable !== false && (
               <button
                 type="button"
-                className="cy-right-inspector__close"
+                className="ff-right-inspector__close"
                 onClick={() => onCloseTab(active.id)}
                 aria-label={`${t("common.close")} ${active.label}`}
                 title={t("rightInspector.closeTab", { name: active.title ?? active.label })}

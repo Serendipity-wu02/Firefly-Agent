@@ -14,7 +14,7 @@ describe("TaskDelegationRow", () => {
     expect(html).toContain("流萤委托了");
     expect(html).toContain("艾利欧");
     expect(html).toContain("正在运行");
-    expect(html).toContain("cy-task-delegation__avatar");
+    expect(html).toContain("ff-task-delegation__avatar");
     expect(html).toContain("is-running");
   });
 
@@ -24,7 +24,7 @@ describe("TaskDelegationRow", () => {
       nickname: "艾利欧", assetFileName: "艾利欧.png", status: "completed", roundId: "round-1",
     } }));
     expect(html).toContain("已完成");
-    expect(html).toContain("cy-task-delegation__avatar");
+    expect(html).toContain("ff-task-delegation__avatar");
     expect(html).toContain("✓");
   });
   it("does not restore a retired portrait from history", () => {
@@ -32,7 +32,7 @@ describe("TaskDelegationRow", () => {
       invocationId: "child-run-1", taskId: "task-1", description: "历史子任务",
       nickname: "风堇", assetFileName: "风堇.png", status: "failed", roundId: "round-1",
     } }));
-    expect(html).not.toContain("cy-task-delegation__avatar");
+    expect(html).not.toContain("ff-task-delegation__avatar");
   });
 
   it.each(["running", "completed", "failed", "cancelled"] as const)("keeps portraits for %s and persisted history", (status) => {
@@ -41,7 +41,7 @@ describe("TaskDelegationRow", () => {
         invocationId: "child-run-1", taskId: "task-1", description: "公开任务",
         nickname: character.nickname, assetFileName: character.assetFileName, status, roundId: "round-1",
       } }));
-      expect(html, character.nickname).toContain("cy-task-delegation__avatar");
+      expect(html, character.nickname).toContain("ff-task-delegation__avatar");
       expect(html, character.nickname).toContain(character.nickname);
     }
   });

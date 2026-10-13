@@ -22,7 +22,7 @@
 .weather-card[data-theme="light"] {
   --card-bg: rgba(255, 255, 255, 0.62);
   --card-border: rgba(255, 255, 255, 0.85);
-  --card-shadow: 0 24px 60px -16px rgba(var(--cy-accent-rgb), 0.24), 0 8px 28px rgba(35, 101, 78, 0.12);
+  --card-shadow: 0 24px 60px -16px rgba(var(--ff-accent-rgb), 0.24), 0 8px 28px rgba(35, 101, 78, 0.12);
   --card-inner-glow: inset 0 1px 0 rgba(255, 255, 255, 0.9);
 
   --text-primary: #4c4f69;
@@ -31,12 +31,12 @@
 
   --accent: #4d4e69;
   --accent-2: #a9aabc;
-  --accent-soft: rgba(var(--cy-accent-rgb), 0.14);
-  --divider: rgba(var(--cy-accent-rgb), 0.16);
+  --accent-soft: rgba(var(--ff-accent-rgb), 0.14);
+  --divider: rgba(var(--ff-accent-rgb), 0.16);
 
   --detail-bg: rgba(255, 255, 255, 0.55);
   --detail-border: rgba(255, 255, 255, 0.9);
-  --detail-shadow: 0 4px 14px rgba(var(--cy-accent-rgb), 0.12);
+  --detail-shadow: 0 4px 14px rgba(var(--ff-accent-rgb), 0.12);
   --icon-bg: linear-gradient(135deg, #e6e8ee, #dcdfe7);
   --icon-color: #4d4e69;
 
@@ -61,7 +61,7 @@
 .weather-card[data-theme="dark"] {
   --card-bg: rgba(18, 40, 31, 0.70);
   --card-border: rgba(255, 255, 255, 0.09);
-  --card-shadow: 0 28px 64px -18px rgba(0, 0, 0, 0.65), 0 6px 22px rgba(var(--cy-accent-rgb), 0.18);
+  --card-shadow: 0 28px 64px -18px rgba(0, 0, 0, 0.65), 0 6px 22px rgba(var(--ff-accent-rgb), 0.18);
   --card-inner-glow: inset 0 1px 0 rgba(255, 255, 255, 0.08);
 
   --text-primary: #e6f6ec;

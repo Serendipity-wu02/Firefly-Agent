@@ -1,14 +1,14 @@
-.cy-sidebar-user {
+.ff-sidebar-user {
   display: flex;
   flex: none;
   align-items: center;
   justify-content: space-between;
   gap: 6px;
   padding: 6px 2px 2px;
-  border-top: 1px solid var(--cy-border);
+  border-top: 1px solid var(--ff-border);
 }
 
-.cy-sidebar-user__who {
+.ff-sidebar-user__who {
   display: flex;
   min-width: 0;
   flex: 1;
@@ -18,18 +18,18 @@
   border: 0;
   border-radius: 10px;
   background: transparent;
-  color: var(--cy-text-secondary);
+  color: var(--ff-text-secondary);
   cursor: pointer;
   font: 500 13px/1.2 var(--rb-font-sans, sans-serif);
   text-align: left;
 }
-.cy-sidebar-user__who:hover { background: var(--cy-bg-hover); color: var(--cy-text); }
-.cy-sidebar-user__name { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.cy-sidebar-user .cy-user-avatar-circle { width: 28px; height: 28px; }
-.cy-sidebar-user .cy-user-avatar-circle.is-placeholder { background: var(--cy-surface); filter: none; border: 1px solid var(--cy-border); }
-.cy-sidebar-user .cy-user-avatar-circle.is-placeholder span { color: var(--cy-text-secondary); font-size: 12px; }
+.ff-sidebar-user__who:hover { background: var(--ff-bg-hover); color: var(--ff-text); }
+.ff-sidebar-user__name { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.ff-sidebar-user .ff-user-avatar-circle { width: 28px; height: 28px; }
+.ff-sidebar-user .ff-user-avatar-circle.is-placeholder { background: var(--ff-surface); filter: none; border: 1px solid var(--ff-border); }
+.ff-sidebar-user .ff-user-avatar-circle.is-placeholder span { color: var(--ff-text-secondary); font-size: 12px; }
 
-.cy-sidebar-user__settings {
+.ff-sidebar-user__settings {
   display: grid;
   width: 32px;
   height: 32px;
@@ -38,7 +38,7 @@
   border: 0;
   border-radius: 10px;
   background: transparent;
-  color: var(--cy-text-muted);
+  color: var(--ff-text-muted);
   cursor: pointer;
 }
-.cy-sidebar-user__settings:hover { background: var(--cy-bg-hover); color: var(--cy-text); }
+.ff-sidebar-user__settings:hover { background: var(--ff-bg-hover); color: var(--ff-text); }

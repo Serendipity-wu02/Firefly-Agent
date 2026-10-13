@@ -1,4 +1,4 @@
-.cy-app-update-entry {
+.ff-app-update-entry {
   position: relative;
   display: flex;
   align-items: center;
@@ -8,10 +8,10 @@
   min-height: 34px;
   padding: 7px 10px;
   overflow: hidden;
-  border: 1px solid rgba(var(--cy-accent-rgb), 0.24);
+  border: 1px solid rgba(var(--ff-accent-rgb), 0.24);
   border-radius: 12px;
-  background: linear-gradient(135deg, rgba(var(--cy-accent-rgb), 0.08), rgba(var(--cy-accent-rgb), 0.04));
-  color: var(--cy-accent);
+  background: linear-gradient(135deg, rgba(var(--ff-accent-rgb), 0.08), rgba(var(--ff-accent-rgb), 0.04));
+  color: var(--ff-accent);
   font: inherit;
   font-size: 12px;
   text-align: left;
@@ -19,26 +19,26 @@
   transition: border-color 150ms ease, box-shadow 150ms ease, transform 150ms ease;
 }
 
-.cy-app-update-entry:hover:not(:disabled) {
-  border-color: var(--cy-border);
-  background: var(--cy-bg-hover);
+.ff-app-update-entry:hover:not(:disabled) {
+  border-color: var(--ff-border);
+  background: var(--ff-bg-hover);
 }
 
-.cy-app-update-entry:disabled {
+.ff-app-update-entry:disabled {
   cursor: default;
   opacity: 0.82;
 }
 
-.cy-app-update-entry > svg,
-.cy-app-update-entry > span:not(.cy-app-update-entry__progress) {
+.ff-app-update-entry > svg,
+.ff-app-update-entry > span:not(.ff-app-update-entry__progress) {
   position: relative;
   z-index: 1;
 }
 
-.cy-app-update-entry__progress {
+.ff-app-update-entry__progress {
   position: absolute;
   inset: 0 auto 0 0;
   z-index: 0;
-  background: rgba(var(--cy-accent-rgb), 0.13);
+  background: rgba(var(--ff-accent-rgb), 0.13);
   transition: width 180ms ease;
 }

@@ -41,7 +41,7 @@ function usePresence(present: boolean, exitMs: number): boolean {
 function SpinnerIcon({ className }: { className: string }) {
   return (
     <svg className={className} viewBox="0 0 24 24" aria-hidden="true">
-      <circle className="cy-step-spinner__track" cx="12" cy="12" r="9" />
+      <circle className="ff-step-spinner__track" cx="12" cy="12" r="9" />
       <path d="M21 12a9 9 0 0 0-9-9" />
     </svg>
   );
@@ -98,51 +98,51 @@ export function StepProgressPill({ steps, filesChanged, added, removed, running 
   return (
     <div
       ref={rootRef}
-      className={`cy-step-pill-host${visible ? "" : " is-leaving"}`}
+      className={`ff-step-pill-host${visible ? "" : " is-leaving"}`}
       onBlur={(event: FocusEvent<HTMLDivElement>) => {
         // 焦点移到组件外（如 Tab 离开）时收起；焦点落在胶囊或弹层内部不收起。
         const next = event.relatedTarget as Node | null;
         if (next && !event.currentTarget.contains(next)) setOpen(false);
       }}
     >
-      <div className="cy-step-pill-row">
+      <div className="ff-step-pill-row">
         <button
           ref={buttonRef}
           type="button"
-          className="cy-step-pill"
+          className="ff-step-pill"
           aria-expanded={open}
           aria-controls={popoverRendered ? popoverId : undefined}
           onClick={() => setOpen((value) => !value)}
         >
-          <SpinnerIcon className="cy-step-pill__spinner" />
-          <span className="cy-step-pill__text">
-            <span key={progressText} className="cy-step-pill__progress">{progressText}</span>
+          <SpinnerIcon className="ff-step-pill__spinner" />
+          <span className="ff-step-pill__text">
+            <span key={progressText} className="ff-step-pill__progress">{progressText}</span>
             {filesChanged !== undefined && (
               <>
-                <span className="cy-step-pill__sep" aria-hidden="true"> · </span>
+                <span className="ff-step-pill__sep" aria-hidden="true"> · </span>
                 <span>{t("stepProgress.filesChanged", { count: filesChanged })}</span>
               </>
             )}
             {added !== undefined && (
               <>
                 {" "}
-                <span className="cy-step-pill__add">+{added}</span>
+                <span className="ff-step-pill__add">+{added}</span>
               </>
             )}
             {removed !== undefined && (
               <>
                 {" "}
-                <span className="cy-step-pill__del">-{removed}</span>
+                <span className="ff-step-pill__del">-{removed}</span>
               </>
             )}
           </span>
         </button>
       </div>
       {popoverRendered && (
-        <div className={`cy-step-popover-anchor${popoverPresent ? "" : " is-leaving"}`}>
+        <div className={`ff-step-popover-anchor${popoverPresent ? "" : " is-leaving"}`}>
           <div
             id={popoverId}
-            className="cy-step-popover"
+            className="ff-step-popover"
             role="group"
             aria-label={t("stepProgress.panelAria")}
             tabIndex={-1}
@@ -151,21 +151,21 @@ export function StepProgressPill({ steps, filesChanged, added, removed, running 
               {steps.map((step, index) => (
                 <li
                   key={index}
-                  className={`cy-step-item is-${step.status}`}
-                  style={{ "--cy-step-index": index } as CSSProperties}
+                  className={`ff-step-item is-${step.status}`}
+                  style={{ "--ff-step-index": index } as CSSProperties}
                 >
-                  <span className="cy-step-item__icon" aria-hidden="true">
-                    <svg className="cy-step-item__check" viewBox="0 0 24 24">
+                  <span className="ff-step-item__icon" aria-hidden="true">
+                    <svg className="ff-step-item__check" viewBox="0 0 24 24">
                       <circle cx="12" cy="12" r="9" />
                       <path d="m8.5 12.3 2.4 2.4 4.6-4.8" />
                     </svg>
-                    <SpinnerIcon className="cy-step-item__spinner" />
-                    <svg className="cy-step-item__circle" viewBox="0 0 24 24">
+                    <SpinnerIcon className="ff-step-item__spinner" />
+                    <svg className="ff-step-item__circle" viewBox="0 0 24 24">
                       <circle cx="12" cy="12" r="8.5" />
                     </svg>
                   </span>
-                  <span className="cy-step-item__status">{t(STATUS_KEYS[step.status])}</span>
-                  <span className="cy-step-item__title">{step.title}</span>
+                  <span className="ff-step-item__status">{t(STATUS_KEYS[step.status])}</span>
+                  <span className="ff-step-item__title">{step.title}</span>
                 </li>
               ))}
             </ol>

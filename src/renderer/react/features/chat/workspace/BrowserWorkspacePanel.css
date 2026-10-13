@@ -1,16 +1,16 @@
 /* Browser pane body. The toolbar shares the active tab's light surface, so the tab reads as part of the chrome. */
-.cy-browser-workspace {
+.ff-browser-workspace {
   display: flex;
   flex-direction: column;
   min-width: 0;
   min-height: 0;
   height: 100%;
-  color: var(--cy-text, #403840);
-  background: var(--cy-bg-workspace, var(--cy-surface));
+  color: var(--ff-text, #403840);
+  background: var(--ff-bg-workspace, var(--ff-surface));
 }
 
 /* Toolbar: back, forward and reload; one wide address pill; then the page close control. */
-.cy-browser-workspace__toolbar {
+.ff-browser-workspace__toolbar {
   position: relative;
   display: flex;
   flex-shrink: 0;
@@ -18,10 +18,10 @@
   gap: 4px;
   height: 44px;
   padding: 0 8px;
-  background: var(--cy-bg-workspace, var(--cy-surface));
+  background: var(--ff-bg-workspace, var(--ff-surface));
   app-region: no-drag;
 }
-.cy-browser-workspace__toolbar button {
+.ff-browser-workspace__toolbar button {
   display: inline-flex;
   flex: 0 0 auto;
   align-items: center;
@@ -32,21 +32,21 @@
   border: 0;
   border-radius: 8px;
   background: transparent;
-  color: var(--cy-text-muted, #828396);
+  color: var(--ff-text-muted, #828396);
   font: inherit;
   cursor: pointer;
   transition: background-color 150ms ease, color 150ms ease, opacity 150ms ease;
 }
-.cy-browser-workspace__toolbar button:hover:enabled { background: var(--cy-bg-hover); color: var(--cy-text); }
-.cy-browser-workspace__toolbar button:active:enabled { background: var(--cy-bg-active); }
-.cy-browser-workspace__toolbar button:disabled { opacity: 0.35; cursor: default; }
-.cy-browser-workspace__toolbar button:focus-visible { outline: 2px solid var(--cy-accent, #6b9982); outline-offset: 2px; }
-.cy-browser-workspace__nav { display: inline-flex; flex: 0 0 auto; align-items: center; gap: 2px; }
+.ff-browser-workspace__toolbar button:hover:enabled { background: var(--ff-bg-hover); color: var(--ff-text); }
+.ff-browser-workspace__toolbar button:active:enabled { background: var(--ff-bg-active); }
+.ff-browser-workspace__toolbar button:disabled { opacity: 0.35; cursor: default; }
+.ff-browser-workspace__toolbar button:focus-visible { outline: 2px solid var(--ff-accent, #6b9982); outline-offset: 2px; }
+.ff-browser-workspace__nav { display: inline-flex; flex: 0 0 auto; align-items: center; gap: 2px; }
 
 /* The address field is the pill itself: the input carries the rounded fill, the submit arrow sits inside it. */
-.cy-browser-workspace__address { position: relative; display: flex; flex: 1 1 0; min-width: 0; height: 32px; border-radius: 16px; }
-.cy-browser-workspace__address:focus-within { outline: 2px solid var(--cy-accent, #6b9982); outline-offset: 1px; }
-.cy-browser-workspace__toolbar .cy-browser-workspace__address input {
+.ff-browser-workspace__address { position: relative; display: flex; flex: 1 1 0; min-width: 0; height: 32px; border-radius: 16px; }
+.ff-browser-workspace__address:focus-within { outline: 2px solid var(--ff-accent, #6b9982); outline-offset: 1px; }
+.ff-browser-workspace__toolbar .ff-browser-workspace__address input {
   flex: 1 1 auto;
   width: 100%;
   min-width: 0;
@@ -55,7 +55,7 @@
   padding: 0 34px 0 14px;
   border: 1px solid transparent;
   border-radius: 16px;
-  background: var(--cy-bg-page, var(--cy-bg-subtle));
+  background: var(--ff-bg-page, var(--ff-bg-subtle));
   color: inherit;
   font: inherit;
   font-size: 12.5px;
@@ -64,10 +64,10 @@
   outline: none;
   transition: background-color 150ms ease, border-color 150ms ease;
 }
-.cy-browser-workspace__address:hover input { border-color: var(--cy-border); }
-.cy-browser-workspace__address input:focus { background: var(--cy-bg-workspace, var(--cy-surface)); }
-.cy-browser-workspace__address input:placeholder-shown { text-align: center; }
-.cy-browser-workspace__toolbar .cy-browser-workspace__address button {
+.ff-browser-workspace__address:hover input { border-color: var(--ff-border); }
+.ff-browser-workspace__address input:focus { background: var(--ff-bg-workspace, var(--ff-surface)); }
+.ff-browser-workspace__address input:placeholder-shown { text-align: center; }
+.ff-browser-workspace__toolbar .ff-browser-workspace__address button {
   position: absolute;
   top: 50%;
   right: 4px;
@@ -76,43 +76,43 @@
   margin-top: -12px;
   padding: 0;
   border-radius: 50%;
-  color: var(--cy-text-muted, #828396);
+  color: var(--ff-text-muted, #828396);
 }
-.cy-browser-workspace__toolbar .cy-browser-workspace__address button:hover:enabled { background: var(--cy-bg-active); }
-.cy-browser-workspace__toolbar .cy-browser-workspace__address button:disabled { opacity: 0.25; }
+.ff-browser-workspace__toolbar .ff-browser-workspace__address button:hover:enabled { background: var(--ff-bg-active); }
+.ff-browser-workspace__toolbar .ff-browser-workspace__address button:disabled { opacity: 0.25; }
 
 /* Committed address: one quiet line under the toolbar, truncated instead of wrapping. */
-.cy-browser-workspace__location {
+.ff-browser-workspace__location {
   display: flex;
   flex: 0 0 auto;
   align-items: center;
   gap: 6px;
   min-width: 0;
   padding: 0 12px 6px;
-  background: var(--cy-bg-workspace, var(--cy-surface));
-  color: var(--cy-text-muted, #828396);
+  background: var(--ff-bg-workspace, var(--ff-surface));
+  color: var(--ff-text-muted, #828396);
   font-size: 11px;
 }
-.cy-browser-workspace__location [data-browser-committed-url] {
+.ff-browser-workspace__location [data-browser-committed-url] {
   min-width: 0;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
-.cy-browser-workspace__location-dot { width: 5px; height: 5px; flex: 0 0 5px; border-radius: 50%; background: currentColor; }
+.ff-browser-workspace__location-dot { width: 5px; height: 5px; flex: 0 0 5px; border-radius: 50%; background: currentColor; }
 
-.cy-browser-workspace__notice { margin: 0; padding: 7px 12px; background: var(--cy-bg-workspace, var(--cy-surface)); color: var(--cy-text-secondary, var(--cy-text)); font-size: 12px; }
-.cy-browser-workspace__notice.is-error {
-  color: var(--cy-danger, #9e3838);
-  background: color-mix(in srgb, var(--cy-danger, #c0392b) 12%, var(--cy-bg-workspace, var(--cy-surface)));
+.ff-browser-workspace__notice { margin: 0; padding: 7px 12px; background: var(--ff-bg-workspace, var(--ff-surface)); color: var(--ff-text-secondary, var(--ff-text)); font-size: 12px; }
+.ff-browser-workspace__notice.is-error {
+  color: var(--ff-danger, #9e3838);
+  background: color-mix(in srgb, var(--ff-danger, #c0392b) 12%, var(--ff-bg-workspace, var(--ff-surface)));
 }
-.cy-browser-workspace__viewport { flex: 1; min-height: 0; overflow: hidden; }
-.cy-browser-workspace__empty { padding: 20px; text-align: center; color: var(--cy-text-muted, #828396); }
-.cy-browser-tab { display: flex; flex-direction: column; min-width: 0; min-height: 0; height: 100%; }
-.cy-browser-tab > .cy-browser-workspace { flex: 1; }
+.ff-browser-workspace__viewport { flex: 1; min-height: 0; overflow: hidden; }
+.ff-browser-workspace__empty { padding: 20px; text-align: center; color: var(--ff-text-muted, #828396); }
+.ff-browser-tab { display: flex; flex-direction: column; min-width: 0; min-height: 0; height: 100%; }
+.ff-browser-tab > .ff-browser-workspace { flex: 1; }
 
 /* Consent and grant notices: a bounded, scrollable bar, so the browser itself keeps the space. */
-.cy-browser-permission {
+.ff-browser-permission {
   box-sizing: border-box;
   flex: 0 1 auto;
   min-height: 0;
@@ -120,82 +120,82 @@
   overflow-y: auto;
   overscroll-behavior: contain;
   padding: 4px 12px;
-  border-bottom: 1px solid var(--cy-border, #dfe1e8);
-  background: var(--cy-bg-workspace, var(--cy-surface));
+  border-bottom: 1px solid var(--ff-border, #dfe1e8);
+  background: var(--ff-bg-workspace, var(--ff-surface));
   font-size: 12px;
 }
-.cy-browser-permission p { margin: 6px 0; }
-.cy-browser-permission summary { cursor: pointer; line-height: 1.6; }
-.cy-browser-permission details:not([open]) > summary { color: var(--cy-text-muted); }
-.cy-browser-permission__scope { overflow-wrap: anywhere; color: var(--cy-text-muted); }
-.cy-browser-permission__mode {
+.ff-browser-permission p { margin: 6px 0; }
+.ff-browser-permission summary { cursor: pointer; line-height: 1.6; }
+.ff-browser-permission details:not([open]) > summary { color: var(--ff-text-muted); }
+.ff-browser-permission__scope { overflow-wrap: anywhere; color: var(--ff-text-muted); }
+.ff-browser-permission__mode {
   display: inline-block;
   margin-right: 7px;
   padding: 1px 6px;
   border: 1px solid currentColor;
   border-radius: 5px;
-  background: var(--cy-bg-page);
-  color: var(--cy-accent, #6b9982);
+  background: var(--ff-bg-page);
+  color: var(--ff-accent, #6b9982);
   font-size: 10px;
 }
-.cy-browser-permission button,
-.cy-browser-workspace__state button {
+.ff-browser-permission button,
+.ff-browser-workspace__state button {
   margin-top: 6px;
   padding: 6px 10px;
-  border: 1px solid var(--cy-border);
+  border: 1px solid var(--ff-border);
   border-radius: 8px;
-  background: var(--cy-bg-page, var(--cy-surface));
+  background: var(--ff-bg-page, var(--ff-surface));
   color: inherit;
   font: inherit;
   cursor: pointer;
 }
-.cy-browser-permission button:disabled { opacity: .55; cursor: default; }
-.cy-browser-permission button:hover:enabled { background: var(--cy-bg-hover); }
-.cy-browser-resource-consent { min-width: 0; margin: 8px 0 0; padding: 8px; border: 1px solid var(--cy-border); border-radius: 12px; }
-.cy-browser-resource-consent label { display: flex; align-items: flex-start; gap: 6px; margin: 6px 0; overflow-wrap: anywhere; }
-.cy-browser-resource-consent input { flex: 0 0 auto; }
-.cy-browser-site-consent { overflow-wrap: anywhere; }
-.cy-browser-workspace__state { padding: 12px; color: var(--cy-text); font-size: 12px; }
-.cy-browser-workspace__state p { margin: 0 0 8px; }
-.cy-browser-workspace__state button { margin-top: 0; }
+.ff-browser-permission button:disabled { opacity: .55; cursor: default; }
+.ff-browser-permission button:hover:enabled { background: var(--ff-bg-hover); }
+.ff-browser-resource-consent { min-width: 0; margin: 8px 0 0; padding: 8px; border: 1px solid var(--ff-border); border-radius: 12px; }
+.ff-browser-resource-consent label { display: flex; align-items: flex-start; gap: 6px; margin: 6px 0; overflow-wrap: anywhere; }
+.ff-browser-resource-consent input { flex: 0 0 auto; }
+.ff-browser-site-consent { overflow-wrap: anywhere; }
+.ff-browser-workspace__state { padding: 12px; color: var(--ff-text); font-size: 12px; }
+.ff-browser-workspace__state p { margin: 0 0 8px; }
+.ff-browser-workspace__state button { margin-top: 0; }
 
 /* Window browser: a single slim bar for private-network grants and actionable notices. */
-.cy-browser-permission--compact { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 8px; padding: 4px 10px; font-size: 12px; }
-.cy-browser-permission--compact p { margin: 2px 0; }
-.cy-browser-permission--compact button { margin-top: 0; padding: 3px 10px; }
-.cy-browser-chip { display: inline-flex; align-items: center; min-width: 0; gap: 6px; }
-.cy-browser-chip .cy-browser-permission__mode { margin-right: 0; }
-.cy-browser-chip code { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font: inherit; color: var(--cy-text); }
-.cy-browser-chip__extra { color: var(--cy-text-muted); }
-.cy-browser-agent-consent { margin-top: 10px; padding-top: 8px; border-top: 1px solid var(--cy-border); }
+.ff-browser-permission--compact { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 8px; padding: 4px 10px; font-size: 12px; }
+.ff-browser-permission--compact p { margin: 2px 0; }
+.ff-browser-permission--compact button { margin-top: 0; padding: 3px 10px; }
+.ff-browser-chip { display: inline-flex; align-items: center; min-width: 0; gap: 6px; }
+.ff-browser-chip .ff-browser-permission__mode { margin-right: 0; }
+.ff-browser-chip code { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font: inherit; color: var(--ff-text); }
+.ff-browser-chip__extra { color: var(--ff-text-muted); }
+.ff-browser-agent-consent { margin-top: 10px; padding-top: 8px; border-top: 1px solid var(--ff-border); }
 
 /* Load progress: a thin sweep under the toolbar; reduced motion shows a steady line. */
-.cy-browser-workspace__toolbar[data-browser-busy]::after {
+.ff-browser-workspace__toolbar[data-browser-busy]::after {
   content: "";
   position: absolute;
   inset: auto 0 0 0;
   height: 2px;
-  background: linear-gradient(90deg, transparent, var(--cy-accent, #6b9982), transparent) 0 0 / 40% 100% no-repeat;
-  animation: cy-browser-load 1.1s ease-in-out infinite;
+  background: linear-gradient(90deg, transparent, var(--ff-accent, #6b9982), transparent) 0 0 / 40% 100% no-repeat;
+  animation: ff-browser-load 1.1s ease-in-out infinite;
 }
-@keyframes cy-browser-load { from { background-position: -40% 0; } to { background-position: 140% 0; } }
+@keyframes ff-browser-load { from { background-position: -40% 0; } to { background-position: 140% 0; } }
 @media (prefers-reduced-motion: reduce) {
-  .cy-browser-workspace__toolbar[data-browser-busy]::after { animation: none; background: var(--cy-accent, #6b9982); opacity: 0.5; }
-  .cy-browser-workspace__toolbar button,
-  .cy-browser-workspace__address input { transition: none; }
+  .ff-browser-workspace__toolbar[data-browser-busy]::after { animation: none; background: var(--ff-accent, #6b9982); opacity: 0.5; }
+  .ff-browser-workspace__toolbar button,
+  .ff-browser-workspace__address input { transition: none; }
 }
 
-.cy-browser-permission button:focus-visible,
-.cy-browser-permission summary:focus-visible,
-.cy-browser-workspace__state button:focus-visible,
-.cy-browser-workspace__toolbar button:focus-visible,
-.cy-browser-workspace__address input:focus-visible { outline: 2px solid var(--cy-accent, #6b9982); outline-offset: 2px; }
+.ff-browser-permission button:focus-visible,
+.ff-browser-permission summary:focus-visible,
+.ff-browser-workspace__state button:focus-visible,
+.ff-browser-workspace__toolbar button:focus-visible,
+.ff-browser-workspace__address input:focus-visible { outline: 2px solid var(--ff-accent, #6b9982); outline-offset: 2px; }
 
 /* Custom colours: the light-only address field and hover surfaces take the user's paired tokens. */
-:root[data-ui-colors] .cy-browser-workspace__address input {
-  background: var(--cy-bg-workspace);
-  border-color: var(--cy-border);
+:root[data-ui-colors] .ff-browser-workspace__address input {
+  background: var(--ff-bg-workspace);
+  border-color: var(--ff-border);
 }
-:root[data-ui-colors] .cy-browser-workspace__toolbar button:hover:enabled { background: var(--cy-bg-hover); }
-:root[data-ui-colors] .cy-browser-workspace__notice.is-error { color: var(--cy-text); background: var(--cy-bg-hover); border-left: 3px solid var(--cy-accent); }
-:root[data-ui-colors] .cy-browser-permission button:hover:enabled { background: var(--cy-bg-hover); }
+:root[data-ui-colors] .ff-browser-workspace__toolbar button:hover:enabled { background: var(--ff-bg-hover); }
+:root[data-ui-colors] .ff-browser-workspace__notice.is-error { color: var(--ff-text); background: var(--ff-bg-hover); border-left: 3px solid var(--ff-accent); }
+:root[data-ui-colors] .ff-browser-permission button:hover:enabled { background: var(--ff-bg-hover); }

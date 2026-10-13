@@ -15,7 +15,7 @@ export function FileDropOverlay({ visible }: { visible: boolean }) {
   const { t } = useTranslation();
   if (!visible) return null;
   return (
-    <div className="cy-file-drop-overlay" aria-hidden="true">
+    <div className="ff-file-drop-overlay" aria-hidden="true">
       <span>{t("workspaceNotices.fileDropHint")}</span>
     </div>
   );
@@ -42,7 +42,7 @@ export function RunRecoveryNotices({
   return (
     <>
       {interruptedRun && (
-        <div className="cy-harness-recovery">
+        <div className="ff-harness-recovery">
           <span>{t("workspaceNotices.interruptedRun", { rounds: interruptedRun.rounds })}</span>
           <button type="button" onClick={() => onResume(interruptedRun.runId)}>{t("workspaceNotices.resumeTask")}</button>
         </div>
@@ -50,7 +50,7 @@ export function RunRecoveryNotices({
       {/* 欢迎页 activeSessionId 为 undefined，sessionTakeover 为 null 时
           null?.sessionId 同样是 undefined，直接 === 会误判相等而在欢迎页渲染本卡片 */}
       {sessionTakeover && sessionTakeover.sessionId === activeSessionId && (
-        <div className="cy-harness-recovery">
+        <div className="ff-harness-recovery">
           <span>{t("workspaceNotices.sessionTakeover")}</span>
           <button type="button" onClick={onTakeover}>{t("workspaceNotices.takeoverAndRestart")}</button>
         </div>
@@ -63,7 +63,7 @@ export function ContextCompressionNotice({ visible }: { visible: boolean }) {
   const { t } = useTranslation();
   if (!visible) return null;
   return (
-    <div className="cy-compressing-context" aria-live="polite" aria-busy="true">
+    <div className="ff-compressing-context" aria-live="polite" aria-busy="true">
       <span>{t("workspaceNotices.compressingContext")}</span>
     </div>
   );

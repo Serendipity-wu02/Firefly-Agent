@@ -27,8 +27,8 @@ describe("browser new-tab page", () => {
     expect(host.querySelector("[data-browser-newtab]")).not.toBeNull();
     expect(tiles().map(tile => tile.dataset.browserSite)).toEqual(BROWSER_START_SITES.map(site => site.url));
     const first = tiles()[0]!;
-    expect(first.querySelector(".cy-browser-newtab__icon")?.textContent).toBe("B");
-    expect(first.querySelector(".cy-browser-newtab__name")?.textContent).toBe(BROWSER_START_SITES[0]!.title);
+    expect(first.querySelector(".ff-browser-newtab__icon")?.textContent).toBe("B");
+    expect(first.querySelector(".ff-browser-newtab__name")?.textContent).toBe(BROWSER_START_SITES[0]!.title);
     expect(first.getAttribute("title")).toBe(BROWSER_START_SITES[0]!.url);
   });
 
@@ -70,7 +70,7 @@ describe("browser new-tab page", () => {
   it("keeps the hint and disables every tile while the browser is unavailable", () => {
     render({ available: false });
     expect(host.querySelector("[data-browser-newtab]")!.hasAttribute("data-disabled")).toBe(true);
-    expect(host.querySelector(".cy-browser-newtab__hint")?.textContent).toBe("browserWorkspace.newTabLocalHint");
+    expect(host.querySelector(".ff-browser-newtab__hint")?.textContent).toBe("browserWorkspace.newTabLocalHint");
   });
 });
 
@@ -84,21 +84,21 @@ describe("browser new-tab page styling", () => {
     dom.window.close(); return value;
   }
   it("wraps the tile row and keeps each tile a fixed, round-cornered target", () => {
-    expect(declaration(".cy-browser-newtab__row", "flex-wrap")).toBe("wrap");
-    expect(declaration(".cy-browser-newtab__tile", "border-radius")).toBe("14px");
-    expect(declaration(".cy-browser-newtab__tile", "width")).toBe("84px");
+    expect(declaration(".ff-browser-newtab__row", "flex-wrap")).toBe("wrap");
+    expect(declaration(".ff-browser-newtab__tile", "border-radius")).toBe("14px");
+    expect(declaration(".ff-browser-newtab__tile", "width")).toBe("84px");
   });
   it("gives hover, keyboard focus and press states a short transition", () => {
-    expect(declaration(".cy-browser-newtab__tile:hover", "background")).toBe("var(--cy-bg-hover)");
-    expect(declaration(".cy-browser-newtab__tile:focus-visible", "outline")).toContain("var(--cy-accent");
-    expect(declaration(".cy-browser-newtab__tile:active", "transform")).toBe("scale(0.97)");
-    expect(declaration(".cy-browser-newtab__tile", "transition")).toContain("150ms");
+    expect(declaration(".ff-browser-newtab__tile:hover", "background")).toBe("var(--ff-bg-hover)");
+    expect(declaration(".ff-browser-newtab__tile:focus-visible", "outline")).toContain("var(--ff-accent");
+    expect(declaration(".ff-browser-newtab__tile:active", "transform")).toBe("scale(0.97)");
+    expect(declaration(".ff-browser-newtab__tile", "transition")).toContain("150ms");
   });
   it("takes its surfaces and text from the theme tokens rather than fixed colours", () => {
-    expect(declaration(".cy-browser-newtab", "background")).toBe("var(--cy-bg-workspace, var(--cy-surface))");
+    expect(declaration(".ff-browser-newtab", "background")).toBe("var(--ff-bg-workspace, var(--ff-surface))");
     expect(css).not.toMatch(/#[0-9a-f]{3,6}\b/i);
   });
   it("removes the tile motion under reduced motion", () => {
-    expect(css).toMatch(/@media \(prefers-reduced-motion: reduce\) \{\s*\.cy-browser-newtab__tile \{ transition: none; \}/);
+    expect(css).toMatch(/@media \(prefers-reduced-motion: reduce\) \{\s*\.ff-browser-newtab__tile \{ transition: none; \}/);
   });
 });

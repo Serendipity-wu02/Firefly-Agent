@@ -1,6 +1,6 @@
 /* 上下文容量观看器：composer footer 圆环 + Popover 占比菜单。 */
 
-.cy-context-usage-ring {
+.ff-context-usage-ring {
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -10,163 +10,163 @@
   border: 0;
   background: transparent;
   cursor: pointer;
-  color: var(--cy-text-muted);
+  color: var(--ff-text-muted);
 }
 
-.cy-context-usage-ring:hover {
-  color: var(--cy-accent);
+.ff-context-usage-ring:hover {
+  color: var(--ff-accent);
 }
 
-.cy-context-usage-ring svg {
+.ff-context-usage-ring svg {
   display: block;
 }
 
-.cy-context-usage-ring__track {
+.ff-context-usage-ring__track {
   /* 底环必须与 composer 背景 (#f4f4f4) 拉开对比，否则整环隐形。
-     取 --cy-text-muted (#8e8e93) 的 35% 透明度 ≈ #d0d0d2。 */
+     取 --ff-text-muted (#8e8e93) 的 35% 透明度 ≈ #d0d0d2。 */
   stroke: rgba(142, 142, 147, 0.35);
   transition: stroke 120ms ease;
 }
 
-.cy-context-usage-ring:hover .cy-context-usage-ring__track {
+.ff-context-usage-ring:hover .ff-context-usage-ring__track {
   stroke: rgba(142, 142, 147, 0.55);
 }
 
-.cy-context-usage-ring.is-normal .cy-context-usage-ring__progress {
-  stroke: var(--cy-accent);
+.ff-context-usage-ring.is-normal .ff-context-usage-ring__progress {
+  stroke: var(--ff-accent);
 }
 
-.cy-context-usage-ring.is-warm .cy-context-usage-ring__progress {
+.ff-context-usage-ring.is-warm .ff-context-usage-ring__progress {
   stroke: #f59e0b;
 }
 
-.cy-context-usage-ring.is-alert .cy-context-usage-ring__progress {
+.ff-context-usage-ring.is-alert .ff-context-usage-ring__progress {
   stroke: #ef4444;
 }
 
 /* ── 占比菜单 ── */
 
 /* Popover 外壳：16px 圆角 + 边框 + 收紧内边距。 */
-.cy-context-usage-popover .ant-popover-inner {
+.ff-context-usage-popover .ant-popover-inner {
   padding: 14px 14px 12px;
-  border: 1px solid var(--cy-border);
+  border: 1px solid var(--ff-border);
   border-radius: 16px;
 }
 
 /* 固定宽度，避免内容变化时弹层宽度跳动；各行不换行、只在行内截断。 */
-.cy-context-usage-menu {
+.ff-context-usage-menu {
   display: grid;
   gap: 12px;
   width: 288px;
   min-width: 0;
 }
 
-.cy-context-usage-menu__header {
+.ff-context-usage-menu__header {
   display: flex;
   align-items: baseline;
   justify-content: space-between;
   gap: 12px;
 }
 
-.cy-context-usage-menu__header strong {
+.ff-context-usage-menu__header strong {
   font: 600 13px/1.4 var(--rb-font-sans, sans-serif);
-  color: var(--cy-text);
+  color: var(--ff-text);
   white-space: nowrap;
 }
 
-.cy-context-usage-menu__header span {
+.ff-context-usage-menu__header span {
   font: 12px/1.4 var(--rb-font-sans, sans-serif);
-  color: var(--cy-text-muted);
+  color: var(--ff-text-muted);
   font-variant-numeric: tabular-nums;
   white-space: nowrap;
 }
 
 /* 总占比进度条：单色，随档位变色（呼应圆环）。 */
-.cy-context-usage-menu__progress {
+.ff-context-usage-menu__progress {
   height: 6px;
   overflow: hidden;
   border-radius: 3px;
-  background: var(--cy-border);
+  background: var(--ff-border);
 }
 
-.cy-context-usage-menu__progress span {
+.ff-context-usage-menu__progress span {
   display: block;
   height: 100%;
   border-radius: 3px;
   transition: width 200ms ease;
 }
 
-.cy-context-usage-menu__progress.is-normal span {
-  background: var(--cy-accent);
+.ff-context-usage-menu__progress.is-normal span {
+  background: var(--ff-accent);
 }
 
-.cy-context-usage-menu__progress.is-warm span {
+.ff-context-usage-menu__progress.is-warm span {
   background: #f59e0b;
 }
 
-.cy-context-usage-menu__progress.is-alert span {
+.ff-context-usage-menu__progress.is-alert span {
   background: #ef4444;
 }
 
 /* 压缩提示块：按钮独占一行（nowrap 药丸形），提示文字另起一行，互不挤压。 */
-.cy-context-usage-menu__mood {
+.ff-context-usage-menu__mood {
   display: grid;
   justify-items: start;
   gap: 6px;
   padding: 8px 10px;
   border-radius: 12px;
-  background: var(--cy-bg-subtle);
+  background: var(--ff-bg-subtle);
 }
 
-.cy-context-usage-menu__mood-figure {
+.ff-context-usage-menu__mood-figure {
   display: inline-flex;
   align-items: center;
   min-height: 26px;
   padding: 0 10px;
-  border: 1px solid var(--cy-border);
+  border: 1px solid var(--ff-border);
   border-radius: 999px;
-  background: var(--cy-surface);
-  color: var(--cy-text);
+  background: var(--ff-surface);
+  color: var(--ff-text);
   font: 500 12px/1 var(--rb-font-sans, sans-serif);
   white-space: nowrap;
 }
 
-.cy-context-usage-menu__mood.can-compact .cy-context-usage-menu__mood-figure {
+.ff-context-usage-menu__mood.can-compact .ff-context-usage-menu__mood-figure {
   cursor: pointer;
 }
 
-.cy-context-usage-menu__mood.can-compact .cy-context-usage-menu__mood-figure:not(:disabled):hover {
-  border-color: var(--cy-accent);
-  color: var(--cy-accent);
+.ff-context-usage-menu__mood.can-compact .ff-context-usage-menu__mood-figure:not(:disabled):hover {
+  border-color: var(--ff-accent);
+  color: var(--ff-accent);
 }
 
-.cy-context-usage-menu__mood-figure:disabled {
-  color: var(--cy-text-muted);
+.ff-context-usage-menu__mood-figure:disabled {
+  color: var(--ff-text-muted);
   cursor: default;
 }
 
-.cy-context-usage-menu__mood.is-compacting .cy-context-usage-menu__mood-figure {
-  color: var(--cy-text-muted);
+.ff-context-usage-menu__mood.is-compacting .ff-context-usage-menu__mood-figure {
+  color: var(--ff-text-muted);
 }
 
-.cy-context-usage-menu__mood span {
+.ff-context-usage-menu__mood span {
   justify-self: stretch;
   min-width: 0;
   font: 12px/1.5 var(--rb-font-sans, sans-serif);
-  color: var(--cy-text-muted);
+  color: var(--ff-text-muted);
   overflow-wrap: anywhere;
 }
 
-.cy-context-usage-menu__mood.is-warm span {
-  color: var(--cy-warning);
+.ff-context-usage-menu__mood.is-warm span {
+  color: var(--ff-warning);
 }
 
-.cy-context-usage-menu__mood.is-alert span {
-  color: var(--cy-danger);
+.ff-context-usage-menu__mood.is-alert span {
+  color: var(--ff-danger);
 }
 
 /* 明细：类别名 / token / 占比三列对齐。 */
-.cy-context-usage-menu__rows {
+.ff-context-usage-menu__rows {
   display: grid;
   gap: 2px;
   margin: 0;
@@ -174,7 +174,7 @@
   list-style: none;
 }
 
-.cy-context-usage-menu__rows li {
+.ff-context-usage-menu__rows li {
   display: grid;
   grid-template-columns: 8px minmax(0, 1fr) auto 38px;
   align-items: center;
@@ -182,47 +182,47 @@
   padding: 5px 2px;
   border-radius: 8px;
   font: 12px/1.6 var(--rb-font-sans, sans-serif);
-  color: var(--cy-text);
+  color: var(--ff-text);
 }
 
-.cy-context-usage-menu__rows li:hover {
-  background: var(--cy-bg-subtle);
+.ff-context-usage-menu__rows li:hover {
+  background: var(--ff-bg-subtle);
 }
 
-.cy-context-usage-menu__dot {
+.ff-context-usage-menu__dot {
   width: 8px;
   height: 8px;
   flex: none;
   border-radius: 50%;
-  background: var(--cy-accent);
+  background: var(--ff-accent);
   /* 透明度由组件内联提供：按排序位次递减。 */
 }
 
-.cy-context-usage-menu__name {
+.ff-context-usage-menu__name {
   min-width: 0;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 
-.cy-context-usage-menu__tokens {
+.ff-context-usage-menu__tokens {
   min-width: 0;
   text-align: right;
-  color: var(--cy-text);
+  color: var(--ff-text);
   font-variant-numeric: tabular-nums;
   white-space: nowrap;
 }
 
-.cy-context-usage-menu__share {
+.ff-context-usage-menu__share {
   text-align: right;
-  color: var(--cy-text-muted);
+  color: var(--ff-text-muted);
   font-variant-numeric: tabular-nums;
   white-space: nowrap;
 }
 
-.cy-context-usage-menu__footnote {
+.ff-context-usage-menu__footnote {
   padding-top: 8px;
-  border-top: 1px solid var(--cy-border);
+  border-top: 1px solid var(--ff-border);
   font: 11px/1.4 var(--rb-font-sans, sans-serif);
-  color: var(--cy-text-muted);
+  color: var(--ff-text-muted);
 }

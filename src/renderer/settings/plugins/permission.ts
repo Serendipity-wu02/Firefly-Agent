@@ -34,17 +34,17 @@ function paintPermissionUI(level: PermissionLevel): void {
 async function confirmFullAccess(): Promise<boolean> {
   // 完全访问需要延迟确认 + 风险提示
   _initModalOverlay();
-  if (!modalState.cyOverlay) return false;
-  const iconEl = modalState.cyOverlay.querySelector("#cy-modal-icon") as HTMLElement;
-  const titleEl = modalState.cyOverlay.querySelector("#cy-modal-title") as HTMLElement;
-  const msgEl = modalState.cyOverlay.querySelector("#cy-modal-message") as HTMLElement;
-  const cancelBtn = modalState.cyOverlay.querySelector("#cy-modal-cancel") as HTMLButtonElement;
-  const confirmBtn = modalState.cyOverlay.querySelector("#cy-modal-confirm") as HTMLButtonElement;
+  if (!modalState.ffOverlay) return false;
+  const iconEl = modalState.ffOverlay.querySelector("#ff-modal-icon") as HTMLElement;
+  const titleEl = modalState.ffOverlay.querySelector("#ff-modal-title") as HTMLElement;
+  const msgEl = modalState.ffOverlay.querySelector("#ff-modal-message") as HTMLElement;
+  const cancelBtn = modalState.ffOverlay.querySelector("#ff-modal-cancel") as HTMLButtonElement;
+  const confirmBtn = modalState.ffOverlay.querySelector("#ff-modal-confirm") as HTMLButtonElement;
   iconEl.textContent = "⚠️";
   titleEl.textContent = "切换到完全访问？";
   msgEl.textContent = "这意味着流萤可以在你的电脑上自由执行命令，包括 git clone、npm install、删除文件等。请只在你完全信任她的判断时启用。";
   cancelBtn.textContent = "再想想";
-  modalState.cyOverlay.classList.remove("is-hidden");
+  modalState.ffOverlay.classList.remove("is-hidden");
 
   // 倒计时 5 秒强制等待
   let remain = 5;
@@ -65,7 +65,7 @@ async function confirmFullAccess(): Promise<boolean> {
     const cleanup = (result: boolean) => {
       clearInterval(tick);
       confirmBtn.disabled = false;
-      modalState.cyOverlay?.classList.add("is-hidden");
+      modalState.ffOverlay?.classList.add("is-hidden");
       cancelBtn.removeEventListener("click", onCancel);
       confirmBtn.removeEventListener("click", onConfirm);
       resolve(result);

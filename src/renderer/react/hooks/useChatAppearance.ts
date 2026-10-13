@@ -7,11 +7,11 @@ import {
 export function applyChatAppearance(input: unknown): void {
   const settings = normalizeChatAppearance(input);
   const style = document.documentElement.style;
-  style.setProperty("--cy-chat-line-height", String(settings.chatLineHeight));
-  style.setProperty("--cy-chat-para-spacing", `${settings.chatParaSpacing}em`);
-  style.setProperty("--cy-ui-font-size", `${settings.uiFontSize}px`);
-  style.setProperty("--cy-chat-font-size", `${settings.chatFontSize}px`);
-  style.setProperty("--cy-code-font-size", `${settings.codeFontSize}px`);
+  style.setProperty("--ff-chat-line-height", String(settings.chatLineHeight));
+  style.setProperty("--ff-chat-para-spacing", `${settings.chatParaSpacing}em`);
+  style.setProperty("--ff-ui-font-size", `${settings.uiFontSize}px`);
+  style.setProperty("--ff-chat-font-size", `${settings.chatFontSize}px`);
+  style.setProperty("--ff-code-font-size", `${settings.codeFontSize}px`);
 }
 
 export function useChatAppearance(): void {

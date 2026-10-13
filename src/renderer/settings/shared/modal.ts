@@ -33,7 +33,7 @@ const noticeTimers = new WeakMap<HTMLElement, ReturnType<typeof setTimeout>>();
 function ensureNoticeContainer(): HTMLElement {
   if (modalState.noticeContainer?.isConnected) return modalState.noticeContainer;
   const container = document.createElement("div");
-  container.className = "cy-notice-stack";
+  container.className = "ff-notice-stack";
   document.body.appendChild(container);
   modalState.noticeContainer = container;
   return container;
@@ -60,14 +60,14 @@ export function showNotice(options: NoticeOptions): void {
   // 最多同时显示 3 条：堆满后不再新增，避免错误循环刷屏
   if (container.children.length >= FEEDBACK_NOTICE_MAX_COUNT) return;
   const item = document.createElement("div");
-  item.className = `cy-notice cy-notice--${options.tone}`;
+  item.className = `ff-notice ff-notice--${options.tone}`;
   item.dataset.noticeKey = key;
   item.setAttribute("role", options.tone === "error" ? "alert" : "status");
   const icon = document.createElement("span");
-  icon.className = "cy-notice__icon";
+  icon.className = "ff-notice__icon";
   icon.innerHTML = TONE_ICONS[options.tone];
   const message = document.createElement("span");
-  message.className = "cy-notice__message";
+  message.className = "ff-notice__message";
   message.textContent = options.message;
   item.append(icon, message);
   container.append(item);
@@ -170,21 +170,21 @@ function renderSemanticDialog(
   request: Extract<BlockingDialogRequest, { kind: "alert" | "confirm" }>,
 ): void {
   _initModalOverlay();
-  const overlay = modalState.cyOverlay;
+  const overlay = modalState.ffOverlay;
   if (!overlay) {
     // 初始化失败时记录错误并安全取消
     console.error("[settings-feedback] 无法创建阻塞弹窗容器");
     finishBlockingDialog(request, () => cancelRequest(request));
     return;
   }
-  const dialog = overlay.querySelector(".cy-modal") as HTMLElement;
-  const iconEl = overlay.querySelector("#cy-modal-icon") as HTMLElement;
-  const titleEl = overlay.querySelector("#cy-modal-title") as HTMLElement;
-  const msgEl = overlay.querySelector("#cy-modal-message") as HTMLElement;
-  const detailsWrap = overlay.querySelector("#cy-modal-details-wrap") as HTMLDetailsElement;
-  const detailsEl = overlay.querySelector("#cy-modal-details") as HTMLElement;
-  const actionsEl = overlay.querySelector("#cy-modal-actions") as HTMLElement;
-  const confirmBtn = overlay.querySelector("#cy-modal-confirm") as HTMLButtonElement;
+  const dialog = overlay.querySelector(".ff-modal") as HTMLElement;
+  const iconEl = overlay.querySelector("#ff-modal-icon") as HTMLElement;
+  const titleEl = overlay.querySelector("#ff-modal-title") as HTMLElement;
+  const msgEl = overlay.querySelector("#ff-modal-message") as HTMLElement;
+  const detailsWrap = overlay.querySelector("#ff-modal-details-wrap") as HTMLDetailsElement;
+  const detailsEl = overlay.querySelector("#ff-modal-details") as HTMLElement;
+  const actionsEl = overlay.querySelector("#ff-modal-actions") as HTMLElement;
+  const confirmBtn = overlay.querySelector("#ff-modal-confirm") as HTMLButtonElement;
 
   const options = request.options;
   const dangerous = request.kind === "confirm" && request.options.dangerous === true;
@@ -194,9 +194,9 @@ function renderSemanticDialog(
       : (request.options.tone ?? (dangerous ? "error" : "warning"));
 
   // 语义图标与色调 class；用户文本一律 textContent，防止注入
-  iconEl.className = `cy-modal__icon cy-modal__icon--${tone}`;
+  iconEl.className = `ff-modal__icon ff-modal__icon--${tone}`;
   iconEl.innerHTML = TONE_ICONS[tone];
-  dialog.className = `cy-modal cy-modal--${tone}${dangerous ? " cy-modal--danger" : ""}`;
+  dialog.className = `ff-modal ff-modal--${tone}${dangerous ? " ff-modal--danger" : ""}`;
   titleEl.textContent = options.title;
   msgEl.textContent = options.message;
   if (request.kind === "alert" && request.options.details) {
@@ -208,11 +208,11 @@ function renderSemanticDialog(
   }
 
   // alert 只有单个动作按钮；confirm 保证取消按钮在场且位于确认按钮左侧
-  let cancelBtn = overlay.querySelector("#cy-modal-cancel") as HTMLButtonElement | null;
+  let cancelBtn = overlay.querySelector("#ff-modal-cancel") as HTMLButtonElement | null;
   if (request.kind === "confirm" && !cancelBtn) {
     cancelBtn = document.createElement("button");
     cancelBtn.type = "button";
-    cancelBtn.id = "cy-modal-cancel";
+    cancelBtn.id = "ff-modal-cancel";
     cancelBtn.className = "ghost-btn";
     actionsEl.insertBefore(cancelBtn, confirmBtn);
   }
@@ -268,28 +268,28 @@ export function showConfirm(options: ConfirmOptions): Promise<boolean> {
 /* ==================== 语义弹窗容器 ==================== */
 
 export function _initModalOverlay(): void {
-  if (modalState.cyOverlay) return;
-  modalState.cyOverlay = document.createElement("div");
-  modalState.cyOverlay.id = "cy-modal-overlay";
-  modalState.cyOverlay.className = "cy-modal-overlay is-hidden";
-  modalState.cyOverlay.innerHTML = [
-    '<div class="cy-modal" role="alertdialog" aria-modal="true" aria-labelledby="cy-modal-title" aria-describedby="cy-modal-message">',
-    '  <div class="cy-modal__head">',
-    '    <span class="cy-modal__icon cy-modal__icon--warning" id="cy-modal-icon" aria-hidden="true"></span>',
-    '    <h3 class="cy-modal__title" id="cy-modal-title">提示</h3>',
+  if (modalState.ffOverlay) return;
+  modalState.ffOverlay = document.createElement("div");
+  modalState.ffOverlay.id = "ff-modal-overlay";
+  modalState.ffOverlay.className = "ff-modal-overlay is-hidden";
+  modalState.ffOverlay.innerHTML = [
+    '<div class="ff-modal" role="alertdialog" aria-modal="true" aria-labelledby="ff-modal-title" aria-describedby="ff-modal-message">',
+    '  <div class="ff-modal__head">',
+    '    <span class="ff-modal__icon ff-modal__icon--warning" id="ff-modal-icon" aria-hidden="true"></span>',
+    '    <h3 class="ff-modal__title" id="ff-modal-title">提示</h3>',
     '  </div>',
-    '  <p class="cy-modal__body" id="cy-modal-message"></p>',
-    '  <details class="cy-modal__details-wrap" id="cy-modal-details-wrap" hidden>',
+    '  <p class="ff-modal__body" id="ff-modal-message"></p>',
+    '  <details class="ff-modal__details-wrap" id="ff-modal-details-wrap" hidden>',
     '    <summary>查看详情</summary>',
-    '    <pre class="cy-modal__details" id="cy-modal-details"></pre>',
+    '    <pre class="ff-modal__details" id="ff-modal-details"></pre>',
     '  </details>',
-    '  <div class="cy-modal__actions" id="cy-modal-actions">',
-    '    <button type="button" class="ghost-btn" id="cy-modal-cancel">取消</button>',
-    '    <button type="button" class="btn-primary" id="cy-modal-confirm">确定</button>',
+    '  <div class="ff-modal__actions" id="ff-modal-actions">',
+    '    <button type="button" class="ghost-btn" id="ff-modal-cancel">取消</button>',
+    '    <button type="button" class="btn-primary" id="ff-modal-confirm">确定</button>',
     '  </div>',
     '</div>',
   ].join("\n");
-  document.body.appendChild(modalState.cyOverlay);
+  document.body.appendChild(modalState.ffOverlay);
 }
 
 /**
@@ -314,24 +314,24 @@ export function showModal(options: {
 /* ==================== 富文本模态框（阻塞队列成员） ==================== */
 
 function _initHtmlModalOverlay(): void {
-  if (modalState.cyHtmlOverlay) return;
-  modalState.cyHtmlOverlay = document.createElement("div");
-  modalState.cyHtmlOverlay.id = "cy-html-modal-overlay";
-  modalState.cyHtmlOverlay.className = "cy-modal-overlay is-hidden";
-  modalState.cyHtmlOverlay.innerHTML = [
-    '<div class="cy-modal cy-html-modal" role="dialog" aria-modal="true">',
-    '  <div class="cy-modal__head">',
-    '    <span class="cy-modal__icon" id="cy-html-modal-icon">📌</span>',
-    '    <h3 class="cy-modal__title" id="cy-html-modal-title">说明</h3>',
+  if (modalState.ffHtmlOverlay) return;
+  modalState.ffHtmlOverlay = document.createElement("div");
+  modalState.ffHtmlOverlay.id = "ff-html-modal-overlay";
+  modalState.ffHtmlOverlay.className = "ff-modal-overlay is-hidden";
+  modalState.ffHtmlOverlay.innerHTML = [
+    '<div class="ff-modal ff-html-modal" role="dialog" aria-modal="true">',
+    '  <div class="ff-modal__head">',
+    '    <span class="ff-modal__icon" id="ff-html-modal-icon">📌</span>',
+    '    <h3 class="ff-modal__title" id="ff-html-modal-title">说明</h3>',
     '  </div>',
-    '  <hr class="cy-modal__divider">',
-    '  <div class="cy-html-modal__body" id="cy-html-modal-body"></div>',
-    '  <div class="cy-modal__actions">',
-    '    <button type="button" class="btn-primary" id="cy-html-modal-confirm">知道了</button>',
+    '  <hr class="ff-modal__divider">',
+    '  <div class="ff-html-modal__body" id="ff-html-modal-body"></div>',
+    '  <div class="ff-modal__actions">',
+    '    <button type="button" class="btn-primary" id="ff-html-modal-confirm">知道了</button>',
     '  </div>',
     '</div>',
   ].join("\n");
-  document.body.appendChild(modalState.cyHtmlOverlay);
+  document.body.appendChild(modalState.ffHtmlOverlay);
 }
 
 /**
@@ -349,18 +349,18 @@ function renderHtmlDialog(
   request: Extract<BlockingDialogRequest, { kind: "html" }>,
 ): void {
   _initHtmlModalOverlay();
-  const overlay = modalState.cyHtmlOverlay;
+  const overlay = modalState.ffHtmlOverlay;
   if (!overlay) {
     console.error("[settings-feedback] 无法创建富文本弹窗容器");
     finishBlockingDialog(request, () => request.resolve());
     return;
   }
   const options = request.options;
-  const iconEl = overlay.querySelector("#cy-html-modal-icon") as HTMLElement;
-  const titleEl = overlay.querySelector("#cy-html-modal-title") as HTMLElement;
-  const bodyEl = overlay.querySelector("#cy-html-modal-body") as HTMLElement;
-  const confirmBtn = overlay.querySelector("#cy-html-modal-confirm") as HTMLButtonElement;
-  const dialog = overlay.querySelector(".cy-modal") as HTMLElement;
+  const iconEl = overlay.querySelector("#ff-html-modal-icon") as HTMLElement;
+  const titleEl = overlay.querySelector("#ff-html-modal-title") as HTMLElement;
+  const bodyEl = overlay.querySelector("#ff-html-modal-body") as HTMLElement;
+  const confirmBtn = overlay.querySelector("#ff-html-modal-confirm") as HTMLButtonElement;
+  const dialog = overlay.querySelector(".ff-modal") as HTMLElement;
   iconEl.innerHTML = options.icon || "📌";
   titleEl.textContent = options.title;
   bodyEl.innerHTML = options.htmlBody;
@@ -390,26 +390,26 @@ const INPUT_ICON_SVG =
 
 // Inline input modal (Electron 禁用了 window.prompt，所以自己实现)
 function _initInputOverlay(): void {
-  if (modalState.cyInputOverlay) return;
-  modalState.cyInputOverlay = document.createElement("div");
-  modalState.cyInputOverlay.id = "cy-input-overlay";
-  modalState.cyInputOverlay.className = "cy-modal-overlay is-hidden";
-  modalState.cyInputOverlay.innerHTML = [
-    '<div class="cy-modal" role="dialog" aria-modal="true" style="width:min(420px,90vw);">',
-    '  <div class="cy-modal__head">',
-    `    <span class="cy-modal__icon" id="cy-input-icon">${INPUT_ICON_SVG}</span>`,
-    '    <h3 class="cy-modal__title" id="cy-input-title">请输入</h3>',
+  if (modalState.ffInputOverlay) return;
+  modalState.ffInputOverlay = document.createElement("div");
+  modalState.ffInputOverlay.id = "ff-input-overlay";
+  modalState.ffInputOverlay.className = "ff-modal-overlay is-hidden";
+  modalState.ffInputOverlay.innerHTML = [
+    '<div class="ff-modal" role="dialog" aria-modal="true" style="width:min(420px,90vw);">',
+    '  <div class="ff-modal__head">',
+    `    <span class="ff-modal__icon" id="ff-input-icon">${INPUT_ICON_SVG}</span>`,
+    '    <h3 class="ff-modal__title" id="ff-input-title">请输入</h3>',
     '  </div>',
-    '  <hr class="cy-modal__divider">',
-    '  <p class="cy-modal__body" id="cy-input-message"></p>',
-    '  <input type="text" id="cy-input-field" autocomplete="off" spellcheck="false" />',
-    '  <div class="cy-modal__actions">',
-    '    <button type="button" class="ghost-btn" id="cy-input-cancel">取消</button>',
-    '    <button type="button" class="btn-primary" id="cy-input-confirm">确定</button>',
+    '  <hr class="ff-modal__divider">',
+    '  <p class="ff-modal__body" id="ff-input-message"></p>',
+    '  <input type="text" id="ff-input-field" autocomplete="off" spellcheck="false" />',
+    '  <div class="ff-modal__actions">',
+    '    <button type="button" class="ghost-btn" id="ff-input-cancel">取消</button>',
+    '    <button type="button" class="btn-primary" id="ff-input-confirm">确定</button>',
     '  </div>',
     '</div>',
   ].join("\n");
-  document.body.appendChild(modalState.cyInputOverlay);
+  document.body.appendChild(modalState.ffInputOverlay);
 }
 
 /**
@@ -426,20 +426,20 @@ function renderInputDialog(
   request: Extract<BlockingDialogRequest, { kind: "input" }>,
 ): void {
   _initInputOverlay();
-  const overlay = modalState.cyInputOverlay;
+  const overlay = modalState.ffInputOverlay;
   if (!overlay) {
     console.error("[settings-feedback] 无法创建输入弹窗容器");
     finishBlockingDialog(request, () => request.resolve(null));
     return;
   }
   const options = request.options;
-  const iconEl = overlay.querySelector("#cy-input-icon") as HTMLElement;
-  const titleEl = overlay.querySelector("#cy-input-title") as HTMLElement;
-  const msgEl = overlay.querySelector("#cy-input-message") as HTMLElement;
-  const inputEl = overlay.querySelector("#cy-input-field") as HTMLInputElement;
-  const cancelBtn = overlay.querySelector("#cy-input-cancel") as HTMLButtonElement;
-  const confirmBtn = overlay.querySelector("#cy-input-confirm") as HTMLButtonElement;
-  const dialog = overlay.querySelector(".cy-modal") as HTMLElement;
+  const iconEl = overlay.querySelector("#ff-input-icon") as HTMLElement;
+  const titleEl = overlay.querySelector("#ff-input-title") as HTMLElement;
+  const msgEl = overlay.querySelector("#ff-input-message") as HTMLElement;
+  const inputEl = overlay.querySelector("#ff-input-field") as HTMLInputElement;
+  const cancelBtn = overlay.querySelector("#ff-input-cancel") as HTMLButtonElement;
+  const confirmBtn = overlay.querySelector("#ff-input-confirm") as HTMLButtonElement;
+  const dialog = overlay.querySelector(".ff-modal") as HTMLElement;
   // 图标只接受内联 SVG；emoji 一律回退到统一线性图标
   if (options.icon && options.icon.startsWith("<svg")) iconEl.innerHTML = options.icon;
   else iconEl.innerHTML = INPUT_ICON_SVG;

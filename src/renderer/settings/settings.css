@@ -1260,7 +1260,7 @@ body {
 }
 
 /* 自定义模态框（自绘实现，A「轻盈品牌化」视觉：珍珠白/深色双主题 Token） */
-.cy-modal-overlay {
+.ff-modal-overlay {
   position: fixed;
   inset: 0;
   display: grid;
@@ -1270,11 +1270,11 @@ body {
   backdrop-filter: blur(4px);
   transition: opacity var(--rb-feedback-motion, 180ms) ease;
 }
-.cy-modal-overlay.is-hidden {
+.ff-modal-overlay.is-hidden {
   opacity: 0;
   pointer-events: none;
 }
-.cy-modal {
+.ff-modal {
   width: min(380px, 90vw);
   padding: 22px;
   border-radius: 12px;
@@ -1284,17 +1284,17 @@ body {
   transform: scale(1);
   transition: transform var(--rb-feedback-motion, 180ms) ease;
 }
-.cy-modal-overlay.is-hidden .cy-modal {
+.ff-modal-overlay.is-hidden .ff-modal {
   transform: scale(0.95);
 }
-.cy-modal__head {
+.ff-modal__head {
   display: flex;
   align-items: center;
   gap: 10px;
   margin-bottom: 10px;
 }
 /* 状态图标：固定色块中的统一线性 SVG，不再使用 emoji */
-.cy-modal__icon {
+.ff-modal__icon {
   display: grid;
   place-items: center;
   width: 30px;
@@ -1302,7 +1302,7 @@ body {
   flex: none;
   border-radius: 12px;
 }
-.cy-modal__icon svg {
+.ff-modal__icon svg {
   width: 16px;
   height: 16px;
   fill: none;
@@ -1311,39 +1311,39 @@ body {
   stroke-linecap: round;
   stroke-linejoin: round;
 }
-.cy-modal__icon--success {
+.ff-modal__icon--success {
   color: var(--rb-feedback-success, #43a877);
   background: rgba(67, 168, 119, 0.14);
 }
-.cy-modal__icon--info {
+.ff-modal__icon--info {
   color: var(--rb-feedback-info, var(--rb-pink-500));
   background: rgba(var(--rb-accent-rgb), 0.13);
 }
-.cy-modal__icon--warning {
+.ff-modal__icon--warning {
   color: var(--rb-feedback-warning, #d09a43);
   background: rgba(208, 154, 67, 0.15);
 }
-.cy-modal__icon--error,
-.cy-modal__icon--danger {
+.ff-modal__icon--error,
+.ff-modal__icon--danger {
   color: var(--rb-feedback-danger, #e15b70);
   background: rgba(225, 91, 112, 0.14);
 }
-.cy-modal--danger .cy-modal__title {
+.ff-modal--danger .ff-modal__title {
   color: var(--rb-feedback-danger, #e15b70);
 }
-.cy-modal__title {
+.ff-modal__title {
   margin: 0;
   color: var(--rb-text-strong);
   font: 600 14px/1.35 var(--rb-font-sans);
 }
 
-.cy-modal__divider {
+.ff-modal__divider {
   width: 100%;
   border: none;
   border-top: 1px solid rgba(var(--rb-accent-rgb), 0.16);
   margin: 5px 0;
 }
-.cy-modal__body {
+.ff-modal__body {
   margin: 0 0 14px;
   color: var(--rb-text-muted);
   font: 400 13px/1.5 var(--rb-font-sans);
@@ -1351,22 +1351,22 @@ body {
   white-space: pre-line;
 }
 /* 技术详情：纯文本折叠区域，可选中复制 */
-.cy-modal__details-wrap {
+.ff-modal__details-wrap {
   margin: 0 0 14px;
 }
-.cy-modal__details-wrap[hidden] {
+.ff-modal__details-wrap[hidden] {
   display: none;
 }
-.cy-modal__details-wrap summary {
+.ff-modal__details-wrap summary {
   cursor: pointer;
   color: var(--rb-text-faint);
   font: 500 12px/1.4 var(--rb-font-sans);
   user-select: none;
 }
-.cy-modal__details-wrap summary:hover {
+.ff-modal__details-wrap summary:hover {
   color: var(--rb-text-muted);
 }
-.cy-modal__details {
+.ff-modal__details {
   margin: 6px 0 0;
   padding: 8px 10px;
   border-radius: 12px;
@@ -1380,14 +1380,14 @@ body {
   overflow: auto;
   user-select: text;
 }
-.cy-modal__actions {
+.ff-modal__actions {
   display: flex;
   justify-content: flex-end;
   gap: 8px;
 }
 
 /* 输入弹窗文本域（行内样式迁移到样式表） */
-#cy-input-field {
+#ff-input-field {
   width: 100%;
   box-sizing: border-box;
   padding: 8px 10px;
@@ -1402,7 +1402,7 @@ body {
 }
 
 /* 轻提示堆叠容器：右上角、最多 3 条、可覆盖弹窗层级 */
-.cy-notice-stack {
+.ff-notice-stack {
   position: fixed;
   top: 14px;
   right: 14px;
@@ -1413,7 +1413,7 @@ body {
   width: min(300px, calc(100vw - 28px));
   pointer-events: none;
 }
-.cy-notice {
+.ff-notice {
   display: flex;
   align-items: flex-start;
   gap: 8px;
@@ -1425,9 +1425,9 @@ body {
   color: var(--rb-text-default, #efe6f2);
   font: 400 12px/1.45 var(--rb-font-sans);
   pointer-events: auto;
-  animation: cy-notice-in var(--rb-feedback-motion, 180ms) ease;
+  animation: ff-notice-in var(--rb-feedback-motion, 180ms) ease;
 }
-.cy-notice__icon {
+.ff-notice__icon {
   display: grid;
   place-items: center;
   width: 18px;
@@ -1436,7 +1436,7 @@ body {
   margin-top: 1px;
   border-radius: 12px;
 }
-.cy-notice__icon svg {
+.ff-notice__icon svg {
   width: 12px;
   height: 12px;
   fill: none;
@@ -1445,26 +1445,26 @@ body {
   stroke-linecap: round;
   stroke-linejoin: round;
 }
-.cy-notice__message {
+.ff-notice__message {
   word-break: break-word;
 }
-.cy-notice--success .cy-notice__icon {
+.ff-notice--success .ff-notice__icon {
   color: var(--rb-feedback-success, #43a877);
   background: rgba(67, 168, 119, 0.14);
 }
-.cy-notice--info .cy-notice__icon {
+.ff-notice--info .ff-notice__icon {
   color: var(--rb-feedback-info, var(--rb-pink-500));
   background: rgba(var(--rb-accent-rgb), 0.13);
 }
-.cy-notice--warning .cy-notice__icon {
+.ff-notice--warning .ff-notice__icon {
   color: var(--rb-feedback-warning, #d09a43);
   background: rgba(208, 154, 67, 0.15);
 }
-.cy-notice--error .cy-notice__icon {
+.ff-notice--error .ff-notice__icon {
   color: var(--rb-feedback-danger, #e15b70);
   background: rgba(225, 91, 112, 0.14);
 }
-@keyframes cy-notice-in {
+@keyframes ff-notice-in {
   from {
     opacity: 0;
     transform: translateY(-6px) scale(0.98);
@@ -1477,9 +1477,9 @@ body {
 
 /* 尊重系统“减少动态效果”偏好：关闭过渡与动画 */
 @media (prefers-reduced-motion: reduce) {
-  .cy-modal-overlay,
-  .cy-modal,
-  .cy-notice {
+  .ff-modal-overlay,
+  .ff-modal,
+  .ff-notice {
     transition-duration: 0s;
     animation-duration: 0s;
   }
@@ -2973,14 +2973,14 @@ body {
   font-weight: 600;
 }
 
-/* 富文本说明模态框（规格说明用）。复用 cy-modal 样式但加宽 body 并允许纵向滚动。 */
-.cy-html-modal {
+/* 富文本说明模态框（规格说明用）。复用 ff-modal 样式但加宽 body 并允许纵向滚动。 */
+.ff-html-modal {
   width: min(560px, 92vw);
   max-height: 86vh;
   display: flex;
   flex-direction: column;
 }
-.cy-html-modal__body {
+.ff-html-modal__body {
   margin: 0 0 16px;
   padding: 0 4px;
   overflow-y: auto;
@@ -2989,7 +2989,7 @@ body {
   font-size: 13px;
   line-height: 1.65;
 }
-.cy-html-modal__body p {
+.ff-html-modal__body p {
   margin: 0 0 6px;
 }
 
@@ -3025,8 +3025,8 @@ body {
 }
 
 /* 模态框 body 与富文本元素：dark 默认下"rgb 浅紫 + 黑底 code"
-   在白底上不可读。复用主题文件里 .cy-modal 的覆盖规则，body 与代码块单独适配。 */
-[data-ui-theme="pearl-white"] .cy-html-modal__body {
+   在白底上不可读。复用主题文件里 .ff-modal 的覆盖规则，body 与代码块单独适配。 */
+[data-ui-theme="pearl-white"] .ff-html-modal__body {
   color: var(--rb-text-default);
 }
 [data-ui-theme="pearl-white"] .tts-clone-spec-block h4 {

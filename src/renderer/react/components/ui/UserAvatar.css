@@ -1,20 +1,20 @@
-.cy-user-avatar {
+.ff-user-avatar {
   display: flex;
   align-items: center;
   gap: 6px;
   cursor: pointer;
 }
 
-.cy-user-avatar:hover .cy-user-avatar-label {
-  color: var(--cy-text);
+.ff-user-avatar:hover .ff-user-avatar-label {
+  color: var(--ff-text);
 }
 
-.cy-user-avatar-circle {
+.ff-user-avatar-circle {
   width: 32px;
   height: 32px;
   border-radius: 50%;
-  background: var(--cy-bg-hover);
-  border: 1px solid var(--cy-border);
+  background: var(--ff-bg-hover);
+  border: 1px solid var(--ff-border);
   box-sizing: border-box;
   display: flex;
   align-items: center;
@@ -23,13 +23,13 @@
   
 }
 
-.cy-user-avatar-circle span {
-  color: var(--cy-text-secondary);
+.ff-user-avatar-circle span {
+  color: var(--ff-text-secondary);
   font-size: 14px;
   font-weight: 600;
 }
 
-.cy-user-avatar-circle img {
+.ff-user-avatar-circle img {
   display: block;
   width: 100%;
   height: 100%;
@@ -38,9 +38,9 @@
   pointer-events: none;
 }
 
-.cy-user-avatar-label {
+.ff-user-avatar-label {
   font-size: 13px;
-  color: var(--cy-text-muted);
+  color: var(--ff-text-muted);
   transition: color 0.15s;
 }
 

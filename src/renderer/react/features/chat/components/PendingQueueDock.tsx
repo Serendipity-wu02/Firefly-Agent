@@ -67,11 +67,11 @@ export function PendingQueueDock({
   }
 
   return (
-    <section className="cy-queue-dock" aria-label={t("composer.queueLabel")}>
+    <section className="ff-queue-dock" aria-label={t("composer.queueLabel")}>
       {items.length > 1 && (
         <button
           type="button"
-          className="cy-queue-dock__header"
+          className="ff-queue-dock__header"
           aria-expanded={listVisible}
           onClick={() => setExpanded((value) => !value)}
         >
@@ -81,16 +81,16 @@ export function PendingQueueDock({
         </button>
       )}
       {listVisible && (
-        <div className="cy-queue-dock__list">
+        <div className="ff-queue-dock__list">
           {items.map((item) => {
             const isEditing = editing?.id === item.id;
             const busy = busyId !== null;
             return (
-              <div className="cy-queue-dock__row" key={item.id}>
-                {items.length === 1 && <UnorderedListOutlined className="cy-queue-dock__lead" aria-hidden="true" />}
+              <div className="ff-queue-dock__row" key={item.id}>
+                {items.length === 1 && <UnorderedListOutlined className="ff-queue-dock__lead" aria-hidden="true" />}
                 {isEditing ? (
                   <input
-                    className="cy-queue-dock__editor"
+                    className="ff-queue-dock__editor"
                     value={editing.content}
                     autoFocus
                     disabled={busy}
@@ -106,7 +106,7 @@ export function PendingQueueDock({
                 ) : (
                   <button
                     type="button"
-                    className="cy-queue-dock__content"
+                    className="ff-queue-dock__content"
                     title={item.content}
                     disabled={busy}
                     onClick={() => setEditing({ id: item.id, content: item.content })}
@@ -117,7 +117,7 @@ export function PendingQueueDock({
                     )}
                   </button>
                 )}
-                <div className="cy-queue-dock__actions">
+                <div className="ff-queue-dock__actions">
                   {isEditing ? (
                     <>
                       <button

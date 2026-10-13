@@ -21,7 +21,7 @@ import "./RunExperience.css";
 
 function PanelShell({ children, title }: { children: ReactNode; title: string }) {
   return (
-    <section className="cy-interaction-panel" aria-label={title}>
+    <section className="ff-interaction-panel" aria-label={title}>
       {children}
     </section>
   );
@@ -76,26 +76,26 @@ export function AskUserPanel({
 
   return (
     <PanelShell title={t("interaction.askingTitle")}>
-      <div className="cy-interaction-panel__heading">
-        <span className="cy-interaction-panel__status">{t("interaction.askingTitle")}</span>
+      <div className="ff-interaction-panel__heading">
+        <span className="ff-interaction-panel__status">{t("interaction.askingTitle")}</span>
         {questions.length > 1 && (
-          <nav className="cy-interaction-panel__pager" aria-label={t("interaction.pagerAria")}>
+          <nav className="ff-interaction-panel__pager" aria-label={t("interaction.pagerAria")}>
             <button type="button" aria-label={t("interaction.prevQuestion")} disabled={disabled || page === 0} onClick={() => setPage((value) => Math.max(0, value - 1))}>‹</button>
-            <span className="cy-interaction-panel__page">{page + 1} / {questions.length}</span>
+            <span className="ff-interaction-panel__page">{page + 1} / {questions.length}</span>
             <button type="button" aria-label={t("interaction.nextQuestion")} disabled={disabled || page === questions.length - 1} onClick={() => setPage((value) => Math.min(questions.length - 1, value + 1))}>›</button>
           </nav>
         )}
       </div>
       {interaction.intro && (
-        <div className="cy-interaction-panel__intro">
+        <div className="ff-interaction-panel__intro">
           <MarkdownContent content={interaction.intro} />
         </div>
       )}
-      <div className="cy-interaction-panel__question">
+      <div className="ff-interaction-panel__question">
         <MarkdownContent content={current.question} />
       </div>
       {current.options.length > 0 && (
-        <div className="cy-interaction-panel__options" role={current.multiple ? "group" : "radiogroup"} aria-label={current.question}>
+        <div className="ff-interaction-panel__options" role={current.multiple ? "group" : "radiogroup"} aria-label={current.question}>
           {current.options.map((option, index) => (
             <button
               type="button"
@@ -108,8 +108,8 @@ export function AskUserPanel({
                 setDrafts((values) => selectAskOption(values, current, option.id));
               }}
             >
-              <span className="cy-interaction-panel__option-index">{index + 1}.</span>
-              <div className="cy-interaction-panel__option-body">
+              <span className="ff-interaction-panel__option-index">{index + 1}.</span>
+              <div className="ff-interaction-panel__option-body">
                 <MarkdownContent content={option.label} />
                 {option.description && <small>{option.description}</small>}
               </div>
@@ -118,7 +118,7 @@ export function AskUserPanel({
         </div>
       )}
       {current.allowCustomInput !== false && (
-        <label className="cy-interaction-panel__custom-answer">
+        <label className="ff-interaction-panel__custom-answer">
           <span>{t("interaction.customAnswerLabel")}</span>
           <input
             value={currentDraft.customText}
@@ -129,7 +129,7 @@ export function AskUserPanel({
         </label>
       )}
       {questions.length > 1 && (
-        <div className="cy-interaction-panel__question-index" aria-label={t("interaction.questionProgressAria")}>
+        <div className="ff-interaction-panel__question-index" aria-label={t("interaction.questionProgressAria")}>
           {questions.map((question, index) => {
             const draft = drafts[question.id];
             const answered = draft?.source === "option" || draft?.source === "custom";
@@ -137,7 +137,7 @@ export function AskUserPanel({
           })}
         </div>
       )}
-      <div className="cy-interaction-panel__actions">
+      <div className="ff-interaction-panel__actions">
         <button type="button" className="is-primary" disabled={disabled || !canSubmit} onClick={submit}>{questions.length > 1 ? t("interaction.submitAll") : t("interaction.submit")}</button>
       </div>
     </PanelShell>
@@ -156,15 +156,15 @@ export function PermissionPanel({
   const { t } = useTranslation();
   return (
     <PanelShell title={t("interaction.permissionTitle")}>
-      <div className="cy-interaction-panel__heading">
-        <span className="cy-interaction-panel__status">{t("interaction.permissionTitle")}</span>
+      <div className="ff-interaction-panel__heading">
+        <span className="ff-interaction-panel__status">{t("interaction.permissionTitle")}</span>
       </div>
-      <p className="cy-interaction-panel__question">{interaction.summary}</p>
-      <dl className="cy-interaction-panel__metadata">
+      <p className="ff-interaction-panel__question">{interaction.summary}</p>
+      <dl className="ff-interaction-panel__metadata">
         {interaction.workspaceName && <><dt>{t("interaction.workspaceLabel")}</dt><dd>{interaction.workspaceName}</dd></>}
         {interaction.targetPath && <><dt>{t("interaction.targetLabel")}</dt><dd title={interaction.targetPath}>{interaction.targetPath}</dd></>}
       </dl>
-      <div className="cy-interaction-panel__actions">
+      <div className="ff-interaction-panel__actions">
         <button type="button" disabled={disabled} onClick={() => onDecision?.(false)}>{t("interaction.deny")}</button>
         <button type="button" className="is-primary" disabled={disabled} onClick={() => onDecision?.(true)}>{t("interaction.allow")}</button>
       </div>
@@ -307,10 +307,10 @@ export function PopQuizPanel({
     const gradedById = new Map(graded.map((item) => [item.questionId, item]));
     return (
       <PanelShell title={t("interaction.quizTitle")}>
-        <div className="cy-interaction-panel__heading">
-          <span className="cy-interaction-panel__status">{t("interaction.quizGradedTitle")}</span>
+        <div className="ff-interaction-panel__heading">
+          <span className="ff-interaction-panel__status">{t("interaction.quizGradedTitle")}</span>
         </div>
-        <div className="cy-quiz-graded">
+        <div className="ff-quiz-graded">
           {questions.map((question) => {
             const result = gradedById.get(question.id);
             const grading = result?.grading ?? "pending_model";
@@ -320,33 +320,33 @@ export function PopQuizPanel({
               : question.type === "true_false" ? (userDraft?.boolean === true ? t("interaction.quizTrueLabel") : userDraft?.boolean === false ? t("interaction.quizFalseLabel") : "—")
               : userDraft?.text?.trim() || "—";
             return (
-              <div key={question.id} className={`cy-quiz-graded__item is-${grading}`}>
-                <div className="cy-interaction-panel__question">
+              <div key={question.id} className={`ff-quiz-graded__item is-${grading}`}>
+                <div className="ff-interaction-panel__question">
                   <MarkdownContent content={question.question} />
                 </div>
-                <div className="cy-quiz-graded__meta">
-                  <span className={`cy-quiz-badge is-${grading}`}>
+                <div className="ff-quiz-graded__meta">
+                  <span className={`ff-quiz-badge is-${grading}`}>
                     {grading === "correct" ? t("interaction.quizGradedCorrect")
                       : grading === "incorrect" ? t("interaction.quizGradedIncorrect")
                       : t("interaction.quizGradedPending")}
                   </span>
-                  <div className="cy-quiz-graded__answer">
+                  <div className="ff-quiz-graded__answer">
                     {t("interaction.quizYourAnswer")}：<MarkdownContent content={userAnswer ?? ""} />
                   </div>
                   {result?.correctAnswer !== undefined && (
-                    <div className="cy-quiz-graded__answer">
+                    <div className="ff-quiz-graded__answer">
                       {t("interaction.quizCorrectAnswer")}：<MarkdownContent content={describeQuizAnswerValue(question, result.correctAnswer, { true: t("interaction.quizTrueLabel"), false: t("interaction.quizFalseLabel") })} />
                     </div>
                   )}
                 </div>
                 {/* 简答题不立即展示解析：标准答案要点由 Firefly 讲评时给出，避免剧透 */}
                 {result?.explanation && grading !== "pending_model" && (
-                  <div className="cy-quiz-graded__explanation">
+                  <div className="ff-quiz-graded__explanation">
                     <MarkdownContent content={result.explanation} />
                   </div>
                 )}
                 {grading === "pending_model" && (
-                  <p className="cy-quiz-graded__pending">{t("interaction.quizPendingHint")}</p>
+                  <p className="ff-quiz-graded__pending">{t("interaction.quizPendingHint")}</p>
                 )}
               </div>
             );
@@ -359,27 +359,27 @@ export function PopQuizPanel({
   // ── 作答态：逐题作答，全部答完才能提交 ──
   return (
     <PanelShell title={t("interaction.quizTitle")}>
-      <div className="cy-interaction-panel__heading">
-        <span className="cy-interaction-panel__status">{t("interaction.quizTitle")}</span>
+      <div className="ff-interaction-panel__heading">
+        <span className="ff-interaction-panel__status">{t("interaction.quizTitle")}</span>
         {questions.length > 1 && (
-          <nav className="cy-interaction-panel__pager" aria-label={t("interaction.pagerAria")}>
+          <nav className="ff-interaction-panel__pager" aria-label={t("interaction.pagerAria")}>
             <button type="button" aria-label={t("interaction.prevQuestion")} disabled={disabled || phase === "submitting" || page === 0} onClick={() => setPage((value) => Math.max(0, value - 1))}>‹</button>
-            <span className="cy-interaction-panel__page">{page + 1} / {questions.length}</span>
+            <span className="ff-interaction-panel__page">{page + 1} / {questions.length}</span>
             <button type="button" aria-label={t("interaction.nextQuestion")} disabled={disabled || phase === "submitting" || page === questions.length - 1} onClick={() => setPage((value) => Math.min(questions.length - 1, value + 1))}>›</button>
           </nav>
         )}
       </div>
-      {interaction.intro && <p className="cy-interaction-panel__intro">{interaction.intro}</p>}
-      <div className="cy-interaction-panel__question">
+      {interaction.intro && <p className="ff-interaction-panel__intro">{interaction.intro}</p>}
+      <div className="ff-interaction-panel__question">
         <MarkdownContent content={current.question} />
       </div>
       {current.learningObjective && (
-        <div className="cy-quiz-objective">
+        <div className="ff-quiz-objective">
           {t("interaction.quizObjectiveLabel")}：<MarkdownContent content={current.learningObjective} />
         </div>
       )}
       {(current.type === "choice" || current.type === "multi") && (
-        <div className="cy-interaction-panel__options" role={current.type === "multi" ? "group" : "radiogroup"} aria-label={current.question}>
+        <div className="ff-interaction-panel__options" role={current.type === "multi" ? "group" : "radiogroup"} aria-label={current.question}>
           {current.options.map((option, index) => {
             const selected = current.type === "choice"
               ? drafts[current.id]?.optionId === option.id
@@ -406,8 +406,8 @@ export function PopQuizPanel({
                   });
                 }}
               >
-                <span className="cy-interaction-panel__option-index">{index + 1}.</span>
-                <div className="cy-interaction-panel__option-body">
+                <span className="ff-interaction-panel__option-index">{index + 1}.</span>
+                <div className="ff-interaction-panel__option-body">
                   <MarkdownContent content={option.label} />
                 </div>
               </button>
@@ -416,7 +416,7 @@ export function PopQuizPanel({
         </div>
       )}
       {current.type === "true_false" && (
-        <div className="cy-interaction-panel__options" role="radiogroup" aria-label={current.question}>
+        <div className="ff-interaction-panel__options" role="radiogroup" aria-label={current.question}>
           {trueFalseOptions.map((option) => (
             <button
               type="button"
@@ -427,17 +427,17 @@ export function PopQuizPanel({
               disabled={disabled || phase === "submitting"}
               onClick={() => setDrafts((values) => ({ ...values, [current.id]: { ...values[current.id], boolean: option.value } }))}
             >
-              <span className="cy-interaction-panel__option-index">◦</span>
+              <span className="ff-interaction-panel__option-index">◦</span>
               <span><strong>{option.label}</strong></span>
             </button>
           ))}
         </div>
       )}
       {current.type === "short_answer" && (
-        <label className="cy-interaction-panel__custom-answer">
+        <label className="ff-interaction-panel__custom-answer">
           <span>{t("interaction.quizShortAnswerLabel")}</span>
           <textarea
-            className="cy-quiz-short-answer"
+            className="ff-quiz-short-answer"
             value={drafts[current.id]?.text ?? ""}
             disabled={disabled || phase === "submitting"}
             placeholder={t("interaction.quizShortAnswerPlaceholder")}
@@ -447,16 +447,16 @@ export function PopQuizPanel({
         </label>
       )}
       {questions.length > 1 && (
-        <div className="cy-interaction-panel__question-index" aria-label={t("interaction.questionProgressAria")}>
+        <div className="ff-interaction-panel__question-index" aria-label={t("interaction.questionProgressAria")}>
           {questions.map((question, index) => {
             const answered = isQuizQuestionAnswered(question, drafts[question.id]);
             return <button type="button" key={question.id} className={page === index ? "is-current" : ""} disabled={disabled || phase === "submitting"} onClick={() => setPage(index)}>{answered ? "✓" : "○"} {index + 1}</button>;
           })}
         </div>
       )}
-      {errorText && <p className="cy-quiz-error" role="alert">{errorText}</p>}
-      <div className="cy-interaction-panel__actions">
-        <button type="button" className="cy-quiz-skip" disabled={disabled || phase === "submitting"} onClick={() => void skip()}>{t("interaction.quizSkip")}</button>
+      {errorText && <p className="ff-quiz-error" role="alert">{errorText}</p>}
+      <div className="ff-interaction-panel__actions">
+        <button type="button" className="ff-quiz-skip" disabled={disabled || phase === "submitting"} onClick={() => void skip()}>{t("interaction.quizSkip")}</button>
         <button type="button" className="is-primary" disabled={disabled || phase === "submitting" || !canSubmit} onClick={() => void submit()}>
           {phase === "submitting" ? t("interaction.quizSubmitting") : t("interaction.quizSubmit")}
         </button>

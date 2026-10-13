@@ -13,7 +13,7 @@
 
 /* ── 令牌：通用派生（深色 / 自定义配色走这一套） ───────────── */
 .settings-shell,
-.cy-modal-overlay {
+.ff-modal-overlay {
   --sys-radius: var(--st-radius-card);
   --sys-pad-x: 20px;
   --sys-row-pad: 16px;
@@ -549,7 +549,7 @@
  * 结构沿用 .settings-list + .setting-row；这里只补：缩略图、色点 pill、字号输入、折叠区。 */
 
 /* 界面基础字号：设置窗口本身也跟随外观设置的界面字号 */
-body { font-size: var(--cy-ui-font-size, 16px); }
+body { font-size: var(--ff-ui-font-size, 16px); }
 
 .appearance-visually-hidden {
   position: absolute; width: 1px; height: 1px; margin: -1px; padding: 0;
@@ -848,7 +848,7 @@ body { font-size: var(--cy-ui-font-size, 16px); }
  * 右侧内容区仍是接近实底的面板，文字和卡片不受背景影响。
  * 玻璃模式用系统画的 8px 窗口圆角（亚克力铺满整个窗口矩形，CSS 圆角再大会在四角露出灰块）。 */
 :root[data-glass="true"] .settings-shell,
-:root[data-glass="true"] .cy-modal-overlay {
+:root[data-glass="true"] .ff-modal-overlay {
   --st-radius-win: 8px;
   --st-win-alpha: 52%;
   --st-main-alpha: 92%;
@@ -866,7 +866,7 @@ body { font-size: var(--cy-ui-font-size, 16px); }
  * 玻璃模式下：窗口底是一层墨绿渐变（亚克力按系统的浅色着色，所以底色要压得更实，侧栏才不发灰），
  * 顶边一条细高光，内容面板右上角一抹淡绿光，卡片带一层几乎看不见的绿色渐变和顶边高光。 */
 :root[data-ui-theme="firefly-dark"] .settings-shell,
-:root[data-ui-theme="firefly-dark"] .cy-modal-overlay {
+:root[data-ui-theme="firefly-dark"] .ff-modal-overlay {
   --st-card-stroke: color-mix(in srgb, var(--rb-pink-400) 18%, var(--rb-border-soft));
   --st-divider: color-mix(in srgb, var(--rb-pink-400) 11%, var(--rb-border-soft));
   --st-selected-fill: color-mix(in srgb, var(--rb-pink-400) 16%, transparent);
@@ -875,7 +875,7 @@ body { font-size: var(--cy-ui-font-size, 16px); }
   --st-nav-hover: color-mix(in srgb, var(--rb-pink-400) 9%, transparent);
 }
 :root[data-glass="true"][data-ui-theme="firefly-dark"] .settings-shell,
-:root[data-glass="true"][data-ui-theme="firefly-dark"] .cy-modal-overlay {
+:root[data-glass="true"][data-ui-theme="firefly-dark"] .ff-modal-overlay {
   --st-main-alpha: 90%;
   --st-card-alpha: 78%;
   --st-card-fill:

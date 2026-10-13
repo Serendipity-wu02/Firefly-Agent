@@ -61,7 +61,7 @@ export function AppUpdateEntry() {
   return (
     <button
       type="button"
-      className={`cy-app-update-entry is-${state.phase}`}
+      className={`ff-app-update-entry is-${state.phase}`}
       disabled={view.disabled}
       onClick={handleClick}
       title={state.releaseNotes || view.label}
@@ -69,7 +69,7 @@ export function AppUpdateEntry() {
       {state.phase === "downloaded" ? <RotateCcw size={15} /> : <Download size={15} />}
       <span>{view.label}</span>
       {state.phase === "downloading" && (
-        <span className="cy-app-update-entry__progress" style={{ width: `${Math.max(0, Math.min(100, state.percent ?? 0))}%` }} />
+        <span className="ff-app-update-entry__progress" style={{ width: `${Math.max(0, Math.min(100, state.percent ?? 0))}%` }} />
       )}
     </button>
   );

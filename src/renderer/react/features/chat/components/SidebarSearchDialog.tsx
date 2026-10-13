@@ -52,23 +52,23 @@ export function SidebarSearchDialog({ open, sessions, activeSessionId, onClose, 
 
   const heading = searching ? t("sidebar.searchResults") : t("sidebar.recentSessions");
   return (
-    <Modal className="cy-sidebar-search-modal" open={open} centered width={520} title={null} footer={null}
+    <Modal className="ff-sidebar-search-modal" open={open} centered width={520} title={null} footer={null}
       closable={false} onCancel={onClose} destroyOnHidden>
-      <div className="cy-sidebar-search" onKeyDown={onKeyDown}>
+      <div className="ff-sidebar-search" onKeyDown={onKeyDown}>
         <Input autoFocus allowClear prefix={<Search size={16} aria-hidden="true" />} placeholder={t("sidebar.searchSessions")}
           aria-label={t("sidebar.searchSessions")} value={query} onChange={event => setQuery(event.target.value)} />
-        <div className="cy-sidebar-search__heading">{heading}</div>
+        <div className="ff-sidebar-search__heading">{heading}</div>
         {results.length === 0
-          ? <div className="cy-sidebar-search__empty">{t("sidebar.noSearchResults")}</div>
-          : <div className="cy-sidebar-search__list" role="listbox" aria-label={heading}>
+          ? <div className="ff-sidebar-search__empty">{t("sidebar.noSearchResults")}</div>
+          : <div className="ff-sidebar-search__list" role="listbox" aria-label={heading}>
             {results.map((session, index) => (
               <button key={session.id} type="button" role="option" aria-selected={index === highlight}
-                className={`cy-sidebar-search__item${index === highlight ? " is-highlighted" : ""}${session.id === activeSessionId ? " is-current" : ""}`}
+                className={`ff-sidebar-search__item${index === highlight ? " is-highlighted" : ""}${session.id === activeSessionId ? " is-current" : ""}`}
                 onMouseEnter={() => setHighlight(index)} onClick={() => choose(session.id)}>
                 <MessageSquareText size={15} aria-hidden="true" />
-                <span className="cy-sidebar-search__copy">
-                  <span className="cy-sidebar-search__title">{session.title || t("sidebar.defaultSessionTitle")}</span>
-                  <span className="cy-sidebar-search__project">{session.workspaceDisplayName || session.workspaceRoot || t("sidebar.unboundProject")}</span>
+                <span className="ff-sidebar-search__copy">
+                  <span className="ff-sidebar-search__title">{session.title || t("sidebar.defaultSessionTitle")}</span>
+                  <span className="ff-sidebar-search__project">{session.workspaceDisplayName || session.workspaceRoot || t("sidebar.unboundProject")}</span>
                 </span>
               </button>
             ))}

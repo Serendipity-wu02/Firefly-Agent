@@ -85,33 +85,33 @@ export function PermissionControl() {
         setOpen(nextOpen);
         if (nextOpen) void refresh();
       }}
-      overlayClassName="cy-permission-popover"
+      overlayClassName="ff-permission-popover"
       content={
-        <div className="cy-permission-panel">
-          <strong className="cy-permission-panel__title">{t("permission.panelQuestion")}</strong>
-          <div className="cy-permission-panel__options" role="radiogroup" aria-label={t("permission.panelTitle")}>
+        <div className="ff-permission-panel">
+          <strong className="ff-permission-panel__title">{t("permission.panelQuestion")}</strong>
+          <div className="ff-permission-panel__options" role="radiogroup" aria-label={t("permission.panelTitle")}>
             {PERMISSION_OPTIONS.map((option) => (
               <button
                 type="button"
                 role="radio"
                 aria-checked={level === option.level}
                 key={option.level}
-                className={`cy-permission-panel__option is-${option.level} ${level === option.level ? "is-active" : ""}`}
+                className={`ff-permission-panel__option is-${option.level} ${level === option.level ? "is-active" : ""}`}
                 onClick={() => void select(option.level)}
               >
-                <span className="cy-permission-panel__icon"><PermissionIcon level={option.level} /></span>
-                <span className="cy-permission-panel__text">
-                  <span className="cy-permission-panel__label">{t(option.labelKey)}</span>
+                <span className="ff-permission-panel__icon"><PermissionIcon level={option.level} /></span>
+                <span className="ff-permission-panel__text">
+                  <span className="ff-permission-panel__label">{t(option.labelKey)}</span>
                   <small>{t(option.descKey)}</small>
                 </span>
-                <svg className="cy-permission-panel__check" viewBox="0 0 24 24" aria-hidden="true"><path d="m5 12.5 4.5 4.5L19 7.5" /></svg>
+                <svg className="ff-permission-panel__check" viewBox="0 0 24 24" aria-hidden="true"><path d="m5 12.5 4.5 4.5L19 7.5" /></svg>
               </button>
             ))}
           </div>
         </div>
       }
     >
-      <button type="button" className={`cy-composer__footer-button cy-permission-control is-${level}`}>
+      <button type="button" className={`ff-composer__footer-button ff-permission-control is-${level}`}>
         <PermissionIcon level={level} />
         <span>{labelFor(level, t)}</span>
         <ChevronIcon />

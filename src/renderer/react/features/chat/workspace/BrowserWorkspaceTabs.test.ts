@@ -35,7 +35,7 @@ it("plays the closing tab's exit before asking Main, and only closes the selecte
   await render(); const input=host.querySelector('[data-tab="a"]');
   await act(async () => host.querySelector<HTMLButtonElement>('[data-browser-new-tab]')!.click());
   await act(async () => host.querySelector<HTMLButtonElement>('[data-browser-close-tab="b"]')!.click());
-  expect(host.querySelector('[data-browser-close-tab="b"]')!.closest(".cy-browser-window__tab")!.classList.contains("is-closing")).toBe(true);
+  expect(host.querySelector('[data-browser-close-tab="b"]')!.closest(".ff-browser-window__tab")!.classList.contains("is-closing")).toBe(true);
   expect(closeTab).not.toHaveBeenCalled();
   await afterExit();
   expect(closeTab).toHaveBeenCalledWith("b"); expect(host.querySelector('[data-tab="b"]')).toBeNull(); expect(host.querySelector('[data-tab="a"]')).toBe(input);
@@ -45,7 +45,7 @@ it("returns a refused close to view with its error", async () => {
   closeTab.mockResolvedValueOnce({ ok: false, code: "cleanup_failed" });
   await act(async () => host.querySelector<HTMLButtonElement>('[data-browser-close-tab="b"]')!.click());
   await afterExit();
-  expect(host.querySelector('[data-browser-close-tab="b"]')!.closest(".cy-browser-window__tab")!.classList.contains("is-closing")).toBe(false);
+  expect(host.querySelector('[data-browser-close-tab="b"]')!.closest(".ff-browser-window__tab")!.classList.contains("is-closing")).toBe(false);
   expect(host.querySelector('[role="alert"]')?.textContent).toContain("browserWorkspace.cleanupFailed");
 });
 it("keeps existing tabs and exposes a server tab-limit failure", async () => {

@@ -29,7 +29,7 @@ describe("图卡片点击放大", () => {
     const html = renderToStaticMarkup(
       React.createElement(MermaidBlock, { code: MERMAID_CODE }),
     );
-    expect(html).toContain("cy-mermaid--zoomable");
+    expect(html).toContain("ff-mermaid--zoomable");
     expect(html).toContain("messageList.diagramZoomHint");
     expect(html).toContain("<svg");
   });
@@ -39,7 +39,7 @@ describe("图卡片点击放大", () => {
     const html = renderToStaticMarkup(
       React.createElement(SvgCardBlock, { code: SVG_CODE }),
     );
-    expect(html).toContain("cy-svg-card--zoomable");
+    expect(html).toContain("ff-svg-card--zoomable");
     expect(html).toContain("messageList.diagramZoomHint");
     expect(html).toContain("<svg");
   });
@@ -49,8 +49,8 @@ describe("图卡片点击放大", () => {
     const html = renderToStaticMarkup(
       React.createElement(MermaidBlock, { code: MERMAID_CODE, streaming: true }),
     );
-    expect(html).toContain("cy-mermaid--pending");
-    expect(html).not.toContain("cy-mermaid--zoomable");
+    expect(html).toContain("ff-mermaid--pending");
+    expect(html).not.toContain("ff-mermaid--zoomable");
     expect(html).not.toContain("<svg");
   });
 });

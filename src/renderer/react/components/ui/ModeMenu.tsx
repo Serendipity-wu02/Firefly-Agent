@@ -18,7 +18,7 @@ const modes = [
 ];
 
 function ChevronIcon() {
-  return <svg className="cy-mode-menu__chevron" viewBox="0 0 24 24" aria-hidden="true"><path d="m7 10 5 5 5-5" /></svg>;
+  return <svg className="ff-mode-menu__chevron" viewBox="0 0 24 24" aria-hidden="true"><path d="m7 10 5 5 5-5" /></svg>;
 }
 
 interface ModeMenuListProps {
@@ -40,7 +40,7 @@ function ModeMenuList({ value, onPick, onClose }: ModeMenuListProps) {
   }
 
   return (
-    <div className="cy-mode-menu__list" role="menu" aria-label={t("ui.modeMenu")}
+    <div className="ff-mode-menu__list" role="menu" aria-label={t("ui.modeMenu")}
       onKeyDown={event => {
         const current = refs.current.findIndex(node => node === document.activeElement);
         if (event.key === "Escape") { event.preventDefault(); event.stopPropagation(); onClose(); }
@@ -53,14 +53,14 @@ function ModeMenuList({ value, onPick, onClose }: ModeMenuListProps) {
         const selected = index === selectedIndex;
         return (
           <button key={mode.key} ref={node => { refs.current[index] = node; }} type="button" role="menuitemradio"
-            className={`cy-mode-menu__item${selected ? " is-active" : ""}`}
+            className={`ff-mode-menu__item${selected ? " is-active" : ""}`}
             aria-checked={selected} tabIndex={selected ? 0 : -1}
             onClick={() => onPick(mode.key)}>
-            <span className="cy-mode-menu__text">
-              <span className="cy-mode-menu__label">{mode.label}</span>
+            <span className="ff-mode-menu__text">
+              <span className="ff-mode-menu__label">{mode.label}</span>
               <small>{t(mode.descriptionKey)}</small>
             </span>
-            <svg className="cy-mode-menu__check" viewBox="0 0 24 24" aria-hidden="true"><path d="m5 12.5 4.5 4.5L19 7.5" /></svg>
+            <svg className="ff-mode-menu__check" viewBox="0 0 24 24" aria-hidden="true"><path d="m5 12.5 4.5 4.5L19 7.5" /></svg>
           </button>
         );
       })}
@@ -88,13 +88,13 @@ export function ModeMenu({ value, onChange, variant = "sidebar" }: ModeMenuProps
       onOpenChange={setOpen}
       destroyOnHidden
       arrow={false}
-      rootClassName="cy-mode-popover"
+      rootClassName="ff-mode-popover"
       content={(
         <ModeMenuList value={value} onClose={() => close(true)}
           onPick={mode => { close(true); if (mode !== value) onChange(mode); }} />
       )}
     >
-      <button ref={triggerRef} type="button" className={`cy-mode-menu__trigger is-${variant}${open ? " is-open" : ""}`}
+      <button ref={triggerRef} type="button" className={`ff-mode-menu__trigger is-${variant}${open ? " is-open" : ""}`}
         aria-haspopup="menu" aria-expanded={open}
         aria-label={t("ui.modeSelector", { mode: current.label })}
         onKeyDown={event => {

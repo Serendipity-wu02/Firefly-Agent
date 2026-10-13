@@ -36,14 +36,14 @@ it("shows no consent panel for ordinary web browsing, and only a slim bar for a 
   const web = { ...permission("granted"), scope: { mode: "manual" as const, web: true, hosts: [], resourceHosts: [], actions: ["navigate" as const] } };
   window.manualBrowserWorkspace!.getPermission = async () => ({ ok: true, value: web });
   await render();
-  expect(host.querySelector(".cy-browser-permission")).toBeNull();
+  expect(host.querySelector(".ff-browser-permission")).toBeNull();
   expect(host.textContent).not.toContain("navigate");
   const local = { ...permission("granted"), scope: { mode: "manual" as const, hosts: ["localhost:5173"], resourceHosts: ["localhost:3000"], actions: ["navigate" as const] } };
   window.manualBrowserWorkspace!.getPermission = async () => ({ ok: true, value: local });
   await act(async () => root.unmount()); root = createRoot(host); await render();
-  const bar = host.querySelector(".cy-browser-permission--compact");
-  expect(bar?.querySelector(".cy-browser-chip code")?.textContent).toBe("localhost:5173");
-  expect(bar?.querySelector(".cy-browser-chip__extra")?.textContent).toBe("+1");
+  const bar = host.querySelector(".ff-browser-permission--compact");
+  expect(bar?.querySelector(".ff-browser-chip code")?.textContent).toBe("localhost:5173");
+  expect(bar?.querySelector(".ff-browser-chip__extra")?.textContent).toBe("+1");
   expect(bar?.querySelector("details")).toBeNull();
   expect(bar?.querySelector("[data-browser-revoke]")).not.toBeNull();
 });

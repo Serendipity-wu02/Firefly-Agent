@@ -120,7 +120,7 @@ import { renderStickerSendStatus } from "./preferences/sticker-send-status";
 // Inline modal (to avoid Vite tree-shaking)
 
 /**
- * 富文本模态框（基于 cy-modal 样式但使用独立 overlay，避免与 showModal 冲突）。
+ * 富文本模态框（基于 ff-modal 样式但使用独立 overlay，避免与 showModal 冲突）。
  * 用于"音色快速复刻"这种需要展示多组说明（规格 / 费用 / 过期规则）的场景。
  * 调用方负责传入安全的 HTML（项目内固定字符串）；若内容来自用户/网络必须先 escapeHtml。
  */
@@ -405,7 +405,7 @@ function renderChatAppearanceControls(settings: ChatAppearanceSettings): void {
   for (const key of Object.keys(pixelSizeInputs) as PixelSizeKey[]) {
     pixelSizeInputs[key].value = String(settings[key]);
   }
-  document.documentElement.style.setProperty("--cy-ui-font-size", `${settings.uiFontSize}px`);
+  document.documentElement.style.setProperty("--ff-ui-font-size", `${settings.uiFontSize}px`);
 }
 
 function bindPixelSizeInput(key: PixelSizeKey): void {
@@ -414,7 +414,7 @@ function bindPixelSizeInput(key: PixelSizeKey): void {
   input.addEventListener("input", () => {
     const value = Number(input.value);
     if (input.value.trim() && Number.isFinite(value) && key === "uiFontSize") {
-      document.documentElement.style.setProperty("--cy-ui-font-size", `${clampFiniteNumber(value, min, max, savedChatAppearance.uiFontSize)}px`);
+      document.documentElement.style.setProperty("--ff-ui-font-size", `${clampFiniteNumber(value, min, max, savedChatAppearance.uiFontSize)}px`);
     }
     setAppearanceSaveStatus(t("settings.status.releaseApply"));
   });

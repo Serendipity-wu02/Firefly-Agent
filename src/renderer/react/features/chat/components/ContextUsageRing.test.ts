@@ -118,7 +118,7 @@ describe("ContextUsageRing rendering", () => {
     const markup = renderToStaticMarkup(React.createElement(ContextUsageRing, {
       usage: snapshotOf({ categories: { systemPrompt: 12_800, conversation: 0 } }),
     }));
-    expect(markup).toContain("cy-context-usage-ring is-normal");
+    expect(markup).toContain("ff-context-usage-ring is-normal");
     expect(markup).toContain("上下文 12.8k / 256k (5%)");
     const dash = extractDasharray(markup);
     expect(dash).toBeDefined();
@@ -132,7 +132,7 @@ describe("ContextUsageRing rendering", () => {
     }));
     // 300k / 256k = 117.1875% → 文本诚实显示 117%，圆环整圈，色调 alert。
     expect(markup).toContain("117%");
-    expect(markup).toContain("cy-context-usage-ring is-alert");
+    expect(markup).toContain("ff-context-usage-ring is-alert");
     const dash = extractDasharray(markup);
     expect(dash![0]).toBeCloseTo(RING_CIRCUMFERENCE);
     expect(dash![0] / dash![1]).toBeCloseTo(1);
@@ -142,12 +142,12 @@ describe("ContextUsageRing rendering", () => {
     const markup = renderToStaticMarkup(React.createElement(ContextUsageRing, {
       usage: snapshotOf({ contextWindowTokens: 0, categories: { systemPrompt: 1500 } }),
     }));
-    expect(markup).toContain("cy-context-usage-ring__track");
-    expect(markup).not.toContain("cy-context-usage-ring__progress");
+    expect(markup).toContain("ff-context-usage-ring__track");
+    expect(markup).not.toContain("ff-context-usage-ring__progress");
     // 无窗口比例：标题不带容量百分比（堆叠条的 width:100% 是 CSS，不算）。
     expect(markup).not.toContain("tokens (");
     // 明细行仍显示占已用百分比（1500/1500 = 100%）。
-    expect(markup).toContain("cy-context-usage-menu__share");
+    expect(markup).toContain("ff-context-usage-menu__share");
     expect(markup).toContain(">100%</span>");
     // 菜单仍显示绝对 token 值。
     expect(markup).toContain("1.5k tokens");
@@ -157,7 +157,7 @@ describe("ContextUsageRing rendering", () => {
     const markup = renderToStaticMarkup(React.createElement(ContextUsageRing, {
       usage: snapshotOf({ categories: { conversation: 184_320 } }), // 184320/256000 = 0.72
     }));
-    expect(markup).toContain("cy-context-usage-ring is-warm");
+    expect(markup).toContain("ff-context-usage-ring is-warm");
     expect(markup).toContain("(72%)");
   });
 
@@ -165,21 +165,21 @@ describe("ContextUsageRing rendering", () => {
     const normal = renderToStaticMarkup(React.createElement(ContextUsageRing, {
       usage: snapshotOf({ categories: { conversation: 12_800 } }), // 5%
     }));
-    expect(normal).toContain("cy-context-usage-menu__mood is-normal");
+    expect(normal).toContain("ff-context-usage-menu__mood is-normal");
     expect(normal).toContain(CONTEXT_USAGE_MOOD_META.normal.text);
     expect(normal).not.toContain("context-usage/normal.png");
 
     const warm = renderToStaticMarkup(React.createElement(ContextUsageRing, {
       usage: snapshotOf({ categories: { conversation: 184_320 } }), // 72%
     }));
-    expect(warm).toContain("cy-context-usage-menu__mood is-warm");
+    expect(warm).toContain("ff-context-usage-menu__mood is-warm");
     expect(warm).toContain(CONTEXT_USAGE_MOOD_META.warm.text);
     expect(warm).not.toContain("context-usage/warm.png");
 
     const alert = renderToStaticMarkup(React.createElement(ContextUsageRing, {
       usage: snapshotOf({ totalTokens: 300_000, categories: { conversation: 300_000 } }), // 117%
     }));
-    expect(alert).toContain("cy-context-usage-menu__mood is-alert");
+    expect(alert).toContain("ff-context-usage-menu__mood is-alert");
     expect(alert).toContain(CONTEXT_USAGE_MOOD_META.alert.text);
     expect(alert).not.toContain("context-usage/alert.png");
   });
@@ -191,7 +191,7 @@ describe("ContextUsageRing rendering", () => {
     }));
     expect(inert).not.toContain("context-usage/compact.png");
     expect(inert).not.toContain("can-compact");
-    expect(inert).toContain("cy-context-usage-menu__mood-figure\" disabled");
+    expect(inert).toContain("ff-context-usage-menu__mood-figure\" disabled");
   });
 
   it("enables the compact trigger with a sessionId and disables it while busy", () => {
@@ -200,9 +200,9 @@ describe("ContextUsageRing rendering", () => {
       usage,
       sessionId: "session-1",
     }));
-    expect(enabled).toContain("cy-context-usage-menu__mood is-normal can-compact");
+    expect(enabled).toContain("ff-context-usage-menu__mood is-normal can-compact");
     expect(enabled).not.toContain("context-usage/compact.png");
-    expect(enabled).not.toContain("cy-context-usage-menu__mood-figure\" disabled");
+    expect(enabled).not.toContain("ff-context-usage-menu__mood-figure\" disabled");
 
     // 模型运行中：压缩禁用，避免与 run 的消息写回竞态。
     const busy = renderToStaticMarkup(React.createElement(ContextUsageRing, {
@@ -211,7 +211,7 @@ describe("ContextUsageRing rendering", () => {
       busy: true,
     }));
     expect(busy).not.toContain("can-compact");
-    expect(busy).toContain("cy-context-usage-menu__mood-figure\" disabled");
+    expect(busy).toContain("ff-context-usage-menu__mood-figure\" disabled");
   });
 
   it("renders the popover menu with a single progress bar and per-category rows, hiding zero-token categories", () => {
@@ -222,8 +222,8 @@ describe("ContextUsageRing rendering", () => {
     expect(markup).toContain("上下文容量");
     expect(markup).toContain("估算值（按字符折算），对话后自动刷新");
     // 单条总占比进度条（normal 档）。
-    expect((markup.match(/cy-context-usage-menu__progress is-normal/g) ?? []).length).toBe(1);
-    expect((markup.match(/cy-context-usage-menu__dot"/g) ?? []).length).toBe(3);
+    expect((markup.match(/ff-context-usage-menu__progress is-normal/g) ?? []).length).toBe(1);
+    expect((markup.match(/ff-context-usage-menu__dot"/g) ?? []).length).toBe(3);
     // 0 token 的技能、运行时与日志、其他被隐藏。
     expect(markup).not.toContain(CONTEXT_USAGE_CATEGORY_META.skills.label);
     expect(markup).not.toContain(CONTEXT_USAGE_CATEGORY_META.runtimeAndToolLogs.label);
@@ -237,9 +237,9 @@ describe("ContextUsageRing rendering", () => {
     expect(markup.indexOf(CONTEXT_USAGE_CATEGORY_META.tools.label))
       .toBeLessThan(markup.indexOf(CONTEXT_USAGE_CATEGORY_META.systemPrompt.label));
     // 圆点统一主题色（CSS 提供），透明度按位次递减：榜首 1，次席 0.85，第三 0.7。
-    expect(markup).toContain(`cy-context-usage-menu__dot" style="opacity:1`);
-    expect(markup).toContain(`cy-context-usage-menu__dot" style="opacity:0.85`);
-    expect(markup).toContain(`cy-context-usage-menu__dot" style="opacity:0.7`);
+    expect(markup).toContain(`ff-context-usage-menu__dot" style="opacity:1`);
+    expect(markup).toContain(`ff-context-usage-menu__dot" style="opacity:0.85`);
+    expect(markup).toContain(`ff-context-usage-menu__dot" style="opacity:0.7`);
   });
 });
 
@@ -254,14 +254,14 @@ describe("ContextUsageRing popover layout", () => {
 
   // 回归：按钮曾被锁成 40px 宽、文字透明，"整理记忆（压缩上下文）"被挤成竖排并与明细重叠。
   it("keeps the compact button on one line and never squeezes it to a fixed figure size", () => {
-    const figure = ruleBody(".cy-context-usage-menu__mood-figure");
+    const figure = ruleBody(".ff-context-usage-menu__mood-figure");
     expect(figure).toContain("white-space: nowrap");
     expect(figure).not.toMatch(/width:\s*\d+px/);
     expect(figure).not.toMatch(/font-size:\s*0/);
   });
 
   it("stacks the hint text under the button instead of beside it", () => {
-    const mood = ruleBody(".cy-context-usage-menu__mood");
+    const mood = ruleBody(".ff-context-usage-menu__mood");
     expect(mood).toContain("display: grid");
     expect(mood).not.toContain("display: flex");
   });

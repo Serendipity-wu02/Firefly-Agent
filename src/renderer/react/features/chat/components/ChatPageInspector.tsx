@@ -50,7 +50,7 @@ function FileDraftMarker({ editorKey }: { editorKey: string }) {
   const { t } = useTranslation();
   const draft = useWorkspaceEditorState(editorKey)?.draft;
   if (!draft || (!draft.saving && draft.text === draft.original)) return null;
-  return <span className="cy-right-inspector__dirty" data-inspector-dirty="true" role="status"
+  return <span className="ff-right-inspector__dirty" data-inspector-dirty="true" role="status"
     aria-label={t(draft.saving ? "fileTree.saving" : "fileTree.unsaved")}
     title={t(draft.saving ? "fileTree.saving" : "fileTree.unsaved")} />;
 }
@@ -155,7 +155,7 @@ export function ChatPageInspector({
           workspaceRoot={workspaceRoot}
           refreshRevision={refreshRevision}
           onOpenFile={onOpenFile}
-        /> : <div className="cy-workspace-empty">
+        /> : <div className="ff-workspace-empty">
           <p>{pendingWorkspaceName
             ? t("workspace.pendingFiles", { name: pendingWorkspaceName })
             : t("fileTree.errNoWorkspace")}</p>
@@ -220,7 +220,7 @@ export function ChatPageInspector({
 
   const browserOnly = tabs.length === 1 && tabs[0].id === "browser";
   return (
-    <div className={`cy-chat-inspector${browserOnly ? " is-browser-only" : ""}${visible ? "" : " is-closed"}`}
+    <div className={`ff-chat-inspector${browserOnly ? " is-browser-only" : ""}${visible ? "" : " is-closed"}`}
       data-dock-motion={moving || undefined} inert={!visible || undefined}>
       <RightInspector
         tabs={tabs}

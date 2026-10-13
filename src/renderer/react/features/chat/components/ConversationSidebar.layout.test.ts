@@ -27,7 +27,7 @@ it("keeps the project entry when every legacy project session is pinned", () => 
     mode: "code", listStatus: "ready", sessions: [{ ...sessions[0], mode: "code", workspaceRoot: "E:\\fixture", workspaceDisplayName: "Pinned project" }],
     onSelect: vi.fn(), onOpenProject: vi.fn(), onRename: vi.fn(), onDelete: vi.fn(), onTogglePin: vi.fn(), onExport: vi.fn(),
   }));
-  expect(html).toContain("cy-conversation-project");
+  expect(html).toContain("ff-conversation-project");
   expect(html).toContain("Pinned project");
   expect(html).toContain('data-pinned="true"');
 });

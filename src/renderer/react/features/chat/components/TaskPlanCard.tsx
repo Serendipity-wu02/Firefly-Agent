@@ -15,7 +15,7 @@ const STATUS_LABEL_KEYS: Record<TaskPlanStepStatus, string> = {
 export function TaskPlanCard({ plan }: { plan: TaskPlanPresentation }) {
   const { t } = useTranslation();
   return (
-    <section className="cy-task-plan-card" aria-label={t("taskPlan.panelAria")}>
+    <section className="ff-task-plan-card" aria-label={t("taskPlan.panelAria")}>
       <header>
         <span>{t("taskPlan.title")}</span>
         {plan.title && <strong>{plan.title}</strong>}
@@ -25,7 +25,7 @@ export function TaskPlanCard({ plan }: { plan: TaskPlanPresentation }) {
           const status = step.status ?? "pending";
           return (
             <li key={step.id} className={`is-${status}`}>
-              <span className="cy-task-plan-card__marker" aria-hidden="true" />
+              <span className="ff-task-plan-card__marker" aria-hidden="true" />
               <span>{step.title}</span>
               <small>{t(STATUS_LABEL_KEYS[status])}</small>
             </li>

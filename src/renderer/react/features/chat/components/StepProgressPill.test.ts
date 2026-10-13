@@ -51,11 +51,11 @@ function render(props: Partial<StepProgressPillProps> = {}) {
 }
 
 function pillHost(): HTMLElement | null {
-  return host.querySelector<HTMLElement>(".cy-step-pill-host");
+  return host.querySelector<HTMLElement>(".ff-step-pill-host");
 }
 
 function pill(): HTMLButtonElement {
-  return host.querySelector<HTMLButtonElement>("button.cy-step-pill")!;
+  return host.querySelector<HTMLButtonElement>("button.ff-step-pill")!;
 }
 
 function popover(): HTMLElement | null {
@@ -99,8 +99,8 @@ describe("StepProgressPill label", () => {
 
   it("colours the added and removed counts separately", () => {
     render();
-    expect(pill().querySelector(".cy-step-pill__add")?.textContent).toBe("+403");
-    expect(pill().querySelector(".cy-step-pill__del")?.textContent).toBe("-0");
+    expect(pill().querySelector(".ff-step-pill__add")?.textContent).toBe("+403");
+    expect(pill().querySelector(".ff-step-pill__del")?.textContent).toBe("-0");
   });
 
   it("reports completion while the run is still going when every step is done", () => {
@@ -113,8 +113,8 @@ describe("StepProgressPill label", () => {
   it("omits file totals when no counts are provided", () => {
     render({ filesChanged: undefined, added: undefined, removed: undefined });
     expect(pill().textContent).toBe("第 2 / 5 步");
-    expect(pill().querySelector(".cy-step-pill__add")).toBeNull();
-    expect(pill().querySelector(".cy-step-pill__del")).toBeNull();
+    expect(pill().querySelector(".ff-step-pill__add")).toBeNull();
+    expect(pill().querySelector(".ff-step-pill__del")).toBeNull();
   });
 });
 
@@ -142,9 +142,9 @@ describe("StepProgressPill popover", () => {
     act(() => pill().click());
     const items = [...popover()!.querySelectorAll("li")];
     expect(items[0].textContent).toContain("读取需求");
-    expect(items[0].querySelector(".cy-step-item__status")?.textContent).toBe("完成");
-    expect(items[1].querySelector(".cy-step-item__status")?.textContent).toBe("进行中");
-    expect(items[2].querySelector(".cy-step-item__status")?.textContent).toBe("待办");
+    expect(items[0].querySelector(".ff-step-item__status")?.textContent).toBe("完成");
+    expect(items[1].querySelector(".ff-step-item__status")?.textContent).toBe("进行中");
+    expect(items[2].querySelector(".ff-step-item__status")?.textContent).toBe("待办");
     expect(items[0].classList.contains("is-done")).toBe(true);
     expect(items[1].classList.contains("is-running")).toBe(true);
     expect(items[2].classList.contains("is-pending")).toBe(true);
@@ -215,7 +215,7 @@ describe("StepProgressPill transitions", () => {
     expect(popover()).not.toBeNull();
 
     pointerDownOutside();
-    expect(host.querySelector(".cy-step-popover-anchor.is-leaving")).not.toBeNull();
+    expect(host.querySelector(".ff-step-popover-anchor.is-leaving")).not.toBeNull();
     act(() => vi.advanceTimersByTime(179));
     expect(popover()).not.toBeNull();
     act(() => vi.advanceTimersByTime(1));
@@ -274,7 +274,7 @@ describe("StepProgressPill reduced motion", () => {
     // 媒体块内规则缩进、闭合花括号位于行首，按此截取整个块（不依赖它在文件中的位置）。
     const block = stylesheet.match(/@media \(prefers-reduced-motion: reduce\) \{([\s\S]*?)\n\}/)?.[1];
     expect(block).toBeDefined();
-    expect(block).toContain(".cy-step-item__spinner");
+    expect(block).toContain(".ff-step-item__spinner");
     expect(block).toContain("transform: none");
     expect(block).not.toMatch(/rotate\(/);
   });

@@ -1,4 +1,4 @@
-.cy-sidebar-toggle {
+.ff-sidebar-toggle {
   width: 32px;
   height: 32px;
   display: flex;
@@ -7,44 +7,44 @@
   border: none;
   background: transparent;
   border-radius: 12px;
-  color: var(--cy-text-muted);
+  color: var(--ff-text-muted);
   cursor: pointer;
   transition: background 0.15s, color 0.15s;
 }
 
-.cy-sidebar-toggle:hover {
-  background: var(--cy-bg-hover);
-  color: var(--cy-text);
+.ff-sidebar-toggle:hover {
+  background: var(--ff-bg-hover);
+  color: var(--ff-text);
 }
 
-.cy-sidebar-toggle:active {
-  background: var(--cy-bg-active);
+.ff-sidebar-toggle:active {
+  background: var(--ff-bg-active);
 }
 
-.cy-sidebar-toggle > svg {
+.ff-sidebar-toggle > svg {
   transform: scaleY(0.88);
 }
 
 /* 竖线 */
-.cy-sidebar-line {
+.ff-sidebar-line {
   transition: d 0.25s ease;
 }
 
-.cy-sidebar-toggle.is-hovered .cy-sidebar-line {
+.ff-sidebar-toggle.is-hovered .ff-sidebar-line {
   d: path("M16.8 14V34");
 }
 
 /* Chevron */
-.cy-sidebar-chevron {
+.ff-sidebar-chevron {
   opacity: 0;
   transform-origin: 30px 24px;
   transition: opacity 0.25s ease, transform 0.25s ease;
 }
 
-.cy-sidebar-toggle.is-hovered .cy-sidebar-chevron {
+.ff-sidebar-toggle.is-hovered .ff-sidebar-chevron {
   opacity: 1;
 }
 
-.cy-sidebar-toggle.is-collapsed.is-hovered .cy-sidebar-chevron {
+.ff-sidebar-toggle.is-collapsed.is-hovered .ff-sidebar-chevron {
   transform: scaleX(-1);
 }

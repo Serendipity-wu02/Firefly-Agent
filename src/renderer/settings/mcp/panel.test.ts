@@ -112,15 +112,15 @@ describe("自定义端点接入说明模态框 - 内容完整性", () => {
 });
 
 describe("模态框 overlay 交互结构", () => {
-  it("showHtmlModal 使用独立的 cyHtmlOverlay 避免与 showModal 冲突", () => {
-    expect(modalSource).toContain("cyHtmlOverlay");
-    expect(modalSource).toContain("cy-html-modal-overlay");
-    expect(modalSource).toContain("cy-html-modal");
+  it("showHtmlModal 使用独立的 ffHtmlOverlay 避免与 showModal 冲突", () => {
+    expect(modalSource).toContain("ffHtmlOverlay");
+    expect(modalSource).toContain("ff-html-modal-overlay");
+    expect(modalSource).toContain("ff-html-modal");
   });
 
   it("showHtmlModal 创建包含 body 和确认按钮的 dialog 结构", () => {
-    expect(modalSource).toContain('id="cy-html-modal-body"');
-    expect(modalSource).toContain('id="cy-html-modal-confirm"');
+    expect(modalSource).toContain('id="ff-html-modal-body"');
+    expect(modalSource).toContain('id="ff-html-modal-confirm"');
     expect(modalSource).toContain('role="dialog"');
     expect(modalSource).toContain('aria-modal="true"');
   });

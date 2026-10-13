@@ -55,7 +55,7 @@ export function CopyButton({ text, size = 16, color = "#8e8e93" }: CopyButtonPro
   return (
     <button
       type="button"
-      className="cy-copy-button"
+      className="ff-copy-button"
       onClick={handleClick}
       aria-label={t("common.copy")}
       title={t("common.copy")}

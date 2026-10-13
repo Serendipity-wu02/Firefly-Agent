@@ -208,7 +208,7 @@ it("rolls a rejected desktop switch back, reports the failure, and clears it on 
   expect(general.launchAtLogin).toBe(false);
 });
 
-const modalIsOpen = () => document.getElementById("cy-modal-overlay")?.classList.contains("is-hidden") === false;
+const modalIsOpen = () => document.getElementById("ff-modal-overlay")?.classList.contains("is-hidden") === false;
 const submitProfile = () => element<HTMLFormElement>("api-form").dispatchEvent(new Event("submit", { bubbles: true, cancelable: true }));
 const profileButton = () => document.querySelector<HTMLButtonElement>('[data-profile-id="existing"] [data-profile-action="edit"]')!;
 // 卡片默认折叠：需要编辑器的用例先点“编辑”展开已存的档案。
@@ -288,13 +288,13 @@ it("keeps a changed profile when discard is canceled and starts a clean draft on
   add.click();
   expect(modalIsOpen()).toBe(true);
   expect(element<HTMLInputElement>("api-key").value).toBe("unsaved-existing-key");
-  expect(document.activeElement).toBe(element("cy-modal-cancel"));
-  element<HTMLButtonElement>("cy-modal-cancel").click();
+  expect(document.activeElement).toBe(element("ff-modal-cancel"));
+  element<HTMLButtonElement>("ff-modal-cancel").click();
   await vi.waitFor(() => expect(modalIsOpen()).toBe(false));
   expect(element<HTMLInputElement>("api-key").value).toBe("unsaved-existing-key");
   expect(document.activeElement).toBe(add);
   add.click();
-  element<HTMLButtonElement>("cy-modal-confirm").click();
+  element<HTMLButtonElement>("ff-modal-confirm").click();
   await vi.waitFor(() => expect(element<HTMLInputElement>("api-key").value).toBe(""));
   expect(element("delete-profile-btn").hidden).toBe(true);
   expect(document.activeElement).toBe(element("api-key"));
@@ -309,7 +309,7 @@ it("retains an unsaved new profile on repeat Add or provider selection and guard
   expect(modalIsOpen()).toBe(false);
   document.querySelector<HTMLButtonElement>('#preset-cards .preset-card:not(.is-active):not(:disabled)')!.click();
   expect(modalIsOpen()).toBe(true);
-  element<HTMLButtonElement>("cy-modal-confirm").click();
+  element<HTMLButtonElement>("ff-modal-confirm").click();
   await vi.waitFor(() => expect(element<HTMLInputElement>("api-key").value).toBe(""));
 });
 
@@ -318,12 +318,12 @@ it("asks before a repeat click collapses an open card with changes, and keeps th
   element<HTMLInputElement>("model-input").value = "unsaved-model";
   profileButton().click();
   expect(modalIsOpen()).toBe(true);
-  element<HTMLButtonElement>("cy-modal-cancel").click();
+  element<HTMLButtonElement>("ff-modal-cancel").click();
   await vi.waitFor(() => expect(modalIsOpen()).toBe(false));
   expect(element("profile-editor").hidden).toBe(false);
   expect(element<HTMLInputElement>("model-input").value).toBe("unsaved-model");
   profileButton().click();
-  element<HTMLButtonElement>("cy-modal-confirm").click();
+  element<HTMLButtonElement>("ff-modal-confirm").click();
   await vi.waitFor(() => expect(element("profile-editor").hidden).toBe(true));
 });
 
@@ -336,12 +336,12 @@ it("cancels a keyboard provider tab switch without moving selection or focus, th
   preset.dispatchEvent(new KeyboardEvent("keydown", { key: "ArrowRight", bubbles: true, cancelable: true }));
   expect(modalIsOpen()).toBe(true);
   expect(preset.getAttribute("aria-selected")).toBe("true");
-  element<HTMLButtonElement>("cy-modal-cancel").click();
+  element<HTMLButtonElement>("ff-modal-cancel").click();
   await vi.waitFor(() => expect(modalIsOpen()).toBe(false));
   expect(document.activeElement).toBe(preset);
   expect(element<HTMLInputElement>("api-key").value).toBe("tab-draft-key");
   preset.dispatchEvent(new KeyboardEvent("keydown", { key: "ArrowRight", bubbles: true, cancelable: true }));
-  element<HTMLButtonElement>("cy-modal-confirm").click();
+  element<HTMLButtonElement>("ff-modal-confirm").click();
   await vi.waitFor(() => expect(custom.getAttribute("aria-selected")).toBe("true"));
   expect(document.activeElement).toBe(custom);
 });
@@ -353,7 +353,7 @@ it("guards custom endpoint mode changes and keeps the editor usable on confirmed
   document.querySelector<HTMLButtonElement>('[data-custom-endpoint-mode="local"]')!.click();
   expect(modalIsOpen()).toBe(true);
   expect(document.querySelector('[data-custom-endpoint-mode="cloud"]')?.getAttribute("aria-pressed")).toBe("true");
-  element<HTMLButtonElement>("cy-modal-confirm").click();
+  element<HTMLButtonElement>("ff-modal-confirm").click();
   await vi.waitFor(() => expect(document.querySelector('[data-custom-endpoint-mode="local"]')?.getAttribute("aria-pressed")).toBe("true"));
 });
 
@@ -365,7 +365,7 @@ it("keeps a failed save dirty and clears the discard guard only after a successf
   await vi.waitFor(() => expect(element("save-status").classList.contains("is-error")).toBe(true));
   profileButton().click();
   expect(modalIsOpen()).toBe(true);
-  element<HTMLButtonElement>("cy-modal-cancel").click();
+  element<HTMLButtonElement>("ff-modal-cancel").click();
   await vi.waitFor(() => expect(modalIsOpen()).toBe(false));
   submitProfile();
   await vi.waitFor(() => expect(element("save-status").classList.contains("is-ok")).toBe(true));
@@ -390,7 +390,7 @@ it("keeps edits made during an in-flight save dirty and prevents selection races
   expect(element("save-status").classList.contains("is-ok")).toBe(false);
   element<HTMLButtonElement>("add-profile-btn").click();
   expect(modalIsOpen()).toBe(true);
-  element<HTMLButtonElement>("cy-modal-cancel").click();
+  element<HTMLButtonElement>("ff-modal-cancel").click();
 });
 
 it("preserves the draft across settings categories and asks before closing its editor", async () => {
@@ -402,7 +402,7 @@ it("preserves the draft across settings categories and asks before closing its e
   expect(modalIsOpen()).toBe(false);
   element<HTMLButtonElement>("close-profile-editor").click();
   expect(modalIsOpen()).toBe(true);
-  element<HTMLButtonElement>("cy-modal-confirm").click();
+  element<HTMLButtonElement>("ff-modal-confirm").click();
   await vi.waitFor(() => expect(element("profile-editor").hidden).toBe(true));
   expect(element("profile-editor").parentElement).toBe(element("provider-editor-slot"));
   expect(element("save-status").parentElement).toBe(element("provider-status-top"));
@@ -430,7 +430,7 @@ it("uses one discard prompt for repeated switch attempts and keeps the original 
   profileButton().click();
   element<HTMLButtonElement>("provider-custom-tab").click();
   expect(document.querySelectorAll('[role="alertdialog"]')).toHaveLength(1);
-  element<HTMLButtonElement>("cy-modal-confirm").click();
+  element<HTMLButtonElement>("ff-modal-confirm").click();
   await vi.waitFor(() => expect(element<HTMLInputElement>("api-key").value).toBe("fixture-key"));
   expect(modalIsOpen()).toBe(false);
 });
@@ -443,7 +443,7 @@ it("keeps duplicate and invalid save drafts guarded and does not save their chan
   await vi.waitFor(() => expect(element("save-status").classList.contains("is-error")).toBe(true));
   profileButton().click();
   expect(modalIsOpen()).toBe(true);
-  element<HTMLButtonElement>("cy-modal-cancel").click();
+  element<HTMLButtonElement>("ff-modal-cancel").click();
   await vi.waitFor(() => expect(modalIsOpen()).toBe(false));
   element<HTMLInputElement>("timeout-test").value = "-1";
   submitProfile();
@@ -451,7 +451,7 @@ it("keeps duplicate and invalid save drafts guarded and does not save their chan
   profileButton().click();
   expect(modalIsOpen()).toBe(true);
   expect(saveProfile).toHaveBeenCalledTimes(1);
-  element<HTMLButtonElement>("cy-modal-cancel").click();
+  element<HTMLButtonElement>("ff-modal-cancel").click();
 });
 
 
@@ -468,7 +468,7 @@ it("distinguishes saved profiles, changed drafts, and a clean new draft without 
   document.querySelector<HTMLButtonElement>('.nav-item[data-section="api"]')!.click();
   expect(state().textContent).toBe("未保存的更改");
   element<HTMLButtonElement>("add-profile-btn").click();
-  element<HTMLButtonElement>("cy-modal-cancel").click();
+  element<HTMLButtonElement>("ff-modal-cancel").click();
   await vi.waitFor(() => expect(modalIsOpen()).toBe(false));
   expect(state().textContent).toBe("未保存的更改");
   saveProfile.mockRejectedValueOnce(new Error("fixture write failure"));

@@ -9,9 +9,9 @@ import { CUSTOM_ENDPOINT_GUIDE_BODY } from "./panel";
 
 // 重置全部 overlay / 队列状态，避免跨用例残留
 function resetModalState(): void {
-  modalState.cyOverlay = null;
-  modalState.cyHtmlOverlay = null;
-  modalState.cyInputOverlay = null;
+  modalState.ffOverlay = null;
+  modalState.ffHtmlOverlay = null;
+  modalState.ffInputOverlay = null;
   modalState.noticeContainer = null;
   modalState.blockingQueue = [];
   modalState.blockingActive = false;
@@ -30,11 +30,11 @@ describe("自定义端点接入说明模态框 - 完整交互", () => {
       htmlBody: CUSTOM_ENDPOINT_GUIDE_BODY,
     });
 
-    const overlay = document.getElementById("cy-html-modal-overlay");
+    const overlay = document.getElementById("ff-html-modal-overlay");
     expect(overlay).toBeTruthy();
     expect(overlay?.classList.contains("is-hidden")).toBe(false);
-    expect(overlay?.querySelector(".cy-html-modal")?.getAttribute("role")).toBe("dialog");
-    expect(overlay?.querySelector(".cy-html-modal")?.getAttribute("aria-modal")).toBe("true");
+    expect(overlay?.querySelector(".ff-html-modal")?.getAttribute("role")).toBe("dialog");
+    expect(overlay?.querySelector(".ff-html-modal")?.getAttribute("aria-modal")).toBe("true");
   });
 
   it("模态框标题和图标正确渲染", async () => {
@@ -44,10 +44,10 @@ describe("自定义端点接入说明模态框 - 完整交互", () => {
       htmlBody: CUSTOM_ENDPOINT_GUIDE_BODY,
     });
 
-    const title = document.getElementById("cy-html-modal-title");
+    const title = document.getElementById("ff-html-modal-title");
     expect(title?.textContent).toBe("模型服务接入说明");
 
-    const icon = document.getElementById("cy-html-modal-icon");
+    const icon = document.getElementById("ff-html-modal-icon");
     expect(icon?.innerHTML).toContain("<svg");
   });
 
@@ -57,7 +57,7 @@ describe("自定义端点接入说明模态框 - 完整交互", () => {
       htmlBody: CUSTOM_ENDPOINT_GUIDE_BODY,
     });
 
-    const body = document.getElementById("cy-html-modal-body");
+    const body = document.getElementById("ff-html-modal-body");
     // 官方云端模型章节
     expect(body?.innerHTML).toContain("官方云端模型");
     expect(body?.innerHTML).toContain("OpenAI、Claude、Kimi、DeepSeek、MiniMax、智谱 GLM");
@@ -82,10 +82,10 @@ describe("自定义端点接入说明模态框 - 完整交互", () => {
       htmlBody: CUSTOM_ENDPOINT_GUIDE_BODY,
     });
 
-    const overlay = document.getElementById("cy-html-modal-overlay");
+    const overlay = document.getElementById("ff-html-modal-overlay");
     expect(overlay?.classList.contains("is-hidden")).toBe(false);
 
-    const confirmBtn = document.getElementById("cy-html-modal-confirm") as HTMLButtonElement;
+    const confirmBtn = document.getElementById("ff-html-modal-confirm") as HTMLButtonElement;
     expect(confirmBtn).toBeTruthy();
     expect(confirmBtn.textContent).toBe("知道了");
 
@@ -109,18 +109,18 @@ describe("MCP Server 添加流程模态框 - 交互", () => {
       placeholder: "node path\\to\\server.js",
     });
 
-    const overlay = document.getElementById("cy-input-overlay");
+    const overlay = document.getElementById("ff-input-overlay");
     expect(overlay?.classList.contains("is-hidden")).toBe(false);
 
-    const title = document.getElementById("cy-input-title");
+    const title = document.getElementById("ff-input-title");
     expect(title?.textContent).toBe("添加 MCP Server");
 
-    const input = document.getElementById("cy-input-field") as HTMLInputElement;
+    const input = document.getElementById("ff-input-field") as HTMLInputElement;
     expect(input).toBeTruthy();
     expect(document.activeElement).toBe(input);
     input.value = "node C:\\mcp\\index.js --port 3000";
 
-    const confirmBtn = document.getElementById("cy-input-confirm") as HTMLButtonElement;
+    const confirmBtn = document.getElementById("ff-input-confirm") as HTMLButtonElement;
     confirmBtn.click();
 
     const result = await promise;
@@ -134,7 +134,7 @@ describe("MCP Server 添加流程模态框 - 交互", () => {
       message: "给这个 MCP server 起个名字",
     });
 
-    const input = document.getElementById("cy-input-field") as HTMLInputElement;
+    const input = document.getElementById("ff-input-field") as HTMLInputElement;
     input.value = "天气工具";
     input.dispatchEvent(new KeyboardEvent("keydown", { key: "Enter", bubbles: true }));
 
@@ -148,7 +148,7 @@ describe("MCP Server 添加流程模态框 - 交互", () => {
       message: "输入",
     });
 
-    const input = document.getElementById("cy-input-field") as HTMLInputElement;
+    const input = document.getElementById("ff-input-field") as HTMLInputElement;
     input.dispatchEvent(new KeyboardEvent("keydown", { key: "Escape", bubbles: true }));
 
     const result = await promise;
@@ -161,7 +161,7 @@ describe("MCP Server 添加流程模态框 - 交互", () => {
       message: "输入",
     });
 
-    const cancelBtn = document.getElementById("cy-input-cancel") as HTMLButtonElement;
+    const cancelBtn = document.getElementById("ff-input-cancel") as HTMLButtonElement;
     cancelBtn.click();
 
     const result = await promise;
@@ -174,17 +174,17 @@ describe("MCP Server 添加流程模态框 - 交互", () => {
       message: '"天气工具" 已连接，发现 5 个工具。详情见终端日志。',
     });
 
-    const overlay = document.getElementById("cy-modal-overlay");
+    const overlay = document.getElementById("ff-modal-overlay");
     expect(overlay?.classList.contains("is-hidden")).toBe(false);
     // 兼容入口默认落到 warning 色调的自绘弹窗，不再使用 emoji 图标
-    expect(overlay?.querySelector(".cy-modal")?.className).toContain("cy-modal--warning");
-    expect(overlay?.querySelector("#cy-modal-icon")?.innerHTML).toContain("<svg");
-    expect(overlay?.querySelector("#cy-modal-icon")?.className).toContain("cy-modal__icon--warning");
+    expect(overlay?.querySelector(".ff-modal")?.className).toContain("ff-modal--warning");
+    expect(overlay?.querySelector("#ff-modal-icon")?.innerHTML).toContain("<svg");
+    expect(overlay?.querySelector("#ff-modal-icon")?.className).toContain("ff-modal__icon--warning");
 
-    const msg = document.getElementById("cy-modal-message");
+    const msg = document.getElementById("ff-modal-message");
     expect(msg?.textContent).toContain("已连接，发现 5 个工具");
 
-    const confirmBtn = document.getElementById("cy-modal-confirm") as HTMLButtonElement;
+    const confirmBtn = document.getElementById("ff-modal-confirm") as HTMLButtonElement;
     confirmBtn.click();
 
     const result = await promise;
@@ -198,7 +198,7 @@ describe("MCP Server 添加流程模态框 - 交互", () => {
       message: "启动命令无效（详情见终端日志）",
     });
 
-    const cancelBtn = document.getElementById("cy-modal-cancel") as HTMLButtonElement;
+    const cancelBtn = document.getElementById("ff-modal-cancel") as HTMLButtonElement;
     cancelBtn.click();
 
     const result = await promise;

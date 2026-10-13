@@ -41,7 +41,7 @@ describe("ChatPageInspector", () => {
       onChooseWorkspace: () => undefined,
     }));
     expect(html).toContain('role="tab"');
-    expect(html).toContain('class="cy-workspace-empty"');
+    expect(html).toContain('class="ff-workspace-empty"');
     expect(html).toContain('data-workspace-choose="true"');
   });
   it("interpolates the selected workspace name in the welcome file state", () => {
@@ -62,7 +62,7 @@ describe("ChatPageInspector", () => {
       tasksTabOpen: true, taskPanel: createElement("div", { "data-task-fixture": true }, "Task fixture"),
     }));
     expect(html).toContain('data-task-fixture="true"');
-    expect(html).toContain('class="cy-right-inspector');
+    expect(html).toContain('class="ff-right-inspector');
   });
   it("renders nothing when no inspector tab is available", () => {
     const html = renderToStaticMarkup(createElement(ChatPageInspector, {

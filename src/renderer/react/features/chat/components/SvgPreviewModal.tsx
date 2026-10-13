@@ -26,11 +26,11 @@ export function SvgPreviewModal({
       footer={null}
       title={t("messageList.diagramPreview")}
       width="min(1200px, 92vw)"
-      className="cy-svg-preview-modal"
+      className="ff-svg-preview-modal"
       destroyOnHidden
     >
       <div
-        className="cy-svg-preview"
+        className="ff-svg-preview"
         // 与卡片本体同一份已消毒 SVG 字符串
         dangerouslySetInnerHTML={{ __html: svg }}
       />

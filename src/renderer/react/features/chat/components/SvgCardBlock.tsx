@@ -31,14 +31,14 @@ export function SvgCardBlock({ code, streaming }: { code: string; streaming?: bo
   const result = useMemo(() => (streaming ? null : renderSvgCardSafe(code)), [code, streaming]);
 
   if (streaming || result === null) {
-    return <div className="cy-svg-card cy-svg-card--pending">{t("messageList.svgCardPending")}</div>;
+    return <div className="ff-svg-card ff-svg-card--pending">{t("messageList.svgCardPending")}</div>;
   }
 
   if (result.kind === "svg") {
     return (
       <>
         <div
-          className="cy-svg-card cy-svg-card--zoomable"
+          className="ff-svg-card ff-svg-card--zoomable"
           title={t("messageList.diagramZoomHint")}
           // 点击放大查看：气泡内 max-width 压缩会让大图看不清
           onClick={() => setZoomed(true)}
@@ -51,9 +51,9 @@ export function SvgCardBlock({ code, streaming }: { code: string; streaming?: bo
   }
 
   return (
-    <div className="cy-svg-card cy-svg-card--fallback">
-      <div className="cy-svg-card__hint">{t("messageList.svgCardFallback")}</div>
-      <pre className="cy-svg-card__source">{code}</pre>
+    <div className="ff-svg-card ff-svg-card--fallback">
+      <div className="ff-svg-card__hint">{t("messageList.svgCardFallback")}</div>
+      <pre className="ff-svg-card__source">{code}</pre>
     </div>
   );
 }

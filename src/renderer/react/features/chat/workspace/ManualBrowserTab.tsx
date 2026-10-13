@@ -338,20 +338,20 @@ export function ManualBrowserTab({ sessionId, workspaceId, tabId, active = true,
     committedUrl: t("browserWorkspace.currentPage"), addressHint: t("browserWorkspace.addressHint"), addressPlaceholder: t("browserWorkspace.addressPlaceholder"),
     viewport: t("browserWorkspace.viewport"), empty: t(ownerKey ? "browserWorkspace.ready" : "browserWorkspace.sessionRequired"),
   };
-  return <div className="cy-browser-tab">
-    {available && ownerKey && (!permission || stateFailure) && <div className="cy-browser-workspace__state" role={stateFailure ? "alert" : "status"}>
+  return <div className="ff-browser-tab">
+    {available && ownerKey && (!permission || stateFailure) && <div className="ff-browser-workspace__state" role={stateFailure ? "alert" : "status"}>
       <p>{t(stateFailure ? "browserWorkspace.stateUnavailable" : "browserWorkspace.checking")}</p>
       {stateFailure && <button type="button" data-browser-retry-state disabled={stateBusy} onClick={() => scopeRef.current?.refresh()}>{t("browserWorkspace.retryState")}</button>}
     </div>}
-    {available && ownerKey && permission && !scopeRef.current?.closed && attention && <section className={`cy-browser-permission${compact ? " cy-browser-permission--compact" : ""}`} aria-label={t("browserWorkspace.permission")}>
-      {compact ? localHost && <div className="cy-browser-chip">
-        <span className="cy-browser-permission__mode">{t("browserWorkspace.localBadge")}</span><code>{localHost}</code>
-        {!!permission?.scope.resourceHosts?.length && <span className="cy-browser-chip__extra">+{permission.scope.resourceHosts.length}</span>}
+    {available && ownerKey && permission && !scopeRef.current?.closed && attention && <section className={`ff-browser-permission${compact ? " ff-browser-permission--compact" : ""}`} aria-label={t("browserWorkspace.permission")}>
+      {compact ? localHost && <div className="ff-browser-chip">
+        <span className="ff-browser-permission__mode">{t("browserWorkspace.localBadge")}</span><code>{localHost}</code>
+        {!!permission?.scope.resourceHosts?.length && <span className="ff-browser-chip__extra">+{permission.scope.resourceHosts.length}</span>}
       </div> : <details open={!granted}>
-        <summary><span className="cy-browser-permission__mode">{t(manual ? "browserWorkspace.manualMode" : "browserWorkspace.agentMode")}</span>{t(granted ? "browserWorkspace.permissionGranted" : "browserWorkspace.permissionRequired")}</summary>
+        <summary><span className="ff-browser-permission__mode">{t(manual ? "browserWorkspace.manualMode" : "browserWorkspace.agentMode")}</span>{t(granted ? "browserWorkspace.permissionGranted" : "browserWorkspace.permissionRequired")}</summary>
         <p>{t(manual ? "browserWorkspace.manualScope" : "browserWorkspace.permissionScope")}</p>
-        <p className="cy-browser-permission__scope">{permission?.scope.hosts.join(", ")}<br />{permission?.scope.actions.join(", ")}</p>
-        {manual && !!permission?.scope.resourceHosts?.length && <p className="cy-browser-permission__scope">
+        <p className="ff-browser-permission__scope">{permission?.scope.hosts.join(", ")}<br />{permission?.scope.actions.join(", ")}</p>
+        {manual && !!permission?.scope.resourceHosts?.length && <p className="ff-browser-permission__scope">
           {t("browserWorkspace.approvedResources")} {permission.scope.resourceHosts.join(", ")}
         </p>}
         {manual && <p>{t("browserWorkspace.manualLimits")}</p>}
@@ -364,18 +364,18 @@ export function ManualBrowserTab({ sessionId, workspaceId, tabId, active = true,
         disabled={!manual && (permissionBusy || permission?.status === "pending")} onClick={() => void changePermission(granted || permissionBusy || permission?.status === "pending")}>
         {t(manual && (permissionBusy || permission?.status === "pending") ? "browserWorkspace.cancelPermission" : permissionBusy || permission?.status === "pending" ? "browserWorkspace.permissionPending" : granted ? !manual && permission?.agentScope ? "browserWorkspace.switchToManual" : "browserWorkspace.revoke" : "browserWorkspace.enable")}
       </button>}
-      {manual && permission?.agentScope && <details className="cy-browser-agent-consent">
+      {manual && permission?.agentScope && <details className="ff-browser-agent-consent">
         <summary>{t("browserWorkspace.separateAgent")}</summary>
         <p>{t("browserWorkspace.agentScope")}</p>
-        <p className="cy-browser-permission__scope">{permission.agentScope.hosts.join(", ")}<br />{permission.agentScope.actions.join(", ")}</p>
+        <p className="ff-browser-permission__scope">{permission.agentScope.hosts.join(", ")}<br />{permission.agentScope.actions.join(", ")}</p>
         <button type="button" data-browser-authorize-agent disabled={permissionBusy || permission.status === "pending" || !!scopeRef.current?.closed || failure === "cleanup_failed"}
           onClick={() => void changePermission(false, permission.agentScope)}>{t("browserWorkspace.authorizeAgent")}</button>
       </details>}
       {manual && (permissionBusy || permission?.status === "pending") && <p role="status">{t("browserWorkspace.permissionPending")}</p>}
-      {manual && !scopeRef.current?.page?.closed && scopeRef.current?.page?.blockedRequest && <p className="cy-browser-workspace__notice is-error" role="status">{t("browserWorkspace.blockedRequest")}</p>}
+      {manual && !scopeRef.current?.page?.closed && scopeRef.current?.page?.blockedRequest && <p className="ff-browser-workspace__notice is-error" role="status">{t("browserWorkspace.blockedRequest")}</p>}
       {manual && failure === "cleanup_failed" && <p role="alert">{t("browserWorkspace.cleanupFailed")}</p>}
       {scopeReloaded && <p role="status">{t("browserWorkspace.scopeReloaded")}</p>}
-      {!!candidates.length && <fieldset className="cy-browser-resource-consent" disabled={permissionBusy || !granted || page.loading}>
+      {!!candidates.length && <fieldset className="ff-browser-resource-consent" disabled={permissionBusy || !granted || page.loading}>
         <legend>{t("browserWorkspace.blockedResources")}</legend>
         <p>{t("browserWorkspace.resourceScope")}</p>
         {candidates.map(host => <label key={host}>
@@ -388,7 +388,7 @@ export function ManualBrowserTab({ sessionId, workspaceId, tabId, active = true,
           {t("browserWorkspace.authorizeResources")}
         </button>
       </fieldset>}
-      {blockedNavigationUrl && <div className="cy-browser-site-consent">
+      {blockedNavigationUrl && <div className="ff-browser-site-consent">
         <p>{t("browserWorkspace.blockedNavigation")} {blockedNavigationUrl}</p>
         <button type="button" data-browser-authorize-site disabled={permissionBusy} onClick={() => void proposeSite(blockedNavigationUrl)}>
           {t("browserWorkspace.authorizeSite")}

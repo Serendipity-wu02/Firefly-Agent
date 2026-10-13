@@ -15,10 +15,10 @@ vi.mock("@ant-design/x", async () => {
 vi.mock("../../../../../shared/renderer-base", () => ({ resolveAsset: (path: string) => path }));
 vi.mock("./StreamdownMessageContent.css", () => ({}));
 vi.mock("./MermaidBlock", () => ({
-  MermaidBlock: ({ streaming }: { streaming?: boolean }) => React.createElement("div", { className: streaming ? "cy-mermaid--pending" : "cy-mermaid" }),
+  MermaidBlock: ({ streaming }: { streaming?: boolean }) => React.createElement("div", { className: streaming ? "ff-mermaid--pending" : "ff-mermaid" }),
 }));
 vi.mock("./SvgCardBlock", () => ({
-  SvgCardBlock: () => React.createElement("div", { className: "cy-svg-card" }),
+  SvgCardBlock: () => React.createElement("div", { className: "ff-svg-card" }),
 }));
 
 import { FileLinkContext, MessageStreamingContext } from "./ChatMessageList";
@@ -99,13 +99,13 @@ describe("StreamdownMessageContent", () => {
   it("keeps Mermaid pending while streaming", () => {
     const markup = render("~~~mermaid\ngraph TD\nA-->B", true);
 
-    expect(markup).toContain("cy-mermaid--pending");
+    expect(markup).toContain("ff-mermaid--pending");
   });
 
   it("renders a workspace file link as the existing file chip", () => {
     const markup = render("[文件](file:///E:/ws/src/a.ts#L12)", false, "E:/ws");
 
-    expect(markup).toContain("cy-file-link");
+    expect(markup).toContain("ff-file-link");
     expect(markup).not.toContain("is-plain");
   });
 

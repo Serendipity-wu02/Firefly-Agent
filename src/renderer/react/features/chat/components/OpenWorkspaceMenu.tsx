@@ -24,7 +24,7 @@ function AppIcon({ app, size }: { app: OpenInAppEntry | undefined; size: number 
         src={app.icon}
         width={size}
         height={size}
-        className="cy-open-workspace__icon"
+        className="ff-open-workspace__icon"
         alt=""
         aria-hidden="true"
         draggable={false}
@@ -39,7 +39,7 @@ function AppIcon({ app, size }: { app: OpenInAppEntry | undefined; size: number 
       fill="none"
       stroke="currentColor"
       strokeWidth={1.8}
-      className="cy-open-workspace__icon"
+      className="ff-open-workspace__icon"
       aria-hidden="true"
     >
       <rect x="3" y="3" width="18" height="18" rx="5" />
@@ -143,10 +143,10 @@ export function OpenWorkspaceMenu({ sessionId }: OpenWorkspaceMenuProps) {
   };
 
   return (
-    <div className="cy-open-workspace" ref={rootRef} data-phase={phase}>
+    <div className="ff-open-workspace" ref={rootRef} data-phase={phase}>
       <button
         type="button"
-        className="cy-open-workspace__main"
+        className="ff-open-workspace__main"
         onClick={() => launch(current.id)}
         disabled={phase === "busy"}
         title={title}
@@ -156,7 +156,7 @@ export function OpenWorkspaceMenu({ sessionId }: OpenWorkspaceMenuProps) {
       </button>
       <button
         type="button"
-        className={`cy-open-workspace__chevron ${open ? "is-open" : ""}`}
+        className={`ff-open-workspace__chevron ${open ? "is-open" : ""}`}
         onClick={() => setOpen((value) => !value)}
         aria-expanded={open}
         aria-haspopup="menu"
@@ -169,23 +169,23 @@ export function OpenWorkspaceMenu({ sessionId }: OpenWorkspaceMenuProps) {
         </svg>
       </button>
       {open && (
-        <div className="cy-open-workspace__menu" role="menu">
-          {apps === null && <div className="cy-open-workspace__hint">{t("openWorkspace.detecting")}</div>}
+        <div className="ff-open-workspace__menu" role="menu">
+          {apps === null && <div className="ff-open-workspace__hint">{t("openWorkspace.detecting")}</div>}
           {apps?.map((app) => (
             <button
               type="button"
               role="menuitem"
               key={app.id}
-              className={`cy-open-workspace__item ${app.id === preferred ? "is-selected" : ""}`}
+              className={`ff-open-workspace__item ${app.id === preferred ? "is-selected" : ""}`}
               onClick={() => {
                 setOpen(false);
                 launch(app.id);
               }}
             >
               <AppIcon app={app} size={18} />
-              <span className="cy-open-workspace__item-name">{displayName(app)}</span>
+              <span className="ff-open-workspace__item-name">{displayName(app)}</span>
               {app.id === preferred && (
-                <svg className="cy-open-workspace__check" width="12" height="12" viewBox="0 0 24 24"
+                <svg className="ff-open-workspace__check" width="12" height="12" viewBox="0 0 24 24"
                   fill="none" stroke="currentColor" strokeWidth="2.6" strokeLinecap="round"
                   strokeLinejoin="round" aria-hidden="true">
                   <path d="M20 6L9 17l-5-5" />

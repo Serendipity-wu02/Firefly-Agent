@@ -9,8 +9,8 @@ it("accepts normalized hex colors and rejects CSS expressions", () => {
 });
 it("maps custom colors to shared legacy and React tokens", () => {
   const tokens = uiColorTokens({ enabled: true, accent: "#123456", background: "#222222", foreground: "#eeeeee" });
-  expect(tokens["--cy-accent"]).toBe("#123456");
+  expect(tokens["--ff-accent"]).toBe("#123456");
   expect(tokens["--rb-pink-500"]).toBe("#123456");
-  expect(tokens["--cy-bg-workspace"]).toBe("#222222");
+  expect(tokens["--ff-bg-workspace"]).toBe("#222222");
   expect(tokens["--rb-text-default"]).toBe("#eeeeee");
 });

@@ -1494,7 +1494,7 @@ export function ChatPage() {
     ? activeSession.modelProfileId : pendingModelProfileByMode[mode];
 
   return (
-    <div className={`cy-page ${collapsed ? "is-collapsed" : ""}`}>
+    <div className={`ff-page ${collapsed ? "is-collapsed" : ""}`}>
       <ChatPageNavigation
         collapsed={collapsed}
         activePanel={activePanel}
@@ -1526,16 +1526,16 @@ export function ChatPage() {
         elementRef={dockRef}
         groupRef={dockGroupRef}
         orientation={compactDock ? "vertical" : "horizontal"}
-        className={`cy-page-dock ${compactDock ? "is-compact" : ""}`}
+        className={`ff-page-dock ${compactDock ? "is-compact" : ""}`}
         defaultLayout={compactDock ? undefined : defaultLayout}
         onLayoutChange={onInspectorLayoutChange}
         onLayoutChanged={compactDock ? undefined : onLayoutChanged}
         // 拖动条命中区外溢到两侧（视觉条只有 12px，命中区鼠标 24px / 触屏 33px）
         resizeTargetMinimumSize={{ coarse: 33, fine: 24 }}
       >
-        <Panel id="chat" minSize={compactDock ? "60%" : 300} className="cy-dock-body">
+        <Panel id="chat" minSize={compactDock ? "60%" : 300} className="ff-dock-body">
       <main
-        className={`cy-page-main cy-workspace ${hasMessages ? "has-messages" : "is-empty"} ${isDraggingFiles ? "is-dragging-files" : ""}`}
+        className={`ff-page-main ff-workspace ${hasMessages ? "has-messages" : "is-empty"} ${isDraggingFiles ? "is-dragging-files" : ""}`}
         onDragEnter={dragHandlers.onDragEnter}
         onDragOver={dragHandlers.onDragOver}
         onDragLeave={dragHandlers.onDragLeave}
@@ -1544,24 +1544,24 @@ export function ChatPage() {
         <FileDropOverlay visible={isDraggingFiles} />
         {/* 标题与工具独立占一行，正文和输入区不再用空白避让浮动按钮。 */}
         {!activePanel && (
-          <header className="cy-workspace-header">
-            <h1 className="cy-workspace-header__title" title={activeSessionTitle}>{activeSessionTitle}</h1>
-            <div className="cy-workspace-header__actions">
+          <header className="ff-workspace-header">
+            <h1 className="ff-workspace-header__title" title={activeSessionTitle}>{activeSessionTitle}</h1>
+            <div className="ff-workspace-header__actions">
               {activeSession?.workspaceBinding && activeSessionId && (
                 <>
                   <OpenWorkspaceMenu sessionId={activeSessionId} />
-                  <span className="cy-inspector-toggle-divider" aria-hidden="true" />
+                  <span className="ff-inspector-toggle-divider" aria-hidden="true" />
                 </>
               )}
-              <button type="button" className="cy-inspector-toggle" aria-label={t("browserWorkspace.open")}
+              <button type="button" className="ff-inspector-toggle" aria-label={t("browserWorkspace.open")}
                 title={t("browserWorkspace.open")} aria-expanded={browserTabOpen && !inspectorHidden}
                 onClick={() => { setBrowserTabOpen(true); setInspectorHidden(false); setActiveTabId("browser"); }}>
                 <GlobalOutlined aria-hidden="true" />
               </button>
-              <button type="button" className="cy-inspector-toggle" aria-label={t("fileTree.title")}
+              <button type="button" className="ff-inspector-toggle" aria-label={t("fileTree.title")}
                 title={t("fileTree.title")} aria-expanded={filesTabOpen && !inspectorHidden}
                 onClick={openFilesTab}><FolderOpenOutlined aria-hidden="true" /></button>
-              {(mode !== "chat" || workspaceOutputs.length > 0) && <button type="button" className="cy-inspector-toggle"
+              {(mode !== "chat" || workspaceOutputs.length > 0) && <button type="button" className="ff-inspector-toggle"
                 aria-label={t("workspace.tasks")} title={t("workspace.tasks")}
                 aria-expanded={tasksTabOpen && !inspectorHidden}
                 onClick={() => { setTasksTabOpen(true); setInspectorHidden(false); setActiveTabId("tasks"); }}>
@@ -1615,15 +1615,15 @@ export function ChatPage() {
           </ChatInspectorActionsContext.Provider>
         )}
         <ContextCompressionNotice visible={isCompressingContext} />
-        {!hasMessages && <div className="cy-workspace-greeting">
-          <h2 className="cy-workspace-greeting__title">{t(mode === "chat" ? "chatPage.emptyGreeting" : "chatPage.emptyGreetingTask")}</h2>
-          <p className="cy-workspace-greeting__hint">{t(`chatPage.emptyHint.${mode}`)}</p>
+        {!hasMessages && <div className="ff-workspace-greeting">
+          <h2 className="ff-workspace-greeting__title">{t(mode === "chat" ? "chatPage.emptyGreeting" : "chatPage.emptyGreetingTask")}</h2>
+          <p className="ff-workspace-greeting__hint">{t(`chatPage.emptyHint.${mode}`)}</p>
         </div>}
-        <div className="cy-workspace-composer">
+        <div className="ff-workspace-composer">
           {scrollToBottomVisible && (
             <button
               type="button"
-              className="cy-workspace-composer__scroll-to-bottom"
+              className="ff-workspace-composer__scroll-to-bottom"
               onClick={() => scrollToBottomRef.current()}
               aria-label={t("chatPage.scrollToBottom")}
               title={t("chatPage.scrollToBottom")}
@@ -1745,7 +1745,7 @@ export function ChatPage() {
         {/* 右侧面板打开时才挂载 Panel + 拖动条；默认 40% 宽，最小 280px，最大 70% */}
         {inspectorTabIds.length > 0 && (
           <>
-            {inspectorVisible && <Separator className="cy-dock-separator" onKeyDown={event => {
+            {inspectorVisible && <Separator className="ff-dock-separator" onKeyDown={event => {
               if (compactDock || !event.defaultPrevented
                 || !["ArrowLeft", "ArrowRight", "Home", "End", "Enter"].includes(event.key)) return;
               // v4 defers onLayoutChanged while a document pointer is active, even
@@ -1755,7 +1755,7 @@ export function ChatPage() {
               const layout = dockGroupRef.current?.getLayout();
               if (layout && Object.hasOwn(layout, "inspector")) onLayoutChanged(layout, { isUserInteraction: true });
             }} />}
-            <Panel id="inspector" panelRef={inspectorPanelRef} collapsible collapsedSize={0} defaultSize={compactDock ? "30%" : "40%"} minSize={compactDock ? "15%" : 280} maxSize={compactDock ? "40%" : "70%"} className="cy-dock-body">
+            <Panel id="inspector" panelRef={inspectorPanelRef} collapsible collapsedSize={0} defaultSize={compactDock ? "30%" : "40%"} minSize={compactDock ? "15%" : 280} maxSize={compactDock ? "40%" : "70%"} className="ff-dock-body">
               <ChatPageInspector
                 sessionId={activeSessionId}
                 visible={inspectorVisible}
@@ -1770,14 +1770,14 @@ export function ChatPage() {
                 tasksTabOpen={tasksTabOpen}
                 pendingWorkspaceName={pendingWorkspaceByMode[mode]?.displayName}
                 onChooseWorkspace={mode !== "chat" ? () => void chooseWorkspace() : undefined}
-                taskPanel={<div className="cy-workspace-task-panel">{mode === "work"
+                taskPanel={<div className="ff-workspace-task-panel">{mode === "work"
                   ? null
                   : mode === "code" && activeSessionId
                     ? <CodeGitPanel docked expanded sessionId={activeSessionId} projectName={workspaceNames.code}
                         todoState={todoStateBySession[activeSessionId] ?? null}
                         planPhase={planReviewBySession[activeSessionId]?.phase}
                         onOpenPlan={() => { setPlanDrawerOpen(true); setActiveTabId(planTabId); }} />
-                    : <div className="cy-workspace-empty"><p>{t("workspace.chooseProject")}</p>
+                    : <div className="ff-workspace-empty"><p>{t("workspace.chooseProject")}</p>
                         {mode !== "chat" && <button type="button" onClick={() => void chooseWorkspace()}>{t("workspace.chooseFolder")}</button>}</div>}
                   <WorkspaceResultsIndex outputs={workspaceOutputs} onOpenResult={openResultTab} />
                 </div>}

@@ -38,7 +38,7 @@ describe("FeedbackProvider", () => {
     await renderProvider();
     api!.notice({ tone: "success", message: "设置已保存" });
     expect(messageOpen).toHaveBeenCalledWith(expect.objectContaining({
-      type: "success", content: "设置已保存", duration: 3, className: "cy-feedback-notice",
+      type: "success", content: "设置已保存", duration: 3, className: "ff-feedback-notice",
     }));
   });
 
@@ -51,7 +51,7 @@ describe("FeedbackProvider", () => {
       maskClosable: false,
       autoFocusButton: "cancel",
       okButtonProps: { danger: true },
-      rootClassName: "cy-feedback-modal cy-feedback-modal--danger",
+      rootClassName: "ff-feedback-modal ff-feedback-modal--danger",
     }));
   });
 
