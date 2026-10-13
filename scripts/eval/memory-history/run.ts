@@ -14,6 +14,7 @@ import { rankHistory } from "../../../src/main/memory-history/history-ranking";
 import { createLocalEmbeddingProvider } from "../../../src/main/rag/embedding";
 import { createStandardReranker } from "../../../src/main/rag/reranker";
 import { tokenizeJieba } from "../../../src/main/rag/jieba-tokenizer";
+import { toWindows } from "../../../src/main/memory-history/history-windows";
 import { assertNoLeakage, buildDataset, sessionText } from "./dataset.mjs";
 import { auc, bootstrapCi, dedupe, hitAtK, mean, ndcgAtK, percentile, recallAtK, reciprocalRank, supersededOrder } from "./metrics.mjs";
 
@@ -24,9 +25,14 @@ const SPLIT = args.split ?? "dev"; // dev | holdout | all。调参只能看 dev�
 const OUT_DIR = args.out ?? path.join(process.cwd(), "output", "memory-eval");
 const SEED = Number(args.seed ?? 20261013);
 // 新近度加权：相关度乘 (1 + α·exp(-age·ln2/半衰期))。只在候选之间做微调，不改变候选集合。
+// --units N：整段粒度下，词法按 N 轮一个窗口计分（向量仍是文档级）。这正是生产里不改存储就能做到的配置。
+const UNITS = Number(args.units ?? 0);
+// 近似并列时新的优先（词法路线用）：相邻两项相关度差不超过 delta、且后者更新超过 gap 天时交换。
+const NEARTIE_DELTA = Number(args["neartie-delta"] ?? 0.05);
+const NEARTIE_GAP_DAYS = Number(args["neartie-gap"] ?? 7);
 const RECENCY_ALPHA = Number(args["recency-alpha"] ?? 0.1);
 const RECENCY_HALF_LIFE_DAYS = Number(args["recency-halflife"] ?? 30);
-const ALL_MODES = ["lexical", "lexical+stop", "dense", "hybrid", "hybrid+stop", "hybrid+rerank8", "hybrid+rerank30", "lexical+rerank30", "lexical+stop+rerank30", "hybrid+rangefilter", "lexical+recency", "hybrid+recency", "hybrid+stop+recency"];
+const ALL_MODES = ["lexical", "lexical+stop", "dense", "hybrid", "hybrid+stop", "hybrid+rerank8", "hybrid+rerank30", "lexical+rerank30", "lexical+stop+rerank30", "hybrid+rangefilter", "lexical+recency", "hybrid+recency", "hybrid+stop+recency", "hybrid+prodrecency", "lexical+neartie"];
 const MODES = args.modes ? args.modes.split(",").filter((m) => ALL_MODES.includes(m)) : ALL_MODES;
 
 function parseArgs(list) {
@@ -81,7 +87,8 @@ function buildDocs(dataset, granularity) {
   for (const s of dataset.sessions) {
     if (granularity === "session") {
       const times = s.turns.map((t) => t.occurredAt);
-      docs.push({ id: s.id, sessionId: s.id, text: sessionText(s), timeSpan: { start: Math.min(...times), end: Math.max(...times) } });
+      const units = UNITS > 0 ? toWindows(s.turns, UNITS) : null;
+      docs.push({ id: s.id, sessionId: s.id, text: sessionText(s), ...(units ? { units } : {}), timeSpan: { start: Math.min(...times), end: Math.max(...times) } });
     } else {
       for (let i = 0; i < s.turns.length; i += 2) {
         const part = s.turns.slice(i, i + 2);
@@ -115,7 +122,7 @@ function getStopTokenizer() {
 async function runMode(mode, ctx, query) {
   const { docs, emb, reranker, vectors } = ctx;
   const byId = new Map(docs.map((d) => [d.id, d]));
-  const rankDocs = (withVectors) => docs.map((d) => ({ id: d.id, text: d.text, timeSpan: d.timeSpan, ...(withVectors ? { vector: vectors.get(d.id) } : {}) }));
+  const rankDocs = (withVectors) => docs.map((d) => ({ id: d.id, text: d.text, timeSpan: d.timeSpan, ...(d.units ? { units: d.units } : {}), ...(withVectors ? { vector: vectors.get(d.id) } : {}) }));
   const temporal = query.temporal;
   const t0 = performance.now();
   let ids = [];
@@ -155,6 +162,27 @@ async function runMode(mode, ctx, query) {
       if (temporal) throw new Error("not-applicable");
       const ranked = rankHistory(rankDocs(false), query.text, { limit: 8, candidateLimit: 50, ...(mode === "lexical+stop+rerank30" ? { tokenizer: getStopTokenizer() } : {}) });
       ids = await rerank(ranked.fused.slice(0, 30).map((r) => r.id), 8);
+    } else if (mode === "lexical+neartie") {
+      if (temporal) throw new Error("not-applicable");
+      const ranked = rankHistory(rankDocs(false), query.text, { limit: 8, candidateLimit: 50 });
+      const list = ranked.routeRanks.lexical.map((r) => ({ id: r.id, score: r.score }));
+      const end = (id) => byId.get(id).timeSpan.end;
+      for (let pass = 0; pass < list.length; pass++) {
+        let swapped = false;
+        for (let i = 0; i + 1 < list.length; i++) {
+          if (list[i + 1].score >= (1 - NEARTIE_DELTA) * list[i].score && end(list[i + 1].id) - end(list[i].id) > NEARTIE_GAP_DAYS * 86_400_000) {
+            [list[i], list[i + 1]] = [list[i + 1], list[i]];
+            swapped = true;
+          }
+        }
+        if (!swapped) break;
+      }
+      ids = list.slice(0, 8).map((r) => r.id);
+    } else if (mode === "hybrid+prodrecency") {
+      // 生产代码里的新近度：rankHistory 的 recency 选项（在多样性去重之前作用于融合后的前 30 个候选）。
+      if (temporal) throw new Error("not-applicable");
+      const queryVector = await embedQuery();
+      ids = rankHistory(rankDocs(true), query.text, { limit: 8, candidateLimit: 50, queryVector, recency: { alpha: RECENCY_ALPHA, halfLifeDays: RECENCY_HALF_LIFE_DAYS, now: ctx.now } }).items.map((r) => r.id);
     } else if (mode === "lexical+recency" || mode === "hybrid+recency" || mode === "hybrid+stop+recency") {
       if (temporal) throw new Error("not-applicable");
       const useVector = mode !== "lexical+recency";
@@ -205,7 +233,7 @@ async function main() {
   const rssAfterLoad = rssMb();
 
   const querySet = (split) => full.queries.filter((q) => q.split === split).map((q) => ({ id: q.id, category: q.category, text: q.text, gold: q.gold, newer: q.newer, older: q.older, temporal: q.temporal }));
-  const result = { meta: { label: args.label ?? null, args, git: gitInfo(), models: { embedding: emb.name, embeddingDims: emb.dims, embeddingIdentity: emb.cacheIdentity ?? null, reranker: reranker.name }, modes: MODES, granularities: GRANULARITIES,
+  const result = { meta: { label: args.label ?? null, units: UNITS, args, git: gitInfo(), models: { embedding: emb.name, embeddingDims: emb.dims, embeddingIdentity: emb.cacheIdentity ?? null, reranker: reranker.name }, modes: MODES, granularities: GRANULARITIES,
     datasetDigest: digest({ seed: SEED, size: maxSize, sessions: full.sessions.map((s) => [s.id, s.turns.map((t) => [t.role, t.text, t.occurredAt])]) }),
     querySetDigests: { dev: digest(querySet("dev")), holdout: digest(querySet("holdout")) },
     recencyAlpha: RECENCY_ALPHA, recencyHalfLifeDays: RECENCY_HALF_LIFE_DAYS, split: SPLIT, sizes: SIZES, seed: SEED, queries: queries.length, node: process.version, platform: process.platform, embedLoadMs, rerankLoadMs, rssAfterLoadMb: rssAfterLoad }, runs: [], index: [] };

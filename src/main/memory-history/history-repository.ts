@@ -7,6 +7,7 @@ import {canonicalJson} from '../memory-core/repository-types';
 import {RecordCodec} from '../memory-core/record-codec';
 import {executeTransaction,type TransactionFault} from '../memory-core/command-transactions';
 import {transactionNow,withTransactionClock} from '../memory-core/transaction-clock';
+import {toWindows} from './history-windows';
 import {SourceLedger} from '../memory-core/source-ledger';
 import {Suppression} from '../memory-core/suppression';
 import {validateUnit} from '../memory-context/token-budget';
@@ -61,9 +62,12 @@ export function parseHistoryDocument(v:unknown,options?:{allowUnboundTranscript?
  if(d.provenance!==undefined){provenance=parseReadonlyHistoryProvenance(d.provenance);if(provenance.length!==messages.length||provenance.some((p,i)=>p.originalRole!==messages[i].role||p.occurredAt!==messages[i].occurredAt||p.timeZone!==messages[i].timeZone||p.span.end-p.span.start!==messages[i].text.length))fail('MEMORY_HISTORY_SOURCE_MISMATCH')}
  return {id:parseInternalId(d.id),incarnation:parseInternalId(d.incarnation),revision:positiveRevision(d.revision),origin:d.origin,sourceDeps,messages,vector:vector(d.vector),...(transcriptRef?{transcriptRef}:{}),...(d.classification?{classification:d.classification as HistoryDocument['classification']}:{}),...(provenance?{provenance}:{})};
 }
-function settings(v:unknown):HistorySettings {const s=objectFields(v,['version','limit','candidateLimit','rrfK','mmrLambda','maxTotalChars','maxExcerptChars','maxIndexDocuments','maxIndexBytes']);
+function settings(v:unknown):HistorySettings {const s=objectFields(v,['version','limit','candidateLimit','rrfK','mmrLambda','maxTotalChars','maxExcerptChars','maxIndexDocuments','maxIndexBytes'],['windowTurns','recencyAlpha','recencyHalfLifeDays']);
+ if(s.windowTurns!==undefined&&(!Number.isSafeInteger(s.windowTurns)||(s.windowTurns as number)<0||(s.windowTurns as number)>8))fail();
+ if(s.recencyAlpha!==undefined&&(!Number.isFinite(s.recencyAlpha as number)||(s.recencyAlpha as number)<0||(s.recencyAlpha as number)>1))fail();
+ if(s.recencyHalfLifeDays!==undefined&&(!Number.isFinite(s.recencyHalfLifeDays as number)||(s.recencyHalfLifeDays as number)<1||(s.recencyHalfLifeDays as number)>3650))fail();
  for(const key of ['limit','candidateLimit','rrfK','maxTotalChars','maxExcerptChars','maxIndexDocuments','maxIndexBytes'])if(natural(s[key])<1)fail();
- if((s.limit as number)>8||(s.candidateLimit as number)>50||(s.maxIndexDocuments as number)>4096||(s.maxIndexBytes as number)>32*1024*1024||(s.maxTotalChars as number)>65536||(s.maxExcerptChars as number)>65536||!Number.isFinite(s.mmrLambda as number)||(s.mmrLambda as number)<0||(s.mmrLambda as number)>1)fail();return {...s,version:parseInternalId(s.version)} as unknown as HistorySettings;
+ if((s.limit as number)>8||(s.candidateLimit as number)>50||(s.maxIndexDocuments as number)>4096||(s.maxIndexBytes as number)>32*1024*1024||(s.maxTotalChars as number)>65536||(s.maxExcerptChars as number)>65536||!Number.isFinite(s.mmrLambda as number)||(s.mmrLambda as number)<0||(s.mmrLambda as number)>1)fail();return {windowTurns:0,recencyAlpha:0,recencyHalfLifeDays:30,...s,version:parseInternalId(s.version)} as unknown as HistorySettings;
 }
 export function parseHistoryDependencies(v:unknown):HistoryDependency[]{return list(v,8).map(raw=>{const d=objectFields(raw,['documentId','providerId','sessionId','incarnation','revision','digest','generation','partition','indexVersion','tokenizerVersion','rankingVersion','recallDeps']),p=objectFields(d.partition,['actorKey','sessions']);if(typeof d.digest!=='string'||! /^[a-f0-9]{64}$/.test(d.digest))fail();return {documentId:parseInternalId(d.documentId),providerId:parseInternalId(d.providerId),sessionId:parseInternalId(d.sessionId),incarnation:parseInternalId(d.incarnation),revision:positiveRevision(d.revision),digest:d.digest,generation:natural(d.generation),partition:{actorKey:parseInternalId(p.actorKey),sessions:parseHistorySessions(p.sessions)},indexVersion:text(d.indexVersion,128),tokenizerVersion:text(d.tokenizerVersion,128),rankingVersion:text(d.rankingVersion,128),recallDeps:parseRecallDependencies(d.recallDeps)}})}
 /** Frozen native transcript provenance only; generic canonical/imported H stays current. */
@@ -124,7 +128,7 @@ export class HistoryRepository {
  private validateDocuments(scope:string,actorKey:string,value:unknown,response?:{owner:{actorKey:string;providerId:string;sessionId:string};operationId:string}):StoredHistory[]{
   return parseHistoryDependencies(value).map(dep=>{
    if(dep.partition.actorKey!==actorKey||!dep.partition.sessions.some(s=>s.providerId===dep.providerId&&s.sessionId===dep.sessionId))fail('MEMORY_HISTORY_ACCESS_DENIED');
-   if(dep.generation!==this.generation(scope,actorKey)||dep.indexVersion!=='history-index-v1'||dep.rankingVersion!=='history-ranking-v3'||!/^history-jieba-v2-[a-f0-9]{64}$/.test(dep.tokenizerVersion))fail('MEMORY_HISTORY_STALE');
+   if(dep.generation!==this.generation(scope,actorKey)||dep.indexVersion!=='history-index-v1'||dep.rankingVersion!=='history-ranking-v4'||!/^history-jieba-v2-[a-f0-9]{64}$/.test(dep.tokenizerVersion))fail('MEMORY_HISTORY_STALE');
    const d=this.read(scope,actorKey,dep,dep.documentId);if(!d||d.incarnation!==dep.incarnation||d.revision!==dep.revision||d.digest!==dep.digest)fail('MEMORY_HISTORY_STALE');this.checkedDocument(scope,d,dep.recallDeps,response);return d;
   });
  }
@@ -164,7 +168,7 @@ export class HistoryRepository {
     const tokenizer=createHistoryTokenizer();if(b.customWords!==undefined)tokenizer.register(list(b.customWords,128).map(x=>text(x,128)));
     if(v&&documents.some(d=>!d.vector||d.vector.identity!==v.identity))fail('MEMORY_HISTORY_VECTOR_INVALID');
     const candidateDocuments=new Map(documents.map(d=>[this.id(scope,d.actorKey,d,d.id),d]));
-    const ranked=rankHistory([...candidateDocuments].map(([id,d])=>({id,text:d.messages.map(m=>m.text).join('\n'),timeSpan:historyTimeSpan(d.messages),exactIdentity:createHmac('sha256',this.key).update(canonicalJson({origin:d.origin,providerId:d.providerId,sessionId:d.sessionId,messages:d.messages,sourceDeps:d.sourceDeps,transcriptRef:d.transcriptRef??null,...(!d.sourceDeps.length?{documentId:d.id,incarnation:d.incarnation}:{})})).digest('hex'),...(v?{vector:d.vector!.values}:{})})),query,{limit:config.limit,candidateLimit:config.candidateLimit,rrfK:config.rrfK,mmrLambda:config.mmrLambda,...(temporal?{temporal}:{}),...(v?{queryVector:v.values}:{}),tokenizer});
+    const ranked=rankHistory([...candidateDocuments].map(([id,d])=>({id,text:d.messages.map(m=>m.text).join('\n'),...(()=>{const units=toWindows(d.messages,config.windowTurns);return units?{units}:{}})(),timeSpan:historyTimeSpan(d.messages),exactIdentity:createHmac('sha256',this.key).update(canonicalJson({origin:d.origin,providerId:d.providerId,sessionId:d.sessionId,messages:d.messages,sourceDeps:d.sourceDeps,transcriptRef:d.transcriptRef??null,...(!d.sourceDeps.length?{documentId:d.id,incarnation:d.incarnation}:{})})).digest('hex'),...(v?{vector:d.vector!.values}:{})})),query,{limit:config.limit,candidateLimit:config.candidateLimit,rrfK:config.rrfK,mmrLambda:config.mmrLambda,...(temporal?{temporal}:{}),...(v?{queryVector:v.values}:{}),...(config.recencyAlpha>0?{recency:{alpha:config.recencyAlpha,halfLifeDays:config.recencyHalfLifeDays,now:transactionNow(this.db)}}:{}),tokenizer});
     if(ranked.temporal)result.temporal=ranked.temporal;
     let used=0;for(const candidate of ranked.items){const d=candidateDocuments.get(candidate.id)!,length=d.messages.reduce((n,m)=>n+historyMessageChars(m),0);if(length>config.maxExcerptChars||used+length>config.maxTotalChars){result.status='excerpt-budget-exhausted';continue}used+=length;
      result.hits.push({document:d,score:candidate.score,dependency:{documentId:d.id,providerId:d.providerId,sessionId:d.sessionId,incarnation:d.incarnation,revision:d.revision,digest:d.digest,generation:this.generation(scope,owner.actorKey),partition,indexVersion:'history-index-v1',tokenizerVersion:ranked.tokenizerVersion,rankingVersion:ranked.version,recallDeps:this.checkedDocument(scope,d)}});

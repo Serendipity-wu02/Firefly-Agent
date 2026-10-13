@@ -8,8 +8,9 @@ export interface HistoryVector {identity:string;values:number[]}
 export interface HistoryMessage extends ContextMessage {id:string;occurredAt:number|null;timeZone:string|null;sourceRef?:BoundSourceRef}
 export interface HistoryDocument {id:string;incarnation:string;revision:number;origin:'canonical'|'synthetic-import';sourceDeps:SourceDependency[];messages:HistoryMessage[];vector:HistoryVector|null;transcriptRef?:TranscriptDependency;classification?:ReadonlyHistoryClassification;provenance?:ReadonlyHistoryProvenance[]}
 export interface StoredHistory extends HistoryDocument {actorKey:string;providerId:string;sessionId:string;generation:number;digest:string;state:'live'|'deleted'}
-export interface HistorySettings {version:string;limit:number;candidateLimit:number;rrfK:number;mmrLambda:number;maxTotalChars:number;maxExcerptChars:number;maxIndexDocuments:number;maxIndexBytes:number}
-export const DEFAULT_HISTORY_SETTINGS:Readonly<HistorySettings>=Object.freeze({version:'history-settings-v1',limit:8,candidateLimit:50,rrfK:60,mmrLambda:.7,maxTotalChars:16000,maxExcerptChars:6000,maxIndexDocuments:512,maxIndexBytes:8388608});
+/** windowTurns：词法排序按几轮一个窗口计分，0 关闭；recencyAlpha：相关度接近时新内容优先的力度，0 关闭；半衰期以天计。 */
+export interface HistorySettings {version:string;limit:number;candidateLimit:number;rrfK:number;mmrLambda:number;maxTotalChars:number;maxExcerptChars:number;maxIndexDocuments:number;maxIndexBytes:number;windowTurns:number;recencyAlpha:number;recencyHalfLifeDays:number}
+export const DEFAULT_HISTORY_SETTINGS:Readonly<HistorySettings>=Object.freeze({version:'history-settings-v2',limit:8,candidateLimit:50,rrfK:60,mmrLambda:.7,maxTotalChars:16000,maxExcerptChars:6000,maxIndexDocuments:512,maxIndexBytes:8388608,windowTurns:2,recencyAlpha:.1,recencyHalfLifeDays:30});
 export interface HistoryDependency {documentId:string;providerId:string;sessionId:string;incarnation:string;revision:number;digest:string;generation:number;partition:HistoryPartition;indexVersion:string;tokenizerVersion:string;rankingVersion:string;recallDeps:RecallDependency[]}
 export interface HistoryHit {document:StoredHistory;dependency:HistoryDependency;score:number}
 export interface HistoryResult {status:'ok'|'index-budget-exhausted'|'excerpt-budget-exhausted';hits:HistoryHit[];diversity:'vector-mmr'|'lexical-dedup';settingsVersion:string;temporal?:HistoryTemporalResult}
