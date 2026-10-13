@@ -33,4 +33,15 @@ These are provenance and distribution notices, not endorsements. Keep all origin
 - `ecc-production-audit`: Affaan Mustafa / ECC production-audit at `ef648e01899ba3e8dc6371642deaaf64b4477775`, MIT. Same-commit LICENSE and adaptation notice are retained inside its Skill directory. This is local-evidence guidance, with no installed scanner or deployment authority.
 - Project `document-reader-validation` is independently authored Firefly guidance under MIT. It includes no Anthropic doc-coauthoring text.
 
-Current distribution is 41 vendor Skills plus four project Skills, 45 total. Earlier 39-vendor and 42-total records describe their own frozen baselines.
+## Approved additions, 2026-10-13
+
+Eleven instruction-only Skills were added at the commits below. Each directory keeps the complete upstream LICENSE and a NOTICE.md naming the pinned source. Firefly changes only the SKILL.md frontmatter (directory ID, `effectKind: read`, `modes`, `hiddenFromUi`); every body and reference file is byte-identical to the pinned commit, and `license-provenance.json.currentDistribution.addedSkills` records both hashes. None grants tool, file, network or credential authority. All were read in full before inclusion.
+
+- `frontend-design`: anthropics/skills `683bc88e56f3e09ba94f7055977f3d3aa499f202`, Apache-2.0 (LICENSE.txt, unchanged from the static review).
+- `ac-prd`, `ac-documentation-writer`: github/awesome-copilot `156736fb63e965b2f547a1460f3b5972c46e6b24`, MIT, Copyright GitHub, Inc.
+- `ws-architecture-decision-records`, `ws-error-handling-patterns`, `ws-stride-analysis-patterns`, `ws-accessibility-compliance`, `ws-data-storytelling`: wshobson/agents `46891e7e60da0e52baf1050b7b6391b64e84c6d9`, MIT, Copyright (c) 2024 Seth Hobson.
+- `as-deprecation-and-migration`: addyosmani/agent-skills `1be8e34187e34647bb83adc3a1323b26ae6f6abe`, MIT, Copyright (c) 2025 Addy Osmani.
+- `sp-receiving-code-review`: obra/superpowers `bb92a77741419a4ab5f06e711a283343f1ada0c3`, MIT, Copyright (c) 2025 Jesse Vincent.
+- `ecc-agent-security-hardening`: affaan-m/ECC `b92f181b3b748d1abbc2afd94af6aa7d8c8fca29`, MIT, Copyright (c) 2026 Affaan Mustafa.
+
+Current distribution is 52 vendor Skills plus four project Skills, 56 total. Earlier 39-vendor, 41-vendor and 42-total records describe their own frozen baselines.

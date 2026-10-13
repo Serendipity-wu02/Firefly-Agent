@@ -22,13 +22,13 @@ async function fixture(context) {
   return temporary;
 }
 
-test("canonical tree validates 41 vendor IDs, four maintained IDs and legal materials without writing an archive", async () => {
+test("canonical tree validates 52 vendor IDs, four maintained IDs and legal materials without writing an archive", async () => {
   const result = await validateSkills(root);
-  assert.equal(result.vendorIds, 41);
+  assert.equal(result.vendorIds, 52);
   assert.equal(result.projectIds, 4);
-  assert.equal(result.vendorFiles + result.projectFiles, 283);
+  assert.equal(result.vendorFiles + result.projectFiles, 323);
   const provenance = JSON.parse(await fs.readFile(path.join(root, "vendor/firefly-skills/license-provenance.json"), "utf8"));
-  assert.equal(provenance.currentDistribution.skillCount, 41);
+  assert.equal(provenance.currentDistribution.skillCount, 52);
   for (const [relative, expected] of Object.entries(provenance.currentDistribution.changedFiles)) {
     assert.equal(hash(await fs.readFile(path.join(root, "vendor/firefly-skills/skills", relative))), expected, relative);
   }

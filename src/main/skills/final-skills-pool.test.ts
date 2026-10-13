@@ -100,13 +100,13 @@ describe("final Skills pool delivery", () => {
     }
   });
 
-  it("ships the 41 canonical vendor bodies and four maintained Skills without retired mode metadata", () => {
+  it("ships the 52 canonical vendor bodies and four maintained Skills without retired mode metadata", () => {
     const vendor = path.join(root, "vendor/firefly-skills");
     const manifest = JSON.parse(fs.readFileSync(path.join(vendor, "skills-manifest.json"), "utf8"));
     expect(manifest.selfSkills).toEqual(expectedIds);
     const entries = scanSkills(path.join(vendor, "skills"), "builtin");
     expect(entries.map(skill => skill.id).sort()).toEqual([...manifest.skills].sort());
-    expect(entries).toHaveLength(41);
+    expect(entries).toHaveLength(52);
     for (const entry of entries) {
       const relative = `${entry.id}/SKILL.md`;
       const canonical = fs.readFileSync(path.join(vendor, "skills", relative));
@@ -115,6 +115,6 @@ describe("final Skills pool delivery", () => {
       expect(entry.modes?.length).toBeGreaterThan(0);
       expect(entry.modes?.every(mode => mode === "work" || mode === "code")).toBe(true);
     }
-    expect(new Set([...entries.map(entry => entry.id), ...manifest.selfSkills]).size).toBe(45);
+    expect(new Set([...entries.map(entry => entry.id), ...manifest.selfSkills]).size).toBe(56);
   });
 });
