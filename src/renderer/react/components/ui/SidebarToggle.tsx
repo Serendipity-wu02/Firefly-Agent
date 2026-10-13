@@ -19,7 +19,7 @@ export function SidebarToggle({ collapsed: controlledCollapsed, onToggle }: Side
 
   return (
     <button
-      className={`cy-sidebar-toggle ${collapsed ? "is-collapsed" : ""} ${hovered ? "is-hovered" : ""}`}
+      className={`ff-sidebar-toggle ${collapsed ? "is-collapsed" : ""} ${hovered ? "is-hovered" : ""}`}
       onClick={handleClick}
       onMouseEnter={() => setHovered(true)}
       onMouseLeave={() => setHovered(false)}
@@ -36,7 +36,7 @@ export function SidebarToggle({ collapsed: controlledCollapsed, onToggle }: Side
 
         {/* 竖线 */}
         <path
-          className="cy-sidebar-line"
+          className="ff-sidebar-line"
           d="M24 6V42"
           stroke="currentColor"
           strokeWidth="3.5"
@@ -51,7 +51,7 @@ export function SidebarToggle({ collapsed: controlledCollapsed, onToggle }: Side
 
         {/* Chevron */}
         <path
-          className="cy-sidebar-chevron"
+          className="ff-sidebar-chevron"
           d="M32 20L28 24L32 28"
           stroke="currentColor"
           strokeWidth="3.5"

@@ -18,41 +18,41 @@ function declaration(file: string, selector: string, property: string): string {
 }
 
 const surfaces: [string, string, string][] = [
-  ["BrowserWorkspacePanel", ".cy-browser-workspace__address input", "--cy-bg-workspace"],
-  ["BrowserWorkspacePanel", ".cy-browser-workspace__toolbar button:hover:enabled", "--cy-bg-hover"],
-  ["FileTreePanel", ".cy-file-preview__header", "--cy-bg-page"],
-  ["ChatMessageList", '.cy-message-markdown [data-streamdown="table-wrapper"]', "--cy-bg-workspace"],
-  ["ChatMessageList", '.cy-message-markdown [data-streamdown="table"] th', "--cy-bg-page"],
-  ["ChatMessageList", ".cy-mermaid--fallback .cy-mermaid__source", "--cy-bg-page"],
-  ["ChatMessageList", ".cy-svg-card--fallback .cy-svg-card__source", "--cy-bg-page"],
-  ["ChatMessageList", ".cy-message-markdown-fallback", "--cy-bg-page"],
-  ["ChatMessageList", ".cy-tool-executions__result", "--cy-bg-page"],
-  ["ChatMessageList", ".cy-ask-user-qa__row", "--cy-bg-page"],
-  ["ConversationSidebar", ".cy-conversation-list .ant-conversations-item-active", "--cy-bg-workspace"],
-  ["ConversationSidebar", ".cy-session-rename-input", "--cy-bg-workspace"],
-  ["ConversationSidebar", ".cy-session-rename-input input", "--cy-bg-workspace"],
-  ["ConversationSidebar", ".cy-project-popover .ant-popover-inner", "--cy-bg-workspace"],
-  ["ConversationSidebar", ".cy-project-card__open", "--cy-bg-workspace"],
-  ["ConversationSidebar", ".cy-session-context-menu", "--cy-bg-workspace"],
-  ["ConversationSidebar", ".cy-session-context-menu .ant-menu", "--cy-bg-workspace"],
-  ["RightInspector", ".cy-right-inspector", "--cy-bg-page"],
-  ["RightInspector", ".cy-right-inspector__tabs > .ant-tabs-nav", "--cy-bg-page"],
-  ["RightInspector", ".cy-right-inspector__tabs .ant-tabs-tab.ant-tabs-tab-active", "--cy-bg-active"],
-  ["RunExperience", ".cy-task-plan-card", "--cy-bg-workspace"],
-  ["RunExperience", ".cy-run-outcome", "--cy-bg-workspace"],
-  ["RunExperience", ".cy-interaction-panel", "--cy-bg-page"],
-  ["RunExperience", ".cy-interaction-panel__custom-answer input", "--cy-bg-workspace"],
-  ["RunExperience", ".cy-interaction-panel__actions button", "--cy-bg-workspace"],
-  ["RunExperience", ".cy-quiz-short-answer", "--cy-bg-workspace"],
-  ["RunExperience", ".cy-quiz-graded__explanation", "--cy-bg-page"],
-  ["ReviewPanel", ".cy-review-panel__restore-btn", "--cy-bg-workspace"],
-  ["root", ".cy-compressing-context", "--cy-bg-workspace"],
-  ["root", ".cy-workspace-empty button", "--cy-bg-workspace"],
+  ["BrowserWorkspacePanel", ".ff-browser-workspace__address input", "--ff-bg-workspace"],
+  ["BrowserWorkspacePanel", ".ff-browser-workspace__toolbar button:hover:enabled", "--ff-bg-hover"],
+  ["FileTreePanel", ".ff-file-preview__header", "--ff-bg-page"],
+  ["ChatMessageList", '.ff-message-markdown [data-streamdown="table-wrapper"]', "--ff-bg-workspace"],
+  ["ChatMessageList", '.ff-message-markdown [data-streamdown="table"] th', "--ff-bg-page"],
+  ["ChatMessageList", ".ff-mermaid--fallback .ff-mermaid__source", "--ff-bg-page"],
+  ["ChatMessageList", ".ff-svg-card--fallback .ff-svg-card__source", "--ff-bg-page"],
+  ["ChatMessageList", ".ff-message-markdown-fallback", "--ff-bg-page"],
+  ["ChatMessageList", ".ff-tool-executions__result", "--ff-bg-page"],
+  ["ChatMessageList", ".ff-ask-user-qa__row", "--ff-bg-page"],
+  ["ConversationSidebar", ".ff-conversation-list .ant-conversations-item-active", "--ff-bg-workspace"],
+  ["ConversationSidebar", ".ff-session-rename-input", "--ff-bg-workspace"],
+  ["ConversationSidebar", ".ff-session-rename-input input", "--ff-bg-workspace"],
+  ["ConversationSidebar", ".ff-project-popover .ant-popover-inner", "--ff-bg-workspace"],
+  ["ConversationSidebar", ".ff-project-card__open", "--ff-bg-workspace"],
+  ["ConversationSidebar", ".ff-session-context-menu", "--ff-bg-workspace"],
+  ["ConversationSidebar", ".ff-session-context-menu .ant-menu", "--ff-bg-workspace"],
+  ["RightInspector", ".ff-right-inspector", "--ff-bg-page"],
+  ["RightInspector", ".ff-right-inspector__tabs > .ant-tabs-nav", "--ff-bg-page"],
+  ["RightInspector", ".ff-right-inspector__tabs .ant-tabs-tab.ant-tabs-tab-active", "--ff-bg-active"],
+  ["RunExperience", ".ff-task-plan-card", "--ff-bg-workspace"],
+  ["RunExperience", ".ff-run-outcome", "--ff-bg-workspace"],
+  ["RunExperience", ".ff-interaction-panel", "--ff-bg-page"],
+  ["RunExperience", ".ff-interaction-panel__custom-answer input", "--ff-bg-workspace"],
+  ["RunExperience", ".ff-interaction-panel__actions button", "--ff-bg-workspace"],
+  ["RunExperience", ".ff-quiz-short-answer", "--ff-bg-workspace"],
+  ["RunExperience", ".ff-quiz-graded__explanation", "--ff-bg-page"],
+  ["ReviewPanel", ".ff-review-panel__restore-btn", "--ff-bg-workspace"],
+  ["root", ".ff-compressing-context", "--ff-bg-workspace"],
+  ["root", ".ff-workspace-empty button", "--ff-bg-workspace"],
   // The rounded card is the surface the typed text sits on; the inner sender is transparent.
-  ["ChatComposer", ".cy-composer-shell", "--cy-surface"],
-  ["ChatComposer", ".cy-queue-dock__editor", "--cy-surface"],
-  ["ChatComposer", ".cy-composer__attachment", "--cy-bg-page"],
-  ["ChatComposer", ".cy-composer .ant-sender-actions-btn:disabled", "--cy-bg-hover"],
+  ["ChatComposer", ".ff-composer-shell", "--ff-surface"],
+  ["ChatComposer", ".ff-queue-dock__editor", "--ff-surface"],
+  ["ChatComposer", ".ff-composer__attachment", "--ff-bg-page"],
+  ["ChatComposer", ".ff-composer .ant-sender-actions-btn:disabled", "--ff-bg-hover"],
 ];
 
 describe("custom-color foreground and surface pairs", () => {
@@ -64,10 +64,10 @@ describe("custom-color foreground and surface pairs", () => {
   });
 
   it.each([
-    ["ChatMessageList", ".cy-message--user .ant-bubble-content"],
-    ["ChatMessageList", ".cy-message--user .cy-message-markdown a"],
-    ["RunExperience", ".cy-interaction-panel__actions button.is-primary"],
-    ["ChatComposer", ".cy-composer .ant-sender-actions-btn"],
+    ["ChatMessageList", ".ff-message--user .ant-bubble-content"],
+    ["ChatMessageList", ".ff-message--user .ff-message-markdown a"],
+    ["RunExperience", ".ff-interaction-panel__actions button.is-primary"],
+    ["ChatComposer", ".ff-composer .ant-sender-actions-btn"],
   ])("uses contrast-aware text on %s %s", (file, selector) => {
     expect(declaration(file, `:root[data-ui-colors] ${selector}`, "color")).toBe("var(--rb-text-on-pink)");
     expect(uiColorTokens({ enabled: true, accent: "#ffffff" })["--rb-text-on-pink"]).toBe("#000000");
@@ -75,21 +75,21 @@ describe("custom-color foreground and surface pairs", () => {
   });
 
   it("keeps the existing light defaults when custom colors are disabled", () => {
-    expect(declaration("ChatMessageList", ".cy-message--user .ant-bubble-content", "color")).toBe("var(--cy-text)");
-    expect(declaration("ConversationSidebar", ".cy-session-rename-input", "background")).toBe("var(--cy-surface)");
-    expect(declaration("RunExperience", ".cy-interaction-panel", "background")).toBe("var(--cy-popover)");
-    const dom = new JSDOM('<div class="cy-session-rename-input"></div>');
+    expect(declaration("ChatMessageList", ".ff-message--user .ant-bubble-content", "color")).toBe("var(--ff-text)");
+    expect(declaration("ConversationSidebar", ".ff-session-rename-input", "background")).toBe("var(--ff-surface)");
+    expect(declaration("RunExperience", ".ff-interaction-panel", "background")).toBe("var(--ff-popover)");
+    const dom = new JSDOM('<div class="ff-session-rename-input"></div>');
     const input = dom.window.document.querySelector("div")!;
-    expect(input.matches(":root[data-ui-colors] .cy-session-rename-input")).toBe(false);
+    expect(input.matches(":root[data-ui-colors] .ff-session-rename-input")).toBe(false);
     dom.window.document.documentElement.dataset.uiColors = "#ffffff:#121212:#ffffff";
-    expect(input.matches(":root[data-ui-colors] .cy-session-rename-input")).toBe(true);
+    expect(input.matches(":root[data-ui-colors] .ff-session-rename-input")).toBe(true);
     dom.window.close();
   });
 
   it("pairs composer text and disabled actions with their surfaces", () => {
-    expect(declaration("ChatComposer", ".cy-composer .ant-sender-input", "color")).toBe("var(--cy-text)");
-    expect(declaration("ChatComposer", ":root[data-ui-colors] .cy-queue-dock__editor", "color")).toBe("var(--cy-text)");
-    expect(declaration("ChatComposer", ":root[data-ui-colors] .cy-composer .ant-sender-actions-btn:disabled", "color")).toBe("var(--cy-text-muted)");
+    expect(declaration("ChatComposer", ".ff-composer .ant-sender-input", "color")).toBe("var(--ff-text)");
+    expect(declaration("ChatComposer", ":root[data-ui-colors] .ff-queue-dock__editor", "color")).toBe("var(--ff-text)");
+    expect(declaration("ChatComposer", ":root[data-ui-colors] .ff-composer .ant-sender-actions-btn:disabled", "color")).toBe("var(--ff-text-muted)");
   });
 
   it.each([
@@ -99,7 +99,7 @@ describe("custom-color foreground and surface pairs", () => {
     const tokens = uiColorTokens(input);
     for (const [file, selector, token] of surfaces.slice(0, 3)) {
       expect(declaration(file, `:root[data-ui-colors] ${selector}`, "background")).toBe(`var(${token})`);
-      expect(uiColorContrast({ background: tokens[token], foreground: tokens["--cy-text"] })).toBeGreaterThanOrEqual(4.5);
+      expect(uiColorContrast({ background: tokens[token], foreground: tokens["--ff-text"] })).toBeGreaterThanOrEqual(4.5);
     }
   });
 

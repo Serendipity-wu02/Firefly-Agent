@@ -264,6 +264,7 @@
         "segmented": {
           "title": "分段输出",
           "desc": "控制流萤回复在聊天气泡中的分段显示；不会改变模型实际回复内容。",
+          "unavailable": "暂不可用",
           "option": {
             "all": "所有",
             "chat": "聊天",
@@ -385,7 +386,7 @@
       },
       "general": {
         "heading": "通用设置",
-        "subheading": "选择流萤的界面语言，切换后立即保存。",
+        "subheading": "界面语言、本地文件权限与桌面行为，切换后立即保存。",
         "language": {
           "title": "语言",
           "desc": "聊天界面的显示语言，重启流萤后生效；设置窗口暂时只有中文。",
@@ -394,6 +395,7 @@
           }
         },
         "groups": {
+          "files": "本地文件",
           "desktop": "桌面与系统"
         },
         "toastSound": {
@@ -752,7 +754,7 @@
           "hint": "QQ邮箱 → 设置 → 账户 → 开启 SMTP → 获取授权码；163/Gmail 同理。"
         },
         "file": {
-          "title": "本地文件",
+          "title": "文件访问权限",
           "note": "只读：流萤不会修改本地任何文件。",
           "permProjectRead": "全只读",
           "permRead": "只读",
@@ -766,7 +768,8 @@
         },
         "music": {
           "title": "音乐工具",
-          "desc": "读取并控制已运行的 QQ Music 桌面客户端。"
+          "desc": "读取并控制已运行的 QQ Music 桌面客户端：状态、播放、暂停与切歌。",
+          "open": "状态与控制"
         }
       },
       "disclaimer": {

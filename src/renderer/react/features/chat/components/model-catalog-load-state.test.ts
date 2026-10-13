@@ -32,7 +32,7 @@ for (const component of ["panel", "selector"] as const) {
     /** The control opens on its effort panel; the model list is one click away. */
     const show = async () => {
       await act(async () => render());
-      if (component === "selector") await act(async () => { host.querySelector<HTMLButtonElement>(".cy-effort__model")!.click(); });
+      if (component === "selector") await act(async () => { host.querySelector<HTMLButtonElement>(".ff-effort__model")!.click(); });
     };
     function bridge(listModelProfiles: () => Promise<unknown>) {
       Object.assign(window, { settings: { listModelProfiles } });

@@ -11,14 +11,14 @@ export function SidebarUserRow({ onOpenSettings }: { onOpenSettings: () => void 
   const nickname = useUserNickname();
   const label = nickname || t("ui.localUser");
   return (
-    <div className="cy-sidebar-user">
-      <button type="button" className="cy-sidebar-user__who" title={label} aria-label={t("ui.userMenu")} onClick={onOpenSettings}>
-        <span className={`cy-user-avatar-circle ${avatar ? "" : "is-placeholder"}`}>
+    <div className="ff-sidebar-user">
+      <button type="button" className="ff-sidebar-user__who" title={label} aria-label={t("ui.userMenu")} onClick={onOpenSettings}>
+        <span className={`ff-user-avatar-circle ${avatar ? "" : "is-placeholder"}`}>
           {avatar ? <img src={avatar} alt={t("ui.userAlt")} draggable={false} /> : <span>U</span>}
         </span>
-        <span className="cy-sidebar-user__name">{label}</span>
+        <span className="ff-sidebar-user__name">{label}</span>
       </button>
-      <button type="button" className="cy-sidebar-user__settings" title={t("ui.settings")} aria-label={t("ui.settings")} onClick={onOpenSettings}>
+      <button type="button" className="ff-sidebar-user__settings" title={t("ui.settings")} aria-label={t("ui.settings")} onClick={onOpenSettings}>
         <Settings size={17} aria-hidden="true" />
       </button>
     </div>

@@ -34,10 +34,10 @@ export type BlockingDialogRequest =
   | { kind: "input"; options: InputModalOptions; resolve: (value: string | null) => void };
 
 export const modalState = {
-  cyOverlay: null as HTMLElement | null,
-  cyHtmlOverlay: null as HTMLElement | null,
-  cyInputOverlay: null as HTMLElement | null,
-  /** 轻提示堆叠容器（.cy-notice-stack） */
+  ffOverlay: null as HTMLElement | null,
+  ffHtmlOverlay: null as HTMLElement | null,
+  ffInputOverlay: null as HTMLElement | null,
+  /** 轻提示堆叠容器（.ff-notice-stack） */
   noticeContainer: null as HTMLElement | null,
   /** 阻塞弹窗先进先出队列 */
   blockingQueue: [] as BlockingDialogRequest[],

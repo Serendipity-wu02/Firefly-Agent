@@ -22,6 +22,6 @@ describe("settings feedback migration", () => {
   it("does not duplicate the shared modal inside RAG", () => {
     const source = fs.readFileSync(path.join(settingsRoot, "rag/panel.ts"), "utf8");
     expect(source).not.toContain("function _showModal");
-    expect(source).not.toContain('id = "cy-modal-overlay"');
+    expect(source).not.toContain('id = "ff-modal-overlay"');
   });
 });

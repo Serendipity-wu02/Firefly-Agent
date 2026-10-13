@@ -13,13 +13,13 @@ export function UserAvatar({ label }: UserAvatarProps) {
   const displayLabel = (label ?? nickname) || "User";
 
   return (
-    <div className="cy-user-avatar">
-      <div className="cy-user-avatar-circle">
+    <div className="ff-user-avatar">
+      <div className="ff-user-avatar-circle">
         {avatarUrl
           ? <img src={avatarUrl} alt={t("ui.userAlt")} draggable={false} />
           : <span>U</span>}
       </div>
-      <span className="cy-user-avatar-label">{displayLabel}</span>
+      <span className="ff-user-avatar-label">{displayLabel}</span>
     </div>
   );
 }

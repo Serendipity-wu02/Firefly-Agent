@@ -131,23 +131,23 @@ export function ModelEffortControl({ sessionId, activeProfileId, onSelectModelPr
   }
 
   const effortPanel = (
-    <div className="cy-model-panel cy-effort">
-      <div className="cy-effort__head">
-        {shownLabel && <span className="cy-effort__value">{shownLabel}</span>}
-        <button type="button" className="cy-effort__model" title={t("modelSelector.switchTitle")} onClick={() => setPanel("models")}>
+    <div className="ff-model-panel ff-effort">
+      <div className="ff-effort__head">
+        {shownLabel && <span className="ff-effort__value">{shownLabel}</span>}
+        <button type="button" className="ff-effort__model" title={t("modelSelector.switchTitle")} onClick={() => setPanel("models")}>
           <span>{modelName}</span>
           <ChevronIcon direction="right" />
         </button>
       </div>
       {adjustable ? (
         <Slider
-          className="cy-effort__slider"
+          className="ff-effort__slider"
           min={0}
           max={items.length - 1}
           step={1}
           dots
           marks={Object.fromEntries(items.map((item, index) => [index, {
-            label: <span className={`cy-effort__mark${index === shownIndex ? " is-current" : ""}${item.disabled ? " is-disabled" : ""}`}>{shortEffortLabel(item.label)}</span>,
+            label: <span className={`ff-effort__mark${index === shownIndex ? " is-current" : ""}${item.disabled ? " is-disabled" : ""}`}>{shortEffortLabel(item.label)}</span>,
           }]))}
           value={shownIndex}
           tooltip={{ open: false }}
@@ -156,23 +156,23 @@ export function ModelEffortControl({ sessionId, activeProfileId, onSelectModelPr
           onChangeComplete={(value) => void commit(value)}
         />
       ) : (
-        <p className="cy-effort__note">{t("modelEffort.unsupported")}</p>
+        <p className="ff-effort__note">{t("modelEffort.unsupported")}</p>
       )}
     </div>
   );
 
   const modelsPanel = (
-    <div className="cy-model-panel cy-model-list">
-      <button type="button" className="cy-model-list__back" onClick={() => setPanel("effort")}>
+    <div className="ff-model-panel ff-model-list">
+      <button type="button" className="ff-model-list__back" onClick={() => setPanel("effort")}>
         <ChevronIcon direction="left" />
         <span>{t("modelSelector.chooseModel")}</span>
       </button>
-      {loadState === "loading" ? <span className="cy-model-list__note">{t("common.loading")}</span>
-        : loadState === "error" ? <span className="cy-model-list__note" role="alert">{t("modelPanel.loadFailed")}</span>
-        : profiles.length === 0 ? <span className="cy-model-list__note">{t("modelSelector.emptyHint")}</span>
+      {loadState === "loading" ? <span className="ff-model-list__note">{t("common.loading")}</span>
+        : loadState === "error" ? <span className="ff-model-list__note" role="alert">{t("modelPanel.loadFailed")}</span>
+        : profiles.length === 0 ? <span className="ff-model-list__note">{t("modelSelector.emptyHint")}</span>
         : profiles.map((profile) => (
-          <button type="button" key={profile.id} className={`cy-model-list__item ${profile.id === active?.id ? "is-active" : ""}`} onClick={() => chooseModel(profile.id)}>
-            <span className="cy-model-list__name"><strong>{profile.displayName || profile.provider}</strong><small>{profile.model}</small></span>
+          <button type="button" key={profile.id} className={`ff-model-list__item ${profile.id === active?.id ? "is-active" : ""}`} onClick={() => chooseModel(profile.id)}>
+            <span className="ff-model-list__name"><strong>{profile.displayName || profile.provider}</strong><small>{profile.model}</small></span>
             {profile.id === active?.id && <CheckIcon />}
           </button>
         ))}
@@ -185,16 +185,16 @@ export function ModelEffortControl({ sessionId, activeProfileId, onSelectModelPr
       trigger="click"
       placement="topRight"
       open={open}
-      overlayClassName="cy-model-popover"
+      overlayClassName="ff-model-popover"
       onOpenChange={(next) => {
         setOpen(next);
         if (next) { setPanel("effort"); void loadProfiles(); void refreshReasoning(); }
       }}
     >
-      <button type="button" className="cy-composer__agent-button cy-model-effort" title={t("modelSelector.switchTitle")}>
-        <span className="cy-model-effort__model">{modelName}</span>
+      <button type="button" className="ff-composer__agent-button ff-model-effort" title={t("modelSelector.switchTitle")}>
+        <span className="ff-model-effort__model">{modelName}</span>
         {view && (adjustable ? items[activeIndex]?.label : view.statusText) && (
-          <span className="cy-model-effort__effort">{adjustable ? items[activeIndex]?.label : view.statusText}</span>
+          <span className="ff-model-effort__effort">{adjustable ? items[activeIndex]?.label : view.statusText}</span>
         )}
         <ChevronIcon />
       </button>

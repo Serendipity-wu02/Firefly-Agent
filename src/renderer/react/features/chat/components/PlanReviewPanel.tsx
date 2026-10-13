@@ -51,9 +51,9 @@ export function PlanContent({
 }) {
   const { t } = useTranslation();
   return (
-    <div className="cy-plan-content">
-      <p className="cy-plan-content__note">{t(PHASE_NOTE_KEYS[phase])}</p>
-      <div className="cy-plan-content__body">
+    <div className="ff-plan-content">
+      <p className="ff-plan-content__note">{t(PHASE_NOTE_KEYS[phase])}</p>
+      <div className="ff-plan-content__body">
         <MarkdownContent content={content} />
       </div>
     </div>
@@ -78,8 +78,8 @@ export function PlanReviewEntry({
 }) {
   const { t } = useTranslation();
   return (
-    <button type="button" className={`cy-plan-entry is-${phase}`} onClick={onOpen}>
-      <span className={`cy-plan-entry__dot ${PHASE_DOT[phase]}`} aria-hidden="true" />
+    <button type="button" className={`ff-plan-entry is-${phase}`} onClick={onOpen}>
+      <span className={`ff-plan-entry__dot ${PHASE_DOT[phase]}`} aria-hidden="true" />
       {t(ENTRY_LABEL_KEYS[phase])}
     </button>
   );

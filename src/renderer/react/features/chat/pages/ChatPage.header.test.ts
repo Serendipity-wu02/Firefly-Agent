@@ -34,14 +34,14 @@ describe("chat header structure", () => {
   it("places a real conversation title and existing workspace actions before the composer", () => {
     const host = document.createElement("div");
     host.innerHTML = renderToStaticMarkup(createElement(FeedbackProvider, null, createElement(ChatPage)));
-    const main = host.querySelector("main.cy-workspace")!;
+    const main = host.querySelector("main.ff-workspace")!;
     const header = main.querySelector(":scope > header");
     expect(header).not.toBeNull();
     expect(header?.querySelector("h1")?.textContent).toBe(t("chatPage.newTaskTitle"));
     expect(header?.querySelector(`[aria-label="${t("browserWorkspace.open")}"]`)).not.toBeNull();
     expect(header?.querySelector(`[aria-label="${t("fileTree.title")}"]`)).not.toBeNull();
     expect(main.querySelector("textarea")).not.toBeNull();
-    expect(main.querySelector(".cy-inspector-toggle-float")).toBeNull();
+    expect(main.querySelector(".ff-inspector-toggle-float")).toBeNull();
   });
   it("keeps composer and browser draft nodes across repeated header collapse actions", async () => {
     const host = document.createElement("div"); document.body.append(host);
@@ -72,18 +72,18 @@ describe("chat header structure", () => {
     const right = readFileSync(resolve(__dirname, "../components/RightInspector.css"), "utf8");
     const sheet = document.createElement("style"); sheet.textContent = root + "\n" + right; document.head.append(sheet);
     const rules = Array.from(sheet.sheet!.cssRules) as CSSStyleRule[];
-    const header = rules.find(rule => rule.selectorText === ".cy-workspace-header");
-    const tabs = rules.find(rule => rule.selectorText === ".cy-right-inspector__tabs > .ant-tabs-nav");
+    const header = rules.find(rule => rule.selectorText === ".ff-workspace-header");
+    const tabs = rules.find(rule => rule.selectorText === ".ff-right-inspector__tabs > .ant-tabs-nav");
     expect(header?.style.position).toBe("relative");
     // jsdom drops Electron's nonstandard app-region declaration from CSSOM.
     // These are source contracts only; native hit testing still needs Electron QA.
-    expect(root.match(/^\.cy-workspace-header \{([^}]+)\}/m)?.[1]).toMatch(/app-region:\s*drag/);
-    expect(root.match(/^\.cy-workspace-header__actions \{([^}]+)\}/m)?.[1]).toMatch(/app-region:\s*no-drag/);
-    expect(root).toMatch(/:root\[data-window-maximized="true"\] \.cy-workspace-header \{[^}]*app-region:\s*no-drag/);
-    expect(header?.style.height).toBe("var(--cy-workspace-header-height)");
-    expect(tabs?.style.height).toBe("var(--cy-workspace-header-height)");
-    expect(rules.some(rule => rule.selectorText === ".cy-workspace .cy-workspace-composer" && rule.style.paddingTop === "56px")).toBe(false);
-    expect(rules.some(rule => rule.selectorText === ".cy-workspace.has-messages .cy-message-list" && rule.style.paddingTop === "52px")).toBe(false);
+    expect(root.match(/^\.ff-workspace-header \{([^}]+)\}/m)?.[1]).toMatch(/app-region:\s*drag/);
+    expect(root.match(/^\.ff-workspace-header__actions \{([^}]+)\}/m)?.[1]).toMatch(/app-region:\s*no-drag/);
+    expect(root).toMatch(/:root\[data-window-maximized="true"\] \.ff-workspace-header \{[^}]*app-region:\s*no-drag/);
+    expect(header?.style.height).toBe("var(--ff-workspace-header-height)");
+    expect(tabs?.style.height).toBe("var(--ff-workspace-header-height)");
+    expect(rules.some(rule => rule.selectorText === ".ff-workspace .ff-workspace-composer" && rule.style.paddingTop === "56px")).toBe(false);
+    expect(rules.some(rule => rule.selectorText === ".ff-workspace.has-messages .ff-message-list" && rule.style.paddingTop === "52px")).toBe(false);
     sheet.remove();
   });
 });
@@ -94,13 +94,13 @@ it("uses a shared titlebar gutter and a solid workspace without an artwork overl
   try {
     const rules = Array.from(sheet.sheet!.cssRules) as CSSStyleRule[];
     const tokens = rules.find(rule => rule.selectorText === ":root")!.style;
-    expect(tokens.getPropertyValue("--cy-app-titlebar-height").trim()).toBe("50px");
-    expect(tokens.getPropertyValue("--cy-workspace-header-height").trim()).toBe("48px");
-    const page = rules.find(rule => rule.selectorText === ".cy-page")!.style;
-    expect(page.getPropertyValue("padding")).toContain("var(--cy-app-titlebar-height)");
-    const titlebar = rules.find(rule => rule.selectorText === ".cy-page-titlebar")!.style;
-    expect(titlebar.getPropertyValue("height")).toBe("var(--cy-app-titlebar-height)");
-    expect(rules.filter(rule => rule.selectorText?.includes(".cy-workspace::before"))).toHaveLength(0);
-    expect(rules.filter(rule => rule.selectorText === ".cy-workspace").some(rule => rule.style.overflowY === "auto")).toBe(false);
+    expect(tokens.getPropertyValue("--ff-app-titlebar-height").trim()).toBe("50px");
+    expect(tokens.getPropertyValue("--ff-workspace-header-height").trim()).toBe("48px");
+    const page = rules.find(rule => rule.selectorText === ".ff-page")!.style;
+    expect(page.getPropertyValue("padding")).toContain("var(--ff-app-titlebar-height)");
+    const titlebar = rules.find(rule => rule.selectorText === ".ff-page-titlebar")!.style;
+    expect(titlebar.getPropertyValue("height")).toBe("var(--ff-app-titlebar-height)");
+    expect(rules.filter(rule => rule.selectorText?.includes(".ff-workspace::before"))).toHaveLength(0);
+    expect(rules.filter(rule => rule.selectorText === ".ff-workspace").some(rule => rule.style.overflowY === "auto")).toBe(false);
   } finally { sheet.remove(); }
 });

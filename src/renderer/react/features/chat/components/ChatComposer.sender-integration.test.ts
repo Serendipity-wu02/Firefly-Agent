@@ -302,13 +302,13 @@ describe("ChatComposer 队列与附件展示", () => {
       modelBusy: true,
       pendingQueue: [{ id: "q1", content: "第一条排队消息" }, { id: "q2", content: "第二条排队消息" }],
     });
-    const dock = host!.querySelector(".cy-queue-dock")!;
-    const shell = host!.querySelector(".cy-composer-shell")!;
+    const dock = host!.querySelector(".ff-queue-dock")!;
+    const shell = host!.querySelector(".ff-composer-shell")!;
     expect(dock.compareDocumentPosition(shell) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
     act(() => {
-      (dock.querySelector(".cy-queue-dock__header") as HTMLButtonElement).click();
+      (dock.querySelector(".ff-queue-dock__header") as HTMLButtonElement).click();
     });
-    const items = [...host!.querySelectorAll(".cy-queue-dock__row")];
+    const items = [...host!.querySelectorAll(".ff-queue-dock__row")];
     expect(items).toHaveLength(2);
     expect(items[0].textContent).toContain("第一条排队消息");
     act(() => {
@@ -326,7 +326,7 @@ describe("ChatComposer 队列与附件展示", () => {
     act(() => {
       buttonByLabel(t("composer.queueEdit")).click();
     });
-    const editor = host!.querySelector(".cy-queue-dock__editor") as HTMLInputElement;
+    const editor = host!.querySelector(".ff-queue-dock__editor") as HTMLInputElement;
     const inputSetter = Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, "value")!.set!;
     act(() => {
       inputSetter.call(editor, "修改后的消息");
@@ -348,7 +348,7 @@ describe("ChatComposer 队列与附件展示", () => {
       modelBusy: true,
       attachments: [{ name: "report.txt", kind: "document" }],
     });
-    expect(host!.querySelector(".cy-composer__attachment")?.textContent).toContain("report.txt");
+    expect(host!.querySelector(".ff-composer__attachment")?.textContent).toContain("report.txt");
     // Attaching lives in the "+" menu; it opens while a run is going and offers the upload entry.
     const addButton = buttonByLabel(t("composer.addMenuTitle"));
     expect(addButton.disabled).toBe(false);

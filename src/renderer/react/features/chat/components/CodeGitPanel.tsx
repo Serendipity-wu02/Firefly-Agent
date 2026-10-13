@@ -92,43 +92,43 @@ export function CodeGitPanel({ sessionId, projectName, todoState, planPhase, onO
 
   return (
     <aside
-      className={`cy-code-git ${docked ? "cy-code-git--docked" : ""} ${floating.collapsed ? "cy-code-git--collapsed" : ""}`}
+      className={`ff-code-git ${docked ? "ff-code-git--docked" : ""} ${floating.collapsed ? "ff-code-git--collapsed" : ""}`}
       style={docked ? undefined : { left: floating.position.x, top: floating.position.y }}
       aria-label={t("codeGit.panelAria")}
     >
-      <button type="button" className="cy-code-git__dragbar" onMouseDown={docked ? undefined : floating.onHeaderMouseDown} onClick={floating.onHeaderClick} aria-expanded={!floating.collapsed} title={t(docked ? "codeGit.panelAria" : "codeGit.drag")}>
-        {docked ? <span className="cy-code-git__dock-label">{t("codeGit.panelAria")}</span> : <span className="cy-code-git__dragline" />}
-        <span className="cy-code-git__toggle" data-floating-toggle onClick={(event) => { event.stopPropagation(); floating.toggle(); }}><ToggleIcon /></span>
+      <button type="button" className="ff-code-git__dragbar" onMouseDown={docked ? undefined : floating.onHeaderMouseDown} onClick={floating.onHeaderClick} aria-expanded={!floating.collapsed} title={t(docked ? "codeGit.panelAria" : "codeGit.drag")}>
+        {docked ? <span className="ff-code-git__dock-label">{t("codeGit.panelAria")}</span> : <span className="ff-code-git__dragline" />}
+        <span className="ff-code-git__toggle" data-floating-toggle onClick={(event) => { event.stopPropagation(); floating.toggle(); }}><ToggleIcon /></span>
       </button>
 
-      <div className="cy-code-git__body" inert={floating.collapsed} aria-hidden={floating.collapsed}>
-        <div className="cy-code-git__mode"><i aria-hidden="true" />Coding</div>
-        <div className="cy-code-git__hero">
-          <div className="cy-code-git__project">
+      <div className="ff-code-git__body" inert={floating.collapsed} aria-hidden={floating.collapsed}>
+        <div className="ff-code-git__mode"><i aria-hidden="true" />Coding</div>
+        <div className="ff-code-git__hero">
+          <div className="ff-code-git__project">
             <strong>{projectName ?? t("codeGit.noWorkspace")}</strong>
             <span title={statusCopy}>{statusCopy}</span>
           </div>
-          <button className="cy-code-git__refresh" type="button" onClick={() => refreshControllerRef.current?.request()} disabled={!api || refreshing} aria-label={t("codeGit.refresh")}>↻</button>
+          <button className="ff-code-git__refresh" type="button" onClick={() => refreshControllerRef.current?.request()} disabled={!api || refreshing} aria-label={t("codeGit.refresh")}>↻</button>
         </div>
 
-        <div className="cy-code-git__git-actions">
+        <div className="ff-code-git__git-actions">
           <button type="button" disabled={status?.state !== "ready"} onClick={() => setDialog("branch")}>
             <span>{t("codeGit.branchSwitch")}</span><code>{branchName}</code><b>›</b>
           </button>
-          <div className="cy-code-git__change-row">
+          <div className="ff-code-git__change-row">
             <span>{t("codeGit.changes")}</span>
-            <span className="cy-code-git__added">+{status?.lines.insertions ?? 0}</span>
-            <span className="cy-code-git__deleted">-{status?.lines.deletions ?? 0}</span>
+            <span className="ff-code-git__added">+{status?.lines.insertions ?? 0}</span>
+            <span className="ff-code-git__deleted">-{status?.lines.deletions ?? 0}</span>
           </div>
           <button type="button" disabled={status?.state !== "ready" || (status.files.length === 0 && status.ahead === 0)} onClick={() => setDialog("commit")}>
             <span>{t("codeGit.commitOrPush")}</span><code>{status?.files.length ? t("codeGit.commitChanges") : status?.ahead ? t("codeGit.pushCommits", { count: status.ahead }) : t("codeGit.noAction")}</code><b>›</b>
           </button>
-          {operationError && <p className="cy-code-git__operation-error">{operationError}</p>}
+          {operationError && <p className="ff-code-git__operation-error">{operationError}</p>}
         </div>
 
-        <div className="cy-code-git__divider" />
-        <div className="cy-code-git__todo-heading"><span>{t("codeGit.currentTasks")}</span><small>{t("codeGit.todoProgress", { completed, total: todos.length })}</small></div>
-        <ul className="cy-code-git__todos" data-testid="code-todo-list">
+        <div className="ff-code-git__divider" />
+        <div className="ff-code-git__todo-heading"><span>{t("codeGit.currentTasks")}</span><small>{t("codeGit.todoProgress", { completed, total: todos.length })}</small></div>
+        <ul className="ff-code-git__todos" data-testid="code-todo-list">
           {todos.length === 0 ? <li className="is-empty"><i />{t("codeGit.noTasks")}</li> : todos.map((todo) => (
             <li key={todo.id} className={todo.status === "completed" ? "is-completed" : ""}>
               <i /> <span>{todo.content}</span>
@@ -136,34 +136,34 @@ export function CodeGitPanel({ sessionId, projectName, todoState, planPhase, onO
           ))}
         </ul>
         {planPhase && onOpenPlan && (
-          <div className="cy-code-git__plan-status" data-testid="code-plan-status">
+          <div className="ff-code-git__plan-status" data-testid="code-plan-status">
             <PlanReviewEntry phase={planPhase} onOpen={onOpenPlan} />
           </div>
         )}
       </div>
 
-      <Modal open={dialog === "branch"} title={t("codeGit.switchBranch")} footer={null} onCancel={() => setDialog(null)} className="cy-code-git-modal">
-        <p className="cy-code-git-modal__hint">{t("codeGit.currentBranch")}<code>{branchName}</code></p>
-        <div className="cy-code-git-modal__branch-list">
+      <Modal open={dialog === "branch"} title={t("codeGit.switchBranch")} footer={null} onCancel={() => setDialog(null)} className="ff-code-git-modal">
+        <p className="ff-code-git-modal__hint">{t("codeGit.currentBranch")}<code>{branchName}</code></p>
+        <div className="ff-code-git-modal__branch-list">
           {status?.branch?.branches.map((branch) => <button key={branch} type="button" disabled={branch === status.branch?.current || operating} onClick={() => api && void runOperation(() => api.switchBranch(sessionId, branch), () => setDialog(null))}>{branch === status.branch?.current ? "✓ " : ""}{branch}</button>)}
         </div>
-        <div className="cy-code-git-modal__new-branch">
+        <div className="ff-code-git-modal__new-branch">
           <Input value={newBranch} onChange={(event) => setNewBranch(event.target.value)} placeholder={t("codeGit.newBranchPlaceholder")} disabled={operating} onPressEnter={() => api && newBranch.trim() && void runOperation(() => api.switchBranch(sessionId, newBranch.trim(), true), () => { setNewBranch(""); setDialog(null); })} />
           <button type="button" disabled={!api || !newBranch.trim() || operating} onClick={() => api && void runOperation(() => api.switchBranch(sessionId, newBranch.trim(), true), () => { setNewBranch(""); setDialog(null); })}>{t("codeGit.createAndSwitch")}</button>
         </div>
       </Modal>
 
-      <Modal open={dialog === "commit"} title={t("codeGit.commitOrPush")} footer={null} onCancel={() => setDialog(null)} className="cy-code-git-modal">
-        {status?.files.length ? <section className="cy-code-git-modal__commit-section">
-          <p className="cy-code-git-modal__hint">{t("codeGit.commitHint", { count: status.files.length })}</p>
+      <Modal open={dialog === "commit"} title={t("codeGit.commitOrPush")} footer={null} onCancel={() => setDialog(null)} className="ff-code-git-modal">
+        {status?.files.length ? <section className="ff-code-git-modal__commit-section">
+          <p className="ff-code-git-modal__hint">{t("codeGit.commitHint", { count: status.files.length })}</p>
           <Input value={commitMessage} onChange={(event) => setCommitMessage(event.target.value)} placeholder={t("codeGit.commitMessagePlaceholder")} disabled={operating} />
           <button type="button" disabled={!api || !commitMessage.trim() || operating} onClick={() => api && void runOperation(() => api.commit(sessionId, commitMessage, status.files.map((file) => file.path)), () => { setCommitMessage(""); setDialog(null); })}>{t("codeGit.commitAll")}</button>
         </section> : null}
-        {status?.ahead ? <section className="cy-code-git-modal__commit-section">
-          <p className="cy-code-git-modal__hint">{t("codeGit.pushHint", { count: status.ahead })}</p>
+        {status?.ahead ? <section className="ff-code-git-modal__commit-section">
+          <p className="ff-code-git-modal__hint">{t("codeGit.pushHint", { count: status.ahead })}</p>
           <button type="button" disabled={!api || operating} onClick={() => api && void runOperation(() => api.push(sessionId), () => setDialog(null))}>{t("codeGit.pushCommits", { count: status.ahead })}</button>
         </section> : null}
-        {operationError && <p className="cy-code-git__operation-error">{operationError}</p>}
+        {operationError && <p className="ff-code-git__operation-error">{operationError}</p>}
       </Modal>
     </aside>
   );

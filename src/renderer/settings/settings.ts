@@ -8,7 +8,6 @@ import { applyProviderEditorLayout, mountProfileEditor, placeSaveStatus, renderK
 import { bindSettingsNavigation, resolveSettingsSection, updateSettingsNavigation } from "./shared/navigation";
 /* 标记！AI写的超大技术债，延期重构*/
 import "../ui/base.css";
-import "./settings.css";
 import "../ui/theme";
 import {
   normalizeChatSocialContextEnabled,
@@ -54,7 +53,6 @@ import type {
   ScheduledTask,
   ScheduledTaskHistoryEntry,
 } from "./scheduler/types";
-import { musicToggle, musicAccordionCard, musicAccordionBody } from "./music/dom";
 import { channelsState } from "./channels/state";
 import { mountPluginPanels } from "./plugin-panels";
 import { channelsWechatEnabledEl, channelsFeishuEnabledEl, channelsWechatStatusEl, channelsFeishuStatusEl, channelsRateUserEl, channelsRateChannelEl, channelsStickerEl, channelsMirrorEl, channelsToolSandboxOffEl, channelsToolSandboxAllEl, channelsFeishuAppIdEl, channelsFeishuAppSecretEl, channelsFeishuAppSecretRevealBtn, channelsFeishuSaveBtn, channelsWechatLoginBtn, channelsWechatRestartBtn, channelsWechatFeedbackEl, channelsFeishuFeedbackEl, channelsLogListEl, channelsLogRefreshBtn, channelsLogClearBtn } from "./channels/dom";
@@ -122,7 +120,7 @@ import { renderStickerSendStatus } from "./preferences/sticker-send-status";
 // Inline modal (to avoid Vite tree-shaking)
 
 /**
- * 富文本模态框（基于 cy-modal 样式但使用独立 overlay，避免与 showModal 冲突）。
+ * 富文本模态框（基于 ff-modal 样式但使用独立 overlay，避免与 showModal 冲突）。
  * 用于"音色快速复刻"这种需要展示多组说明（规格 / 费用 / 过期规则）的场景。
  * 调用方负责传入安全的 HTML（项目内固定字符串）；若内容来自用户/网络必须先 escapeHtml。
  */
@@ -185,6 +183,7 @@ if (!window.settings) {
       weatherEnabled: false,
       amapKey: "",
       travelEnabled: false,
+      musicEnabled: true,
       playwrightMcpEnabled: false,
       searchEngine: "off",
       searchBochaKey: "",
@@ -406,7 +405,7 @@ function renderChatAppearanceControls(settings: ChatAppearanceSettings): void {
   for (const key of Object.keys(pixelSizeInputs) as PixelSizeKey[]) {
     pixelSizeInputs[key].value = String(settings[key]);
   }
-  document.documentElement.style.setProperty("--cy-ui-font-size", `${settings.uiFontSize}px`);
+  document.documentElement.style.setProperty("--ff-ui-font-size", `${settings.uiFontSize}px`);
 }
 
 function bindPixelSizeInput(key: PixelSizeKey): void {
@@ -415,7 +414,7 @@ function bindPixelSizeInput(key: PixelSizeKey): void {
   input.addEventListener("input", () => {
     const value = Number(input.value);
     if (input.value.trim() && Number.isFinite(value) && key === "uiFontSize") {
-      document.documentElement.style.setProperty("--cy-ui-font-size", `${clampFiniteNumber(value, min, max, savedChatAppearance.uiFontSize)}px`);
+      document.documentElement.style.setProperty("--ff-ui-font-size", `${clampFiniteNumber(value, min, max, savedChatAppearance.uiFontSize)}px`);
     }
     setAppearanceSaveStatus(t("settings.status.releaseApply"));
   });
@@ -829,9 +828,10 @@ export function applyPreset(
 
   setActivePresetCard(preset.providerName);
 
-  // 昵称：优先用传入的（用户自定义过）；否则用厂商 shortName 作默认。
-  // 留空显示厂商短名——但这里主动填 shortName 让用户看到默认值，可改可清。
-  displayNameInput.value = preferredDisplayName ?? preset.shortName;
+  // 昵称：只有用户自己起过名才写进输入框；默认的厂商短名以灰色占位提示显示，
+  // 保存时留空会回落到这个短名（见 saveProfile 的 displayName）。
+  displayNameInput.value = preferredDisplayName && preferredDisplayName !== preset.shortName ? preferredDisplayName : "";
+  displayNameInput.placeholder = preset.shortName;
 
   // baseUrl：仅对官方已确认的 A 口预设做协议配套切换；自定义 URL 永远不猜、不覆盖。
   const selectedTransport = preferredExplicitTransport ?? preset.transport;
@@ -1425,7 +1425,7 @@ apiForm.addEventListener("submit", async (e) => {
     const profile = {
       id: apiState.editingProfileId,
       provider: apiState.activeProvider,
-      displayName: displayNameInput.value.trim(),
+      displayName: displayNameInput.value.trim() || findPreset(apiState.activeProvider).shortName,
       baseUrl: baseUrlInput.value.trim(),
       model: getCurrentModelValue().trim(),
       apiKey: getApiKeyForRequest(),
@@ -1647,14 +1647,6 @@ memoryImportedList?.addEventListener("click", async (event) => {
 });
 
 void loadMemoryPanel();
-
-// ── 音乐工具手风琴 ─────────────────────────────────────────
-musicToggle?.addEventListener("click", () => {
-  const expanded = musicToggle?.getAttribute("aria-expanded") === "true";
-  musicToggle?.setAttribute("aria-expanded", String(!expanded));
-  musicAccordionCard?.classList.toggle("is-expanded", !expanded);
-  musicAccordionBody?.classList.toggle("is-collapsed", expanded);
-});
 
 // ── 音乐工具路由 ──────────────────────────────────────────────
 document.getElementById("music-platform-qq")?.addEventListener("click", () => {

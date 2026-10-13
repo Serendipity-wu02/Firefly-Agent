@@ -60,7 +60,7 @@ function renderAction(ids: LastTurnIds, ui: ReactElement) {
 
 function queryAction(kind: "edit" | "regenerate"): HTMLElement | null {
   if (!host) throw new Error("DOM 未初始化");
-  return host.querySelector(`.cy-last-turn-action--${kind}`);
+  return host.querySelector(`.ff-last-turn-action--${kind}`);
 }
 
 afterEach(() => {

@@ -24,7 +24,7 @@ function toneIcon(tone: FeedbackTone): ReactNode {
 /** 错误信息弹窗内容：正文 + 折叠详情（与设置页弹窗同构） */
 function FeedbackAlertContent({ message: text, details }: Pick<AlertOptions, "message" | "details">) {
   return (
-    <div className="cy-feedback-alert__content">
+    <div className="ff-feedback-alert__content">
       <p>{text}</p>
       {details ? <details><summary>查看详情</summary><pre>{details}</pre></details> : null}
     </div>
@@ -56,7 +56,7 @@ function createConfirmPromise(
       maskClosable: false,
       autoFocusButton: options.dangerous ? "cancel" : "ok",
       okButtonProps: options.dangerous ? { danger: true } : undefined,
-      rootClassName: `cy-feedback-modal${options.dangerous ? " cy-feedback-modal--danger" : ""}`,
+      rootClassName: `ff-feedback-modal${options.dangerous ? " ff-feedback-modal--danger" : ""}`,
       onOk: () => settle(true),
       onCancel: cancel,
     });
@@ -98,7 +98,7 @@ export function FeedbackProvider({ children }: { children: ReactNode }) {
         type: options.tone,
         content: options.message,
         duration: (options.durationMs ?? FEEDBACK_NOTICE_DURATION_MS) / 1000,
-        className: "cy-feedback-notice",
+        className: "ff-feedback-notice",
       });
     },
     alert(options) {
@@ -119,7 +119,7 @@ export function FeedbackProvider({ children }: { children: ReactNode }) {
           okText: options.confirmText ?? "知道了",
           maskClosable: false,
           autoFocusButton: "ok",
-          rootClassName: `cy-feedback-modal cy-feedback-modal--${options.tone}`,
+          rootClassName: `ff-feedback-modal ff-feedback-modal--${options.tone}`,
           onOk: settle,
           onCancel: settle,
         });

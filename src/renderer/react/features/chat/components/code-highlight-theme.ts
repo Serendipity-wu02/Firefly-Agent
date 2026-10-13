@@ -5,7 +5,7 @@ import type { CSSProperties } from "react";
  * The code block surface itself is painted by the theme tokens, so both backgrounds stay transparent.
  */
 const base: CSSProperties = {
-  color: "var(--cy-text)",
+  color: "var(--ff-text)",
   background: "transparent",
   textShadow: "none",
   fontFamily: 'Consolas, "Cascadia Code", "Cascadia Mono", monospace',
@@ -50,7 +50,7 @@ export const fireflyDarkCodeTheme: Record<string, CSSProperties> = {
   operator: { color: "#a9bdb3" },
   entity: { color: sky, cursor: "help" },
   url: { color: sky },
-  variable: { color: "var(--cy-text)" },
+  variable: { color: "var(--ff-text)" },
   atrule: { color: violet },
   "attr-value": { color: mint },
   function: { color: sky },

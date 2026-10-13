@@ -27,7 +27,7 @@ describe("chat Markdown style integration", () => {
     document.head.append(style);
 
     const reasoning = document.createElement("section");
-    reasoning.className = "cy-message-reasoning";
+    reasoning.className = "ff-message-reasoning";
     const content = document.createElement("div");
     content.className = "ant-think-content";
     reasoning.append(content);
@@ -43,9 +43,9 @@ describe("chat Markdown style integration", () => {
     document.head.append(style);
 
     const message = document.createElement("article");
-    message.className = "cy-message cy-message--assistant";
+    message.className = "ff-message ff-message--assistant";
     const markdown = document.createElement("div");
-    markdown.className = "cy-message-markdown";
+    markdown.className = "ff-message-markdown";
     const heading = document.createElement("h2");
     const divider = document.createElement("hr");
     divider.dataset.streamdown = "horizontal-rule";
@@ -67,15 +67,15 @@ describe("chat Markdown style integration", () => {
   it("polishes file links, display math, lists, and task controls", () => {
     // jsdom 不解析 var()：按各变量的回落值求值，其余断言保持原样。
     const stylesheet = readFileSync(resolve(componentDirectory, "ChatMessageList.css"), "utf8")
-      .replace(/var\(--cy-chat-font-size,\s*([^)]+)\)/g, "$1");
+      .replace(/var\(--ff-chat-font-size,\s*([^)]+)\)/g, "$1");
     const style = document.createElement("style");
     style.textContent = stylesheet;
     document.head.append(style);
 
     const markdown = document.createElement("div");
-    markdown.className = "cy-message-markdown";
+    markdown.className = "ff-message-markdown";
     const fileLink = document.createElement("button");
-    fileLink.className = "cy-file-link";
+    fileLink.className = "ff-file-link";
     const formula = document.createElement("p");
     const katex = document.createElement("span");
     katex.className = "katex";

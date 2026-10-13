@@ -22,7 +22,7 @@ export function recordingFileName({ dataset, count, scroll, streamRender }, runN
 export function installLiveMessageFollow() {
   const follow = () => {
     if (globalThis.window?.__perfState === "streaming") {
-      const list = globalThis.document.querySelector(".cy-message-list");
+      const list = globalThis.document.querySelector(".ff-message-list");
       if (list) list.scrollTop = list.scrollHeight;
     }
     globalThis.requestAnimationFrame(follow);

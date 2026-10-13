@@ -7,7 +7,7 @@ import { ModeMenu } from "./ModeMenu";
 let host: HTMLDivElement;
 let root: ReturnType<typeof createRoot>;
 
-const trigger = () => host.querySelector<HTMLButtonElement>(".cy-mode-menu__trigger")!;
+const trigger = () => host.querySelector<HTMLButtonElement>(".ff-mode-menu__trigger")!;
 const items = () => [...document.querySelectorAll<HTMLButtonElement>('[role="menuitemradio"]')];
 const flush = () => act(async () => { await new Promise(resolve => setTimeout(resolve, 0)); });
 
@@ -46,7 +46,7 @@ describe("ModeMenu", () => {
     await flush();
     expect(trigger().getAttribute("aria-expanded")).toBe("true");
     expect(document.querySelector('[role="menu"]')?.getAttribute("aria-label")).toBe("会话模式");
-    expect(items().map(node => node.querySelector(".cy-mode-menu__label")?.textContent)).toEqual(["Work", "Chat", "Code"]);
+    expect(items().map(node => node.querySelector(".ff-mode-menu__label")?.textContent)).toEqual(["Work", "Chat", "Code"]);
     expect(items().map(node => node.getAttribute("aria-checked"))).toEqual(["false", "false", "true"]);
     for (const node of items()) expect(node.querySelector("small")?.textContent?.length).toBeGreaterThan(0);
     expect(document.activeElement).toBe(items()[2]);

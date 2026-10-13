@@ -7,9 +7,9 @@ const INTERACTIVE = 'button, a, input, select, textarea, [role="tab"], [role="bu
 /** 标题栏与工作区标题行的空白处才算窗口拖动面（交互控件、侧栏、消息区都不是）。 */
 export function isWindowDragSurface(target: EventTarget | null, clientY: number): boolean {
   if (!(target instanceof Element) || target.closest(INTERACTIVE)) return false;
-  if (target.closest(".cy-workspace-header")) return true;
+  if (target.closest(".ff-workspace-header")) return true;
   if (clientY > TITLEBAR_HEIGHT_PX) return false;
-  return target.classList.contains("cy-page") || target.closest(".cy-page-titlebar") !== null;
+  return target.classList.contains("ff-page") || target.closest(".ff-page-titlebar") !== null;
 }
 
 /**

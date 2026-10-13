@@ -128,14 +128,14 @@ function toTreeItem(entry: WorkspaceFileEntry): TreeItem {
     isLeaf: !entry.isDir,
     icon: entry.isDir
       ? (props: { expanded?: boolean }) => (
-          <span className="cy-file-tree__folder-icon" aria-hidden="true">
+          <span className="ff-file-tree__folder-icon" aria-hidden="true">
             {props.expanded ? "📁" : "📂"}
           </span>
         )
       : () => {
           const iconUrl = vscodeIconForFile(entry.name);
           return iconUrl
-            ? <img className="cy-file-tree__type-icon" src={iconUrl} alt="" width={14} height={14} />
+            ? <img className="ff-file-tree__type-icon" src={iconUrl} alt="" width={14} height={14} />
             : <FileText size={14} strokeWidth={1.75} aria-hidden="true" />;
         },
   };
@@ -247,12 +247,12 @@ export function FileTreePanel({
     : treeData.length === 0 ? t("fileTree.empty") : null;
 
   return (
-    <div className="cy-file-tree" ref={treeRootRef} aria-busy={loading}>
-      <div className="cy-file-tree__header">
+    <div className="ff-file-tree" ref={treeRootRef} aria-busy={loading}>
+      <div className="ff-file-tree__header">
         <span>{t("fileTree.title")}</span>
         <button
           type="button"
-          className="cy-file-refresh"
+          className="ff-file-refresh"
           aria-label={t("fileTree.refresh")}
           title={!workspaceRoot ? t("fileTree.errNoWorkspace") : t("fileTree.refresh")}
           disabled={!workspaceRoot || loading}
@@ -262,7 +262,7 @@ export function FileTreePanel({
           {t("fileTree.refresh")}
         </button>
       </div>
-      {stateMessage ? <div className="cy-file-tree__state" role="status">{stateMessage}</div> : (
+      {stateMessage ? <div className="ff-file-tree__state" role="status">{stateMessage}</div> : (
         <Tree.DirectoryTree
           treeData={treeData}
           loadData={loadData}
@@ -284,7 +284,7 @@ export function FileTreePanel({
           }}
         />
       )}
-      {truncated && <div className="cy-file-tree__truncated">{t("fileTree.truncated", { count: 1000 })}</div>}
+      {truncated && <div className="ff-file-tree__truncated">{t("fileTree.truncated", { count: 1000 })}</div>}
     </div>
   );
 }
@@ -333,8 +333,8 @@ export function FilePreviewContent({
     return uiColorTokens({ enabled: true, accent, background, foreground });
   }, [customColorKey]);
   const tokenColor = (color: string) => customPalette && uiColorContrast({
-    background: customPalette["--cy-bg-page"], foreground: color,
-  }) < 4.5 ? customPalette["--cy-text"] : color;
+    background: customPalette["--ff-bg-page"], foreground: color,
+  }) < 4.5 ? customPalette["--ff-text"] : color;
 
   // Markdown 文件的查看方式：渲染预览 / 源码（非 md 文件不用）；
   // 带行号定位跳转过来时直接进源码视图（预览视图没有行号概念）
@@ -419,13 +419,13 @@ export function FilePreviewContent({
     : text;
 
   return (
-    <div className="cy-file-preview" ref={scrollHostRef} aria-busy={state.phase === "loading"}>
-      <div className="cy-file-preview__header">
-        <span className="cy-file-preview__path" title={relPath}>{relPath}</span>
-        {state.phase === "ok" && <span className="cy-file-preview__size">{(state.size / 1024).toFixed(1)} KB</span>}
+    <div className="ff-file-preview" ref={scrollHostRef} aria-busy={state.phase === "loading"}>
+      <div className="ff-file-preview__header">
+        <span className="ff-file-preview__path" title={relPath}>{relPath}</span>
+        {state.phase === "ok" && <span className="ff-file-preview__size">{(state.size / 1024).toFixed(1)} KB</span>}
         <button
           type="button"
-          className="cy-file-refresh"
+          className="ff-file-refresh"
           aria-label={t("fileTree.refreshPreview")}
           title={t("fileTree.refreshPreview")}
           disabled={state.phase === "loading" || editing}
@@ -434,10 +434,10 @@ export function FilePreviewContent({
           <RefreshCw size={14} aria-hidden="true" />
         </button>
         {isMarkdown && !editing && (
-          <span className="cy-file-preview__md-toggle" role="group" aria-label={t("rightInspector.toggle")}>
+          <span className="ff-file-preview__md-toggle" role="group" aria-label={t("rightInspector.toggle")}>
             <button
               type="button"
-              className={`cy-file-preview__md-btn ${mdView === "preview" ? "is-active" : ""}`}
+              className={`ff-file-preview__md-btn ${mdView === "preview" ? "is-active" : ""}`}
               onClick={() => setMdView("preview")}
               aria-label={t("fileTree.viewPreview")}
               title={t("fileTree.viewPreview")}
@@ -446,7 +446,7 @@ export function FilePreviewContent({
             </button>
             <button
               type="button"
-              className={`cy-file-preview__md-btn ${mdView === "source" ? "is-active" : ""}`}
+              className={`ff-file-preview__md-btn ${mdView === "source" ? "is-active" : ""}`}
               onClick={() => setMdView("source")}
               aria-label={t("fileTree.viewSource")}
               title={t("fileTree.viewSource")}
@@ -459,19 +459,19 @@ export function FilePreviewContent({
       <WorkspaceTextEditor editorKey={editorKey} sessionId={sessionId} relPath={relPath}
         snapshot={state.phase === "ok" ? state : undefined} errorText={code => t(ERROR_KEYS[code])} />
       {editing ? null : state.phase !== "ok" ? (
-        <div className="cy-file-preview__state" role="status">
+        <div className="ff-file-preview__state" role="status">
           {state.phase === "loading" ? t("fileTree.previewLoading") : t(ERROR_KEYS[state.code])}
         </div>
       ) : isMarkdown && mdView === "preview" ? (
-        <div className="cy-file-preview__markdown">
+        <div className="ff-file-preview__markdown">
           <MarkdownContent content={renderedContent} />
         </div>
       ) : (
-        <pre className="cy-file-preview__code">
+        <pre className="ff-file-preview__code">
           {lines.map((line, index) => (
-            <div className="cy-file-preview__line" key={index} data-line={index + 1}>
-              <span className="cy-file-preview__lineno">{index + 1}</span>
-              <span className="cy-file-preview__text">
+            <div className="ff-file-preview__line" key={index} data-line={index + 1}>
+              <span className="ff-file-preview__lineno">{index + 1}</span>
+              <span className="ff-file-preview__text">
                 {line.map((token, tokenIndex) =>
                   token.color ? (
                     <span key={tokenIndex} style={{ color: tokenColor(token.color) }}>{token.content}</span>
@@ -485,7 +485,7 @@ export function FilePreviewContent({
         </pre>
       )}
       {!editing && state.phase === "ok" && totalLines > PREVIEW_MAX_LINES && (
-        <div className="cy-file-preview__truncated">
+        <div className="ff-file-preview__truncated">
           {t("fileTree.previewLinesHint", { count: PREVIEW_MAX_LINES })}
         </div>
       )}

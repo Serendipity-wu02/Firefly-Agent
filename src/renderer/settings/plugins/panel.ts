@@ -5,7 +5,7 @@
 import {
   weatherEnabledCheckbox, weatherConfig, weatherSourceSelect, amapFields, amapKeyInput,
   travelEnabledCheckbox, travelConfig, travelAmapKeyInput,
-  playwrightMcpCheckbox,
+  playwrightMcpCheckbox, musicEnabledCheckbox,
 } from "./dom";
 import { pluginsState } from "./state";
 
@@ -95,6 +95,10 @@ export async function saveBuiltinMcpField(field: string, value: unknown): Promis
 export async function loadBuiltinMcpToggles(): Promise<void> {
   try {
     const cfg = await window.settings?.getGeneral();
+    if (cfg && musicEnabledCheckbox) {
+      // 缺省视为开启：升级前音乐工具一直可用
+      musicEnabledCheckbox.checked = cfg.musicEnabled !== false;
+    }
     if (cfg && playwrightMcpCheckbox) {
       // 默认关闭 —— 浏览器走系统 Edge，MCP 随应用内置，无需额外下载
       playwrightMcpCheckbox.checked = Boolean(cfg.playwrightMcpEnabled);
@@ -138,6 +142,10 @@ travelAmapKeyInput?.addEventListener("input", function () {
   pluginsState.travelAmapKeyDebounceTimer = setTimeout(() => {
     void saveTravelField("amapKey", this.value.trim());
   }, 800);
+});
+
+musicEnabledCheckbox?.addEventListener("change", function () {
+  void saveBuiltinMcpField("musicEnabled", this.checked);
 });
 
 playwrightMcpCheckbox?.addEventListener("change", function () {

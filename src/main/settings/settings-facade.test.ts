@@ -295,3 +295,15 @@ describe("appearance typography settings", () => {
     });
   });
 });
+
+describe("music tool switch", () => {
+  it("stays on for settings saved before the switch existed", () => {
+    expect(normalizeGeneralSettings({}).musicEnabled).toBe(true);
+    expect(normalizeGeneralSettings({ weatherEnabled: true } as never).musicEnabled).toBe(true);
+  });
+
+  it("keeps an explicit choice", () => {
+    expect(normalizeGeneralSettings({ musicEnabled: false } as never).musicEnabled).toBe(false);
+    expect(normalizeGeneralSettings({ musicEnabled: true } as never).musicEnabled).toBe(true);
+  });
+});

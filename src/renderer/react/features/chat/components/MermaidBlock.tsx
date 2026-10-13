@@ -48,14 +48,14 @@ export function MermaidBlock({ code, streaming }: { code: string; streaming?: bo
   const result = useMemo(() => (streaming ? null : renderMermaidSafe(code)), [code, streaming]);
 
   if (streaming || result === null) {
-    return <div className="cy-mermaid cy-mermaid--pending">{t("messageList.mermaidPending")}</div>;
+    return <div className="ff-mermaid ff-mermaid--pending">{t("messageList.mermaidPending")}</div>;
   }
 
   if (result.kind === "svg") {
     return (
       <>
         <div
-          className="cy-mermaid cy-mermaid--zoomable"
+          className="ff-mermaid ff-mermaid--zoomable"
           title={t("messageList.diagramZoomHint")}
           // 点击放大查看：气泡内 max-width 压缩会让大图看不清
           onClick={() => setZoomed(true)}
@@ -68,9 +68,9 @@ export function MermaidBlock({ code, streaming }: { code: string; streaming?: bo
   }
 
   return (
-    <div className="cy-mermaid cy-mermaid--fallback">
-      <div className="cy-mermaid__hint">{t("messageList.mermaidFallback")}</div>
-      <pre className="cy-mermaid__source">{code}</pre>
+    <div className="ff-mermaid ff-mermaid--fallback">
+      <div className="ff-mermaid__hint">{t("messageList.mermaidFallback")}</div>
+      <pre className="ff-mermaid__source">{code}</pre>
     </div>
   );
 }

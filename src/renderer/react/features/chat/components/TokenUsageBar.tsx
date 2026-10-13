@@ -124,18 +124,18 @@ export function TokenUsageBar({ busy }: TokenUsageBarProps) {
   const tooltip = t("tokenUsageBar.tooltip", { days, input, output });
 
   return (
-    <div className="cy-token-usage-bar" role="status" aria-label={t("tokenUsageBar.ariaLabel", { days })}>
-      <div className="cy-token-usage-bar__inner" title={tooltip}>
-        <span className="cy-token-usage-bar__item cy-token-usage-bar__item--secondary">
+    <div className="ff-token-usage-bar" role="status" aria-label={t("tokenUsageBar.ariaLabel", { days })}>
+      <div className="ff-token-usage-bar__inner" title={tooltip}>
+        <span className="ff-token-usage-bar__item ff-token-usage-bar__item--secondary">
           <RequestIcon />
           {t("tokenUsageBar.requests", { count: formatTokenAmount(summary.requests) })}
         </span>
-        <span className="cy-token-usage-bar__item">
+        <span className="ff-token-usage-bar__item">
           <TokenIcon />
           {t("tokenUsageBar.total", { days, value: formatTokenAmount(summary.total) })}
         </span>
         {cacheText !== undefined && (
-          <span className="cy-token-usage-bar__item">
+          <span className="ff-token-usage-bar__item">
             {t("tokenUsageBar.cacheHit", { rate: cacheText })}
           </span>
         )}

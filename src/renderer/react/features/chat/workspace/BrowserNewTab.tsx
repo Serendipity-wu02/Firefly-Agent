@@ -29,9 +29,9 @@ export function clearRecentSites(): void { recentHosts.clear(); }
 
 function Tile({ title, url, onOpen }: { title: string; url: string; onOpen(url: string): void }) {
   const letter = [...title.replace(/^www\./, "")][0]?.toUpperCase() ?? "?";
-  return <button type="button" className="cy-browser-newtab__tile" data-browser-site={url} title={url} onClick={() => onOpen(url)}>
-    <span className="cy-browser-newtab__icon" aria-hidden="true">{letter}</span>
-    <span className="cy-browser-newtab__name">{title}</span>
+  return <button type="button" className="ff-browser-newtab__tile" data-browser-site={url} title={url} onClick={() => onOpen(url)}>
+    <span className="ff-browser-newtab__icon" aria-hidden="true">{letter}</span>
+    <span className="ff-browser-newtab__name">{title}</span>
   </button>;
 }
 
@@ -39,15 +39,15 @@ function Tile({ title, url, onOpen }: { title: string; url: string; onOpen(url: 
 export function BrowserNewTab({ onOpen, available = true }: { onOpen(url: string): void; available?: boolean }) {
   const { t } = useTranslation();
   const recent = recentSites();
-  return <div className="cy-browser-newtab" data-browser-newtab data-disabled={!available || undefined}>
+  return <div className="ff-browser-newtab" data-browser-newtab data-disabled={!available || undefined}>
     {recent.length > 0 && <section aria-label={t("browserWorkspace.newTabRecent")}>
       <h3>{t("browserWorkspace.newTabRecent")}</h3>
-      <div className="cy-browser-newtab__row">{recent.map(site => <Tile key={site.url} {...site} onOpen={onOpen} />)}</div>
+      <div className="ff-browser-newtab__row">{recent.map(site => <Tile key={site.url} {...site} onOpen={onOpen} />)}</div>
     </section>}
     <section aria-label={t("browserWorkspace.newTabSites")}>
       <h3>{t("browserWorkspace.newTabSites")}</h3>
-      <div className="cy-browser-newtab__row">{BROWSER_START_SITES.map(site => <Tile key={site.url} {...site} onOpen={onOpen} />)}</div>
+      <div className="ff-browser-newtab__row">{BROWSER_START_SITES.map(site => <Tile key={site.url} {...site} onOpen={onOpen} />)}</div>
     </section>
-    <p className="cy-browser-newtab__hint">{t("browserWorkspace.newTabLocalHint")}</p>
+    <p className="ff-browser-newtab__hint">{t("browserWorkspace.newTabLocalHint")}</p>
   </div>;
 }

@@ -158,17 +158,17 @@ export function ContextUsageRing({ usage, sessionId, busy }: ContextUsageRingPro
   const categoryMeta = contextUsageCategoryMeta();
 
   const menu = (
-    <div className="cy-context-usage-menu" aria-label={t("contextRing.menuAria")}>
-      <div className="cy-context-usage-menu__header">
+    <div className="ff-context-usage-menu" aria-label={t("contextRing.menuAria")}>
+      <div className="ff-context-usage-menu__header">
         <strong>{t("contextRing.menuTitle")}</strong>
         <span>{summaryText}</span>
       </div>
-      <div className={`cy-context-usage-menu__progress is-${tone}`} aria-hidden="true">
+      <div className={`ff-context-usage-menu__progress is-${tone}`} aria-hidden="true">
         <span style={{ width: `${visualRatio * 100}%` }} />
       </div>
       <div
         className={[
-          "cy-context-usage-menu__mood",
+          "ff-context-usage-menu__mood",
           `is-${tone}`,
           canCompact ? "can-compact" : "",
           compacting ? "is-compacting" : "",
@@ -176,7 +176,7 @@ export function ContextUsageRing({ usage, sessionId, busy }: ContextUsageRingPro
       >
         <button
           type="button"
-          className="cy-context-usage-menu__mood-figure"
+          className="ff-context-usage-menu__mood-figure"
           onClick={handleCompactClick}
           disabled={!canCompact || compacting}
           title={canCompact ? t("contextRing.compactTitle") : undefined}
@@ -186,7 +186,7 @@ export function ContextUsageRing({ usage, sessionId, busy }: ContextUsageRingPro
         </button>
         <span>{moodText}</span>
       </div>
-      <ul className="cy-context-usage-menu__rows">
+      <ul className="ff-context-usage-menu__rows">
         {visibleCategories.map((category, index) => {
           const meta = categoryMeta[category.key];
           // 占已用比例：各类加总恒 100%，直观看构成；与顶行"占窗口容量"互补。
@@ -198,18 +198,18 @@ export function ContextUsageRing({ usage, sessionId, busy }: ContextUsageRingPro
           return (
             <li key={category.key}>
               <span
-                className="cy-context-usage-menu__dot"
+                className="ff-context-usage-menu__dot"
                 style={{ opacity: dotOpacity }}
                 aria-hidden="true"
               />
-              <span className="cy-context-usage-menu__name">{meta.label}</span>
-              <span className="cy-context-usage-menu__tokens">{formatTokenCount(category.tokens)}</span>
-              {share !== undefined && <span className="cy-context-usage-menu__share">{share}%</span>}
+              <span className="ff-context-usage-menu__name">{meta.label}</span>
+              <span className="ff-context-usage-menu__tokens">{formatTokenCount(category.tokens)}</span>
+              {share !== undefined && <span className="ff-context-usage-menu__share">{share}%</span>}
             </li>
           );
         })}
       </ul>
-      <div className="cy-context-usage-menu__footnote">{t("contextRing.footnote")}</div>
+      <div className="ff-context-usage-menu__footnote">{t("contextRing.footnote")}</div>
     </div>
   );
 
@@ -220,18 +220,18 @@ export function ContextUsageRing({ usage, sessionId, busy }: ContextUsageRingPro
       placement="topRight"
       open={open}
       onOpenChange={setOpen}
-      rootClassName="cy-context-usage-popover"
+      rootClassName="ff-context-usage-popover"
     >
       <button
         type="button"
-        className={`cy-context-usage-ring is-${tone}`}
+        className={`ff-context-usage-ring is-${tone}`}
         aria-label={title}
         title={title}
         onClick={() => setOpen(!open)}
       >
         <svg width={RING_SIZE} height={RING_SIZE} viewBox={`0 0 ${RING_SIZE} ${RING_SIZE}`} aria-hidden="true">
           <circle
-            className="cy-context-usage-ring__track"
+            className="ff-context-usage-ring__track"
             cx={RING_SIZE / 2}
             cy={RING_SIZE / 2}
             r={RING_RADIUS}
@@ -240,7 +240,7 @@ export function ContextUsageRing({ usage, sessionId, busy }: ContextUsageRingPro
           />
           {visualRatio > 0 && (
             <circle
-              className="cy-context-usage-ring__progress"
+              className="ff-context-usage-ring__progress"
               cx={RING_SIZE / 2}
               cy={RING_SIZE / 2}
               r={RING_RADIUS}

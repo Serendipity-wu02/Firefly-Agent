@@ -70,11 +70,11 @@ function StreamdownAnchor({ href, children }: { href?: string; children?: ReactN
       return (
         <button
           type="button"
-          className="cy-file-link"
+          className="ff-file-link"
           title={target.absPath}
           onClick={() => openFile(relPath, target.lineStart)}
         >
-          <svg className="cy-file-link__icon" viewBox="0 0 16 16" width="12" height="12" aria-hidden="true">
+          <svg className="ff-file-link__icon" viewBox="0 0 16 16" width="12" height="12" aria-hidden="true">
             <path
               d="M4 1.5h5L12.5 5v9a.5.5 0 0 1-.5.5H4a.5.5 0 0 1-.5-.5V2a.5.5 0 0 1 .5-.5Z"
               fill="none"
@@ -83,11 +83,11 @@ function StreamdownAnchor({ href, children }: { href?: string; children?: ReactN
             />
             <path d="M9 1.5V5h3.5" fill="none" stroke="currentColor" strokeLinejoin="round" />
           </svg>
-          <span className="cy-file-link__text">{children}</span>
+          <span className="ff-file-link__text">{children}</span>
         </button>
       );
     }
-    return <span className="cy-file-link is-plain">{children}</span>;
+    return <span className="ff-file-link is-plain">{children}</span>;
   }
   return <a href={href} target="_blank" rel="noreferrer">{children}</a>;
 }
@@ -155,7 +155,7 @@ export function StreamdownMessageContent({ content, streaming }: StreamdownMessa
       components={messageComponents}
       rehypePlugins={rehypePlugins}
       controls={chatControls}
-      className="cy-message-markdown cy-streamdown-message"
+      className="ff-message-markdown ff-streamdown-message"
     >
       {content}
     </Streamdown>

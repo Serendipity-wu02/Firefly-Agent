@@ -11,9 +11,9 @@ function Probe() {
   useMaximizedWindowDrag();
   return createElement(
     "div",
-    { className: "cy-page" },
-    createElement("header", { className: "cy-page-titlebar" }, createElement("button", { id: "tab" }, "Work")),
-    createElement("div", { className: "cy-workspace-header" }, createElement("button", { id: "act" }, "x")),
+    { className: "ff-page" },
+    createElement("header", { className: "ff-page-titlebar" }, createElement("button", { id: "tab" }, "Work")),
+    createElement("div", { className: "ff-workspace-header" }, createElement("button", { id: "act" }, "x")),
     createElement("div", { id: "body" }, "messages"),
   );
 }
@@ -28,14 +28,14 @@ function fire(target: Element, type: string, init: Record<string, unknown> = {})
 
 describe("isWindowDragSurface", () => {
   it("accepts blank title areas only", () => {
-    document.body.innerHTML = '<div class="cy-page"><header class="cy-page-titlebar"><button>t</button><span id="blank"></span></header><div class="cy-workspace-header"><h1 id="title">t</h1><button id="b">b</button></div><p id="msg">m</p></div>';
+    document.body.innerHTML = '<div class="ff-page"><header class="ff-page-titlebar"><button>t</button><span id="blank"></span></header><div class="ff-workspace-header"><h1 id="title">t</h1><button id="b">b</button></div><p id="msg">m</p></div>';
     expect(isWindowDragSurface(document.getElementById("blank"), 20)).toBe(true);
-    expect(isWindowDragSurface(document.querySelector(".cy-page-titlebar button"), 20)).toBe(false);
+    expect(isWindowDragSurface(document.querySelector(".ff-page-titlebar button"), 20)).toBe(false);
     expect(isWindowDragSurface(document.getElementById("title"), 80)).toBe(true);
     expect(isWindowDragSurface(document.getElementById("b"), 80)).toBe(false);
     expect(isWindowDragSurface(document.getElementById("msg"), 300)).toBe(false);
-    expect(isWindowDragSurface(document.querySelector(".cy-page"), 20)).toBe(true);
-    expect(isWindowDragSurface(document.querySelector(".cy-page"), 400)).toBe(false);
+    expect(isWindowDragSurface(document.querySelector(".ff-page"), 20)).toBe(true);
+    expect(isWindowDragSurface(document.querySelector(".ff-page"), 400)).toBe(false);
   });
 });
 
@@ -72,7 +72,7 @@ describe("useMaximizedWindowDrag", () => {
   });
 
   it("starts the window drag only after the pointer moves past the threshold, and ends on release", () => {
-    const body = document.querySelector(".cy-workspace-header")!;
+    const body = document.querySelector(".ff-workspace-header")!;
     fire(body, "pointerdown", { button: 0, buttons: 1, clientY: 80, screenX: 100, screenY: 100 });
     fire(body, "pointermove", { buttons: 1, screenX: 102, screenY: 101 });
     expect(chat.startWindowDrag).not.toHaveBeenCalled();
@@ -93,7 +93,7 @@ describe("useMaximizedWindowDrag", () => {
   });
 
   it("restores on double click of the title area", () => {
-    fire(document.querySelector(".cy-workspace-header")!, "dblclick", { clientY: 80 });
+    fire(document.querySelector(".ff-workspace-header")!, "dblclick", { clientY: 80 });
     expect(chat.toggleMaximize).toHaveBeenCalledTimes(1);
   });
 });

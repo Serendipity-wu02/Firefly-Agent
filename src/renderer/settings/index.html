@@ -168,7 +168,7 @@
               <span><span data-i18n="panel.api.field.baseUrl.label">Base URL</span></span>
               <div class="base-url-row">
                 <input id="base-url" aria-describedby="endpoint-preview" type="url" placeholder="https://api.deepseek.com" autocomplete="off" data-i18n-placeholder="panel.api.field.baseUrl.placeholder" />
-                <button type="button" class="base-url-reset" id="base-url-reset-btn" title="重置为厂商默认 URL" data-i18n-title="panel.api.field.baseUrl.resetTitle">↻</button>
+                <button type="button" class="base-url-reset" id="base-url-reset-btn" title="重置为厂商默认 URL" data-i18n-title="panel.api.field.baseUrl.resetTitle"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 12a8 8 0 1 1-2.34-5.66"/><path d="M20 4v4h-4"/></svg></button>
               </div>
               <span class="form-hint endpoint-preview" id="endpoint-preview" aria-live="polite"></span>
             </label>
@@ -276,7 +276,7 @@
               <span><span data-i18n="panel.api.field.timeout.label">测试超时（ms，1s=1000ms）</span></span>
               <div class="timeout-row">
                 <input id="timeout-test" type="number" placeholder="单位ms（1s=1000ms）" autocomplete="off" data-i18n-placeholder="panel.api.field.timeout.placeholder" />
-                <button type="button" class="timeout-reset" id="timeout-test-reset-btn" title="重置为默认（15s）" data-i18n-title="panel.api.field.timeout.resetTitle">↻</button>
+                <button type="button" class="timeout-reset" id="timeout-test-reset-btn" title="重置为默认（15s）" data-i18n-title="panel.api.field.timeout.resetTitle"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 12a8 8 0 1 1-2.34-5.66"/><path d="M20 4v4h-4"/></svg></button>
               </div>
             </label>
           </div>
@@ -342,7 +342,7 @@
               <span>模型请求超时（秒）</span>
               <div class="timeout-row">
                 <input id="model-request-timeout-sec" type="number" min="10" max="600" step="5" placeholder="60" autocomplete="off" />
-                <button type="button" class="timeout-reset" id="model-request-timeout-sec-reset-btn" title="重置为默认（60秒）">↻</button>
+                <button type="button" class="timeout-reset" id="model-request-timeout-sec-reset-btn" title="重置为默认（60秒）"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 12a8 8 0 1 1-2.34-5.66"/><path d="M20 4v4h-4"/></svg></button>
               </div>
               <span class="field-hint">范围：10~600 秒，默认 60 秒。用于非流式模型请求。</span>
             </label>
@@ -350,7 +350,7 @@
               <span>询问等待时间（秒）</span>
               <div class="timeout-row">
                 <input id="timeout-user-choice" type="number" min="1" step="1" placeholder="60" autocomplete="off" />
-                <button type="button" class="timeout-reset" id="timeout-user-choice-reset-btn" title="重置为默认（60s）">↻</button>
+                <button type="button" class="timeout-reset" id="timeout-user-choice-reset-btn" title="重置为默认（60s）"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 12a8 8 0 1 1-2.34-5.66"/><path d="M20 4v4h-4"/></svg></button>
               </div>
               <span class="field-hint">流萤向用户提问后等待回答的最长时间。</span>
             </label>
@@ -388,10 +388,10 @@
           <div class="settings-list">
             <div class="setting-row">
               <div>
-                <strong><span data-i18n="panel.preferences.segmented.title">分段输出</span></strong>
+                <strong><span data-i18n="panel.preferences.segmented.title">分段输出</span><span class="setting-row__tag" data-i18n="panel.preferences.segmented.unavailable">暂不可用</span></strong>
                 <span><span data-i18n="panel.preferences.segmented.desc">控制流萤回复在聊天气泡中的分段显示；不会改变模型实际回复内容。</span></span>
               </div>
-              <div class="option-blocks option-blocks--wide" id="segmented-output-select" role="radiogroup" aria-label="分段输出">
+              <div class="option-blocks" id="segmented-output-select" role="radiogroup" aria-label="分段输出">
                 <button type="button" class="option-block" data-value="all" aria-pressed="false" disabled><span data-i18n="panel.preferences.segmented.option.all">所有</span></button>
                 <button type="button" class="option-block" data-value="chat" aria-pressed="false" disabled><span data-i18n="panel.preferences.segmented.option.chat">聊天</span></button>
                 <button type="button" class="option-block is-active" data-value="off" aria-pressed="true" disabled><span data-i18n="panel.preferences.segmented.option.off">关闭</span></button>
@@ -403,7 +403,7 @@
                 <strong><span data-i18n="panel.preferences.proactive.title">主动聊天</span></strong>
                 <span><span data-i18n="panel.preferences.proactive.desc">流萤会在合适的时间主动发起对话；深夜无操作、正常聊天中和连续两次未回复时不会打扰。</span></span>
               </div>
-              <div class="option-blocks option-blocks--wide" id="proactive-chat-select" role="radiogroup" aria-label="主动聊天">
+              <div class="option-blocks" id="proactive-chat-select" role="radiogroup" aria-label="主动聊天">
                 <button type="button" class="option-block is-active" data-value="off" aria-pressed="true"><span data-i18n="panel.preferences.proactive.option.off">关闭</span></button>
                 <button type="button" class="option-block" data-value="on" aria-pressed="false"><span data-i18n="panel.preferences.proactive.option.on">开启</span></button>
               </div>
@@ -414,7 +414,7 @@
                 <strong><span data-i18n="panel.preferences.proactive.delivery.title">主动消息发送到</span></strong>
                 <span><span data-i18n="panel.preferences.proactive.delivery.desc">手机渠道不可用时，本次主动消息会取消，不会改发到本地。</span></span>
               </div>
-              <div class="option-blocks option-blocks--wide" id="proactive-delivery-select" role="radiogroup" aria-label="主动消息发送到">
+              <div class="option-blocks" id="proactive-delivery-select" role="radiogroup" aria-label="主动消息发送到">
                 <button type="button" class="option-block is-active" data-value="local" aria-pressed="true"><span data-i18n="panel.preferences.proactive.delivery.option.local">仅本地</span></button>
                 <button type="button" class="option-block" data-value="wechat" aria-pressed="false"><span data-i18n="panel.preferences.proactive.delivery.option.wechat">仅微信</span></button>
                 <button type="button" class="option-block" data-value="feishu" aria-pressed="false"><span data-i18n="panel.preferences.proactive.delivery.option.feishu">仅飞书</span></button>
@@ -602,7 +602,7 @@
             <div class="panel-heading__icon"><svg width="24" height="24" viewBox="0 0 48 48" fill="none" aria-hidden="true"><title>通用设置</title><path d="M18.2838 43.1713C14.9327 42.1736 11.9498 40.3213 9.58787 37.867C10.469 36.8227 11 35.4734 11 34.0001C11 30.6864 8.31371 28.0001 5 28.0001C4.79955 28.0001 4.60139 28.01 4.40599 28.0292C4.13979 26.7277 4 25.3803 4 24.0001C4 21.9095 4.32077 19.8938 4.91579 17.9995C4.94381 17.9999 4.97188 18.0001 5 18.0001C8.31371 18.0001 11 15.3138 11 12.0001C11 11.0488 10.7786 10.1493 10.3846 9.35011C12.6975 7.1995 15.5205 5.59002 18.6521 4.72314C19.6444 6.66819 21.6667 8.00013 24 8.00013C26.3333 8.00013 28.3556 6.66819 29.3479 4.72314C32.4795 5.59002 35.3025 7.1995 37.6154 9.35011C37.2214 10.1493 37 11.0488 37 12.0001C37 15.3138 39.6863 18.0001 43 18.0001C43.0281 18.0001 43.0562 17.9999 43.0842 17.9995C43.6792 19.8938 44 21.9095 44 24.0001C44 25.3803 43.8602 26.7277 43.594 28.0292C43.3986 28.01 43.2005 28.0001 43 28.0001C39.6863 28.0001 37 30.6864 37 34.0001C37 35.4734 37.531 36.8227 38.4121 37.867C36.0502 40.3213 33.0673 42.1736 29.7162 43.1713C28.9428 40.752 26.676 39.0001 24 39.0001C21.324 39.0001 19.0572 40.752 18.2838 43.1713Z" fill="none" stroke="currentColor" stroke-width="4" stroke-linejoin="round"/><path d="M24 31C27.866 31 31 27.866 31 24C31 20.134 27.866 17 24 17C20.134 17 17 20.134 17 24C17 27.866 20.134 31 24 31Z" fill="none" stroke="currentColor" stroke-width="4" stroke-linejoin="round"/></svg></div>
             <div>
               <h1><span data-i18n="panel.general.heading">通用设置</span></h1>
-              <p><span data-i18n="panel.general.subheading">选择流萤的界面语言，切换后立即保存。</span></p>
+              <p><span data-i18n="panel.general.subheading">界面语言、本地文件权限与桌面行为，切换后立即保存。</span></p>
             </div>
           </div>
 
@@ -615,6 +615,22 @@
               <div class="language-options" id="language-select" role="radiogroup" aria-label="语言" data-i18n-aria-label="panel.general.language.groupLabel">
                 <button type="button" class="language-option is-active" data-lang="zh-CN" aria-pressed="true"><span data-i18n="panel.general.language.option.zh">中文</span></button>
                 <button type="button" class="language-option" data-lang="en" aria-pressed="false">English</button>
+              </div>
+            </div>
+          </div>
+
+          <h2 class="settings-group-title"><span data-i18n="panel.general.groups.files">本地文件</span></h2>
+          <div class="settings-list">
+            <div class="setting-row setting-row--control" id="plugin-file-card">
+              <div>
+                <strong><span data-i18n="panel.plugins.file.title">文件访问权限</span></strong>
+                <span><span id="plugin-file-note">只读：流萤不会修改本地任何文件。</span></span>
+              </div>
+              <div class="plugin-perm-capsule" id="plugin-file-permission" role="group" aria-label="本地文件权限">
+                <button type="button" class="perm-seg" data-level="project-read-only" title="完全只读：只能在项目目录内只读" data-i18n-title="panel.plugins.file.permProjectReadTitle"><span data-i18n="panel.plugins.file.permProjectRead">全只读</span></button>
+                <button type="button" class="perm-seg is-active" data-level="read-only" title="允许访问：可读取但不修改" data-i18n-title="panel.plugins.file.permReadTitle"><span data-i18n="panel.plugins.file.permRead">只读</span></button>
+                <button type="button" class="perm-seg" data-level="per-action" title="每次审批" data-i18n-title="panel.plugins.file.permActionTitle"><span data-i18n="panel.plugins.file.permAction">审批</span></button>
+                <button type="button" class="perm-seg" data-level="full" title="完全访问" data-i18n-title="panel.plugins.file.permFullTitle"><span data-i18n="panel.plugins.file.permFull">完全</span></button>
               </div>
             </div>
           </div>
@@ -674,7 +690,7 @@
               </label>
               <div class="agent-setting-subgroup">
                 <strong><span data-i18n="panel.firefly.sticker.size.title">表情包显示大小</span></strong>
-                <div class="option-blocks option-blocks--wide" id="sticker-size" role="radiogroup" aria-label="表情包显示大小">
+                <div class="option-blocks" id="sticker-size" role="radiogroup" aria-label="表情包显示大小">
                   <button type="button" class="option-block" data-value="small" aria-pressed="false"><span data-i18n="panel.firefly.sticker.size.option.small">小图</span></button>
                   <button type="button" class="option-block is-active" data-value="standard" aria-pressed="true"><span data-i18n="panel.firefly.sticker.size.option.standard">标准</span></button>
                   <button type="button" class="option-block" data-value="large" aria-pressed="false"><span data-i18n="panel.firefly.sticker.size.option.large">大图</span></button>
@@ -811,7 +827,7 @@
             <div class="settings-list account-card" id="account-card">
               <div class="setting-row" id="account-signed-out">
                 <div class="account-card__identity">
-                  <span class="account-card__avatar" aria-hidden="true"><svg width="22" height="22" viewBox="0 0 48 48" fill="none" aria-hidden="true"><path d="M44 8H4V38H19L24 43L29 38H44V8Z" stroke="currentColor" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/><circle cx="24" cy="19" r="5" fill="none" stroke="currentColor" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/><path d="M33 32C33 27.5817 28.9706 24 24 24C19.0294 24 15 27.5817 15 32" stroke="currentColor" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/></svg></span>
+                  <span class="account-card__avatar" aria-hidden="true"><svg width="22" height="22" viewBox="0 0 48 48" fill="none" aria-hidden="true"><circle cx="24" cy="14" r="7" stroke="currentColor" stroke-width="4"/><path d="M8 41C8 33.268 15.268 27 24 27C32.732 27 40 33.268 40 41" stroke="currentColor" stroke-width="4" stroke-linecap="round"/></svg></span>
                   <div>
                     <strong><span data-i18n="panel.user.account.signedOutTitle">未登录</span></strong>
                     <span><span data-i18n="panel.user.account.signedOutDesc">登录后可在多台设备间同步你的资料与设置（即将支持）</span></span>
@@ -826,7 +842,7 @@
                 <div class="account-card__identity">
                   <span class="account-card__avatar">
                     <img id="account-avatar-img" alt="" hidden />
-                    <span id="account-avatar-placeholder"><svg width="22" height="22" viewBox="0 0 48 48" fill="none" aria-hidden="true"><path d="M44 8H4V38H19L24 43L29 38H44V8Z" stroke="currentColor" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/><circle cx="24" cy="19" r="5" fill="none" stroke="currentColor" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/><path d="M33 32C33 27.5817 28.9706 24 24 24C19.0294 24 15 27.5817 15 32" stroke="currentColor" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/></svg></span>
+                    <span id="account-avatar-placeholder"><svg width="22" height="22" viewBox="0 0 48 48" fill="none" aria-hidden="true"><circle cx="24" cy="14" r="7" stroke="currentColor" stroke-width="4"/><path d="M8 41C8 33.268 15.268 27 24 27C32.732 27 40 33.268 40 41" stroke="currentColor" stroke-width="4" stroke-linecap="round"/></svg></span>
                   </span>
                   <div>
                     <strong id="account-display-name"></strong>
@@ -848,7 +864,7 @@
                 </div>
                 <div class="user-avatar-actions">
                   <div class="user-avatar" id="user-avatar-el">
-                    <span><svg width="22" height="22" viewBox="0 0 48 48" fill="none" aria-hidden="true"><path d="M44 8H4V38H19L24 43L29 38H44V8Z" stroke="currentColor" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/><circle cx="24" cy="19" r="5" fill="none" stroke="currentColor" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/><path d="M33 32C33 27.5817 28.9706 24 24 24C19.0294 24 15 27.5817 15 32" stroke="currentColor" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/></svg></span>
+                    <span><svg width="22" height="22" viewBox="0 0 48 48" fill="none" aria-hidden="true"><circle cx="24" cy="14" r="7" stroke="currentColor" stroke-width="4"/><path d="M8 41C8 33.268 15.268 27 24 27C32.732 27 40 33.268 40 41" stroke="currentColor" stroke-width="4" stroke-linecap="round"/></svg></span>
                   </div>
                   <button type="button" class="ghost-btn" id="upload-avatar-btn"><svg width="16" height="16" viewBox="0 0 48 48" fill="none" aria-hidden="true" style="vertical-align:-3px; margin-right:4px"><circle cx="24" cy="24" r="20" stroke="currentColor" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/><path d="M9 37L17 28L33 41" stroke="currentColor" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/><circle cx="18" cy="17" r="4" fill="none" stroke="currentColor" stroke-width="4"/><path d="M24 33L32 23L42 31" stroke="currentColor" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/></svg><span data-i18n="panel.user.uploadAvatarButton">上传头像</span></button>
                 </div>
@@ -868,7 +884,7 @@
                 <div class="gender-select" id="user-gender">
                     <button type="button" class="gender-select__btn is-active" data-gender="secret"><svg width="16" height="16" viewBox="0 0 48 48" fill="none" aria-hidden="true" style="vertical-align:-2px"><path d="M6 8.25564L24.0086 3L42 8.25564V19.0337C42 30.3622 34.7502 40.4194 24.0026 44.0005C13.2521 40.4195 6 30.36 6 19.0287V8.25564Z" fill="none" stroke="currentColor" stroke-width="4" stroke-linejoin="round"/></svg> <span data-i18n="panel.user.genderSecret">保密</span></button>
                     <button type="button" class="gender-select__btn" data-gender="male"><svg width="16" height="16" viewBox="0 0 48 48" fill="none" aria-hidden="true" style="vertical-align:-2px"><path d="M41.9517 15.0483V6.04834H32.9517" stroke="#4A9EFF" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/><path d="M10.4135 38.0007C15.8808 43.4681 24.7451 43.4681 30.2125 38.0007C32.9462 35.2671 34.313 31.6841 34.313 28.1012C34.313 24.5183 32.9462 20.9354 30.2125 18.2017C24.7451 12.7344 15.8808 12.7344 10.4135 18.2017C4.94615 23.6691 4.94615 32.5334 10.4135 38.0007Z" fill="none" stroke="#4A9EFF" stroke-width="4" stroke-linejoin="round"/><path d="M30.0002 17.9999L39.9517 8.04838" stroke="#4A9EFF" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/></svg> <span data-i18n="panel.user.genderMale">男生</span></button>
-                    <button type="button" class="gender-select__btn" data-gender="female"><svg width="16" height="16" viewBox="0 0 48 48" fill="none" aria-hidden="true" style="vertical-align:-2px"><g clip-path="url(#icon-gender-female)"><path d="M38.3785 9.85132C32.9112 4.38398 24.0468 4.38398 18.5795 9.85132C15.8458 12.585 14.479 16.1679 14.479 19.7508C14.479 23.3337 15.8458 26.9166 18.5795 29.6503C24.0468 35.1176 32.9112 35.1176 38.3785 29.6503C43.8458 24.183 43.8458 15.3187 38.3785 9.85132Z" fill="none" stroke="currentColor" stroke-width="4" stroke-linejoin="round"/><path d="M18.4642 29.5353L5.73633 42.2632" stroke="currentColor" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/><path d="M19.1714 41.5562L6.44346 28.8282" stroke="currentColor" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/></g><defs><clipPath id="icon-gender-female"><rect width="48" height="48" fill="currentColor"/></clipPath></defs></svg> <span data-i18n="panel.user.genderFemale">女生</span></button>
+                    <button type="button" class="gender-select__btn" data-gender="female"><svg width="16" height="16" viewBox="0 0 48 48" fill="none" aria-hidden="true" style="vertical-align:-2px"><g clip-path="url(#icon-gender-female)"><path d="M38.3785 9.85132C32.9112 4.38398 24.0468 4.38398 18.5795 9.85132C15.8458 12.585 14.479 16.1679 14.479 19.7508C14.479 23.3337 15.8458 26.9166 18.5795 29.6503C24.0468 35.1176 32.9112 35.1176 38.3785 29.6503C43.8458 24.183 43.8458 15.3187 38.3785 9.85132Z" fill="none" stroke="#FF7EB3" stroke-width="4" stroke-linejoin="round"/><path d="M18.4642 29.5353L5.73633 42.2632" stroke="#FF7EB3" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/><path d="M19.1714 41.5562L6.44346 28.8282" stroke="#FF7EB3" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/></g><defs><clipPath id="icon-gender-female"><rect width="48" height="48" fill="currentColor"/></clipPath></defs></svg> <span data-i18n="panel.user.genderFemale">女生</span></button>
                   </div>
               </div>
               <label class="setting-row" for="user-call-pref">
@@ -1448,20 +1464,6 @@
               </label>
             </article>
 
-            <article class="plugin-card" id="plugin-file-card">
-              <div class="plugin-card__icon"><svg width="22" height="22" viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><path d="M4 9V41L9 21H39.5V15C39.5 13.8954 38.6046 13 37.5 13H24L19 7H6C4.89543 7 4 7.89543 4 9Z" stroke="currentColor" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/><path d="M40 41L44 21H8.8125L4 41H40Z" fill="none" stroke="currentColor" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
-              <div class="plugin-card__body">
-                <h2><span data-i18n="panel.plugins.file.title">本地文件</span></h2>
-                <p id="plugin-file-note"><span data-i18n="panel.plugins.file.note">只读：流萤不会修改本地任何文件。</span></p>
-              </div>
-              <div class="plugin-perm-capsule" id="plugin-file-permission" role="group" aria-label="本地文件权限">
-                <button type="button" class="perm-seg" data-level="project-read-only" title="完全只读：只能在项目目录内只读" data-i18n-title="panel.plugins.file.permProjectReadTitle"><span data-i18n="panel.plugins.file.permProjectRead">全只读</span></button>
-                <button type="button" class="perm-seg is-active" data-level="read-only" title="允许访问：可读取但不修改" data-i18n-title="panel.plugins.file.permReadTitle"><span data-i18n="panel.plugins.file.permRead">只读</span></button>
-                <button type="button" class="perm-seg" data-level="per-action" title="每次审批" data-i18n-title="panel.plugins.file.permActionTitle"><span data-i18n="panel.plugins.file.permAction">审批</span></button>
-                <button type="button" class="perm-seg" data-level="full" title="完全访问" data-i18n-title="panel.plugins.file.permFullTitle"><span data-i18n="panel.plugins.file.permFull">完全</span></button>
-              </div>
-            </article>
-
             <article class="plugin-card" id="plugin-playwright-mcp-card">
               <div class="plugin-card__icon"><svg width="22" height="22" viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><rect x="19" y="32" width="10" height="9" stroke="currentColor" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/><rect x="5" y="8" width="38" height="24" rx="2" fill="none" stroke="currentColor" stroke-width="4"/><path d="M22 27H26" stroke="currentColor" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/><path d="M14 41L34 41" stroke="currentColor" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
               <div class="plugin-card__body">
@@ -1474,23 +1476,17 @@
               </label>
             </article>
 
-            <article class="plugin-card plugin-card--accordion plugin-card--music" id="plugin-music-card">
-              <div class="plugin-accordion-header">
-                <div class="plugin-card__icon"><svg width="22" height="22" viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><path d="M24 4C12.9543 4 4 12.9543 4 24C4 35.0457 12.9543 44 24 44C35.0457 44 44 35.0457 44 24C44 21.2883 43.4603 18.7026 42.4825 16.3446C42.2308 15.7376 41.9501 15.1457 41.6421 14.5707" stroke="currentColor" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/><path d="M35 10C37.2091 10 39 8.65685 39 7C39 5.34315 37.2091 4 35 4C32.7909 4 31 5.34315 31 7C31 8.65685 32.7909 10 35 10Z" fill="none" stroke="currentColor" stroke-width="4" stroke-linejoin="round"/><path d="M24 31C27.866 31 31 27.866 31 24C31 20.134 27.866 17 24 17C20.134 17 17 20.134 17 24C17 27.866 20.134 31 24 31Z" fill="none" stroke="currentColor" stroke-width="4" stroke-linejoin="round"/><path d="M31 6.5V24" stroke="currentColor" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
-                <div class="plugin-card__body">
-                  <h2><span data-i18n="panel.plugins.music.title">音乐工具</span></h2>
-                  <p>读取并控制已运行的 QQ Music 桌面客户端。</p>
-                </div>
-                <button type="button" class="accordion-toggle" id="plugin-music-toggle" aria-label="展开音乐工具" aria-expanded="false">▾</button>
+            <article class="plugin-card plugin-card--music" id="plugin-music-card">
+              <div class="plugin-card__icon"><svg width="22" height="22" viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><path d="M24 4C12.9543 4 4 12.9543 4 24C4 35.0457 12.9543 44 24 44C35.0457 44 44 35.0457 44 24C44 21.2883 43.4603 18.7026 42.4825 16.3446C42.2308 15.7376 41.9501 15.1457 41.6421 14.5707" stroke="currentColor" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/><path d="M35 10C37.2091 10 39 8.65685 39 7C39 5.34315 37.2091 4 35 4C32.7909 4 31 5.34315 31 7C31 8.65685 32.7909 10 35 10Z" fill="none" stroke="currentColor" stroke-width="4" stroke-linejoin="round"/><path d="M24 31C27.866 31 31 27.866 31 24C31 20.134 27.866 17 24 17C20.134 17 17 20.134 17 24C17 27.866 20.134 31 24 31Z" fill="none" stroke="currentColor" stroke-width="4" stroke-linejoin="round"/><path d="M31 6.5V24" stroke="currentColor" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+              <div class="plugin-card__body">
+                <h2><span data-i18n="panel.plugins.music.title">音乐工具</span></h2>
+                <p><span data-i18n="panel.plugins.music.desc">读取并控制已运行的 QQ Music 桌面客户端：状态、播放、暂停与切歌。</span></p>
+                <button type="button" class="plugin-card__link" id="music-platform-qq" data-platform="qqmusic"><span data-i18n="panel.plugins.music.open">状态与控制</span></button>
               </div>
-              <div class="plugin-accordion-body is-collapsed" id="plugin-music-body">
-                <div class="music-platform-grid" id="music-platform-list">
-                  <button type="button" class="plugin-card plugin-card--sub music-platform" id="music-platform-qq" data-platform="qqmusic">
-                    <div class="plugin-card__icon" aria-hidden="true">♫</div>
-                    <div class="plugin-card__body"><h2>QQ Music</h2><p>读取状态、播放、暂停与切歌；仅控制 QQMusic.exe。</p></div>
-                  </button>
-                </div>
-              </div>
+              <label class="plugin-switch" aria-label="启用音乐工具">
+                <input type="checkbox" id="plugin-music-enabled" />
+                <span></span>
+              </label>
             </article>
           </div>
           <!-- 插件设置面板（settingsSection: plugins，缺省分区）动态挂载点 -->

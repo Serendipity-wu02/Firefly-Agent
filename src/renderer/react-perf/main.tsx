@@ -219,8 +219,8 @@ async function main() {
   let lastBubbleCount = -1;
   const hydrateDeadline = performance.now() + 60_000;
   while (performance.now() < hydrateDeadline) {
-    const list = document.querySelector<HTMLElement>(".cy-message-list");
-    const bubbles = list ? list.querySelectorAll(".cy-message").length : 0;
+    const list = document.querySelector<HTMLElement>(".ff-message-list");
+    const bubbles = list ? list.querySelectorAll(".ff-message").length : 0;
     if (bubbles > 0 && firstBubbleAt === null) firstBubbleAt = performance.now();
     if (bubbles >= expectedBubbles && bubbles === lastBubbleCount) {
       stableCount += 1;
@@ -243,14 +243,14 @@ async function main() {
   await sleep(600);
 
   // ── 滚离底部（autoScroll 关闭场景）：用户翻阅历史，不跟随滚动 ──
-  const list = document.querySelector<HTMLElement>(".cy-message-list");
+  const list = document.querySelector<HTMLElement>(".ff-message-list");
   if (params.scrollMode === "top" && list) {
     list.scrollTop = 0;
     await sleep(300);
   }
 
   // ── 驱动发送：填入草稿并回车，走真实 sendMessage → 待发队列 → runModel 链路 ──
-  const textarea = document.querySelector<HTMLTextAreaElement>(".cy-workspace-composer textarea");
+  const textarea = document.querySelector<HTMLTextAreaElement>(".ff-workspace-composer textarea");
   if (!textarea) {
     finishWithError("未找到输入框，驱动失败");
     return;

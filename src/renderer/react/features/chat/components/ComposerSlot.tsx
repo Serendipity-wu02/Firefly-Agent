@@ -26,12 +26,12 @@ export function ComposerSlot({
   const slot = resolveComposerSlot(interaction);
 
   return (
-    <div className={`cy-composer-slot is-${slot}`}>
-      <div className="cy-composer-slot__composer" aria-hidden={interaction ? true : undefined}>
+    <div className={`ff-composer-slot is-${slot}`}>
+      <div className="ff-composer-slot__composer" aria-hidden={interaction ? true : undefined}>
         {composer}
       </div>
       {interaction?.kind === "ask" && (
-        <div className="cy-composer-slot__interaction">
+        <div className="ff-composer-slot__interaction">
           <AskUserPanel
             interaction={interaction}
             disabled={interactionBusy}
@@ -41,7 +41,7 @@ export function ComposerSlot({
         </div>
       )}
       {interaction?.kind === "permission" && (
-        <div className="cy-composer-slot__interaction">
+        <div className="ff-composer-slot__interaction">
           <PermissionPanel
             interaction={interaction}
             disabled={interactionBusy}
@@ -50,7 +50,7 @@ export function ComposerSlot({
         </div>
       )}
       {interaction?.kind === "quiz" && (
-        <div className="cy-composer-slot__interaction">
+        <div className="ff-composer-slot__interaction">
           <PopQuizPanel
             interaction={interaction}
             disabled={interactionBusy}

@@ -102,27 +102,27 @@ describe("formal answer visibility", () => {
 
     expect(liveHtml).toContain("正在生成");
     expect(completedHtml).toContain("已经完成");
-    expect(liveHtml).toContain("cy-streamdown-message");
-    expect(completedHtml).toContain("cy-streamdown-message");
+    expect(liveHtml).toContain("ff-streamdown-message");
+    expect(completedHtml).toContain("ff-streamdown-message");
   });
 
   it("keeps the source free of breathing tails, tail animations and generating hints", () => {
     const source = readFileSync(resolve(__dirname, "ChatMessageList.tsx"), "utf8");
     const stylesheet = readFileSync(resolve(__dirname, "ChatMessageList.css"), "utf8");
-    expect(source).not.toContain("cy-live-answer");
+    expect(source).not.toContain("ff-live-answer");
     expect(source).not.toContain("LiveAnswerTail");
     expect(source).not.toContain("generatingAnswer");
-    expect(stylesheet).not.toContain("cy-live-answer");
-    expect(stylesheet).not.toContain("cy-live-answer-breathe");
+    expect(stylesheet).not.toContain("ff-live-answer");
+    expect(stylesheet).not.toContain("ff-live-answer-breathe");
   });
 
   it("separates assistant Markdown headings from the following body text", () => {
     const stylesheet = readFileSync(resolve(__dirname, "ChatMessageList.css"), "utf8");
 
-    expect(stylesheet).toMatch(/\.cy-message--assistant \.cy-message-markdown h1 \{[^}]*padding-bottom:\s*8px;[^}]*border-bottom:\s*1px solid/s);
-    expect(stylesheet).toMatch(/\.cy-message--assistant \.cy-message-markdown h1 \{[^}]*margin:\s*26px 0 16px;/s);
-    expect(stylesheet).toMatch(/\.cy-message--assistant \.cy-message-markdown h2 \{[^}]*margin:\s*24px 0 10px;/s);
-    expect(stylesheet).toMatch(/\.cy-message--assistant \.cy-message-markdown h3 \{[^}]*margin:\s*20px 0 8px;/s);
+    expect(stylesheet).toMatch(/\.ff-message--assistant \.ff-message-markdown h1 \{[^}]*padding-bottom:\s*8px;[^}]*border-bottom:\s*1px solid/s);
+    expect(stylesheet).toMatch(/\.ff-message--assistant \.ff-message-markdown h1 \{[^}]*margin:\s*26px 0 16px;/s);
+    expect(stylesheet).toMatch(/\.ff-message--assistant \.ff-message-markdown h2 \{[^}]*margin:\s*24px 0 10px;/s);
+    expect(stylesheet).toMatch(/\.ff-message--assistant \.ff-message-markdown h3 \{[^}]*margin:\s*20px 0 8px;/s);
   });
 
   it("hides the run activity card at terminal when the run produced no process content", () => {
@@ -173,10 +173,10 @@ describe("formal answer visibility", () => {
     // 头像钉在活动卡（运行块头部），一次运行只出现一次
     expect(activityItem?.avatar).toBeTruthy();
     // 运行块内的正文隐藏自己的头像（占位保留，左边缘与时间线内容对齐）
-    expect(assistantItem?.rootClassName).toContain("cy-message--assistant-run");
+    expect(assistantItem?.rootClassName).toContain("ff-message--assistant-run");
     const stylesheet = readFileSync(resolve(__dirname, "ChatMessageList.css"), "utf8");
-    expect(stylesheet).toMatch(/\.cy-message--assistant-run \.ant-bubble-avatar \{\s*visibility: hidden/);
-    expect(stylesheet).not.toMatch(/\.cy-message--activity \.ant-bubble-avatar \{\s*display: none/);
+    expect(stylesheet).toMatch(/\.ff-message--assistant-run \.ant-bubble-avatar \{\s*visibility: hidden/);
+    expect(stylesheet).not.toMatch(/\.ff-message--activity \.ant-bubble-avatar \{\s*display: none/);
   });
 
   it("keeps the assistant avatar when the run activity card is not rendered", () => {
@@ -189,7 +189,7 @@ describe("formal answer visibility", () => {
     };
     const [assistantItem] = createMessageItems([message], []);
     // 活动卡未渲染（无过程内容的终态）：正文保留自己的头像，不出现空占位
-    expect(assistantItem?.rootClassName ?? "").not.toContain("cy-message--assistant-run");
+    expect(assistantItem?.rootClassName ?? "").not.toContain("ff-message--assistant-run");
   });
 
   it("renders a flat continuous timeline while the run is live, without per-round fold bars", () => {
@@ -209,7 +209,7 @@ describe("formal answer visibility", () => {
       interrupted: false,
     }));
 
-    expect(html).not.toContain("cy-agent-round");
+    expect(html).not.toContain("ff-agent-round");
     expect(html).toContain("思考目录结构");
     expect(html).toContain("先看项目结构");
     expect(html).toContain("查找 IPC 入口");
@@ -290,11 +290,11 @@ describe("review panel visibility", () => {
     const reviewItem = createMessageItems([message], []).find((item) => item.role === "review");
     expect(reviewItem?.extraInfo?.runId).toBe("run-abc-123");
     // Review 面板属于运行块：头像占位隐藏，面板与正文/时间线内容左对齐
-    expect(reviewItem?.rootClassName).toContain("cy-message--review-run");
+    expect(reviewItem?.rootClassName).toContain("ff-message--review-run");
     expect(reviewItem?.avatar).toBeTruthy();
     const stylesheet = readFileSync(resolve(__dirname, "ChatMessageList.css"), "utf8");
-    expect(stylesheet).toMatch(/\.cy-message--review-run \.ant-bubble-avatar \{\s*display: block;\s*visibility: hidden/);
-    expect(stylesheet).toMatch(/\.cy-message--review-run \.ant-bubble-body \{[\s\S]*width: calc\(100% - 54px\)/);
+    expect(stylesheet).toMatch(/\.ff-message--review-run \.ant-bubble-avatar \{\s*display: block;\s*visibility: hidden/);
+    expect(stylesheet).toMatch(/\.ff-message--review-run \.ant-bubble-body \{[\s\S]*width: calc\(100% - 54px\)/);
   });
 
   it("does not append review bubble while streaming", () => {
@@ -344,10 +344,10 @@ describe("function-calling round presentation", () => {
       interrupted: false,
     }));
 
-    expect(html.match(/class="cy-agent-round(?: is-(?:running|complete))?"/g)).toHaveLength(2);
-    expect(html).not.toContain("cy-agent-round__art-image");
-    expect(html).not.toContain("cy-agent-round__status");
-    expect(html).toContain("cy-reasoning-status-art is-thinking");
+    expect(html.match(/class="ff-agent-round(?: is-(?:running|complete))?"/g)).toHaveLength(2);
+    expect(html).not.toContain("ff-agent-round__art-image");
+    expect(html).not.toContain("ff-agent-round__status");
+    expect(html).toContain("ff-reasoning-status-art is-thinking");
     expect(html).not.toContain("status-moods");
     expect(html).toContain("流萤已完成 · 浏览 1 个目录");
     expect(html).toContain("流萤正在读取文件");
@@ -370,7 +370,7 @@ describe("function-calling round presentation", () => {
     }));
 
     expect(html).toContain("流萤已完成");
-    expect(html).toContain('class="cy-agent-round__files"');
+    expect(html).toContain('class="ff-agent-round__files"');
     expect(html).toContain("1 个文件已被改动");
   });
 
@@ -383,7 +383,7 @@ describe("function-calling round presentation", () => {
       tools: [],
       interrupted: false,
     }));
-    expect(html).not.toContain("cy-agent-round");
+    expect(html).not.toContain("ff-agent-round");
   });
 
   it("keeps function-calling narration visible after its round collapses", () => {

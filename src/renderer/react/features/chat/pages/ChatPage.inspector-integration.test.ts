@@ -62,7 +62,7 @@ function input(node: HTMLInputElement | HTMLTextAreaElement, value: string) {
   Object.getOwnPropertyDescriptor(prototype, "value")!.set!.call(node, value);
   node.dispatchEvent(new Event("input", { bubbles: true }));
 }
-const inspector = () => host.querySelector<HTMLElement>(".cy-right-inspector");
+const inspector = () => host.querySelector<HTMLElement>(".ff-right-inspector");
 const panelWidth = () => Number(host.querySelector<HTMLElement>('[data-panel][id="inspector"]')?.style.flexGrow);
 
 beforeEach(async () => {
@@ -122,7 +122,7 @@ it("preserves browser, composer and resized width over hide/show and close/reope
   const address = inspector()!.querySelector<HTMLInputElement>("input")!;
   expect(address.value).toBe(browserPage.url);
   await act(async () => input(address, "https://example.invalid/unsent-address"));
-  const separator = host.querySelector<HTMLElement>(".cy-dock-separator")!;
+  const separator = host.querySelector<HTMLElement>(".ff-dock-separator")!;
   await act(async () => separator.dispatchEvent(new KeyboardEvent("keydown", { key: "ArrowLeft", bubbles: true })));
   const width = panelWidth();
   expect(width).toBeGreaterThan(40);
@@ -142,7 +142,7 @@ it("preserves browser, composer and resized width over hide/show and close/reope
   expect(commands.some(command => command.kind === "close")).toBe(false); expect(revoked).toBe(0);
   for (let repeat = 0; repeat < 2; repeat++) {
     // A last-tab close/reopen must not rely on another ResizeObserver delivery.
-    await act(async () => inspector()!.querySelector<HTMLElement>(".cy-right-inspector__close")!.click());
+    await act(async () => inspector()!.querySelector<HTMLElement>(".ff-right-inspector__close")!.click());
     expect(inspector()).toBeNull();
     await act(async () => button("打开浏览器").click());
     await measuredUpdate();
@@ -158,15 +158,15 @@ it("keeps registration current across compact orientation changes and Work mode 
   await click(button("文件"));
   const before = inspector();
   dockWidth = 500; await measuredUpdate();
-  expect(host.querySelector(".cy-page-dock")?.classList.contains("is-compact")).toBe(true);
+  expect(host.querySelector(".ff-page-dock")?.classList.contains("is-compact")).toBe(true);
   await click(button("展开/收起右侧面板")); expect(panelWidth()).toBe(0);
   dockWidth = 1000; await measuredUpdate();
   await click(button("展开/收起右侧面板")); expect(panelWidth()).toBeGreaterThan(0);
   expect(inspector()).toBe(before);
-  await click(inspector()!.querySelector<HTMLElement>(".cy-right-inspector__close")!);
-  await click(host.querySelector<HTMLElement>(".cy-mode-menu__trigger")!);
+  await click(inspector()!.querySelector<HTMLElement>(".ff-right-inspector__close")!);
+  await click(host.querySelector<HTMLElement>(".ff-mode-menu__trigger")!);
   await click([...document.querySelectorAll<HTMLElement>('[role="menuitemradio"]')].find(node => node.textContent?.includes("Work"))!);
-  expect(host.querySelector(".cy-mode-menu__trigger")?.textContent).toContain("Work");
+  expect(host.querySelector(".ff-mode-menu__trigger")?.textContent).toContain("Work");
   expect(inspector()?.hidden).toBe(false); expect(panelWidth()).toBeGreaterThan(0);
   expect(fetch).not.toHaveBeenCalled();
 });
@@ -185,7 +185,7 @@ it("treats a restored zero-size inspector as registered and expands it on explic
 
 it("does not expand a user-collapsed panel merely because the numeric layout changed", async () => {
   await click(button("文件"));
-  const separator = host.querySelector<HTMLElement>(".cy-dock-separator")!;
+  const separator = host.querySelector<HTMLElement>(".ff-dock-separator")!;
   await act(async () => separator.dispatchEvent(new KeyboardEvent("keydown", { key: "End", bubbles: true })));
   await measuredUpdate();
   expect(panelWidth()).toBe(0);
@@ -215,7 +215,7 @@ it("mounts an initially hidden browser inspector collapsed and reveals the same 
 });
 
 it("persists a keyboard inspector resize immediately after a sidebar pointercancel", async () => {
-  const left = host.querySelector<HTMLElement>('.cy-sidebar-resizer')!;
+  const left = host.querySelector<HTMLElement>('.ff-sidebar-resizer')!;
   const pointer = (type: string, x: number) => Object.assign(new Event(type, { bubbles: true, cancelable: true }), {
     pointerId: 21, pointerType: "mouse", clientX: x, clientY: 90, button: 0,
   });
@@ -225,7 +225,7 @@ it("persists a keyboard inspector resize immediately after a sidebar pointercanc
   await click(button("打开浏览器"));
   const key = "react-resizable-panels:firefly.chat-page-dock:chat:inspector";
   expect(localStorage.getItem(key)).toBeNull();
-  const separator = host.querySelector<HTMLElement>(".cy-dock-separator")!;
+  const separator = host.querySelector<HTMLElement>(".ff-dock-separator")!;
   await act(async () => separator.dispatchEvent(new KeyboardEvent("keydown", { key: "ArrowLeft", bubbles: true, cancelable: true })));
   const width = panelWidth();
   expect(width).toBeGreaterThan(40);

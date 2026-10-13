@@ -73,19 +73,19 @@ function ProjectInfoCard({
 }) {
   const { t } = useTranslation();
   return (
-    <section className="cy-project-card" aria-label={t("sidebar.projectInfoAria", { name: project.name })}>
-      <div className="cy-project-card__name">
+    <section className="ff-project-card" aria-label={t("sidebar.projectInfoAria", { name: project.name })}>
+      <div className="ff-project-card__name">
         <ProjectIcon mode={mode} />
         <span>{project.name}</span>
       </div>
-      <dl className="cy-project-card__details">
+      <dl className="ff-project-card__details">
         <div><dt>{t("sidebar.projectNameLabel")}</dt><dd>{project.name}</dd></div>
         <div><dt>{t("sidebar.conversationCountLabel")}</dt><dd>{project.conversationCount}</dd></div>
         <div><dt>{t("sidebar.projectPathLabel")}</dt><dd title={project.workspaceRoot}>{project.workspaceRoot ?? t("sidebar.noProjectPath")}</dd></div>
         <div><dt>{t("sidebar.lastModifiedLabel")}</dt><dd>{formatModifiedTime(project.updatedAt)}</dd></div>
       </dl>
       <button
-        className="cy-project-card__open"
+        className="ff-project-card__open"
         type="button"
         disabled={!project.workspaceRoot}
         onClick={(event) => {
@@ -206,7 +206,7 @@ export const ConversationSidebar = memo(function ConversationSidebar({
             <Input
               ref={renameInputRef}
               size="small"
-              className="cy-session-rename-input"
+              className="ff-session-rename-input"
               value={editing.value}
               onChange={(e) => setEditing({ ...editing, value: e.target.value })}
               onPressEnter={() => {
@@ -225,9 +225,9 @@ export const ConversationSidebar = memo(function ConversationSidebar({
               onClick={(e) => e.stopPropagation()}
             />
           ) : (
-            <span className="cy-session-label">
-              <span className="cy-session-label__title" title={session.title || t("sidebar.defaultSessionTitle")}>{session.title || t("sidebar.defaultSessionTitle")}</span>
-              {session.pinned && <PushpinOutlined className="cy-session-label__pin" />}
+            <span className="ff-session-label">
+              <span className="ff-session-label__title" title={session.title || t("sidebar.defaultSessionTitle")}>{session.title || t("sidebar.defaultSessionTitle")}</span>
+              {session.pinned && <PushpinOutlined className="ff-session-label__pin" />}
             </span>
           ),
         group: groupBySession.get(session.id) ?? (supportsProjects ? session.workspaceRoot ?? `unbound:${session.id}` : session.pinned ? "pinned" : "recent"),
@@ -292,7 +292,7 @@ export const ConversationSidebar = memo(function ConversationSidebar({
     if (!contextMenu.open) return;
     function onPointerDown(event: MouseEvent) {
       const target = event.target as HTMLElement;
-      if (target.closest(".cy-session-context-menu")) return;
+      if (target.closest(".ff-session-context-menu")) return;
       closeContextMenu();
     }
     function onKeyDown(event: KeyboardEvent) {
@@ -307,14 +307,14 @@ export const ConversationSidebar = memo(function ConversationSidebar({
   }, [contextMenu.open]);
 
   return (
-    <nav className="cy-conversation-sidebar" aria-label={supportsProjects ? t("sidebar.projectsAndConversationsAria") : t("sidebar.conversationListAria")}>
+    <nav className="ff-conversation-sidebar" aria-label={supportsProjects ? t("sidebar.projectsAndConversationsAria") : t("sidebar.conversationListAria")}>
       {layout.snapshot && projection
         ? <SidebarLayoutControls mode={mode} snapshot={layout.snapshot} groups={projection.groups} title={sectionTitle}
           projectIds={sessions.map(session => layout.snapshot!.sessionProjectIds[session.id]).filter((id): id is string => !!id)} pending={layout.pending} mutate={layout.mutate} />
-        : <div className="cy-conversation-sidebar__title">{sectionTitle}</div>}
-      {layout.error && <p className="cy-sidebar-layout__error" role="alert">{t(layout.error === "conflict" ? "sidebar.layoutConflict" : "sidebar.layoutFailed")}</p>}
+        : <div className="ff-conversation-sidebar__title">{sectionTitle}</div>}
+      {layout.error && <p className="ff-sidebar-layout__error" role="alert">{t(layout.error === "conflict" ? "sidebar.layoutConflict" : "sidebar.layoutFailed")}</p>}
       {items.length === 0 ? (
-        <div className="cy-conversation-sidebar__empty">
+        <div className="ff-conversation-sidebar__empty">
           {listStatus === "loading"
             ? t("sidebar.listLoading")
             : listStatus === "error"
@@ -324,7 +324,7 @@ export const ConversationSidebar = memo(function ConversationSidebar({
       ) : (
         <>
           <div
-            className="cy-conversation-list-wrapper"
+            className="ff-conversation-list-wrapper"
             onContextMenu={(e) => {
               const item = (e.target as HTMLElement).closest("[data-session-id]");
               const sessionId = item?.getAttribute("data-session-id");
@@ -333,7 +333,7 @@ export const ConversationSidebar = memo(function ConversationSidebar({
             }}
           >
             <Conversations
-              rootClassName={flat ? "cy-conversation-list cy-conversation-list--flat" : "cy-conversation-list"}
+              rootClassName={flat ? "ff-conversation-list ff-conversation-list--flat" : "ff-conversation-list"}
               items={items}
               activeKey={activeSessionId}
               onActiveChange={(key) => {
@@ -374,7 +374,7 @@ export const ConversationSidebar = memo(function ConversationSidebar({
                       placement="rightTop"
                       mouseEnterDelay={0.25}
                       mouseLeaveDelay={0.12}
-                      overlayClassName="cy-project-popover"
+                      overlayClassName="ff-project-popover"
                       getPopupContainer={(trigger) => trigger.closest<HTMLElement>("#firefly-context-sidebar") ?? trigger.parentElement!}
                       content={(
                         <ProjectInfoCard
@@ -384,10 +384,10 @@ export const ConversationSidebar = memo(function ConversationSidebar({
                         />
                       )}
                     >
-                      <span className="cy-conversation-project">
+                      <span className="ff-conversation-project">
                         <ProjectIcon mode={mode} />
-                        <span className="cy-conversation-project__name">{project.name}</span>
-                        <span className="cy-conversation-project__count">{project.conversationCount}</span>
+                        <span className="ff-conversation-project__name">{project.name}</span>
+                        <span className="ff-conversation-project__count">{project.conversationCount}</span>
                       </span>
                     </Popover>
                   );
@@ -397,7 +397,7 @@ export const ConversationSidebar = memo(function ConversationSidebar({
           </div>
           {contextMenu.open && (
             <div
-              className="cy-session-context-menu"
+              className="ff-session-context-menu"
               style={{
                 position: "fixed",
                 left: contextMenu.x,

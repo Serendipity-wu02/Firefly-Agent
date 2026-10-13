@@ -19,12 +19,12 @@ modes:
 
 | 用途 | 色值 | 来源 |
 | --- | --- | --- |
-| 卡片背景 | `#ffffff` | --cy-bg-workspace |
-| 次级表面 | `#e9f6ef` | --cy-bg-hover |
-| 强调主色 | `#2d7a5f` | --cy-accent |
-| 主文字 | `#183628` | --cy-text |
-| 次要文字 | `#456858` | --cy-text-muted |
-| 边框 | `#F2F2F2` | --cy-border |
+| 卡片背景 | `#ffffff` | --ff-bg-workspace |
+| 次级表面 | `#e9f6ef` | --ff-bg-hover |
+| 强调主色 | `#2d7a5f` | --ff-accent |
+| 主文字 | `#183628` | --ff-text |
+| 次要文字 | `#456858` | --ff-text-muted |
+| 边框 | `#F2F2F2` | --ff-border |
 
 圆角：卡片 12px、节点 8px。字号：正文 ≥14px、说明文字 ≥12px——字号是下限，不许缩小硬塞。
 

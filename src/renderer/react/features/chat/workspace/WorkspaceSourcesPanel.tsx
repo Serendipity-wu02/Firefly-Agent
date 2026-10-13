@@ -34,15 +34,15 @@ export function WorkspaceSourcesPanel({ rows, labels }: {
   };
   const refLabels = { file_read: labels.fileRead, file_change: labels.fileChange, web_search: labels.webSearch };
   return (
-    <section className="cy-workspace-sources" aria-label={labels.panel}>
-      <p className="cy-workspace-sources__pending">{labels.pending}</p>
-      {rows.length === 0 ? <p>{labels.empty}</p> : <ul className="cy-workspace-sources__rows">
-        {rows.map((row) => <li className="cy-workspace-sources__row" key={row.id}>
-          <div className="cy-workspace-sources__heading">
+    <section className="ff-workspace-sources" aria-label={labels.panel}>
+      <p className="ff-workspace-sources__pending">{labels.pending}</p>
+      {rows.length === 0 ? <p>{labels.empty}</p> : <ul className="ff-workspace-sources__rows">
+        {rows.map((row) => <li className="ff-workspace-sources__row" key={row.id}>
+          <div className="ff-workspace-sources__heading">
             <strong>{row.toolLabel}</strong>
-            <span className={`cy-workspace-sources__outcome is-${row.outcome}`}>{outcomeLabels[row.outcome]}</span>
+            <span className={`ff-workspace-sources__outcome is-${row.outcome}`}>{outcomeLabels[row.outcome]}</span>
           </div>
-          {row.refs.length === 0 ? <p>{labels.empty}</p> : <ul className="cy-workspace-sources__refs">
+          {row.refs.length === 0 ? <p>{labels.empty}</p> : <ul className="ff-workspace-sources__refs">
             {row.refs.map((ref, index) => <li key={`${ref.kind}:${index}`}>
               <span>{refLabels[ref.kind]}</span><code>{ref.display}</code>
             </li>)}

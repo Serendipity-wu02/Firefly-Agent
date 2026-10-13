@@ -60,17 +60,17 @@ export function ReviewDiffContent({
   const file = snapshot?.files[fileIndex];
 
   return (
-    <div className="cy-review-diff-content">
-      <div className="cy-review-inspector__file-title" title={file?.newPath ?? ""}>
+    <div className="ff-review-diff-content">
+      <div className="ff-review-inspector__file-title" title={file?.newPath ?? ""}>
         {file && (
-          <span className={`cy-review-inspector__kind ${KIND_CLASS[file.kind]}`}>
+          <span className={`ff-review-inspector__kind ${KIND_CLASS[file.kind]}`}>
             {t(KIND_LABEL_KEYS[file.kind])}
           </span>
         )}
-        <span className="cy-review-inspector__title-text">{file?.newPath ?? t("common.loading")}</span>
+        <span className="ff-review-inspector__title-text">{file?.newPath ?? t("common.loading")}</span>
       </div>
-      <div className="cy-review-inspector__body">
-        {!file && <div className="cy-review-inspector__loading">{t("common.loading")}</div>}
+      <div className="ff-review-inspector__body">
+        {!file && <div className="ff-review-inspector__loading">{t("common.loading")}</div>}
         {file && <DiffView file={file} />}
       </div>
     </div>
@@ -81,20 +81,20 @@ function DiffView({ file }: { file: ReviewFileChange }) {
   const { t } = useTranslation();
   if (file.kind === "binary" || file.kind === "large-text") {
     return (
-      <div className="cy-review-inspector__meta">
-        <div className="cy-review-inspector__meta-info">
-          <span className={`cy-review-inspector__kind ${KIND_CLASS[file.kind]}`}>{t(KIND_LABEL_KEYS[file.kind])}</span>
+      <div className="ff-review-inspector__meta">
+        <div className="ff-review-inspector__meta-info">
+          <span className={`ff-review-inspector__kind ${KIND_CLASS[file.kind]}`}>{t(KIND_LABEL_KEYS[file.kind])}</span>
           {file.before && (
-            <span className="cy-review-inspector__meta-size">
+            <span className="ff-review-inspector__meta-size">
               {formatSize(file.before.size)}
               {file.after ? ` → ${formatSize(file.after.size)}` : ""}
             </span>
           )}
           {!file.before && file.after && (
-            <span className="cy-review-inspector__meta-size">{formatSize(file.after.size)}</span>
+            <span className="ff-review-inspector__meta-size">{formatSize(file.after.size)}</span>
           )}
         </div>
-        <div className="cy-review-inspector__meta-hint">
+        <div className="ff-review-inspector__meta-hint">
           {file.kind === "binary" ? t("review.binaryHint") : t("review.largeTextHint")}
         </div>
       </div>
@@ -103,8 +103,8 @@ function DiffView({ file }: { file: ReviewFileChange }) {
 
   if (!file.hunks || file.hunks.length === 0) {
     return (
-      <div className="cy-review-inspector__meta">
-        <div className="cy-review-inspector__meta-hint">
+      <div className="ff-review-inspector__meta">
+        <div className="ff-review-inspector__meta-hint">
           {file.kind === "renamed" ? t("review.renamedHint") : t("review.noDiffHint")}
         </div>
       </div>
@@ -112,11 +112,11 @@ function DiffView({ file }: { file: ReviewFileChange }) {
   }
 
   return (
-    <div className="cy-review-inspector__diff-content">
-      <div className="cy-review-inspector__diff-lines">
+    <div className="ff-review-inspector__diff-content">
+      <div className="ff-review-inspector__diff-lines">
         {file.hunks.map((hunk, hunkIndex) => (
-          <div key={hunkIndex} className="cy-review-inspector__hunk">
-            <div className="cy-review-inspector__hunk-header">
+          <div key={hunkIndex} className="ff-review-inspector__hunk">
+            <div className="ff-review-inspector__hunk-header">
               @@ -{hunk.oldStart},{hunk.oldLines} +{hunk.newStart},{hunk.newLines} @@
             </div>
             {hunk.lines.map((line, lineIndex) => (
@@ -133,11 +133,11 @@ function DiffLine({ line }: { line: ReviewLine }) {
   const lineClass = line.type === "add" ? "is-add" : line.type === "remove" ? "is-remove" : "is-context";
   const marker = line.type === "add" ? "+" : line.type === "remove" ? "−" : " ";
   return (
-    <div className={`cy-review-inspector__line ${lineClass}`}>
-      <span className="cy-review-inspector__line-old">{line.oldLine ?? ""}</span>
-      <span className="cy-review-inspector__line-new">{line.newLine ?? ""}</span>
-      <span className="cy-review-inspector__line-marker" aria-hidden="true">{marker}</span>
-      <span className="cy-review-inspector__line-text">{line.text || " "}</span>
+    <div className={`ff-review-inspector__line ${lineClass}`}>
+      <span className="ff-review-inspector__line-old">{line.oldLine ?? ""}</span>
+      <span className="ff-review-inspector__line-new">{line.newLine ?? ""}</span>
+      <span className="ff-review-inspector__line-marker" aria-hidden="true">{marker}</span>
+      <span className="ff-review-inspector__line-text">{line.text || " "}</span>
     </div>
   );
 }

@@ -101,8 +101,8 @@ function ToolIcon({ toolId }: { toolId: string }) {
     <span
       className="tool-card__icon"
       style={{
-        background: "var(--cy-bg-page, #f5f5f5)",
-        color: "var(--cy-text-muted, #6e6e73)",
+        background: "var(--ff-bg-page, #f5f5f5)",
+        color: "var(--ff-text-muted, #6e6e73)",
       }}
     >
       {TOOL_ICON_SVGS[toolId] ?? <PlaceholderIcon />}

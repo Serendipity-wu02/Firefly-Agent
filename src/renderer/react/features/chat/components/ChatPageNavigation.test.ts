@@ -89,7 +89,7 @@ describe("ChatPageNavigation", () => {
     }));
 
     expect(html).toContain("plugin-button:true");
-    expect(html).toContain("cy-page-titlebar");
+    expect(html).toContain("ff-page-titlebar");
     expect(html).toContain("mode-menu:sidebar");
     expect(html).toContain("conversation-sidebar:error");
   });
