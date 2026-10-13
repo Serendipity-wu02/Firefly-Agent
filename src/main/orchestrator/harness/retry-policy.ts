@@ -39,7 +39,7 @@ export function decideRetry(
       if (category === "transient" || category === "timeout" || category === "rate_limited") {
         return "retry";
       }
-      // unknown 最多 1 次重试（保守）
+      // read_only 的部分失败最多重试 1 次。
       if (category === "partial_failure") return "retry";
       // not_found / permission_denied / invalid_arguments / semantic_failure 不重试
       return "no_retry";
@@ -70,6 +70,9 @@ export function getRetryParams(category: ToolErrorCategory): RetryParams {
 
     case "rate_limited":
       return { maxRetries: 2, backoffMs: [2000, 5000] };
+
+    case "partial_failure":
+      return { maxRetries: 1, backoffMs: [500] };
 
     default:
       return { maxRetries: 0, backoffMs: [] };

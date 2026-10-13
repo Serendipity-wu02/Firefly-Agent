@@ -17,7 +17,7 @@
 import type { ChatMessage, ToolCall } from "../vendors/types";
 import type { ToolCallResult } from "../types";
 import { TranscriptWriteError } from "../transcript-sink";
-import type { HarnessToolFinishedEvent, SideEffectKind, ToolCallOutcome, ToolObservation } from "./types";
+import type { HarnessToolFinishedEvent, HarnessToolLifecycleEvent, SideEffectKind, ToolCallOutcome, ToolObservation } from "./types";
 import type { ToolRiskLevel } from "../../permission-policy";
 import { parseToolCallArgs, toolCallFingerprint } from "./types";
 import { dispatchToolCall, persistToolDispatchResult, type ToolDispatchResult } from "./tool-dispatcher";
@@ -69,13 +69,15 @@ export async function runToolRound(run: HarnessRun, toolCalls: ToolCall[]): Prom
   const { input } = run;
   // The canonical assistant declaration is already durable. Persist every planned
   // call before approval or queuing so a crash cannot mistake waiting for execution.
-  for (const call of toolCalls) {
+  const planned: (HarnessToolLifecycleEvent & { status: "planned" })[] = toolCalls.map(call => {
     let toolSideEffect: SideEffectKind = "non_idempotent_side_effect";
     try {
       toolSideEffect = resolveSideEffect(input.tools.find(tool => tool.id === call.name), parseToolCallArgs(call));
     } catch { /* Unknown or failing classifiers remain conservative. */ }
-    input.onToolLifecycle?.({ toolCallId: call.id, toolName: call.name, toolSideEffect, status: "planned" });
-  }
+    return { toolCallId: call.id, toolName: call.name, toolSideEffect, status: "planned" };
+  });
+  if (input.onToolsPlanned) input.onToolsPlanned(planned);
+  else for (const event of planned) input.onToolLifecycle?.(event);
   const exclusiveToolNames = input.includeInteractiveTools === false
     ? new Set<string>()
     : new Set(["ask_user", "confirm_uncertain_effect"]);
@@ -338,19 +340,19 @@ async function executeToolCallWithRetry(run: HarnessRun, execution: ToolCallExec
     }
   };
   let result = await dispatch();
-  if (!input.signal?.aborted && result.outcome === "failure") {
+  let retryLimit = Number.POSITIVE_INFINITY;
+  for (let attempt = 0; !input.signal?.aborted && result.outcome === "failure"; attempt++) {
     const category = result.category ?? classifyToolResultError(
       result.rawResult ?? { toolId: call.name, args: {}, output: "", status: "failed" } as ToolCallResult,
     );
-    if (decideRetry(category, toolSideEffect) === "retry") {
-      const retryParams = getRetryParams(category);
-      for (let attempt = 0; attempt < retryParams.maxRetries; attempt++) {
-        await sleepWithJitter(retryParams.backoffMs[attempt] ?? 1000, input.signal);
-        if (input.signal?.aborted) break;
-        result = await dispatch();
-        if (result.outcome !== "failure") break;
-      }
-    }
+    if (decideRetry(category, toolSideEffect) !== "retry") break;
+    const retryParams = getRetryParams(category);
+    // Reclassify every result, but never replenish the invocation's retry budget.
+    retryLimit = Math.min(retryLimit, retryParams.maxRetries);
+    if (attempt >= retryLimit) break;
+    await sleepWithJitter(retryParams.backoffMs[attempt] ?? 1000, input.signal);
+    if (input.signal?.aborted) break;
+    result = await dispatch();
   }
   return persistToolDispatchResult(call, result, run.toolDispatchContext);
 }

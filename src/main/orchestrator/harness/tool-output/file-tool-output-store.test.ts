@@ -2,7 +2,7 @@ import { createHash } from "node:crypto";
 import { mkdtemp, mkdir, readFile, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import path from "node:path";
-import { afterEach, describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import {
   FileToolOutputStore,
   ToolOutputCorruptError,
@@ -35,6 +35,45 @@ afterEach(async () => {
 });
 
 describe("FileToolOutputStore", () => {
+  it("paginates large results without allocating a code-point array for the entire output", async () => {
+    const { store } = await makeStore();
+    const output = "😀x".repeat(40_000);
+    const ref = await store.put(input(output));
+    const arrayFrom = Array.from;
+    const arraySpy = vi.spyOn(Array, "from").mockImplementation(((value: unknown, ...args: unknown[]) => {
+      if (value === output) throw new Error("full-result code-point array allocated");
+      return Reflect.apply(arrayFrom, Array, [value, ...args]);
+    }) as typeof Array.from);
+    try {
+      await expect(store.read({ conversationId: "conversation-a", resultRef: ref.resultRef, offset: 79_997, length: 3 }))
+        .resolves.toMatchObject({ content: "x😀x", totalCodePoints: 80_000 });
+    } finally {
+      arraySpy.mockRestore();
+    }
+  });
+
+  it.each([
+    { offset: 0, length: 3, content: "A😀B" },
+    { offset: 1, length: 3, content: "😀B𠮷" },
+    { offset: 4, length: 8, content: "C" },
+    { offset: 20, length: 3, content: "" },
+  ])("reads Unicode code-point boundaries at $offset with length $length", async ({ offset, length, content }) => {
+    const { store } = await makeStore();
+    const ref = await store.put(input("A😀B𠮷C"));
+    await expect(store.read({ conversationId: "conversation-a", resultRef: ref.resultRef, offset, length }))
+      .resolves.toMatchObject({ content, totalCodePoints: 5 });
+  });
+
+  it("still detects same-size tampering after a successful page read", async () => {
+    const { root, store } = await makeStore();
+    const ref = await store.put(input("original"));
+    const request = { conversationId: "conversation-a", resultRef: ref.resultRef, offset: 0, length: 8 };
+    await expect(store.read(request)).resolves.toMatchObject({ content: "original" });
+    const conversationHash = createHash("sha256").update("conversation-a").digest("hex");
+    await writeFile(path.join(root, "firefly-runs", "tool-results", conversationHash, "records", ref.recordId, "output.txt"), "tampered", "utf8");
+    await expect(store.read(request)).rejects.toBeInstanceOf(ToolOutputCorruptError);
+  });
+
   it("persists owner scope across reopening and rejects replay under another owner", async () => {
     const { root, store } = await makeStore();
     const owned = { ...input(), ownerSessionId: "agent-a" };

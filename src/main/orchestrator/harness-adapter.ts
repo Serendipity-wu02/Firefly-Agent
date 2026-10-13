@@ -82,7 +82,7 @@ export async function runHarnessWithAdapter(
     tools,
     vendorConfig,
     config: {
-      maxParallelToolCalls: options.maxParallelToolCalls,
+      ...(options.maxParallelToolCalls !== undefined ? { maxParallelToolCalls: options.maxParallelToolCalls } : {}),
       // 缺省走 Harness 默认值（200 轮 / 2 小时）；设置里调成 0 表示不限。
       ...(options.maxToolRounds !== undefined ? { maxRounds: options.maxToolRounds } : {}),
       ...(options.runTimeoutMs !== undefined ? { totalTimeoutMs: options.runTimeoutMs } : {}),
@@ -101,7 +101,14 @@ export async function runHarnessWithAdapter(
         state: checkpoint.state,
         toolOutputs: checkpoint.toolOutputs,
         rounds: checkpoint.rounds,
+        cache: checkpoint.cache,
       });
+    },
+    onToolsPlanned: (events) => {
+      runStore.recordTools(runId, events.map(event => ({
+        toolCallId: event.toolCallId, toolName: event.toolName,
+        sideEffect: event.toolSideEffect, status: event.status,
+      })));
     },
     onToolLifecycle: (event) => {
       runStore.recordTool(runId, {

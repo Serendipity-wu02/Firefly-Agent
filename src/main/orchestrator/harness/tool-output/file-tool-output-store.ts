@@ -55,6 +55,27 @@ function sha256(value: string): string {
   return createHash("sha256").update(value, "utf8").digest("hex");
 }
 
+/** Keep Unicode code-point coordinates without allocating an array for the full result. */
+function countCodePoints(value: string): number {
+  let count = 0;
+  for (let index = 0; index < value.length; count++) {
+    index += value.codePointAt(index)! > 0xffff ? 2 : 1;
+  }
+  return count;
+}
+
+function sliceCodePoints(value: string, offset: number, length: number): string {
+  let start = 0;
+  for (let point = 0; point < offset && start < value.length; point++) {
+    start += value.codePointAt(start)! > 0xffff ? 2 : 1;
+  }
+  let end = start;
+  for (let point = 0; point < length && end < value.length; point++) {
+    end += value.codePointAt(end)! > 0xffff ? 2 : 1;
+  }
+  return value.slice(start, end);
+}
+
 function parseResultRef(resultRef: string): string {
   const recordId = resultRef.startsWith(RESULT_REF_PREFIX)
     ? resultRef.slice(RESULT_REF_PREFIX.length)
@@ -157,7 +178,7 @@ export class FileToolOutputStore implements ToolOutputStore {
         outcome: input.outcome,
         createdAt: this.now(),
         bytes: Buffer.byteLength(input.output, "utf8"),
-        codePoints: Array.from(input.output).length,
+        codePoints: countCodePoints(input.output),
         truncatedForModel: input.truncatedForModel,
         sha256: sha256(input.output),
       };
@@ -178,11 +199,10 @@ export class FileToolOutputStore implements ToolOutputStore {
     const recordId = parseResultRef(input.resultRef);
     const record = await this.readAndValidate(this.recordDir(input.conversationId, recordId), input.conversationId, recordId, input.ownerSessionId);
     if (!record) return null;
-    const points = Array.from(record.output);
     return {
-      content: points.slice(input.offset, input.offset + input.length).join(""),
+      content: sliceCodePoints(record.output, input.offset, input.length),
       offset: input.offset,
-      totalCodePoints: points.length,
+      totalCodePoints: record.meta.codePoints,
       resultRef: input.resultRef,
     };
   }
@@ -273,7 +293,7 @@ export class FileToolOutputStore implements ToolOutputStore {
     }
     if (sha256(output) !== meta.sha256
       || Buffer.byteLength(output, "utf8") !== meta.bytes
-      || Array.from(output).length !== meta.codePoints) {
+      || countCodePoints(output) !== meta.codePoints) {
       throw new ToolOutputCorruptError("工具结果内容校验失败");
     }
     return { meta, output };
