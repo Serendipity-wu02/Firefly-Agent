@@ -1,10 +1,12 @@
-import { describe, expect, it, vi } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import {
   PendingSenderRegistry,
   isSenderAllowed,
   isValidSenderId,
   normalizeSenderIds,
 } from "./sender-gate";
+
+afterEach(() => vi.useRealTimers());
 
 describe("sender gate", () => {
   it("allows only listed senders unless everyone is allowed", () => {
@@ -57,5 +59,35 @@ describe("sender gate", () => {
     const registry = new PendingSenderRegistry();
     registry.record("feishu", "ou_a", "n".repeat(200));
     expect(registry.list("feishu")[0].senderName).toHaveLength(64);
+  });
+
+  it("does not notify again for repeat messages from the same pending sender", () => {
+    vi.useFakeTimers();
+    const registry = new PendingSenderRegistry();
+    const listener = vi.fn();
+    registry.onChange(listener);
+    registry.record("wechat", "a@im.wechat", "A", 1);
+    for (let i = 0; i < 100; i += 1) registry.record("wechat", "a@im.wechat", "A", 2 + i);
+    vi.advanceTimersByTime(2000);
+    expect(listener).toHaveBeenCalledTimes(1);
+    // 时间仍然刷新，列表排序保持最新
+    expect(registry.list("wechat")[0].at).toBe(101);
+    // 昵称变化算实质变化
+    registry.record("wechat", "a@im.wechat", "B", 500);
+    vi.advanceTimersByTime(2000);
+    expect(listener).toHaveBeenCalledTimes(2);
+  });
+
+  it("coalesces a burst of new strangers into at most two notifications per window", () => {
+    vi.useFakeTimers();
+    const registry = new PendingSenderRegistry();
+    const listener = vi.fn();
+    registry.onChange(listener);
+    for (let i = 0; i < 50; i += 1) registry.record("feishu", `ou_${i}`, undefined, i);
+    expect(listener).toHaveBeenCalledTimes(1);
+    vi.advanceTimersByTime(500);
+    expect(listener).toHaveBeenCalledTimes(2);
+    vi.advanceTimersByTime(5000);
+    expect(listener).toHaveBeenCalledTimes(2);
   });
 });

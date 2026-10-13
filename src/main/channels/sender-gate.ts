@@ -41,22 +41,31 @@ export function isSenderAllowed(config: SenderGateConfig, senderId: string): boo
 
 type Listener = (channel: SenderGatedChannel) => void;
 
+/** 同一渠道两次"新增陌生人"通知之间的最短间隔；窗口内的变化合并为窗口结束时的一次通知。 */
+const RECORD_NOTIFY_INTERVAL_MS = 500;
+
 export class PendingSenderRegistry {
   private readonly pending = new Map<SenderGatedChannel, Map<string, PendingSender>>();
   private readonly listeners = new Set<Listener>();
+  private readonly cooldown = new Map<SenderGatedChannel, { timer: NodeJS.Timeout; dirty: boolean }>();
 
-  /** 记录一次被拒的来信；同一发送者只保留一条并刷新时间，超过上限时淘汰最旧的。 */
+  /**
+   * 记录一次被拒的来信。同一发送者只保留一条并刷新时间；重复来信不通知界面，
+   * 只有新增发送者或昵称变化才通知，且按渠道限频，陌生人无法借此刷出无限的状态广播。
+   */
   record(channel: SenderGatedChannel, senderId: string, senderName?: string, at = Date.now()): void {
     if (!isValidSenderId(senderId)) return;
     const bucket = this.pending.get(channel) ?? new Map<string, PendingSender>();
     this.pending.set(channel, bucket);
     const name = senderName?.trim().slice(0, SENDER_NAME_MAX_LENGTH) || undefined;
+    const previous = bucket.get(senderId);
+    const changed = !previous || previous.senderName !== name;
     bucket.delete(senderId);
     bucket.set(senderId, { senderId, senderName: name, at });
     while (bucket.size > MAX_PENDING_PER_CHANNEL) {
       bucket.delete(bucket.keys().next().value!);
     }
-    this.emit(channel);
+    if (changed) this.notifyThrottled(channel);
   }
 
   list(channel: SenderGatedChannel): PendingSender[] {
@@ -71,11 +80,29 @@ export class PendingSenderRegistry {
 
   clear(): void {
     this.pending.clear();
+    for (const { timer } of this.cooldown.values()) clearTimeout(timer);
+    this.cooldown.clear();
   }
 
   onChange(listener: Listener): () => void {
     this.listeners.add(listener);
     return () => this.listeners.delete(listener);
+  }
+
+  private notifyThrottled(channel: SenderGatedChannel): void {
+    const active = this.cooldown.get(channel);
+    if (active) {
+      active.dirty = true;
+      return;
+    }
+    this.emit(channel);
+    const state = { dirty: false, timer: undefined as unknown as NodeJS.Timeout };
+    state.timer = setTimeout(() => {
+      this.cooldown.delete(channel);
+      if (state.dirty) this.notifyThrottled(channel);
+    }, RECORD_NOTIFY_INTERVAL_MS);
+    state.timer.unref?.();
+    this.cooldown.set(channel, state);
   }
 
   private emit(channel: SenderGatedChannel): void {
