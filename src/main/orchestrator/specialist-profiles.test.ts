@@ -34,8 +34,8 @@ describe("production specialist profiles", () => {
 
   it("assigns every distributed Skill exactly once and derives profile Skills from ownership", () => {
     const matrix = buildSkillOwnership(skills);
-    expect(matrix).toHaveLength(45);
-    expect(new Set(matrix.map(entry => entry.skillId)).size).toBe(45);
+    expect(matrix).toHaveLength(56);
+    expect(new Set(matrix.map(entry => entry.skillId)).size).toBe(56);
     expect(matrix.map(entry => entry.skillId).sort()).toEqual(skills.map(skill => skill.id).sort());
     for (const entry of matrix) {
       expect(Object.keys(expected)).toContain(entry.primaryAgent);
@@ -74,55 +74,66 @@ describe("production specialist profiles", () => {
 });
 
 const roleAlignedOwnership = {
-  "as-planning-and-task-breakdown": "strategy-planning",
-  "ecc-plan-canvas": "strategy-planning",
-  "sp-writing-plans": "strategy-planning",
+  "ac-documentation-writer": "knowledge",
+  "ac-prd": "strategy-planning",
   "as-api-and-interface-design": "architecture",
-  "as-spec-driven-development": "architecture",
-  "tob-property-based-testing": "implementation",
-  "as-code-simplification": "implementation",
-  "as-incremental-implementation": "implementation",
-  "ecc-tdd-workflow": "implementation",
-  "as-source-driven-development": "research",
-  "as-doubt-driven-development": "research",
-  "sp-brainstorming": "research",
-  "knowledge-workspace": "knowledge",
-  "as-context-engineering": "knowledge",
-  "ecc-code-tour": "knowledge",
-  "ecc-codebase-onboarding": "knowledge",
-  "self-improving-agent": "knowledge",
   "as-code-review-and-quality": "review",
-  "ecc-ai-regression-testing": "review",
-  "sp-requesting-code-review": "review",
-  "sp-verification-before-completion": "review",
-  "as-security-and-hardening": "security-governance",
-  "ecc-coding-standards": "security-governance",
-  "ecc-security-review": "security-governance",
-  "diagram": "ui-visual",
+  "as-code-simplification": "implementation",
+  "as-context-engineering": "knowledge",
+  "as-debugging-and-error-recovery": "tooling-skills",
+  "as-deprecation-and-migration": "implementation",
+  "as-doubt-driven-development": "research",
   "as-frontend-ui-engineering": "ui-visual",
-  "office-design": "ui-visual",
+  "as-git-workflow-and-versioning": "ops-release",
+  "as-incremental-implementation": "implementation",
+  "as-planning-and-task-breakdown": "strategy-planning",
+  "as-security-and-hardening": "security-governance",
+  "as-source-driven-development": "research",
+  "as-spec-driven-development": "architecture",
+  "as-using-agent-skills": "tooling-skills",
+  "diagram": "ui-visual",
   "document-reader-validation": "documents-data",
   "docx": "documents-data",
-  "pdf": "documents-data",
-  "pptx-generator": "documents-data",
-  "xlsx": "documents-data",
-  "plugin-development": "tooling-skills",
-  "as-using-agent-skills": "tooling-skills",
-  "skill-creator": "tooling-skills",
-  "sp-using-superpowers": "tooling-skills",
-  "as-debugging-and-error-recovery": "tooling-skills",
   "ecc-agent-introspection-debugging": "tooling-skills",
-  "sp-systematic-debugging": "tooling-skills",
+  "ecc-agent-security-hardening": "security-governance",
+  "ecc-ai-regression-testing": "review",
+  "ecc-code-tour": "knowledge",
+  "ecc-codebase-onboarding": "knowledge",
+  "ecc-coding-standards": "security-governance",
+  "ecc-plan-canvas": "strategy-planning",
   "ecc-production-audit": "ops-release",
-  "as-git-workflow-and-versioning": "ops-release",
-  "sp-using-git-worktrees": "ops-release",
-  "write-expense-report": "ops-release",
+  "ecc-security-review": "security-governance",
+  "ecc-tdd-workflow": "implementation",
+  "frontend-design": "ui-visual",
+  "knowledge-workspace": "knowledge",
+  "office-design": "ui-visual",
+  "pdf": "documents-data",
+  "plugin-development": "tooling-skills",
+  "pptx-generator": "documents-data",
+  "self-improving-agent": "knowledge",
+  "skill-creator": "tooling-skills",
+  "sp-brainstorming": "research",
   "sp-dispatching-parallel-agents": "coordination-debug",
-  "sp-subagent-driven-development": "coordination-debug"
+  "sp-receiving-code-review": "review",
+  "sp-requesting-code-review": "review",
+  "sp-subagent-driven-development": "coordination-debug",
+  "sp-systematic-debugging": "tooling-skills",
+  "sp-using-git-worktrees": "ops-release",
+  "sp-using-superpowers": "tooling-skills",
+  "sp-verification-before-completion": "review",
+  "sp-writing-plans": "strategy-planning",
+  "tob-property-based-testing": "implementation",
+  "write-expense-report": "ops-release",
+  "ws-accessibility-compliance": "ui-visual",
+  "ws-architecture-decision-records": "architecture",
+  "ws-data-storytelling": "documents-data",
+  "ws-error-handling-patterns": "implementation",
+  "ws-stride-analysis-patterns": "security-governance",
+  "xlsx": "documents-data"
 } as const;
 
 describe("role-aligned complete Skill allocation", () => {
-  it("matches all 45 unique primary owners across the twelve roles", () => {
+  it("matches all 56 unique primary owners across the twelve roles", () => {
     const ownership = buildSkillOwnership(skills);
     expect(Object.fromEntries(ownership.map(row => [row.skillId, row.primaryAgent]))).toEqual(roleAlignedOwnership);
     expect(new Set(ownership.map(row => row.primaryAgent)).size).toBe(12);

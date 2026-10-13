@@ -13,7 +13,7 @@ vi.mock("electron", () => ({ app: {} }));
 const roots: string[] = [];
 afterEach(() => roots.splice(0).forEach(root => fs.rmSync(root, { recursive: true, force: true })));
 
-it("installs exactly 41 vendor directories alongside four maintained Skills without double scanning or changing enabled state", () => {
+it("installs exactly 52 vendor directories alongside four maintained Skills without double scanning or changing enabled state", () => {
   const root = fs.mkdtempSync(path.join(os.tmpdir(), "firefly-packaged-skills-"));
   roots.push(root);
   const userSkillsDir = path.join(root, "userData", "skills");
@@ -25,7 +25,7 @@ it("installs exactly 41 vendor directories alongside four maintained Skills with
   const manifest = JSON.parse(fs.readFileSync(path.join(vendorRoot, "skills-manifest.json"), "utf8"));
   const options = { sourceDirectory: path.join(vendorRoot, "skills"), userSkillsDir,
     expectedIds: manifest.skills, expectedFileHashes: manifest.files };
-  expect(synchronizeManagedSkillDirectories(options).installed).toHaveLength(41);
+  expect(synchronizeManagedSkillDirectories(options).installed).toHaveLength(52);
   const sources = resolveSkillScanSources({
     builtinSkillDirectory: path.join(repository, "skills"),
     userSkillDirectories: [userSkillsDir],
@@ -33,8 +33,8 @@ it("installs exactly 41 vendor directories alongside four maintained Skills with
   expect(sources).toHaveLength(2);
   expect(sources.some(source => source.directory === options.sourceDirectory)).toBe(false);
   const ids = sources.flatMap(source => scanSkills(source.directory, source.source).map(skill => skill.id));
-  expect(ids).toHaveLength(45);
-  expect(new Set(ids).size).toBe(45);
+  expect(ids).toHaveLength(56);
+  expect(new Set(ids).size).toBe(56);
   expect(ids.sort()).toEqual([...manifest.skills, ...manifest.selfSkills].sort());
   expect(synchronizeManagedSkillDirectories(options)).toEqual({ installed: [], updated: [], preserved: [] });
   expect(fs.readFileSync(enabled, "utf8")).toBe(JSON.stringify({ pdf: false }));

@@ -42,7 +42,7 @@ it("materializes exactly the distributed vendor tree without adding a runtime so
   const manifest = JSON.parse(fs.readFileSync(path.join(vendor, "skills-manifest.json"), "utf8"));
   expect(fs.existsSync(source)).toBe(true);
   expect(fs.readdirSync(source).sort()).toEqual([...manifest.skills].sort());
-  expect(manifest.skills).toHaveLength(41);
+  expect(manifest.skills).toHaveLength(52);
   expect(fs.readdirSync(path.join(root, "skills")).sort()).toEqual([...manifest.selfSkills].sort());
   expect(manifest.selfSkills).toEqual(["diagram", "document-reader-validation", "knowledge-workspace", "plugin-development"]);
   for (const id of manifest.skills) {

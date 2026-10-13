@@ -1,12 +1,12 @@
 {
   "currentDistribution": {
     "archiveSha256": null,
-    "manifestSha256": "cf6ea967b5e28b8ef6e2df3e9d2ac3d1ed53100c3a232c4bec3598b43f4da15e",
+    "manifestSha256": "0d4752977e8d7b448d5b92cfb010545e30595b30f801c36d7e006d331cfb9128",
     "previousArchiveSha256": "bdc2d00cbf2a6e4d41c931990e5ec5b47b3a13a67742d43f8189bb96cea3b673",
-    "previousManifestSha256": "2f887c5e6f3fd818c398ece10cf973072eb17548774f10a2e027ce562ea0b212",
+    "previousManifestSha256": "cf6ea967b5e28b8ef6e2df3e9d2ac3d1ed53100c3a232c4bec3598b43f4da15e",
     "predecessorEvidence": "scripts/packaging/specialist-predecessor.json",
-    "skillCount": 41,
-    "fileCount": 268,
+    "skillCount": 52,
+    "fileCount": 308,
     "unchangedSkillBodies": 33,
     "managedPredecessors": "src/main/migration/vnext-skill-versions.json",
     "changedFiles": {
@@ -73,6 +73,186 @@
         "retainedLicenseSha256": "326146379f01bb137c0a5d3c54770c1aa31076705c8b88a7f6b26a460f6221b2",
         "notice": "ecc-production-audit/NOTICE.md",
         "adaptation": "Discovery prefix/modes/effect and Firefly authority/actual baseline/cross-Skill boundary; single guidance document only"
+      },
+      {
+        "id": "ac-prd",
+        "license": "MIT",
+        "upstream": {
+          "repository": "github/awesome-copilot",
+          "commit": "156736fb63e965b2f547a1460f3b5972c46e6b24",
+          "path": "skills/prd/SKILL.md",
+          "bodySha256": "6772e6f0fcc7110d625c7f4595e4990e1910007676c36d217eda4e779041d5e5",
+          "licensePath": "LICENSE"
+        },
+        "distributedBodySha256": "c42e4cce82346eab12ac857c7f8ae93b3ff406c1ac3e0c1277dcea13a1b923df",
+        "retainedLicenseSha256": "e32449d23085399adc1222f7a17408b730550258e51627c153cb108ca9955823",
+        "notice": "ac-prd/NOTICE.md",
+        "adaptation": "Frontmatter only (directory ID, read effect, work/code modes); body and references byte-identical to the pinned upstream; instruction-only, no authority granted"
+      },
+      {
+        "id": "ws-architecture-decision-records",
+        "license": "MIT",
+        "upstream": {
+          "repository": "wshobson/agents",
+          "commit": "46891e7e60da0e52baf1050b7b6391b64e84c6d9",
+          "path": "plugins/documentation-generation/skills/architecture-decision-records/SKILL.md",
+          "bodySha256": "f8928e30d37eb7654e18adc93c752b43e7272f88054fba5a7813b434779c50e6",
+          "licensePath": "LICENSE"
+        },
+        "distributedBodySha256": "f89b1894fb4759286cb5f077bba93ec51161a169d703a1cc350d900b41d1e001",
+        "retainedLicenseSha256": "f89abb55d9f073f38f1703e4518f0613c788c6174be7f13b8dfe48a1c076c746",
+        "notice": "ws-architecture-decision-records/NOTICE.md",
+        "adaptation": "Frontmatter only (directory ID, read effect, work/code modes); body and references byte-identical to the pinned upstream; instruction-only, no authority granted"
+      },
+      {
+        "id": "as-deprecation-and-migration",
+        "license": "MIT",
+        "upstream": {
+          "repository": "addyosmani/agent-skills",
+          "commit": "1be8e34187e34647bb83adc3a1323b26ae6f6abe",
+          "path": "skills/deprecation-and-migration/SKILL.md",
+          "bodySha256": "6a624f942e09c69863a4219b9bd5d56975026b67b0c70bc83385ffd2120b6142",
+          "licensePath": "LICENSE"
+        },
+        "distributedBodySha256": "2dcd0a28f5a93eecdf1c03fc91f5fe43fa130736e6a9d66d0f96c3cf01d7b4c8",
+        "retainedLicenseSha256": "6f202f8bd568cd730dbb2b0d1f8e243bc74c2fa1f64dbce9b2c7ea08bd5c9fd7",
+        "notice": "as-deprecation-and-migration/NOTICE.md",
+        "adaptation": "Frontmatter only (directory ID, read effect, work/code modes); body and references byte-identical to the pinned upstream; instruction-only, no authority granted"
+      },
+      {
+        "id": "ws-error-handling-patterns",
+        "license": "MIT",
+        "upstream": {
+          "repository": "wshobson/agents",
+          "commit": "46891e7e60da0e52baf1050b7b6391b64e84c6d9",
+          "path": "plugins/developer-essentials/skills/error-handling-patterns/SKILL.md",
+          "bodySha256": "5fb7f4d995fc05386a8c04b045f96fd3cb652cbd31fd52d78966f86323b373b8",
+          "licensePath": "LICENSE",
+          "references": {
+            "references/details.md": "6f6a48bdee3b8fccf5b73725e798725970826a53c0bb2d4cc2a8e19b1e69466f"
+          }
+        },
+        "distributedBodySha256": "bf4848e046922b06d6bc442a46eab6005fde5456dac2f49b645c5ed8f8d8cd7a",
+        "retainedLicenseSha256": "f89abb55d9f073f38f1703e4518f0613c788c6174be7f13b8dfe48a1c076c746",
+        "notice": "ws-error-handling-patterns/NOTICE.md",
+        "adaptation": "Frontmatter only (directory ID, read effect, work/code modes); body and references byte-identical to the pinned upstream; instruction-only, no authority granted"
+      },
+      {
+        "id": "ac-documentation-writer",
+        "license": "MIT",
+        "upstream": {
+          "repository": "github/awesome-copilot",
+          "commit": "156736fb63e965b2f547a1460f3b5972c46e6b24",
+          "path": "skills/documentation-writer/SKILL.md",
+          "bodySha256": "7e8244988c9f4eb63bf8c0edf160578544621eb96e5e51e2d848f1401c5de8f1",
+          "licensePath": "LICENSE"
+        },
+        "distributedBodySha256": "5c9253f7bfd3b70296c4abd6ca64deea7e2a2d0bd3a2c0248e6aebb07d1b91a8",
+        "retainedLicenseSha256": "e32449d23085399adc1222f7a17408b730550258e51627c153cb108ca9955823",
+        "notice": "ac-documentation-writer/NOTICE.md",
+        "adaptation": "Frontmatter only (directory ID, read effect, work/code modes); body and references byte-identical to the pinned upstream; instruction-only, no authority granted"
+      },
+      {
+        "id": "sp-receiving-code-review",
+        "license": "MIT",
+        "upstream": {
+          "repository": "obra/superpowers",
+          "commit": "bb92a77741419a4ab5f06e711a283343f1ada0c3",
+          "path": "skills/receiving-code-review/SKILL.md",
+          "bodySha256": "091df1629510af1b92fc4abd6f96732ebedb4cb2c0f3457e8f2740b0504a2438",
+          "licensePath": "LICENSE"
+        },
+        "distributedBodySha256": "3b1f660b4d52b43a2ae19bf86abcdf54336453ef07ea80f77212554574787da2",
+        "retainedLicenseSha256": "a37e0e9697144819e1d965176ac4ae5bc3fa02d11e7812036bbcadf6dafe2400",
+        "notice": "sp-receiving-code-review/NOTICE.md",
+        "adaptation": "Frontmatter only (directory ID, read effect, work/code modes); body and references byte-identical to the pinned upstream; instruction-only, no authority granted"
+      },
+      {
+        "id": "ws-stride-analysis-patterns",
+        "license": "MIT",
+        "upstream": {
+          "repository": "wshobson/agents",
+          "commit": "46891e7e60da0e52baf1050b7b6391b64e84c6d9",
+          "path": "plugins/security-scanning/skills/stride-analysis-patterns/SKILL.md",
+          "bodySha256": "b7cfab85be4d04a81d22f79cc3b0e95aab8aa3ae4dfacbcf44de076dbeb16f1e",
+          "licensePath": "LICENSE",
+          "references": {
+            "references/details.md": "c386eb04dacbbb52eaaed318e7681549c40bd4686cce2f0d17d24f1c03ae1049"
+          }
+        },
+        "distributedBodySha256": "7ec06a731095a912d4a321c51f3c6c75567fab3c252d2cc4ae7522577dd32060",
+        "retainedLicenseSha256": "f89abb55d9f073f38f1703e4518f0613c788c6174be7f13b8dfe48a1c076c746",
+        "notice": "ws-stride-analysis-patterns/NOTICE.md",
+        "adaptation": "Frontmatter only (directory ID, read effect, work/code modes); body and references byte-identical to the pinned upstream; instruction-only, no authority granted"
+      },
+      {
+        "id": "ecc-agent-security-hardening",
+        "license": "MIT",
+        "upstream": {
+          "repository": "affaan-m/ECC",
+          "commit": "b92f181b3b748d1abbc2afd94af6aa7d8c8fca29",
+          "path": "skills/agent-security-hardening/SKILL.md",
+          "bodySha256": "0e0895ada90aa8fa085e4257961ebe15f2dff43b843785b1533d4c731186ad81",
+          "licensePath": "LICENSE"
+        },
+        "distributedBodySha256": "3e021f7da3eb841f726ec321f50f0ff285f56636afc374ec0cb3eb59b8a98b22",
+        "retainedLicenseSha256": "326146379f01bb137c0a5d3c54770c1aa31076705c8b88a7f6b26a460f6221b2",
+        "notice": "ecc-agent-security-hardening/NOTICE.md",
+        "adaptation": "Frontmatter only (directory ID, read effect, work/code modes); body and references byte-identical to the pinned upstream; instruction-only, no authority granted"
+      },
+      {
+        "id": "frontend-design",
+        "license": "Apache-2.0",
+        "upstream": {
+          "repository": "anthropics/skills",
+          "commit": "683bc88e56f3e09ba94f7055977f3d3aa499f202",
+          "path": "skills/frontend-design/SKILL.md",
+          "bodySha256": "d91970639e9f5c37682ac7ab60094d35f1c7c1f38d731bd56396563aee10c1d3",
+          "licensePath": "LICENSE.txt"
+        },
+        "distributedBodySha256": "cddc7efe5654ef895fe448ee59934848b6fb334bd44a7cd37b9beecae4c4f4a1",
+        "retainedLicenseSha256": "0d542e0c8804e39aa7f37eb00da5a762149dc682d7829451287e11b938e94594",
+        "notice": "frontend-design/NOTICE.md",
+        "adaptation": "Frontmatter only (directory ID, read effect, work/code modes); body and references byte-identical to the pinned upstream; instruction-only, no authority granted"
+      },
+      {
+        "id": "ws-accessibility-compliance",
+        "license": "MIT",
+        "upstream": {
+          "repository": "wshobson/agents",
+          "commit": "46891e7e60da0e52baf1050b7b6391b64e84c6d9",
+          "path": "plugins/ui-design/skills/accessibility-compliance/SKILL.md",
+          "bodySha256": "3ad0fbcb0a69b69e70652641a8eeb59f168cceb4bc9d9b9c8b47154072b9e1a2",
+          "licensePath": "LICENSE",
+          "references": {
+            "references/aria-patterns.md": "72e2f2cb2d168bb5d82260b703be863a6371284ba3cf4ac22da28a309728c14a",
+            "references/details.md": "1789504a4268186e62126059da48d8deb95d36631fac6263b368e715df2ca2fb",
+            "references/mobile-accessibility.md": "b293d6c2b0a44c7f6ebb4848f7fe09d33713e91bbb1b97d88a561e7360b90201",
+            "references/wcag-guidelines.md": "09bf683d0e15c7100bd9d1bc4a5e7bf019c580fd447bceccdd0ee30d4ccc01ce"
+          }
+        },
+        "distributedBodySha256": "e64b661643dc420bfa6fe4a67e3d30bd9c98c09d058557ef7efc1513a4d35b88",
+        "retainedLicenseSha256": "f89abb55d9f073f38f1703e4518f0613c788c6174be7f13b8dfe48a1c076c746",
+        "notice": "ws-accessibility-compliance/NOTICE.md",
+        "adaptation": "Frontmatter only (directory ID, read effect, work/code modes); body and references byte-identical to the pinned upstream; instruction-only, no authority granted"
+      },
+      {
+        "id": "ws-data-storytelling",
+        "license": "MIT",
+        "upstream": {
+          "repository": "wshobson/agents",
+          "commit": "46891e7e60da0e52baf1050b7b6391b64e84c6d9",
+          "path": "plugins/business-analytics/skills/data-storytelling/SKILL.md",
+          "bodySha256": "0244a9ef6bca2df0762425b78912d27061b9b93f9b09987ad7bc074752a0cb50",
+          "licensePath": "LICENSE",
+          "references": {
+            "references/details.md": "b3442d4692d4470091f3aee50a092aebae32df0c26ccc3526b1b2e3bfe614407"
+          }
+        },
+        "distributedBodySha256": "068094a59ec23501a5ba88d240769b9000ce22769672bd639369527daaf39185",
+        "retainedLicenseSha256": "f89abb55d9f073f38f1703e4518f0613c788c6174be7f13b8dfe48a1c076c746",
+        "notice": "ws-data-storytelling/NOTICE.md",
+        "adaptation": "Frontmatter only (directory ID, read effect, work/code modes); body and references byte-identical to the pinned upstream; instruction-only, no authority granted"
       }
     ],
     "manifestSha256Scope": "Current physical canonical manifest bytes; verify before packaging, distinct from Git text-normalized object bytes"
