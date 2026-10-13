@@ -1,114 +1,158 @@
-import * as fs from "node:fs";
-import * as path from "node:path";
+// 将已逐笔核实、并经用户确认的支出中间数据整理为 write_excel 的参数。
+// 只读取输入；中间输出以独占方式创建；不访问账本、不生成 XLSX。
+// 用法：node prepare-report.mjs <输入 JSON> <中间输出 JSON> <运行时输出根目录> <新文件名.xlsx>
+import { lstatSync, readFileSync, statSync, writeFileSync } from "node:fs";
+import { extname, isAbsolute, resolve } from "node:path";
 
-function invalid(message) {
-  throw new Error(`Invalid input: ${message}`);
+const USAGE = "usage: node prepare-report.mjs INPUT_JSON PREPARED_JSON RUNTIME_OUTPUT_ROOT FILENAME";
+const ROOT_FIELDS = ["currency", "records"];
+const RECORD_FIELDS = ["date", "category", "amount", "note", "currency"];
+const DETAIL_SHEET = "支出明细";
+const DETAIL_HEADERS = ["日期", "类目", "金额", "备注"];
+const SUMMARY_SHEET = "分类汇总";
+const SUMMARY_HEADERS = ["类目", "金额", "币种"];
+const TOTAL_LABEL = "合计";
+const MAX_SAFE_CENTS = BigInt(Number.MAX_SAFE_INTEGER);
+
+// 所有输入类错误都经由这里抛出，前缀固定为 "Invalid input: "。
+function rejectInput(detail) {
+  throw new Error(`Invalid input: ${detail}`);
 }
 
-function exactKeys(value, keys) {
-  if (!value || typeof value !== "object" || Array.isArray(value)
-    || Object.keys(value).length !== keys.length
-    || !keys.every(key => Object.hasOwn(value, key))) {
-    invalid(`expected exactly ${keys.join(", ")}`);
+// 要求对象恰好拥有给定的全部字段：多一个或少一个都不行，数组与非对象同样拒绝。
+function assertExactFields(value, fields) {
+  const isObject = Boolean(value) && typeof value === "object" && !Array.isArray(value);
+  const sameCount = isObject && Object.keys(value).length === fields.length;
+  if (!sameCount || !fields.every(field => Object.hasOwn(value, field))) {
+    rejectInput(`expected exactly ${fields.join(", ")}`);
   }
 }
 
-function centsFromDecimal(amount) {
-  if (typeof amount !== "string" || amount.length > 100 || !/^\d+(?:\.\d+)?$/.test(amount)) {
-    invalid("amount must be an unsigned decimal string, without exponent notation");
+// 把金额原文按十进制 half-up 舍入到分，得到 BigInt 形式的分值。全程不使用二进制浮点。
+function amountToCents(text) {
+  if (typeof text !== "string" || text.length > 100 || !/^\d+(?:\.\d+)?$/.test(text)) {
+    rejectInput("amount must be an unsigned decimal string, without exponent notation");
   }
-  const [whole, fraction = ""] = amount.split(".");
-  const cents = BigInt(whole) * 100n + BigInt((fraction + "00").slice(0, 2))
-    + (fraction.length > 2 && fraction[2] >= "5" ? 1n : 0n);
-  if (cents <= 0n) invalid("expense must round to positive cents");
-  numericAmount(cents);
+  const [wholePart, fractionPart = ""] = text.split(".");
+  const roundUp = fractionPart.length > 2 && fractionPart.charAt(2) >= "5" ? 1n : 0n;
+  const cents = BigInt(wholePart) * 100n + BigInt(`${fractionPart}00`.slice(0, 2)) + roundUp;
+  if (cents <= 0n) rejectInput("expense must round to positive cents");
+  centsToNumber(cents); // 仅用于校验：安全范围与 Excel 数字精度。
   return cents;
 }
 
-function numericAmount(cents) {
-  if (cents > BigInt(Number.MAX_SAFE_INTEGER)) invalid("amount or total exceeds safe cents");
-  const decimal = `${cents / 100n}.${String(cents % 100n).padStart(2, "0")}`;
-  const amount = Number(decimal);
-  if (amount.toFixed(2) !== decimal) invalid("amount or total cannot retain exact cents in Excel numbers");
-  return amount;
+// 分值 -> Excel 数字。必须不超过安全整数，并且 toFixed(2) 能精确还原成同一个两位小数文本。
+function centsToNumber(cents) {
+  if (cents > MAX_SAFE_CENTS) rejectInput("amount or total exceeds safe cents");
+  const text = `${cents / 100n}.${String(cents % 100n).padStart(2, "0")}`;
+  const numeric = Number(text);
+  if (numeric.toFixed(2) !== text) rejectInput("amount or total cannot retain exact cents in Excel numbers");
+  return numeric;
 }
 
-function prepareSheets(input) {
-  exactKeys(input, ["currency", "records"]);
-  if (typeof input.currency !== "string" || !/^[A-Z]{3}$/.test(input.currency)) {
-    invalid("currency must be an explicitly confirmed three-letter uppercase code");
+// 日期必须是 YYYY-MM-DD 且为真实存在的公历日（例如 2 月 30 日会被拒绝）。
+function assertConfirmedDate(value) {
+  if (typeof value !== "string" || !/^\d{4}-\d{2}-\d{2}$/.test(value)) {
+    rejectInput("date must be a confirmed YYYY-MM-DD calendar date");
   }
-  if (!Array.isArray(input.records) || input.records.length === 0) invalid("records must be nonempty");
-  const byCategory = new Map();
-  let totalCents = 0n;
-  const rows = input.records.map(record => {
-    exactKeys(record, ["date", "category", "amount", "note", "currency"]);
-    if (typeof record.date !== "string" || !/^\d{4}-\d{2}-\d{2}$/.test(record.date)) {
-      invalid("date must be a confirmed YYYY-MM-DD calendar date");
-    }
-    const date = new Date(`${record.date}T00:00:00.000Z`);
-    if (!Number.isFinite(date.getTime()) || date.toISOString().slice(0, 10) !== record.date) {
-      invalid("date is not a valid calendar date");
-    }
-    if (typeof record.category !== "string" || !record.category.trim()) invalid("category is required");
-    if (typeof record.note !== "string") invalid("note must be text, including an explicit empty string");
-    if (record.currency !== input.currency) invalid("mixed or missing currency; no conversion is performed");
-    const cents = centsFromDecimal(record.amount);
-    totalCents += cents;
-    byCategory.set(record.category, (byCategory.get(record.category) ?? 0n) + cents);
-    return [record.date, record.category, numericAmount(cents), record.note];
+  const instant = new Date(`${value}T00:00:00.000Z`);
+  if (!Number.isFinite(instant.getTime()) || instant.toISOString().slice(0, 10) !== value) {
+    rejectInput("date is not a valid calendar date");
+  }
+}
+
+// 汇总排序：小计按分值降序；小计相同时按类目名称的码元顺序升序。
+function bySubtotalThenName([nameA, centsA], [nameB, centsB]) {
+  if (centsA !== centsB) return centsA > centsB ? -1 : 1;
+  if (nameA === nameB) return 0;
+  return nameA < nameB ? -1 : 1;
+}
+
+function buildSheets(input) {
+  assertExactFields(input, ROOT_FIELDS);
+  const { currency, records } = input;
+  if (typeof currency !== "string" || !/^[A-Z]{3}$/.test(currency)) {
+    rejectInput("currency must be an explicitly confirmed three-letter uppercase code");
+  }
+  if (!Array.isArray(records) || records.length === 0) rejectInput("records must be nonempty");
+
+  // 使用 Map 而非普通对象，避免 "constructor"、"__proto__" 等名称与对象原型冲突。
+  const subtotals = new Map();
+  let grandCents = 0n;
+  const detailRows = records.map((record) => {
+    assertExactFields(record, RECORD_FIELDS);
+    assertConfirmedDate(record.date);
+    if (typeof record.category !== "string" || !record.category.trim()) rejectInput("category is required");
+    if (typeof record.note !== "string") rejectInput("note must be text, including an explicit empty string");
+    if (record.currency !== currency) rejectInput("mixed or missing currency; no conversion is performed");
+    const cents = amountToCents(record.amount);
+    grandCents += cents;
+    subtotals.set(record.category, (subtotals.get(record.category) ?? 0n) + cents);
+    return [record.date, record.category, centsToNumber(cents), record.note];
   });
-  const summaryRows = [...byCategory.entries()]
-    .sort(([leftCategory, leftCents], [rightCategory, rightCents]) => {
-      if (leftCents !== rightCents) return leftCents > rightCents ? -1 : 1;
-      return leftCategory < rightCategory ? -1 : leftCategory > rightCategory ? 1 : 0;
-    })
-    .map(([category, cents]) => [category, numericAmount(cents), input.currency]);
-  summaryRows.push(["合计", numericAmount(totalCents), input.currency]);
+
+  const summaryRows = [...subtotals.entries()]
+    .sort(bySubtotalThenName)
+    .map(([category, cents]) => [category, centsToNumber(cents), currency]);
+  summaryRows.push([TOTAL_LABEL, centsToNumber(grandCents), currency]);
+
   return [
-    { name: "支出明细", headers: ["日期", "类目", "金额", "备注"], rows },
-    { name: "分类汇总", headers: ["类目", "金额", "币种"], rows: summaryRows },
+    { name: DETAIL_SHEET, headers: [...DETAIL_HEADERS], rows: detailRows },
+    { name: SUMMARY_SHEET, headers: [...SUMMARY_HEADERS], rows: summaryRows },
   ];
 }
 
-function main() {
-  const [inputPath, preparedPath, outputRoot, filename, ...extra] = process.argv.slice(2);
-  if (!inputPath || !preparedPath || !outputRoot || !filename || extra.length) {
-    invalid("usage: node prepare-report.mjs INPUT_JSON PREPARED_JSON RUNTIME_OUTPUT_ROOT FILENAME");
-  }
-  if (![inputPath, preparedPath, outputRoot].every(value => path.isAbsolute(value))) {
-    invalid("input, prepared output and runtime output root must be absolute paths");
-  }
-  if (/[\\/<>:"|?*]/.test(filename) || filename.includes("..") || path.extname(filename) !== ".xlsx") {
-    invalid("filename must be one new .xlsx filename, without directories or unsafe characters");
-  }
-  if (!fs.statSync(outputRoot).isDirectory()) invalid("runtime output root must be an existing directory");
-  const workbookPath = path.resolve(outputRoot, filename);
-  let input;
+function readInputDocument(inputPath) {
   try {
-    input = JSON.parse(fs.readFileSync(inputPath, "utf8"));
+    return JSON.parse(readFileSync(inputPath, "utf8"));
   } catch (error) {
-    if (error instanceof SyntaxError) invalid("malformed JSON");
+    if (error instanceof SyntaxError) rejectInput("malformed JSON");
     throw error;
   }
-  const payload = { filename, sheets: prepareSheets(input) };
-  if (path.resolve(preparedPath) === path.resolve(workbookPath)) invalid("prepared JSON must not be the workbook");
+}
+
+// 只要目标路径存在（文件、目录或链接，包括断开的链接）就拒绝。lstat 不跟随符号链接。
+function assertWorkbookTargetFree(workbookPath) {
+  let occupied = false;
   try {
-    fs.lstatSync(workbookPath);
-    throw new Error("Output exists: workbook path; choose a new confirmed filename");
+    lstatSync(workbookPath);
+    occupied = true;
   } catch (error) {
     if (error.code !== "ENOENT") throw error;
   }
+  if (occupied) throw new Error("Output exists: workbook path; choose a new confirmed filename");
+}
+
+// flag "wx" 保证中间输出是新建的；已有文件不会被覆盖。
+function writePreparedDocument(preparedPath, payload) {
   try {
-    fs.writeFileSync(preparedPath, `${JSON.stringify(payload, null, 2)}\n`, { encoding: "utf8", flag: "wx" });
+    writeFileSync(preparedPath, `${JSON.stringify(payload, null, 2)}\n`, { encoding: "utf8", flag: "wx" });
   } catch (error) {
     if (error.code === "EEXIST") throw new Error("Output exists: prepared JSON; choose a new path");
     throw error;
   }
 }
 
+function run() {
+  const [inputPath, preparedPath, outputRoot, filename, ...unexpected] = process.argv.slice(2);
+  if (!inputPath || !preparedPath || !outputRoot || !filename || unexpected.length > 0) rejectInput(USAGE);
+  if (![inputPath, preparedPath, outputRoot].every(candidate => isAbsolute(candidate))) {
+    rejectInput("input, prepared output and runtime output root must be absolute paths");
+  }
+  if (/[\\/<>:"|?*]/.test(filename) || filename.includes("..") || extname(filename) !== ".xlsx") {
+    rejectInput("filename must be one new .xlsx filename, without directories or unsafe characters");
+  }
+  if (!statSync(outputRoot).isDirectory()) rejectInput("runtime output root must be an existing directory");
+
+  const workbookPath = resolve(outputRoot, filename);
+  const payload = { filename, sheets: buildSheets(readInputDocument(inputPath)) };
+  if (resolve(preparedPath) === resolve(workbookPath)) rejectInput("prepared JSON must not be the workbook");
+  assertWorkbookTargetFree(workbookPath);
+  writePreparedDocument(preparedPath, payload);
+}
+
 try {
-  main();
+  run();
 } catch (error) {
   process.stderr.write(`[expense-report] ${error.message}\n`);
   process.exitCode = 1;

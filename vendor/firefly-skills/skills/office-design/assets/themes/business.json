@@ -1,42 +1,43 @@
 {
   "id": "business",
   "colors": {
-    "primary": "#18364B",
-    "secondary": "#315569",
-    "accent": "#006B68",
-    "background": "#FFFFFF",
-    "surface": "#F1F5F7",
-    "foreground": "#172B36",
-    "muted": "#4A5D69",
-    "border": "#BCCAD2"
+    "primary": "#133F63",
+    "secondary": "#3E6A8A",
+    "accent": "#0B7669",
+    "background": "#FBFCFD",
+    "surface": "#EDF3F7",
+    "foreground": "#1A2B38",
+    "muted": "#52636E",
+    "border": "#B7C8D3"
   },
   "fonts": {
     "cjk": [
       "Microsoft YaHei",
-      "SimSun"
+      "DengXian"
     ],
     "latin": [
-      "Arial",
-      "Aptos"
+      "Segoe UI",
+      "Calibri"
     ],
     "fallback": [
-      "Helvetica"
+      "Arial",
+      "Liberation Sans"
     ]
   },
   "spacing": {
-    "base": 6
+    "base": 5
   },
   "roles": {
     "table_header": "primary",
     "input": "#0000FF",
     "formula": "#000000",
-    "warning": "#9A4700",
-    "success": "#17633C"
+    "warning": "#A3561B",
+    "success": "#1C7048"
   },
   "chart_colors": [
-    "#006B68",
-    "#315569",
-    "#845C24",
-    "#694F83"
+    "#0B7669",
+    "#3E6A8A",
+    "#C07A1F",
+    "#7457A0"
   ]
 }

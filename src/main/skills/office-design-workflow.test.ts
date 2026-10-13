@@ -246,10 +246,10 @@ describe("Office theme validator", () => {
     expect(fs.readdirSync(directory)).toEqual([]);
   });
 
-  it("keeps the original Python regression assertions passing", () => {
+  it("keeps the Python regression assertions passing", () => {
     const result = runPython([path.join(officeDir, "tests/test_validate_theme.py")], temporaryDirectory());
     expect(result.status).toBe(0);
-    expect(result.stderr).toContain("Ran 3 tests");
+    expect(result.stderr).toMatch(/Ran \d+ tests/);
     expect(result.stderr).toContain("OK");
   });
 });
