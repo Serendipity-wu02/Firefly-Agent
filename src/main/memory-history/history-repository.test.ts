@@ -100,3 +100,20 @@ it('Main unbound structure mode cannot authorize Worker put; current head binds 
  expect(()=>f.command('put',{document:{...d,id:'new-id',revision:99,transcriptRef:ref},generation},randomUUID())).toThrow('MEMORY_HISTORY_STALE');
  expect(query(f,{transcriptHeads:['head-native']}).hits).toEqual([]);f.reopen();expect(query(f,{transcriptHeads:['head-native']}).hits).toEqual([]);
 });
+it('settings from before windowing and recency still work and mean both are off; out-of-range values are rejected',async()=>{
+ const f=fixture(),d=await document(f);put(f,d);
+ const {windowTurns,recencyAlpha,recencyHalfLifeDays,...legacy}=DEFAULT_HISTORY_SETTINGS;void windowTurns;void recencyAlpha;void recencyHalfLifeDays;
+ const old=query(f,{settings:{...legacy,version:'history-settings-v1'}});expect(old.hits).toHaveLength(1);expect(old.hits[0].document.id).toBe(d.id);
+ expect(()=>query(f,{settings:{...DEFAULT_HISTORY_SETTINGS,windowTurns:99}})).toThrow();
+ expect(()=>query(f,{settings:{...DEFAULT_HISTORY_SETTINGS,windowTurns:1.5}})).toThrow();
+ expect(()=>query(f,{settings:{...DEFAULT_HISTORY_SETTINGS,recencyAlpha:2}})).toThrow();
+ expect(()=>query(f,{settings:{...DEFAULT_HISTORY_SETTINGS,recencyHalfLifeDays:0}})).toThrow();
+});
+it('the default settings window a long conversation and still return the whole document',async()=>{
+ const f=fixture(),turn=(i:number,text:string)=>({id:'m'+i,role:i%2?'assistant':'user',text,occurredAt:null,timeZone:null});
+ const messages=Array.from({length:41},(_,i)=>turn(i,i===20?'zebra passport renewal':'filler turn '+i));
+ put(f,{id:'win-doc',incarnation:'v1',revision:1,origin:'synthetic-import',sourceDeps:[],vector:null,messages});
+ const r=query(f,{query:'zebra passport'});expect(r.hits).toHaveLength(1);expect(r.hits[0].document.messages).toHaveLength(41);
+ // 关掉窗口化后同一个查询仍然命中，说明窗口化只改排序，不改返回的内容
+ const off=query(f,{query:'zebra passport',settings:{...DEFAULT_HISTORY_SETTINGS,windowTurns:0}});expect(off.hits).toHaveLength(1);expect(off.hits[0].document.messages).toHaveLength(41);
+});

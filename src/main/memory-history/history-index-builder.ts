@@ -1,6 +1,7 @@
 import {historyMessageChars} from './history-message';
 import {canonicalJson} from '../memory-core/repository-types';
 import {rankHistory} from './history-ranking';
+import {toWindows} from './history-windows';
 import {historyTimeSpan,type HistoryTemporalQuery} from './history-temporal';
 import {validateReadonlyHistoryScope} from './firefly-history-reader';
 import {DEFAULT_HISTORY_SETTINGS,type ReadonlyHistoryScope,type ReadonlyHistoryReadResult,type HistorySettings} from './history-contracts';
@@ -15,7 +16,7 @@ export function createHistoryIndexBuilder(scope:ReadonlyHistoryScope,read:Readon
   if(input.signal?.aborted)throw new Error('MEMORY_HISTORY_CANCELLED');
   if(typeof query!=='string'||query.length>4096)throw new Error('MEMORY_HISTORY_INPUT_INVALID');
   if(exhausted)return {status:'index-budget-exhausted' as const,hits:[],coverage:read.coverage,diagnostics:[...read.diagnostics]};
-  const ranked=rankHistory(documents.map(d=>({id:d.document.id,text:d.document.messages.map(m=>m.text).join('\n'),timeSpan:historyTimeSpan(d.document.messages)})),query,{limit:config.limit,candidateLimit:config.candidateLimit,rrfK:config.rrfK,mmrLambda:config.mmrLambda,...input});
+  const ranked=rankHistory(documents.map(d=>({id:d.document.id,text:d.document.messages.map(m=>m.text).join('\n'),...(()=>{const units=toWindows(d.document.messages,config.windowTurns);return units?{units}:{}})(),timeSpan:historyTimeSpan(d.document.messages)})),query,{limit:config.limit,candidateLimit:config.candidateLimit,rrfK:config.rrfK,mmrLambda:config.mmrLambda,...input});
   let chars=0,status:'ok'|'excerpt-budget-exhausted'='ok';
   const hits=ranked.items.flatMap(hit=>{const record=documents.find(d=>d.document.id===hit.id)!,size=record.document.messages.reduce((n,m)=>n+historyMessageChars(m),0);
    if(size>config.maxExcerptChars||chars+size>config.maxTotalChars){status='excerpt-budget-exhausted';return []}chars+=size;return [{record:structuredClone(record),score:hit.score}]});
