@@ -258,6 +258,50 @@ describe("back_from_away edge detection", () => {
   });
 });
 
+describe("back_from_away urgency grows with the length of the absence", () => {
+  const MINUTE = 60_000;
+  const NOON = Date.UTC(2026, 6, 21, 4, 0, 0); // 上海 12:00，不在任何问候窗口内，"回来"是唯一候选
+
+  /** 离开 awayMinutes 分钟后回来，返回 back_from_away 候选的总分（沉默奖励 12 来自从未活跃的新状态）。 */
+  async function backFromAwayScore(awayMinutes: number, unansweredCount: 0 | 1 = 0): Promise<number> {
+    const ctx = setup();
+    ctx.setState({ unansweredCount });
+    ctx.setSnapshot({ now: NOON, idleSec: awayMinutes * 60 });
+    await ctx.trigger.evaluateNow("away");
+    ctx.setSnapshot({ now: NOON + MINUTE, idleSec: 10 });
+    await ctx.trigger.evaluateNow("back");
+    const call = (ctx.evaluateCandidate.mock.calls as Array<[ProactiveCandidate]>).find(([c]) => c.sceneId === "back_from_away");
+    expect(call, `back_from_away after ${awayMinutes} min`).toBeDefined();
+    return call![0].score;
+  }
+
+  const BASE_AND_SILENCE = 68 + 12;
+
+  it.each([
+    [30, 4],
+    [45, 6],
+    [60, 8],
+    [120, 12],
+    [240, 16],
+    [480, 20],
+    [24 * 60, 20],
+  ])("an absence of %i minutes adds %i points of urgency", async (awayMinutes, urgency) => {
+    expect(await backFromAwayScore(awayMinutes)).toBe(BASE_AND_SILENCE + urgency);
+  });
+
+  it("never lowers the score for a longer absence", async () => {
+    const scores: number[] = [];
+    for (const minutes of [30, 40, 60, 90, 180, 360, 720]) scores.push(await backFromAwayScore(minutes));
+    expect([...scores].sort((a, b) => a - b)).toEqual(scores);
+    expect(scores[scores.length - 1]).toBeGreaterThan(scores[0]);
+  });
+
+  it("even the longest absence stays below the follow-up score after one unanswered message", async () => {
+    const score = await backFromAwayScore(24 * 60, 1);
+    expect(score).toBeLessThan(FOLLOWUP_MIN_SCORE);
+  });
+});
+
 describe("weather context gating (placeholder)", () => {
   it("未传 getWeatherContext 时，4 个核心场景正常工作", async () => {
     const ctx = setup(); // 没有 getWeatherContext

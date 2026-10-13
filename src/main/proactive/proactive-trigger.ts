@@ -154,9 +154,13 @@ function timeWindowFit(
 /** 事件紧迫度（0-20）。普通时间问候为 0。 */
 function eventUrgency(sceneId: string, ctx: ProactiveTriggerContext): number {
   switch (sceneId) {
-    case "back_from_away":
-      // 离开越久分越高，但封顶 20
-      return clamp(Math.round(ctx.snapshot.idleSec / 60), 0, 20);
+    case "back_from_away": {
+      // 看的是回来之前的离开时长（此时 snapshot.idleSec 不到 60 秒）：
+      // 离开 30 分钟得 4 分，之后每翻一倍加 4 分，8 小时起封顶 20。
+      const awaySec = ctx.previousIdleSec;
+      if (awaySec === null || !(awaySec >= AWAY_THRESHOLD_SEC)) return 0;
+      return clamp(Math.round(4 + 4 * Math.log2(awaySec / AWAY_THRESHOLD_SEC)), 0, 20);
+    }
     case "work_break":
       // 活跃 90min 起，每多 30min 加 4，封顶 20
       const activeMs = ctx.activeSessionStartedAt !== null ? ctx.now - ctx.activeSessionStartedAt : 0;
