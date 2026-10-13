@@ -59,3 +59,8 @@ For these and/or other purposes and motivations, and without any expectation of 
     4. Affirmer understands and acknowledges that Creative Commons is not a party to this document and has no duty or obligation with respect to this CC0 or use of the Work.
 
 For more information, please see <https://creativecommons.org/publicdomain/zero/1.0>.
+
+
+## 明暗主题技术徽章
+
+新增的 `*-light.svg` 与 `*-dark.svg` 是基于上述原始品牌图标的新 SVG 排版，使用 flat-square 方角布局。图标 path 与归档 SVG 完全相同；Electron、TypeScript、React、Rust、SQLite 品牌色保持不变。技术名底板分别为浅灰绿与深墨绿，SVG 无脚本、外部资源或动态指标。它们不声称整张图由 Shields 官方生成。生成与主题说明见 [README 展示素材](./README.md)。
