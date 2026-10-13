@@ -202,15 +202,25 @@ export class HarnessRunStore {
   }
 
   recordTool(runId: string, input: Omit<PersistedToolCall, "updatedAt">): HarnessRunSession {
+    return this.recordTools(runId, [input]);
+  }
+
+  /** One durable snapshot for a batch; preserve the existing per-call lifecycle journal. */
+  recordTools(runId: string, inputs: readonly Omit<PersistedToolCall, "updatedAt">[]): HarnessRunSession {
     const session = this.require(runId);
+    if (inputs.length === 0) return clone(session);
     const updatedAt = this.now();
-    const next: PersistedToolCall = { ...input, updatedAt };
-    const existing = session.toolCalls.findIndex((call) => call.toolCallId === input.toolCallId);
-    if (existing >= 0) session.toolCalls[existing] = next;
-    else session.toolCalls.push(next);
+    for (const input of inputs) {
+      const next: PersistedToolCall = { ...input, updatedAt };
+      const existing = session.toolCalls.findIndex((call) => call.toolCallId === input.toolCallId);
+      if (existing >= 0) session.toolCalls[existing] = next;
+      else session.toolCalls.push(next);
+    }
     session.updatedAt = updatedAt;
     this.write(session);
-    this.appendEvent(session, `tool_${input.status}`, { toolCallId: input.toolCallId });
+    for (const input of inputs) {
+      this.appendEvent(session, `tool_${input.status}`, { toolCallId: input.toolCallId });
+    }
     return clone(session);
   }
 

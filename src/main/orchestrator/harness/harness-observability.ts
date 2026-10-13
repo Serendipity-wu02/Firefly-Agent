@@ -45,6 +45,7 @@ export function emitContextUsage(run: HarnessRun, phase: "preRequest" | "termina
 
 /** 请求前发送非敏感缓存结构诊断（hash + 计数，不含提示词正文）。 */
 export function emitCacheDiagnostic(run: HarnessRun, promptLayers: PromptLayers): void {
+  if (!run.input.onCacheDiagnostic) return;
   const cacheRequest = projectCacheRelevantRequest({
     stableSystem: buildStableSystemPrefix(promptLayers),
     tools: run.allToolSpecs,

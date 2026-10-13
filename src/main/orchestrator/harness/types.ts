@@ -282,6 +282,9 @@ export interface HarnessInput {
    *  不得持有跨 await 的活引用。payload 必须严格 JSON-serializable
    *  （不得含 Date / Map / Set / BigInt / class instance），否则克隆与持久化都会失真。 */
   onCheckpoint?: (checkpoint: HarnessCheckpoint) => void;
+  /** 同轮 planned 调用的同步持久化边界；返回前全部落盘，失败不得开始审批或执行。
+   * 未注入时沿用逐项 onToolLifecycle，保留旧宿主的行为。 */
+  onToolsPlanned?: (events: readonly (HarnessToolLifecycleEvent & { status: "planned" })[]) => void;
   /** 工具执行前与模型可见结果提交后的持久化边界。 */
   onToolLifecycle?: (event: HarnessToolLifecycleEvent) => void;
   /** 工具结果确定后的只读观察回调；只读稳定元数据，不参与执行决策。 */

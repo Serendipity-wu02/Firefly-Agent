@@ -40,6 +40,46 @@ afterEach(() => {
 });
 
 describe("HarnessRunStore", () => {
+  it("persists a planned batch with one session write and keeps every journal entry", () => {
+    const { root, store } = createStore();
+    createRun(store);
+    const planned = ["a", "b", "c"].map(toolCallId => ({
+      toolCallId, toolName: "read_file", sideEffect: "read_only" as const, status: "planned" as const,
+    }));
+    const rename = vi.spyOn(fs, "renameSync");
+    try {
+      store.recordTools("run-1", planned);
+      const sessionPath = path.join(root, "firefly-runs", "sessions", "run-1.json");
+      expect(rename.mock.calls.filter(([, target]) => target === sessionPath)).toHaveLength(1);
+      const persisted = JSON.parse(fs.readFileSync(sessionPath, "utf8"));
+      expect(persisted.toolCalls.map(({ toolCallId, status }: { toolCallId: string; status: string }) => ({ toolCallId, status })))
+        .toEqual([{ toolCallId: "a", status: "planned" }, { toolCallId: "b", status: "planned" }, { toolCallId: "c", status: "planned" }]);
+      const events = fs.readFileSync(path.join(root, "firefly-runs", "sessions", "run-1.events.jsonl"), "utf8")
+        .trim().split("\n").map(line => JSON.parse(line)).filter(event => event.type === "tool_planned");
+      expect(events.map(event => event.toolCallId)).toEqual(["a", "b", "c"]);
+      planned[0]!.toolName = "changed after persistence";
+      expect(store.get("run-1")?.toolCalls[0]?.toolName).toBe("read_file");
+    } finally {
+      rename.mockRestore();
+      store.markTerminal("run-1", "completed");
+    }
+  });
+
+  it("updates existing lifecycle calls without duplicating them in a batch", () => {
+    const { store } = createStore();
+    createRun(store);
+    store.recordTool("run-1", { toolCallId: "a", toolName: "read_file", sideEffect: "read_only", status: "planned" });
+    store.recordTools("run-1", [
+      { toolCallId: "a", toolName: "read_file", sideEffect: "read_only", status: "started" },
+      { toolCallId: "b", toolName: "write_file", sideEffect: "idempotent_mutation", status: "planned" },
+    ]);
+    expect(store.get("run-1")?.toolCalls).toEqual([
+      expect.objectContaining({ toolCallId: "a", status: "started" }),
+      expect.objectContaining({ toolCallId: "b", status: "planned" }),
+    ]);
+    store.markTerminal("run-1", "completed");
+  });
+
   it("persists a main-run checkpoint separately from the chat transcript", () => {
     const { root, store, tick } = createStore();
     createRun(store);
