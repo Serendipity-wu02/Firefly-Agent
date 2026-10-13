@@ -318,7 +318,7 @@
     {
       "id": "office-design",
       "status": "unresolved",
-      "reason": "No independently verified upstream identified. Historical skill is a local cross-format theme workflow with Cyrene-hosted validation and theme assets; do not substitute an unrelated same-name skill.",
+      "reason": "No independently verified upstream identified. Firefly-maintained cross-format theme workflow, re-authored 2026-10-13 against the current document tools; its lineage runs to the Cyrene-Agent revision in evidence_url. Do not substitute an unrelated same-name skill.",
       "evidence_url": "https://github.com/Playa-Cyrene/Cyrene-Agent/blob/734bfeeab97b0cdaf5a29ee8fd8f0d61efb88948/skills/office-design/SKILL.md"
     },
     {
@@ -477,7 +477,7 @@
     {
       "id": "write-expense-report",
       "status": "unresolved",
-      "reason": "No independently verified upstream identified. Historical skill depends on host-specific query_expense and write_excel tools. Preserve the existing implementation pending an explicit adaptation.",
+      "reason": "No independently verified upstream identified. Firefly-maintained workflow that depends on the host's query_expense and write_excel tools, re-authored 2026-10-13; its lineage runs to the Cyrene-Agent revision in evidence_url.",
       "evidence_url": "https://github.com/Playa-Cyrene/Cyrene-Agent/blob/734bfeeab97b0cdaf5a29ee8fd8f0d61efb88948/skills/write-expense-report/SKILL.md"
     },
     {
