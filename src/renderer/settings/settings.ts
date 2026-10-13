@@ -207,6 +207,7 @@ if (!window.settings) {
     channelsQqResolveAuthRequirement: () =>
       Promise.resolve({ ok: false, requiresAccessToken: false, error: "settings api unavailable" }),
     channelsQqBotTestConnection: () => Promise.resolve({ ok: false, error: "settings api unavailable" }),
+    channelsSenderResolve: () => Promise.resolve({ ok: false, error: "settings api unavailable" }),
     channelsLogGet: () => Promise.resolve([]),
     channelsLogClear: () => Promise.resolve({ ok: true }),
     channelsContextBindingsGet: () => Promise.resolve({ externalChats: [], bindings: [], conversations: [] }),

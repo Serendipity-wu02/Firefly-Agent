@@ -5,6 +5,10 @@ import { ChannelManager } from "../../manager";
 import { createChannelMemoryAccountIdentity } from "../base";
 import { requireChannelMemoryIngress, type ChannelMemoryIngress } from "../../../memory-context/channel-memory-ingress";
 
+vi.mock("../../settings-store", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("../../settings-store")>()),
+  loadChannelsSettings: () => ({ wechat: { enabled: true, allowAnyPrivate: true, allowedSenderIds: [] } }),
+}));
 vi.mock("electron", () => ({
   app: {
     getPath: () => "C:/tmp/firefly-test-user-data",

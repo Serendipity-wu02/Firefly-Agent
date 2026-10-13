@@ -42,6 +42,7 @@ import type {
   OutgoingPart,
 } from "../../types";
 import { loadChannelsSettings } from "../../settings-store";
+import { admitSender } from "../../sender-gate";
 import { getAudioDurationMs } from "./audio-duration";
 import { logger, LogTag } from "../../../logger";
 
@@ -317,6 +318,17 @@ export class FeishuAdapter implements ChannelAdapter {
       // 私聊 only（方案决策）
       if (msg.chatType !== "p2p") {
         console.log(LOG, `忽略 ${msg.chatType} 消息 (私聊优先)`);
+        return;
+      }
+      // 先判定发送者，再展开引用、下载资源，陌生人的消息不触发任何处理。
+      let senderRules: ReturnType<typeof loadChannelsSettings>["feishu"] | null = null;
+      try {
+        senderRules = loadChannelsSettings().feishu;
+      } catch (err) {
+        console.warn(LOG, "读取发送者白名单失败，按拒绝处理:", err);
+      }
+      if (!admitSender("feishu", senderRules, msg.senderId ?? "", msg.senderName)) {
+        console.warn(LOG, "陌生发送者已拦截，等待在设置中批准");
         return;
       }
       try {

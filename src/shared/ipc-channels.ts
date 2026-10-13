@@ -317,6 +317,7 @@ export const IPC = {
   CHANNELS_INSTALL_PROGRESS: "channels:install-progress",     // main → renderer
   CHANNELS_STATUS_CHANGED: "channels:status-changed",         // main → renderer
   // 微信专属
+  CHANNELS_SENDER_RESOLVE: "channels:sender:resolve",
   CHANNELS_WECHAT_LOGIN_START: "channels:wechat:login-start",
   CHANNELS_WECHAT_QRCODE: "channels:wechat:qrcode",        // main → renderer, payload: dataURL string
   CHANNELS_WECHAT_LOGIN_DONE: "channels:wechat:login-done", // main → renderer, payload: { ok, botId?, error? }
