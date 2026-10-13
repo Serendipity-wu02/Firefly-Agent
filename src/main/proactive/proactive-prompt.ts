@@ -1,3 +1,4 @@
+import { getZonedDateParts, isWithinQuietHours, minuteOfDay } from "./proactive-clock";
 import type { ChatMessage } from "../orchestrator/vendors/types";
 
 export interface ProactiveHistoryTurn {
@@ -53,50 +54,9 @@ const FOLLOWUP_SYSTEM = `[followup_system]
 不要责怪、催促、卖惨或表现出被冷落，也不要机械地重复"在吗"。
 没有充分理由时必须返回 silent。`;
 
-/**
- * 用 Intl 把日期拆成 {year, month, day, hour, minute}（按 timezone）。
- * 不依赖 toLocaleString 的本地化标点和顺序。
- * 失败回退 system-local（resolver 已保证 timezone 合法，此分支仅 debug）。
- */
-function getZonedDateParts(
-  date: Date,
-  timezone: string,
-): { year: number; month: number; day: number; hour: number; minute: number } {
-  let parts: Intl.DateTimeFormatPart[];
-  try {
-    parts = new Intl.DateTimeFormat("en-CA", {
-      timeZone: timezone,
-      year: "numeric",
-      month: "2-digit",
-      day: "2-digit",
-      hour: "2-digit",
-      minute: "2-digit",
-      hourCycle: "h23",
-    }).formatToParts(date);
-  } catch {
-    return {
-      year: date.getFullYear(),
-      month: date.getMonth() + 1,
-      day: date.getDate(),
-      hour: date.getHours(),
-      minute: date.getMinutes(),
-    };
-  }
-  const get = (type: Intl.DateTimeFormatPartTypes): string =>
-    parts.find((p) => p.type === type)?.value ?? "";
-  return {
-    year: Number(get("year")),
-    month: Number(get("month")),
-    day: Number(get("day")),
-    hour: Number(get("hour")),
-    minute: Number(get("minute")),
-  };
-}
-
 /** 早晚判定：基于用户时区的 hour。保留原 22:00-08:00 + idle<60 语义。 */
 function isActiveNight(date: Date, timezone: string, idleSec: number): boolean {
-  const { hour } = getZonedDateParts(date, timezone);
-  return (hour >= 22 || hour < 8) && idleSec < 60;
+  return isWithinQuietHours(minuteOfDay(getZonedDateParts(date, timezone))) && idleSec < 60;
 }
 
 /** 用户时区下的"本地时间"格式化：`YYYY-MM-DD HH:MM`。 */

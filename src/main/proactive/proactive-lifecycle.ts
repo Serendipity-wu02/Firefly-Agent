@@ -27,6 +27,7 @@ import type {
 } from "./proactive-service";
 import { routeProactiveDelivery } from "./proactive-delivery-routing";
 import { buildProactiveMessages, type ProactiveHistoryTurn } from "./proactive-prompt";
+import { getZonedDateParts } from "./proactive-clock";
 import { canCommitProactiveMessage } from "./proactive-policy";
 import { loadProactiveState, saveProactiveState } from "./proactive-state-store";
 import { createProactiveTrigger, type ProactiveTriggerController } from "./proactive-trigger";
@@ -98,9 +99,12 @@ export function createProactiveLifecycle(options: ProactiveLifecycleOptions): Pr
     const now = Date.now();
     let idleSec = Number.POSITIVE_INFINITY;
     try { idleSec = powerMonitor.getSystemIdleTime(); } catch { /* app 尚未 ready */ }
+    // 与候选打分、提示词使用同一个用户时区，不能再取系统本地小时。
+    const local = getZonedDateParts(new Date(now), resolveChatContextTimezone(loadUserProfile().timezone));
     return {
       now,
-      localHour: new Date(now).getHours(),
+      localHour: local.hour,
+      localMinute: local.minute,
       idleSec,
       enabled: options.loadGeneralSettings().proactiveChatMode === "on",
       conversationBusy: normalConversationBusyCount > 0,

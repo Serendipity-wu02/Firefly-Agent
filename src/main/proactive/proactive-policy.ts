@@ -1,3 +1,4 @@
+import { isWithinQuietHours } from "./proactive-clock";
 import type {
   ProactiveCandidate,
   ProactiveCommitDecision,
@@ -27,8 +28,9 @@ export function createDefaultProactiveState(): ProactiveState {
   };
 }
 
-function isNight(hour: number): boolean {
-  return hour >= 22 || hour < 8;
+/** 免打扰判断：用户时区的墙上时间，规则只在 proactive-clock.ts 里定义一份。 */
+function isNight(snapshot: ProactiveRuntimeSnapshot): boolean {
+  return isWithinQuietHours(snapshot.localHour * 60 + snapshot.localMinute);
 }
 
 export function canStartProactiveGeneration(
@@ -40,7 +42,7 @@ export function canStartProactiveGeneration(
   if (snapshot.screenLocked) return block("screen_locked");
   if (snapshot.conversationBusy) return block("conversation_busy");
   if (snapshot.generationBusy) return block("generation_busy");
-  if (isNight(snapshot.localHour) && snapshot.idleSec >= NIGHT_ACTIVE_IDLE_LIMIT_SEC) return block("night_inactive");
+  if (isNight(snapshot) && snapshot.idleSec >= NIGHT_ACTIVE_IDLE_LIMIT_SEC) return block("night_inactive");
   if (state.unansweredCount >= 2) return block("unanswered_limit");
 
   if (

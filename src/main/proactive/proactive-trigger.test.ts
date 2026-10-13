@@ -5,7 +5,7 @@ import {
   type ProactiveTriggerDependencies,
   TRIGGER_CONSTANTS,
 } from "./proactive-trigger";
-import { createDefaultProactiveState } from "./proactive-policy";
+import { FOLLOWUP_MIN_SCORE, canStartProactiveGeneration, createDefaultProactiveState } from "./proactive-policy";
 import type {
   ProactiveCandidate,
   ProactiveRuntimeSnapshot,
@@ -19,6 +19,7 @@ function makeSnapshot(overrides: Partial<ProactiveRuntimeSnapshot> = {}): Proact
   return {
     now: FIXED_NOW,
     localHour: 20,
+    localMinute: 0,
     idleSec: 30,
     enabled: true,
     conversationBusy: false,
@@ -348,5 +349,55 @@ describe("getZonedDateParts", () => {
     // 不抛错，返回数字对象
     expect(typeof p.year).toBe("number");
     expect(typeof p.hour).toBe("number");
+  });
+});
+
+describe("after one unanswered proactive message", () => {
+  // 特征化测试：记录现状，不是产品决定。
+  // 未回复一次会给候选扣 18 分，而跟进要求至少 FOLLOWUP_MIN_SCORE 分；各场景加满也到不了，
+  // 所以实际行为是"未回复一次后保持沉默，直到用户有新动作"。如果以后让跟进可达，这条测试会失败，
+  // 提醒你同时更新产品意图（跟进是否允许、多严格）。
+  const MINUTE = 60_000;
+  const HOUR = 60 * MINUTE;
+
+  async function collectScores(): Promise<Array<{ sceneId: string; score: number }>> {
+    const ctx = setup();
+    ctx.setState({ unansweredCount: 1 });
+    const seen: Array<{ sceneId: string; score: number }> = [];
+    const run = async (now: number, idleSec: number, label: string) => {
+      ctx.backoffMap.clear();
+      ctx.setSnapshot({ now, idleSec });
+      await ctx.trigger.evaluateNow(label);
+    };
+    const eveningNow = Date.UTC(2026, 6, 21, 12, 0, 0); // 上海 20:00
+    await run(eveningNow, 0, "evening");
+    await run(eveningNow + 31 * MINUTE, 30 * 60, "away");
+    await run(eveningNow + 32 * MINUTE, 10, "back");
+    await run(eveningNow + 8 * HOUR, 0, "later");
+    await run(eveningNow + 8 * HOUR + 1 * MINUTE, 0, "later2");
+    await run(Date.UTC(2026, 6, 22, 0, 45, 0), 0, "morning"); // 上海 08:45
+    await run(Date.UTC(2026, 6, 22, 6, 0, 0), 0, "work-break"); // 连续活跃很久
+    for (const [candidate] of ctx.evaluateCandidate.mock.calls as Array<[ProactiveCandidate]>) {
+      seen.push({ sceneId: candidate.sceneId, score: candidate.score });
+    }
+    return seen;
+  }
+
+  it("no scene can reach the follow-up score, so none passes the policy gate", async () => {
+    const seen = await collectScores();
+    expect(seen.length).toBeGreaterThan(0);
+    for (const { sceneId, score } of seen) {
+      expect(score, sceneId).toBeLessThan(FOLLOWUP_MIN_SCORE);
+      const state = createDefaultProactiveState();
+      state.unansweredCount = 1;
+      state.lastProactiveAt = 0;
+      state.lastProactiveScene = "some_other_scene";
+      const decision = canStartProactiveGeneration(
+        { now: Date.UTC(2026, 6, 22, 6, 0, 0), localHour: 14, localMinute: 0, idleSec: 0, enabled: true, conversationBusy: false, generationBusy: false, screenLocked: false },
+        state,
+        { sceneId, score, sceneCooldownMs: 0 },
+      );
+      expect(decision.allowed, sceneId).toBe(false);
+    }
   });
 });

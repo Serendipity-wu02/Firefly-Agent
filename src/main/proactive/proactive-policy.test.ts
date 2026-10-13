@@ -18,6 +18,7 @@ function snapshot(patch: Partial<ProactiveRuntimeSnapshot> = {}): ProactiveRunti
   return {
     now: NOW,
     localHour: 14,
+    localMinute: 0,
     idleSec: 0,
     enabled: true,
     conversationBusy: false,
@@ -130,5 +131,25 @@ describe("proactive hard policy", () => {
     expect(state.lastProactiveAt).toBe(NOW);
     expect(state.lastProactiveScene).toBe("work_break");
     expect(state.lastFiredAt.work_break).toBe(NOW);
+  });
+});
+
+describe("quiet hours use the user's wall clock to the minute", () => {
+  const idle = { idleSec: 3600 };
+  const decide = (localHour: number, localMinute: number) =>
+    canStartProactiveGeneration(snapshot({ localHour, localMinute, ...idle }), createDefaultProactiveState(), candidate());
+
+  it("blocks an idle user from 22:00 and releases at 08:00", () => {
+    expect(decide(21, 59).allowed).toBe(true);
+    expect(decide(22, 0).reason).toBe("night_inactive");
+    expect(decide(23, 59).reason).toBe("night_inactive");
+    expect(decide(0, 0).reason).toBe("night_inactive");
+    expect(decide(7, 59).reason).toBe("night_inactive");
+    expect(decide(8, 0).allowed).toBe(true);
+  });
+
+  it("still allows a user who is active at night", () => {
+    const decision = canStartProactiveGeneration(snapshot({ localHour: 23, localMinute: 30, idleSec: 59 }), createDefaultProactiveState(), candidate());
+    expect(decision.allowed).toBe(true);
   });
 });

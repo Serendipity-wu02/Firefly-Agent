@@ -1,6 +1,8 @@
 export interface ProactiveRuntimeSnapshot {
   now: number;
+  /** 用户设置的 IANA 时区下的墙上时间，与 localMinute 一起判断免打扰；不得取系统本地时间。 */
   localHour: number;
+  localMinute: number;
   idleSec: number;
   enabled: boolean;
   conversationBusy: boolean;
