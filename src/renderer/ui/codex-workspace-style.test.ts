@@ -79,12 +79,12 @@ describe("Codex-reference workbench presentation", () => {
     expect(value("inspector", ".cy-right-inspector__tabs .ant-tabs-tab.ant-tabs-tab-active", "box-shadow")).toBe("none");
     expect(sources.inspector).not.toContain("transform: translateX");
   });
-  it("centres the empty-state greeting and composer as one group without changing the composer's component lifetime", () => {
+  it("centres the empty-state greeting in the free space and docks the composer at the bottom, without changing the composer's component lifetime", () => {
     expect(value("root", ".cy-workspace.is-empty .cy-workspace-composer", "flex")).toBe("0 0 auto");
-    // auto margins above the greeting and below the composer split the free space around the pair
-    expect(value("root", ".cy-workspace.is-empty .cy-workspace-greeting", "margin-top")).toBe("auto");
-    expect(value("root", ".cy-workspace.is-empty .cy-workspace-composer", "margin-top")).toBe("0px");
-    expect(value("root", ".cy-workspace.is-empty .cy-workspace-composer", "margin-bottom")).toBe("auto");
+    // the greeting takes the free space and centres itself; the composer keeps no auto margins, so it stays docked and does not jump on the first message
+    expect(value("root", ".cy-workspace.is-empty .cy-workspace-greeting", "flex")).toBe("1 1 auto");
+    expect(value("root", ".cy-workspace.is-empty .cy-workspace-greeting", "justify-content")).toBe("center");
+    expect(value("root", ".cy-workspace.is-empty .cy-workspace-composer", "margin")).toBe("0px");
     expect(value("root", ".cy-workspace-greeting", "display")).toBe("none"); // hidden once the conversation has messages
   });
   it("does not paint an accent box behind a sticker-only user message", () => {

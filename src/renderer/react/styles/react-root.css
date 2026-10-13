@@ -476,12 +476,15 @@ body {
   padding: 22px 24px;
 }
 
-/* Empty conversation: greeting and composer sit together a little above the vertical centre. */
+/* Empty conversation: the greeting is centred in the free space above the docked composer. */
 .cy-workspace-greeting { display: none; }
 .cy-workspace.is-empty .cy-workspace-greeting {
-  display: block;
-  flex: 0 0 auto;
-  margin-top: auto;
+  display: flex;
+  flex: 1 1 auto;
+  flex-direction: column;
+  justify-content: center;
+  min-height: 0;
+  margin: 0;
   padding: 0 28px;
   text-align: center;
 }
@@ -492,12 +495,12 @@ body {
   letter-spacing: -0.01em;
 }
 .cy-workspace-greeting__hint { margin: 6px 0 0; color: var(--cy-text-muted); font: 400 13px/1.5 var(--rb-font-sans, sans-serif); }
+/* Like the Codex window: the greeting takes the free space and the composer stays docked at the bottom,
+   so sending the first message does not move it. */
 .cy-workspace.is-empty .cy-workspace-composer {
-  margin-top: 0;
-  margin-bottom: auto;
-  padding-top: 20px;
-  padding-bottom: 14vh;
-  align-items: flex-start;
+  margin: 0;
+  padding: 22px 24px;
+  align-items: flex-end;
 }
 
 .cy-compressing-context {
