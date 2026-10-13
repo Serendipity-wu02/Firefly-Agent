@@ -1,7 +1,7 @@
 {
   "currentDistribution": {
     "archiveSha256": null,
-    "manifestSha256": "f5a2a6b35db3f8f04f00df678c1d11e3e73924245885074b65276c5bcdf10522",
+    "manifestSha256": "0d4752977e8d7b448d5b92cfb010545e30595b30f801c36d7e006d331cfb9128",
     "previousArchiveSha256": "bdc2d00cbf2a6e4d41c931990e5ec5b47b3a13a67742d43f8189bb96cea3b673",
     "previousManifestSha256": "cf6ea967b5e28b8ef6e2df3e9d2ac3d1ed53100c3a232c4bec3598b43f4da15e",
     "predecessorEvidence": "scripts/packaging/specialist-predecessor.json",
