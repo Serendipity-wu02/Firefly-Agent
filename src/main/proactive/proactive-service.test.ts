@@ -17,6 +17,7 @@ function setup(overrides: Record<string, unknown> = {}) {
   let snapshot: ProactiveRuntimeSnapshot = {
     now: NOW,
     localHour: 14,
+    localMinute: 0,
     idleSec: 0,
     enabled: true,
     conversationBusy: false,

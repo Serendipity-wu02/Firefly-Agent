@@ -16,6 +16,7 @@
 // 并在 generateWeatherCandidates 内部加判断。本文件其它结构（定时循环、候选排序、
 // evaluateCandidate 接线）无需改动。
 
+import { getZonedDateParts } from "./proactive-clock";
 import type {
   ProactiveCandidate,
   ProactiveRuntimeSnapshot,
@@ -102,45 +103,8 @@ function clamp(value: number, lo: number, hi: number): number {
   return Math.max(lo, Math.min(hi, value));
 }
 
-/**
- * 用 Intl 把日期拆成 {year, month, day, hour, minute}（按 timezone）。
- * 不依赖 toLocaleString 的本地化标点和顺序。
- */
-export function getZonedDateParts(
-  date: Date,
-  timezone: string,
-): { year: number; month: number; day: number; hour: number; minute: number } {
-  let parts: Intl.DateTimeFormatPart[];
-  try {
-    parts = new Intl.DateTimeFormat("en-CA", {
-      timeZone: timezone,
-      year: "numeric",
-      month: "2-digit",
-      day: "2-digit",
-      hour: "2-digit",
-      minute: "2-digit",
-      hourCycle: "h23",
-    }).formatToParts(date);
-  } catch {
-    // 非法 timezone 时降级到 system-local（仅 debug 时出现；resolver 已保证 timezone 合法）
-    return {
-      year: date.getFullYear(),
-      month: date.getMonth() + 1,
-      day: date.getDate(),
-      hour: date.getHours(),
-      minute: date.getMinutes(),
-    };
-  }
-  const get = (type: Intl.DateTimeFormatPartTypes): string =>
-    parts.find((p) => p.type === type)?.value ?? "";
-  return {
-    year: Number(get("year")),
-    month: Number(get("month")),
-    day: Number(get("day")),
-    hour: Number(get("hour")),
-    minute: Number(get("minute")),
-  };
-}
+// 时钟只在 proactive-clock.ts 里实现；这里重新导出以保持原有的导入路径。
+export { getZonedDateParts } from "./proactive-clock";
 
 /** 用户时区下的日期字符串 YYYY-MM-DD（用于跨日判断）。 */
 function formatLocalDate(date: Date, timezone: string): string {
