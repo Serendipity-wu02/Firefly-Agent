@@ -23,6 +23,7 @@ import {
 } from "./plugin-marketplace";
 import { IPC } from "../shared/ipc-channels";
 import { registerPluginMarketplaceIpc } from "./plugin-marketplace-ipc";
+import { guardPluginIpcHandler, isFromHostMainFrame, type PluginIpcHosts } from "./plugin-management-ipc-guard";
 import type { LlmClient } from "./services/llm/llm-client";
 import { enqueueLLMTask } from "./llm-queue";
 import type { IpcScope } from "./application/ipc-scope";
@@ -56,6 +57,10 @@ export async function startPluginRuntime(deps: PluginRuntimeDeps): Promise<Plugi
   const pluginDataRoot = path.join(app.getPath("userData"), "plugin-data");
   // 插件 IPC 路由器：面板转发与既有 ipcMain 直达共用一套执行路径
   const router = createPluginIpcRouter();
+  const hosts: PluginIpcHosts = {
+    getManagementHost: () => deps.getMarketplaceHostWebContents?.() ?? null,
+    getPanelHost: () => deps.getPanelHostWebContents?.() ?? null,
+  };
   // 独占语音输入租约：全局单例，随插件运行时启动创建；
   // 普通聊天经 IPC 提交桥送入聊天窗口渲染页，活动通话经控制器落到通话管理器
 
@@ -83,7 +88,8 @@ export async function startPluginRuntime(deps: PluginRuntimeDeps): Promise<Plugi
       registerIpc: (channel, handler) => {
         // 两条调用来源（既有 ipcMain 直达 + 面板转发）共用同一张路由表
         router.register(channel, handler);
-        deps.ipc.handle(channel, (_event, ...args: unknown[]) => router.invokeRegistered(channel, args));
+        // 宿主管理通道（plugins:*）只接受宿主窗口主 frame 的调用；插件自己的 plugin:<id>:* 通道不受影响
+        deps.ipc.handle(channel, guardPluginIpcHandler(channel, hosts, (args) => router.invokeRegistered(channel, args)));
       },
       unregisterIpc: (channel) => {
         router.unregister(channel);
@@ -169,8 +175,7 @@ export async function startPluginRuntime(deps: PluginRuntimeDeps): Promise<Plugi
       if (typeof pluginId !== "string" || typeof channel !== "string" || !Array.isArray(args)) {
         return { ok: false, error: "面板调用参数格式非法" };
       }
-      const host = deps.getPanelHostWebContents?.() ?? null;
-      if (!host || event.sender !== host) {
+      if (!isFromHostMainFrame(event, hosts.getPanelHost())) {
         return { ok: false, error: "面板调用来源窗口不受信任" };
       }
       return router.dispatch({ pluginId, channel, args, caller: "panel" });
