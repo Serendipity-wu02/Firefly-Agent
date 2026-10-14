@@ -15,7 +15,8 @@ import {SHADOW_COUNTERS,SHADOW_STOP_REASONS,SHADOW_STORE_LIMITS,type ShadowCount
 type Kind='control'|'record'|'attempt'|'stats';
 interface Control {actorKey:string;revision:number;enabled:boolean;dailyCap:number;clearGeneration:number}
 interface Stats {actorKey:string;day:string;used:number;stopped:ShadowStopReason|null;counters:Partial<Record<ShadowCounter,number>>}
-interface Attempt {actorKey:string;clearGeneration:number}
+/** 预占记录。只能写回一次：写回成功后标为 recorded；清空版本不同的预占不能写回。 */
+interface Attempt {actorKey:string;clearGeneration:number;state:'reserved'|'recorded'}
 interface StoredRecord extends ShadowExportRecord {actorKey:string;clearGeneration:number}
 
 function fail(code='MEMORY_SHADOW_INPUT_INVALID'):never {throw new Error(code)}
@@ -108,7 +109,7 @@ export class ShadowRepository {
    else if(!this.sourceAvailable(scope,body.sourceRef))reason='source-unavailable';
    if(reason){this.bump(s,{[`refuse:${reason}`]:1});this.put(scope,'stats',this.statsId(scope,actorKey,day),s);return {status:'refused',reason}}
    s.used++;this.bump(s,{sent:1});this.put(scope,'stats',this.statsId(scope,actorKey,day),s);
-   this.put(scope,'attempt',attemptId,{actorKey,clearGeneration:c.clearGeneration} satisfies Attempt);
+   this.put(scope,'attempt',attemptId,{actorKey,clearGeneration:c.clearGeneration,state:'reserved'} satisfies Attempt);
    return {status:'reserved',day,used:s.used};
   });
  }
@@ -130,11 +131,13 @@ export class ShadowRepository {
  record(scope:string,commandId:string,actorKey:string,body:{clearGeneration:number;sourceRef:BoundSourceRef;profile:{id:string;revision:number};promptVersion:string;candidates:ShadowCandidate[];tally:Partial<Record<ShadowCounter,number>>}):ShadowRecordResult {
   return this.transaction(scope,commandId,{kind:'record',actorKey,body},now=>{
    const c=this.control(scope,actorKey),day=shadowDay(now),s=this.stats(scope,actorKey,day);
+   const attemptId=this.attemptId(scope,actorKey,body.sourceRef,body.promptVersion),attempt=this.get<Attempt>(scope,'attempt',attemptId);
    const existing=body.candidates.length?this.all<StoredRecord>(scope,'record',actorKey).length:0;
    let reason:ShadowRefusal|null=null;
    if(!c.enabled)reason='disabled';
    else if(c.clearGeneration!==body.clearGeneration)reason='generation-changed';
-   else if(!this.get<Attempt>(scope,'attempt',this.attemptId(scope,actorKey,body.sourceRef,body.promptVersion)))reason='not-reserved';
+   // 预占必须属于当前清空版本且尚未写回：关闭后重新开启、或同一结果重复提交，都不能写回。
+   else if(!attempt||attempt.state!=='reserved'||attempt.clearGeneration!==body.clearGeneration)reason='not-reserved';
    else if(!this.sourceAvailable(scope,body.sourceRef))reason='source-unavailable';
    else if(existing+body.candidates.length>SHADOW_STORE_LIMITS.maxRecordsPerActor)reason='storage-full';
    if(reason){this.bump(s,{[`discard:${reason}`]:1});this.put(scope,'stats',this.statsId(scope,actorKey,day),s);return {status:'refused',reason}}
@@ -142,6 +145,7 @@ export class ShadowRepository {
     const id=this.id('record',scope,actorKey,{sourceId:body.sourceRef.sourceId,revision:body.sourceRef.revision,promptVersion:body.promptVersion,index});
     this.put(scope,'record',id,{actorKey,clearGeneration:c.clearGeneration,candidate,sourceRef:body.sourceRef,profile:body.profile,promptVersion:body.promptVersion,recordedAt:now} satisfies StoredRecord);
    });
+   this.put(scope,'attempt',attemptId,{...attempt!,state:'recorded'} satisfies Attempt);
    this.bump(s,{...body.tally,candidates:body.candidates.length});this.put(scope,'stats',this.statsId(scope,actorKey,day),s);
    return {status:'recorded',written:body.candidates.length};
   });

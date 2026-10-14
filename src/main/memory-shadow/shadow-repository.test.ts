@@ -101,6 +101,14 @@ describe('shadow store',()=>{
   expect(f.shadow('status').used).toBe(1);
  });
 
+ it('accepts only one writeback per reservation, so a second result cannot overwrite or mix with the first',()=>{
+  const f=fixture(),ref=f.publish();f.enable();
+  expect(extract(f,ref,[candidate(ref,'First'),candidate(ref,'Second')])).toEqual({status:'recorded',written:2});
+  expect(f.shadow('record',{clearGeneration:0,sourceRef:ref,profile:{id:'profile-a',revision:1},promptVersion:PROMPT,candidates:[candidate(ref,'Other')],tally:{}})).toEqual({status:'refused',reason:'not-reserved'});
+  expect(f.shadow('export').map((r:any)=>r.candidate.value)).toEqual(['First','Second']);
+  expect(f.shadow('status').counters).toMatchObject({candidates:2,'discard:not-reserved':1});
+ });
+
  it('refuses to write without a reservation',()=>{
   const f=fixture(),ref=f.publish();f.enable();
   expect(f.shadow('record',{clearGeneration:0,sourceRef:ref,profile:{id:'profile-a',revision:1},promptVersion:PROMPT,candidates:[candidate(ref)],tally:{}})).toEqual({status:'refused',reason:'not-reserved'});
@@ -122,6 +130,15 @@ describe('shadow store',()=>{
    expect(f.shadow('configure',{enabled:false,dailyCap:50,expectedRevision:s.revision})).toMatchObject({enabled:false,clearGeneration:1});
    expect(late()).toEqual({status:'refused',reason:'disabled'});
    f.enable();expect(late()).toEqual({status:'refused',reason:'generation-changed'});
+  });
+
+  it('a reservation from before the switch was turned off cannot be written back after turning it on again',()=>{
+   const f=fixture();f.enable();const ref=f.publish(),old=f.shadow('status');
+   expect(f.shadow('reserve',{clearGeneration:old.clearGeneration,sourceRef:ref,promptVersion:PROMPT}).status).toBe('reserved');
+   f.shadow('configure',{enabled:false,dailyCap:50,expectedRevision:old.revision});f.enable();
+   const {clearGeneration}=f.shadow('status');expect(clearGeneration).toBe(old.clearGeneration+1);
+   expect(f.shadow('record',{clearGeneration,sourceRef:ref,profile:{id:'profile-a',revision:1},promptVersion:PROMPT,candidates:[candidate(ref)],tally:{}})).toEqual({status:'refused',reason:'not-reserved'});
+   expect(f.shadow('export')).toEqual([]);
   });
 
   it('clear deletes the rows physically but keeps today\'s usage',()=>{
