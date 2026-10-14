@@ -8,6 +8,7 @@ import {PolicyRepository} from "../memory-policy/policy-repository";
 import {ContextRepository} from "../memory-context/context-repository";
 import {RecallRepository} from "../memory-recall/recall-repository";
 import {HistoryRepository} from "../memory-history/history-repository";
+import {ShadowRepository} from "../memory-shadow/shadow-repository";
 import {executeTransaction} from "./command-transactions";
 import {DatabaseSync} from "node:sqlite";
 import {ensureDatabaseAuth} from "./database-auth";
@@ -31,6 +32,7 @@ export class MemoryRepository {
  }
  jobCommand(command:unknown):unknown{this.assertOpen();return new JobRepository(this.db,this.key,this.clock,this.fault).execute(command)}
  historyCommand(command:unknown):any{this.assertOpen();return new HistoryRepository(this.db,this.key,this.fault,this.clock).execute(command)}
+ shadowCommand(command:unknown):unknown{this.assertOpen();return new ShadowRepository(this.db,this.key,this.fault,this.clock).execute(command)}
  policyCommand(command:unknown):unknown{this.assertOpen();return new PolicyRepository(this.db,this.key,this.fault,this.clock).execute(command)}
  contextCommand(command:unknown):unknown{this.assertOpen();return new ContextRepository(this.db,this.key,this.fault,this.clock).execute(command)}
  recallCommand(command:unknown):unknown{this.assertOpen();return new RecallRepository(this.db,this.key,this.clock,this.fault).execute(command)}
