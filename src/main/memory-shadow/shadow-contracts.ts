@@ -2,7 +2,7 @@
 // 本目录只放纯逻辑：请求构造与对模型输出的校验。模型输出一律当作不可信数据。
 
 /** 第一批只收这些低敏感类别。健康、过敏、财务、证件、住址、他人隐私等一律不收。 */
-export const SHADOW_ATTRIBUTES=['preference','tool','address','response-style','language'] as const;
+export const SHADOW_ATTRIBUTES=['preference','tool','form-of-address','response-style','language'] as const;
 export type ShadowAttribute=typeof SHADOW_ATTRIBUTES[number];
 
 export interface ShadowCandidate {

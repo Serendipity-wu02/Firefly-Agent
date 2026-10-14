@@ -75,13 +75,49 @@ describe('validateShadowResponse',()=>{
  });
 
  it.each([
-  ['allergy (also about a friend)','我朋友对花生过敏','花生过敏'],
+  ['allergy','我对花生过敏','花生过敏'],
   ['health','我最近在吃降压药','降压药'],
   ['finance','我工资卡是招商银行','招商银行'],
   ['english health','I am allergic to peanuts','peanut allergy'],
  ])('drops sensitive categories: %s',(_label,text,value)=>{
   const v=validateShadowResponse(respond(fact({attribute:'preference',value,quote:text})),turn(text));
   expect(v.candidates).toEqual([]);expect(v.dropped.sensitive).toBe(1);
+ });
+
+ it.each([
+  ['a street address','I live at 123 Main Street','123 Main Street'],
+  ['a Chinese address','我住在中山路 88 号','中山路 88 号'],
+  ['an email address','我常用 me@example.com 收信','me@example.com'],
+  ['a phone number','打 138-0013-8000 找我','138-0013-8000'],
+  ['an ID-like number','我的号码是 110101199001011234','110101199001011234'],
+ ])('drops a raw sensitive value even without a category word: %s',(_label,text,value)=>{
+  const v=validateShadowResponse(respond(fact({attribute:'preference',value,quote:value})),turn(text));
+  expect(v.candidates).toEqual([]);expect(v.dropped.sensitive).toBe(1);
+ });
+
+ it.each([
+  ['a friend, mislabelled as the user','My friend uses Vim','Vim','uses Vim'],
+  ['a colleague, quote cut before the subject','我同事一直用 Emacs','Emacs','一直用 Emacs'],
+  ['she','她喜欢深色主题','深色主题','喜欢深色主题'],
+  ['a friend with an allergy','我朋友对花生过敏','花生过敏','对花生过敏'],
+ ])('drops facts about others even when the model says subject "user": %s',(_label,text,value,quote)=>{
+  const v=validateShadowResponse(respond(fact({subject:'user',attribute:'tool',value,quote})),turn(text));
+  expect(v.candidates).toEqual([]);expect(v.dropped['about-other']).toBe(1);
+ });
+
+ it('does not treat 其他 or 吉他 as a third person',()=>{
+  const v=validateShadowResponse(respond(fact({attribute:'preference',value:'弹吉他',quote:'我喜欢弹吉他，其他乐器不太会'})),turn('我喜欢弹吉他，其他乐器不太会'));
+  expect(v.candidates).toHaveLength(1);
+ });
+
+ it('judges temporariness from the whole sentence, not only the quote the model chose',()=>{
+  const v=validateShadowResponse(respond(fact({attribute:'response-style',value:'concise replies',quote:'I prefer concise replies'})),turn('Today, I prefer concise replies.'));
+  expect(v.candidates).toEqual([]);expect(v.dropped.temporary).toBe(1);
+ });
+
+ it('a time word in another sentence does not drop an unrelated durable fact',()=>{
+  const v=validateShadowResponse(respond(fact({quote:'我平时用 VS Code'})),turn('我平时用 VS Code。今天先不聊这个'));
+  expect(v.candidates).toHaveLength(1);
  });
 
  it('drops temporary situations',()=>{

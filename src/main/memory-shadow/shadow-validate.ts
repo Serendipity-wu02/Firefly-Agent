@@ -13,12 +13,38 @@ const SENSITIVE=new RegExp([
  'bank','account number','card number','salary','income','debt','loan','passport','social security','\\bssn\\b','driver\'?s licen','home address','phone number','e-?mail',
  'religio','politic','sexual','ethnic','\\brace\\b',
 ].join('|'),'i');
+/**
+ * 敏感值的形状：只靠类别词拦不住"123 Main Street"、邮箱、电话、证件号这类原始值。
+ * 邮箱；7 位以上的数字串（允许空格、横线分隔）；中英文门牌地址与住址表述。
+ */
+const SENSITIVE_SHAPE=new RegExp([
+ String.raw`[\w.+-]+@[\w-]+\.[\w.-]+`,
+ String.raw`(?:\d[\s-]?){7,}`,
+ String.raw`\b\d+[a-z]?\s+(?:[a-z]+\s+){0,3}(?:street|st|road|rd|avenue|ave|lane|ln|boulevard|blvd|drive|dr|court|ct|way|place|pl)\b`,
+ String.raw`\b(?:i live|i'm living|my address)\b`,
+ String.raw`[\d一二三四五六七八九十百]+\s*(?:号楼|号院|号|弄|栋|幢|单元|室)`,
+ String.raw`(?:路|街|巷|道|大道)\s*\d+`,
+ '我住在|我家在|住址是',
+].join('|'),'i');
+/**
+ * 说的是别人：不信模型的 subject 标注，独立检查引用所在的整句。宁可多丢。
+ * 中文排除"其他""吉他"里的"他"。
+ */
+const OTHER_PERSON=/朋友|同事|同学|室友|老板|领导|上司|客户|妈|爸|父亲|母亲|爷爷|奶奶|外公|外婆|老婆|老公|妻子|丈夫|男朋友|女朋友|对象|伴侣|孩子|儿子|女儿|哥哥|姐姐|弟弟|妹妹|别人|他人|(?<![其吉])他|她|\bmy\s+(?:friends?|wife|husband|partner|boyfriend|girlfriend|mom|mother|dad|father|son|daughter|kids?|child|children|brother|sister|boss|colleague|co-?worker|roommate|manager|client)\b|\b(?:he|she|his|her|him|they|their|them)\b/i;
 const TEMPORARY=/临时|暂时|今天|今晚|明天|这次|本次|这周|本周|这会儿|for now|today|tonight|tomorrow|this time|this week|right now/i;
 /** 用户整句只是附和，不能据此确定任何事实。 */
 const AFFIRMATION=/^(?:是的?|对的?|对呀|嗯+|恩+|好的?|好呀|行|可以|没错|当然|yes|yeah|yep|yup|ok(?:ay)?|sure|right|correct|exactly)[\s。.!！~～,，]*$/i;
 
 const isRecord=(v:unknown):v is Record<string,unknown>=>!!v&&typeof v==='object'&&!Array.isArray(v);
 const short=(v:unknown,max:number,min=1):v is string=>typeof v==='string'&&v.trim().length>=min&&v.length<=max;
+/** 引用所在的整句（按句末标点和换行切分）。时间限定和"说的是谁"要看整句，不能只看模型挑出的那一段。 */
+function sentenceAround(text:string,quote:string):string {
+ const at=text.indexOf(quote),boundary=/[。！？!?.;；\n]/;
+ let from=at,to=at+quote.length;
+ while(from>0&&!boundary.test(text[from-1]))from--;
+ while(to<text.length&&!boundary.test(text[to]))to++;
+ return text.slice(from,to);
+}
 
 function emptyDropped():Record<ShadowDropReason,number> {return Object.fromEntries(SHADOW_DROP_REASONS.map(r=>[r,0])) as Record<ShadowDropReason,number>}
 
@@ -44,8 +70,10 @@ export function validateShadowResponse(raw:unknown,turn:ShadowTurn):ShadowValida
   if(item.subject!=='user'){dropped['about-other']++;continue}
   // 只能引用用户原话；只出现在助手回复里的句子不算证据。
   if(!userText.includes(quote)){dropped['quote-not-in-user']++;continue}
-  if(SENSITIVE.test(value.normalize('NFKC'))||SENSITIVE.test(quote.normalize('NFKC'))){dropped.sensitive++;continue}
-  if(TEMPORARY.test(quote.normalize('NFKC'))){dropped.temporary++;continue}
+  const sentence=sentenceAround(userText,quote).normalize('NFKC');
+  if(OTHER_PERSON.test(sentence)){dropped['about-other']++;continue}
+  if([value,quote,sentence].some(t=>{const n=t.normalize('NFKC');return SENSITIVE.test(n)||SENSITIVE_SHAPE.test(n)})){dropped.sensitive++;continue}
+  if(TEMPORARY.test(sentence)){dropped.temporary++;continue}
   const key=`${item.attribute}\u0000${item.polarity}\u0000${value.toLowerCase()}`;
   if(seen.has(key)){dropped.duplicate++;continue}
   if(result.candidates.length>=SHADOW_LIMITS.maxCandidates){dropped['over-limit']++;continue}
