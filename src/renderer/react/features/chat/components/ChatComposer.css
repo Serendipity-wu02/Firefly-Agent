@@ -2,7 +2,9 @@
   display: flex;
   width: min(100%, var(--ff-reading-width));
   flex-direction: column;
-  transition: transform 240ms ease, width 320ms ease;
+  /* Only the vertical slide between the welcome and docked states animates. The width follows its container directly: a width
+     transition made the composer lag behind and glide while the sidebar or window edge was being dragged. */
+  transition: transform 240ms ease;
 }
 
 .ff-composer-stack.is-centered {
