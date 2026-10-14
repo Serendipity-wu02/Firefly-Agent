@@ -1,16 +1,16 @@
 // MCP Server 管理 UI：列表/添加/删除 MCP Server，自定义端点接入说明
-// 从 settings.ts 抽离。依赖 shared/modal + shared/parse + plugins/dom + api/dom。
+// 从 settings.ts 抽离。依赖 shared/modal + shared/parse + api/dom；MCP 有自己的导航页 #mcp-panel。
 // 副作用导入：模块加载时执行事件绑定 + 接入说明渲染。
 
 import { showHtmlModal } from "../shared/modal";
 import { mountMcpManagement } from "./management";
 import "./panel.css";
-import { pluginAddBtn } from "../plugins/dom";
 import { customEndpointGuideBtn } from "../api/dom";
 
 // Only the existing, narrow preload methods cross the Electron IPC boundary.
-const management = mountMcpManagement(pluginAddBtn);
-pluginAddBtn?.addEventListener("click", () => { void management?.add(); });
+const mcpAddBtn = document.querySelector<HTMLButtonElement>("#mcp-panel .mcp-add-btn");
+const management = mountMcpManagement(mcpAddBtn);
+mcpAddBtn?.addEventListener("click", () => { void management?.add(); });
 
 export const CUSTOM_ENDPOINT_GUIDE_BODY = [
   '<section class="custom-endpoint-guide-section">',

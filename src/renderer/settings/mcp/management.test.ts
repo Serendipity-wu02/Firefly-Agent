@@ -17,7 +17,7 @@ function inputs() { modal.showInputModal.mockResolvedValueOnce('node "path with 
 
 beforeEach(() => {
   vi.resetModules(); vi.resetAllMocks();
-  document.body.innerHTML = '<section id="plugins-panel"><header><button class="plugin-add-btn">＋</button></header><div class="plugin-list"></div></section>';
+  document.body.innerHTML = '<section id="mcp-panel"><h1 id="mcp-panel-title">MCP</h1><button class="mcp-add-btn"></button><div class="mcp-server-host"></div></section>';
   window.settings = api as unknown as SettingsApi;
   api.listMcpServers.mockResolvedValue([row()]);
   api.addMcpServer.mockResolvedValue({ ok: true, toolIds: ["tool"] });
@@ -60,43 +60,43 @@ describe("MCP management UI", () => {
   });
   it("does not queue duplicate add dialogs or execute before explicit confirmation", async () => {
     await mount(); const command = deferred<string | null>(); modal.showInputModal.mockReturnValueOnce(command.promise);
-    click(".plugin-add-btn"); click(".plugin-add-btn");
+    click(".mcp-add-btn"); click(".mcp-add-btn");
     expect(modal.showInputModal).toHaveBeenCalledTimes(1);
     expect(api.addMcpServer).not.toHaveBeenCalled();
     command.resolve("node synthetic-server.js"); modal.showInputModal.mockResolvedValueOnce("New"); modal.showConfirm.mockResolvedValueOnce(false);
     await flush();
     expect(modal.showConfirm).toHaveBeenCalledTimes(1);
     expect(api.addMcpServer).not.toHaveBeenCalled();
-    expect(document.querySelector<HTMLButtonElement>(".plugin-add-btn")?.disabled).toBe(false);
+    expect(document.querySelector<HTMLButtonElement>(".mcp-add-btn")?.disabled).toBe(false);
   });
   it.each([null, "", "   "])("canceling or blank command %j never reaches Main", async (command) => {
     await mount(); modal.showInputModal.mockResolvedValueOnce(command);
-    click(".plugin-add-btn"); await flush();
+    click(".mcp-add-btn"); await flush();
     expect(api.addMcpServer).not.toHaveBeenCalled(); expect(modal.showConfirm).not.toHaveBeenCalled();
   });
   it("canceling the name dialog does not silently launch an unnamed server", async () => {
     await mount(); modal.showInputModal.mockResolvedValueOnce("node server.js").mockResolvedValueOnce(null);
-    click(".plugin-add-btn"); await flush();
+    click(".mcp-add-btn"); await flush();
     expect(api.addMcpServer).not.toHaveBeenCalled(); expect(modal.showConfirm).not.toHaveBeenCalled();
   });
   it("adds through the existing stdio contract and refreshes only after Main completes", async () => {
     await mount(); inputs(); const added = deferred<{ ok: boolean; toolIds: string[] }>(); api.addMcpServer.mockReturnValueOnce(added.promise);
-    click(".plugin-add-btn"); await flush();
+    click(".mcp-add-btn"); await flush();
     expect(api.addMcpServer).toHaveBeenCalledWith(expect.objectContaining({ name: "New server", transport: "stdio", command: "node", args: ["path with space/server.js", "--flag"] }));
     expect(list()?.textContent).not.toContain("New server");
     api.listMcpServers.mockResolvedValueOnce([row(), row("new", "New server")]); added.resolve({ ok: true, toolIds: ["tool"] }); await flush();
     expect(list()?.textContent).toContain("New server");
-    expect(document.querySelector<HTMLButtonElement>(".plugin-add-btn")?.disabled).toBe(false);
+    expect(document.querySelector<HTMLButtonElement>(".mcp-add-btn")?.disabled).toBe(false);
   });
   it("preserves rows on add failure and never echoes command/credential errors to DOM or logs", async () => {
     await mount(); inputs(); api.addMcpServer.mockResolvedValueOnce({ ok: false, error: "TOKEN=synthetic-secret" });
     const log = vi.spyOn(console, "log").mockImplementation(() => {}); const error = vi.spyOn(console, "error").mockImplementation(() => {});
-    click(".plugin-add-btn"); await flush();
+    click(".mcp-add-btn"); await flush();
     expect(list()?.textContent).toContain("Weather");
     expect(modal.showAlert).toHaveBeenCalled();
     const exposed = JSON.stringify([modal.showAlert.mock.calls, log.mock.calls, error.mock.calls]);
     expect(exposed).not.toContain("synthetic-secret"); expect(exposed).not.toContain("path with space");
-    expect(document.querySelector<HTMLButtonElement>(".plugin-add-btn")?.disabled).toBe(false);
+    expect(document.querySelector<HTMLButtonElement>(".mcp-add-btn")?.disabled).toBe(false);
   });
   it("canceling deletion leaves both server and config untouched", async () => {
     await mount(); modal.showConfirm.mockResolvedValueOnce(false); remove(); await flush();
@@ -119,34 +119,37 @@ describe("MCP management UI", () => {
   });
   it("leaves built-in Playwright under its existing setting instead of offering conflicting deletion", async () => {
     api.listMcpServers.mockResolvedValueOnce([row("playwright-mcp", "Playwright")]); await mount();
-    expect(list()?.textContent).toContain("开关"); expect(list()?.querySelector("[data-mcp-remove]")).toBeNull();
+    expect(list()?.textContent).toContain("工具配置"); expect(list()?.querySelector("[data-mcp-remove]")).toBeNull();
+    const nav = document.createElement("button"); nav.className = "nav-item"; nav.dataset.section = "plugins"; const opened = vi.fn(); nav.addEventListener("click", opened); document.body.append(nav);
+    const open = [...list()!.querySelectorAll<HTMLButtonElement>("button")].find(button => button.textContent === "前往工具配置");
+    expect(open).toBeDefined(); open!.click(); expect(opened).toHaveBeenCalledTimes(1);
   });
   it("ignores an older list result after a confirmed add refresh", async () => {
     const stale = deferred<ReturnType<typeof row>[]>(); api.listMcpServers.mockReturnValueOnce(stale.promise); await mount();
-    inputs(); api.listMcpServers.mockResolvedValueOnce([row("new", "New server")]); click(".plugin-add-btn"); await flush();
+    inputs(); api.listMcpServers.mockResolvedValueOnce([row("new", "New server")]); click(".mcp-add-btn"); await flush();
     stale.resolve([row("old", "Old snapshot")]); await flush();
     expect(list()?.textContent).toContain("New server"); expect(list()?.textContent).not.toContain("Old snapshot");
   });
   it("retains an in-flight initial read when addition is canceled", async () => {
     const pending = deferred<ReturnType<typeof row>[]>(); api.listMcpServers.mockReturnValueOnce(pending.promise); await mount();
-    modal.showInputModal.mockResolvedValueOnce(null); click(".plugin-add-btn"); await flush();
+    modal.showInputModal.mockResolvedValueOnce(null); click(".mcp-add-btn"); await flush();
     pending.resolve([row()]); await flush();
     expect(list()?.textContent).toContain("Weather");
     expect(api.addMcpServer).not.toHaveBeenCalled();
   });
   it("does not start a command after the window unloads during confirmation", async () => {
     await mount(); inputs(); const confirmation = deferred<boolean>(); modal.showConfirm.mockReturnValueOnce(confirmation.promise);
-    click(".plugin-add-btn"); await flush(); window.dispatchEvent(new Event("pagehide")); confirmation.resolve(true); await flush();
+    click(".mcp-add-btn"); await flush(); window.dispatchEvent(new Event("pagehide")); confirmation.resolve(true); await flush();
     expect(api.addMcpServer).not.toHaveBeenCalled();
   });
   it("does not revive UI or refresh after an in-flight operation returns to an unloaded window", async () => {
     await mount(); inputs(); const added = deferred<{ ok: boolean }>(); api.addMcpServer.mockReturnValueOnce(added.promise);
-    click(".plugin-add-btn"); await flush(); window.dispatchEvent(new Event("pagehide")); document.body.innerHTML = "";
+    click(".mcp-add-btn"); await flush(); window.dispatchEvent(new Event("pagehide")); document.body.innerHTML = "";
     added.resolve({ ok: true }); await flush();
     expect(document.body.innerHTML).toBe(""); expect(api.listMcpServers).toHaveBeenCalledTimes(1); expect(modal.showNotice).not.toHaveBeenCalled();
   });
   it("does not paint a list into a detached settings panel after a late response", async () => {
     const pending = deferred<ReturnType<typeof row>[]>(); api.listMcpServers.mockReturnValueOnce(pending.promise); await mount();
-    document.getElementById("plugins-panel")!.remove(); pending.resolve([row()]); await flush(); expect(document.body.innerHTML).toBe("");
+    document.getElementById("mcp-panel")!.remove(); pending.resolve([row()]); await flush(); expect(document.body.innerHTML).toBe("");
   });
 });

@@ -11,6 +11,5 @@ export const travelConfig = document.getElementById("plugin-travel-config") as H
 export const travelAmapKeyInput = document.getElementById("travel-amap-key") as HTMLInputElement | null;
 export const musicEnabledCheckbox = document.getElementById("plugin-music-enabled") as HTMLInputElement | null;
 export const playwrightMcpCheckbox = document.getElementById("plugin-playwright-mcp-enabled") as HTMLInputElement | null;
-export const pluginAddBtn = document.querySelector(".plugin-add-btn") as HTMLButtonElement | null;
 export const permissionBlocksWrap = document.getElementById("plugin-file-permission") as HTMLElement | null;
 export const permissionNote = document.getElementById("plugin-file-note") as HTMLElement | null;
