@@ -1,7 +1,7 @@
 import type { ToolCall, ToolSpec } from "../../vendors/types";
 import type { ToolContext } from "../../tools/registry/tool-context";
 import type { ToolObservation } from "../types";
-import { parseToolCallArgs } from "../types";
+import { tryParseToolCallArgs, invalidToolCallArguments } from "../types";
 import {
   ToolOutputCorruptError,
   ToolOutputInvalidInputError,
@@ -41,7 +41,8 @@ export async function executeReadToolResult(
   if (!store) {
     return runtimeSafety("工具结果存储未注入，当前运行无法读取完整结果");
   }
-  const args = parseToolCallArgs(call);
+  const args = tryParseToolCallArgs(call);
+  if (args === undefined) return invalidToolCallArguments(call);
   const resultRef = resolveResultRef(args, toolContext);
   if ("error" in resultRef) return resultRef.error;
 

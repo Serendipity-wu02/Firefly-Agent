@@ -19,7 +19,7 @@ import type { ToolCallResult } from "../types";
 import { TranscriptWriteError } from "../transcript-sink";
 import type { HarnessToolFinishedEvent, HarnessToolLifecycleEvent, SideEffectKind, ToolCallOutcome, ToolObservation } from "./types";
 import type { ToolRiskLevel } from "../../permission-policy";
-import { parseToolCallArgs, toolCallFingerprint } from "./types";
+import { parseToolCallArgs, tryParseToolCallArgs, toolCallFingerprint } from "./types";
 import { dispatchToolCall, persistToolDispatchResult, type ToolDispatchResult } from "./tool-dispatcher";
 import { classifyToolExecutionMode, scheduleToolCalls, type ToolCallScheduleResult, type ToolScheduleCommitDecision } from "./tool-call-scheduler";
 import { resolveSideEffect } from "./side-effect-resolver";
@@ -65,6 +65,12 @@ function notifyToolFinished(
  * - 普通工具交给调度器：安全读操作滚动并行，独占调用前后形成串行屏障，
  *   模型可见结果始终按原始 tool-call 顺序写回。
  */
+function resolveCallSideEffect(run: HarnessRun, call: ToolCall): SideEffectKind {
+  const args = tryParseToolCallArgs(call);
+  return args === undefined ? "non_idempotent_side_effect"
+    : resolveSideEffect(run.input.tools.find(tool => tool.id === call.name), args);
+}
+
 export async function runToolRound(run: HarnessRun, toolCalls: ToolCall[]): Promise<ToolRoundOutcome> {
   const { input } = run;
   // The canonical assistant declaration is already durable. Persist every planned
@@ -166,10 +172,12 @@ function preserveUncertainEffectIfNeeded(run: HarnessRun, call: ToolCall, toolSi
   if (toolSideEffect !== "non_idempotent_side_effect") return;
   const effectId = `${run.input.runId ?? run.input.toolContext?.runId ?? "unknown-run"}:${call.id}`;
   if (run.state.uncertainEffects.some((effect) => effect.id === effectId)) return;
+  const args = tryParseToolCallArgs(call);
   run.state.uncertainEffects.push({
     id: effectId,
     toolCallId: call.id,
-    fingerprint: toolCallFingerprint(call.name, parseToolCallArgs(call)),
+    fingerprint: toolCallFingerprint(call.name, args ?? {}),
+    ...(args === undefined ? { argumentsUnavailable: true as const } : {}),
     toolName: call.name,
     message: "工具已执行，但结果持久化失败，效果状态未知",
   });
@@ -246,7 +254,7 @@ async function runAskUserRound(
     input.onToolLifecycle?.({
       toolCallId: call.id,
       toolName: call.name,
-      toolSideEffect: resolveSideEffect(input.tools.find((tool) => tool.id === call.name), parseToolCallArgs(call)),
+      toolSideEffect: resolveCallSideEffect(run, call),
       status: "not_executed",
     });
     notifyToolFinished(run, call, "not_executed");
@@ -254,26 +262,30 @@ async function runAskUserRound(
 
   // 执行 ask_user（等待期间不计入执行超时）
   // ask_user 同样走工具卡事件链：运行流里出现「询问用户」卡片，等待与问答结果可见
-  input.onEvent?.({
-    type: "tool_start",
-    toolCallId: primaryAsk.id,
-    toolName: primaryAsk.name,
-    args: parseToolCallArgs(primaryAsk),
-  });
-  run.clock.startUserWait();
-  input.onToolLifecycle?.({ toolCallId: primaryAsk.id, toolName: primaryAsk.name, toolSideEffect: "read_only", status: "started" });
-  const askStartedAt = Date.now();
+  const args = tryParseToolCallArgs(primaryAsk);
+  let askStartedAt: number | undefined;
   let askResult: ToolDispatchResult;
-  try {
-    askResult = await raceWithSignal(
-      dispatchToolCall(primaryAsk, run.askDispatchContext),
-      input.signal,
-    );
-  } catch (error) {
-    run.clock.stopUserWait();
-    throw error;
+  if (args === undefined) {
+    askResult = await dispatchToolCall(primaryAsk, run.askDispatchContext);
+  } else {
+    input.onEvent?.({
+      type: "tool_start",
+      toolCallId: primaryAsk.id,
+      toolName: primaryAsk.name,
+      args,
+    });
+    run.clock.startUserWait();
+    input.onToolLifecycle?.({ toolCallId: primaryAsk.id, toolName: primaryAsk.name, toolSideEffect: "read_only", status: "started" });
+    askStartedAt = Date.now();
+    try {
+      askResult = await raceWithSignal(
+        dispatchToolCall(primaryAsk, run.askDispatchContext),
+        input.signal,
+      );
+    } finally {
+      run.clock.stopUserWait();
+    }
   }
-  run.clock.stopUserWait();
 
   // 问答结果发布到工具卡：message 已含「问题 → 回答」逐行预览
   input.onEvent?.({
@@ -299,6 +311,7 @@ async function runAskUserRound(
  */
 async function executeToolCallWithRetry(run: HarnessRun, execution: ToolCallExecution): Promise<ToolDispatchResult> {
   const { call } = execution;
+  if (tryParseToolCallArgs(call) === undefined) return dispatchToolCall(call, run.toolDispatchContext);
   // 熔断拦截：同工具连续失败达到阈值 → 不再 dispatch，直接合成 not_executed。
   // 拦截必须在 dispatch 之前；合成结果流回 commitToolResult 时 not_executed 不改计数，
   // 熔断不会被自己合成的结果解除。
@@ -313,7 +326,7 @@ async function executeToolCallWithRetry(run: HarnessRun, execution: ToolCallExec
   }
 
   const { input } = run;
-  const toolSideEffect = resolveSideEffect(input.tools.find((tool) => tool.id === call.name), parseToolCallArgs(call));
+  const toolSideEffect = resolveCallSideEffect(run, call);
   const dispatchContext = {
     ...run.toolDispatchContext,
     delegationScope: execution.delegationScope,
@@ -369,7 +382,7 @@ async function commitToolResult(
 ): Promise<ToolScheduleCommitDecision> {
   const { input } = run;
   const toolSideEffect = result.toolSideEffect
-    ?? resolveSideEffect(input.tools.find((tool) => tool.id === call.name), parseToolCallArgs(call));
+    ?? resolveCallSideEffect(run, call);
 
   // 熔断计数（结果必经点）：failure 递增、success 清零、not_executed/unknown 不动
   const streaks = (run.state.toolFailureStreaks ??= {});
@@ -434,13 +447,15 @@ async function commitToolResult(
   notifyToolFinished(run, call, result.outcome, startedAt);
 
   if (result.outcome === "unknown" && toolSideEffect === "non_idempotent_side_effect") {
-    const fingerprint = toolCallFingerprint(call.name, parseToolCallArgs(call));
+    const args = tryParseToolCallArgs(call);
+    const fingerprint = toolCallFingerprint(call.name, args ?? {});
     const effectId = `${input.toolContext?.runId ?? "unknown-run"}:${call.id}`;
     if (!run.state.uncertainEffects.some((effect) => effect.id === effectId)) {
       run.state.uncertainEffects.push({
         id: effectId,
         toolCallId: call.id,
         fingerprint,
+        ...(args === undefined ? { argumentsUnavailable: true as const } : {}),
         toolName: call.name,
         message: "副作用已发起，但 Runtime 无法确认是否生效",
       });

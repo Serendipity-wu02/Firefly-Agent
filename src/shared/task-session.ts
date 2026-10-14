@@ -39,6 +39,8 @@ export interface TaskUncertainEffect {
   id: string;
   toolCallId: string;
   fingerprint: string;
+  /** 无法解析历史已启动调用的参数时，保守拦截该工具直到用户确认。 */
+  argumentsUnavailable?: true;
   toolName: string;
   message: string;
   repeatAuthorization?: { source: "user"; grantedAt: number };

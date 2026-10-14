@@ -15,7 +15,12 @@
  * obligation + final gate 已移除，只保留本文件的副作用拦截。
  */
 
-import type { AgentState } from "./types";
+import type { AgentState, UncertainEffect } from "./types";
+
+export function findBlockingUncertainEffect(state: AgentState, fingerprint: string, toolName?: string): UncertainEffect | undefined {
+  return state.uncertainEffects.find(effect => effect.fingerprint === fingerprint
+    || effect.argumentsUnavailable === true && effect.toolName === toolName);
+}
 
 /**
  * 检查某工具调用是否被 uncertainEffects 拦截（相同 fingerprint）。
@@ -27,8 +32,9 @@ import type { AgentState } from "./types";
 export function isBlockedByUncertainEffect(
   state: AgentState,
   fingerprint: string,
+  toolName?: string,
 ): boolean {
-  return state.uncertainEffects.some((effect) => effect.fingerprint === fingerprint);
+  return findBlockingUncertainEffect(state, fingerprint, toolName) !== undefined;
 }
 
 /**

@@ -11,7 +11,7 @@ import * as path from "path";
 import type { AskClarificationCard } from "../../../shared/ask-clarification";
 import type { ToolCall, ToolSpec } from "../vendors/types";
 import type { HarnessEvent, ToolObservation } from "./types";
-import { parseToolCallArgs } from "./types";
+import { tryParseToolCallArgs } from "./types";
 import type { ToolContext } from "../tools/registry/tool-context";
 import {
   enterPlanDiscussing,
@@ -131,8 +131,8 @@ export async function executeWritePlan(
       message: "write_plan 仅在计划讨论状态可用",
     };
   }
-  const args = parseToolCallArgs(call);
-  const content = typeof args.content === "string" ? args.content.trim() : "";
+  const args = tryParseToolCallArgs(call);
+  const content = typeof args?.content === "string" ? args.content.trim() : "";
   if (!content) {
     return {
       outcome: "failure",

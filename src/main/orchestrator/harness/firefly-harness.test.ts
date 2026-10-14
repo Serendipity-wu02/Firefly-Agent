@@ -211,6 +211,19 @@ describe("FireflyHarness completion", () => {
     recordUsage.mockReset();
   });
 
+  it("passes the canonical cancellation signal into confirmation dispatch", async () => {
+    const controller = new AbortController();
+    const call: ToolCall = { id: "confirm", name: "confirm_uncertain_effect", arguments: '{"effectId":"effect"}' };
+    const { fn } = fakeFetchSequencer([assistantResponse({ toolCalls: [call] }), assistantResponse({ text: "done" })]);
+    vi.stubGlobal("fetch", fn);
+    mockedDispatch.mockImplementation(async (_call, context) => {
+      if (context.toolContext?.signal !== controller.signal) throw new Error("confirmation signal missing");
+      return { outcome: "success", tool: call.name, message: "confirmed" };
+    });
+    const result = await runFireflyHarness({ systemPrompt: "test", messages: [], tools: [], vendorConfig, signal: controller.signal });
+    expect(result.finalAnswer).toBe("done");
+  });
+
   it("uses the SDK stream runner with native tools enabled", async () => {
     const { fn: fetchMock } = fakeFetchSequencer([
       assistantResponse({ text: "直接完成。" }),

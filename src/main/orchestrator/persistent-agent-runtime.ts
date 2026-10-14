@@ -70,7 +70,11 @@ export function createAgentExecutor(input: {
         const instructionIndex = previous.messages.map(message => message.role).lastIndexOf("user");
         const prefix = instructionIndex >= 0 ? previous.messages.slice(0, instructionIndex) : previous.messages;
         const effects = [...previous.uncertainEffects ?? []];
-        for (const effect of recovered.state.uncertainEffects) if (!effects.some(entry => entry.id === effect.id)) effects.push(effect);
+        for (const effect of recovered.state.uncertainEffects) {
+          const existing = effects.find(entry => entry.id === effect.id);
+          if (!existing) effects.push(effect);
+          else if (effect.argumentsUnavailable === true) existing.argumentsUnavailable = true;
+        }
         input.store.checkpoint(previous.id, {
           ...(previous.recoveryRunId ? {} : { messages: [...prefix, ...recovered.messages] as TaskTranscriptMessage[] }),
           uncertainEffects: effects, recoveryRunId: recoverRunId ?? null,

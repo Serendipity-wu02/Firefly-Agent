@@ -60,6 +60,15 @@ function outcomeFor(messages: ChatMessage[], toolCallId: string): string {
 // ── 活动视图与 rewind 语义 ─────────────────────────────────
 
 describe("materializeTranscript", () => {
+  it.each(["{", "null", "[]", '"text"', "1", "true"])("conservatively closes a started orphan with %s arguments", argumentsText => {
+    const e = createEntries();
+    const reader: TranscriptRunReader = { get: () => ({ toolCalls: [{ toolCallId: "legacy", toolName: "send_email",
+      sideEffect: "non_idempotent_side_effect", status: "started", updatedAt: 1 }] }) as HarnessRunSession };
+    const built = materializeTranscript([e.assistantWithCalls("assistant", [{ id: "legacy", name: "send_email", arguments: argumentsText }], "run")], reader);
+    expect(outcomeFor(built.messages, "legacy")).toBe("unknown");
+    expect(built.messages.filter(message => message.toolCallId === "legacy")).toHaveLength(1);
+    expect(built.uncertainEffects).toContainEqual(expect.objectContaining({ toolCallId: "legacy", toolName: "send_email", argumentsUnavailable: true }));
+  });
   it("applies repeated replace_user against the highest active revision", () => {
     const e = createEntries();
     const active = materializeTranscript([

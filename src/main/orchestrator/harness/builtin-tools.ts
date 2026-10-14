@@ -14,8 +14,8 @@ import type {
   TodoStatus,
   ToolObservation,
 } from "./types";
-import { parseToolCallArgs } from "./types";
-import { isAbortError } from "../../abort-utils";
+import { tryParseToolCallArgs, invalidToolCallArguments } from "./types";
+import { createAbortError, isAbortError, raceWithSignal } from "../../abort-utils";
 import { resolveUncertainEffect } from "./uncertain-effect-guard";
 import type { DelegationScope } from "../child-session-types";
 import type { AgentExecuteRequest, AgentExecuteResult } from "../persistent-agent-runtime";
@@ -48,8 +48,8 @@ export async function executeDelegateAgent(
   onExecutionStarted?: () => void,
 ): Promise<ToolObservation> {
   if (!executor) return { outcome: "failure", category: "runtime_safety", tool: DELEGATE_AGENT_TOOL_ID, message: "当前运行未配置持久 Agent 委托" };
-  const args = parseToolCallArgs(call);
-  if (!args || typeof args !== "object" || Array.isArray(args)) {
+  const args = tryParseToolCallArgs(call);
+  if (args === undefined) {
     return { outcome: "failure", category: "invalid_arguments", tool: DELEGATE_AGENT_TOOL_ID, message: "delegate_agent 参数必须是对象" };
   }
   const agentId = typeof args.agent_id === "string" ? args.agent_id.trim() : "";
@@ -203,7 +203,8 @@ export async function executeUpdateTodo(
   state: AgentState,
   onEvent?: (event: HarnessEvent) => void,
 ): Promise<ToolObservation> {
-  const args = parseToolCallArgs(call);
+  const args = tryParseToolCallArgs(call);
+  if (args === undefined) return invalidToolCallArguments(call);
   const rawTodos = (args.todos as unknown) ?? [];
 
   if (!Array.isArray(rawTodos)) {
@@ -412,7 +413,8 @@ export async function executeAskUser(
   requestUserClarification: ((card: unknown) => Promise<unknown>) | undefined,
   onEvent?: (event: HarnessEvent) => void,
 ): Promise<ToolObservation> {
-  const args = parseToolCallArgs(call);
+  const args = tryParseToolCallArgs(call);
+  if (args === undefined) return invalidToolCallArguments(call);
   const rawQuestions = (args.questions as unknown) ?? [];
 
   const parsed = parseAskQuestions(rawQuestions);
@@ -540,8 +542,11 @@ export async function executeConfirmUncertainEffect(
   call: ToolCall,
   state: AgentState,
   requestUserClarification: ((card: unknown) => Promise<unknown>) | undefined,
+  signal?: AbortSignal,
 ): Promise<ToolObservation> {
-  const effectId = String(parseToolCallArgs(call).effectId ?? "").trim();
+  const args = tryParseToolCallArgs(call);
+  if (args === undefined) return invalidToolCallArguments(call);
+  const effectId = String(args.effectId ?? "").trim();
   const effect = state.uncertainEffects.find((candidate) => candidate.id === effectId);
   if (!effect) {
     return {
@@ -578,9 +583,10 @@ export async function executeConfirmUncertainEffect(
   };
 
   try {
-    const raw = await requestUserClarification(card) as {
+    const raw = await raceWithSignal(requestUserClarification(card), signal) as {
       answers?: Array<{ field?: string; selectedValues?: string[] }>;
     };
+    if (signal?.aborted) throw createAbortError();
     const decision = raw.answers?.find((answer) => answer.field === "decision")?.selectedValues?.[0];
     const matchedEffect = state.uncertainEffects.find((effect) => effect.id === effectId);
     const authorized = decision === "allow_repeat" && Boolean(matchedEffect);

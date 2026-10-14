@@ -34,6 +34,14 @@ afterEach(() => {
 });
 
 describe("Firefly agent session store", () => {
+  it("preserves the conservative guard for unavailable legacy arguments across restart", () => {
+    const { root, store } = fixture();
+    create(store);
+    const effect = { id: "effect-legacy", toolCallId: "legacy", toolName: "write_file", fingerprint: "write_file()",
+      message: "unknown arguments", argumentsUnavailable: true as const };
+    store.checkpoint(sessionId, { uncertainEffects: [effect] });
+    expect(new TaskSessionStore(root).get(sessionId)?.uncertainEffects).toEqual([effect]);
+  });
   it("persists a private agent session outside chat history", () => {
     const { root, store } = fixture();
     const session = create(store);
