@@ -324,16 +324,34 @@ const CHATTER = [
   ["user", "我想学点新东西。"], ["assistant", "可以从你感兴趣、每天能抽出二十分钟的方向开始。"],
 ];
 
-// baseTurns 默认 160（约 3000 字，低于 6000 字的摘录预算）；想覆盖预算问题时传更大的值。
-function longSession(rand, needle, id, at, baseTurns = 160) {
+const LONG_BASE_TURNS = 160; // 约 3000 字，低于 6000 字的摘录预算
+const hashId = (text) => {
+  let h = 2166136261;
+  for (const ch of text) h = Math.imul(h ^ ch.codePointAt(0), 16777619);
+  return h >>> 0;
+};
+
+// 共享的 rand 消耗量与 longTurns 无关，所以改变 longTurns 不会改变后面的干扰会话，对照实验只差长会话本身。
+// 多出来的填充句（longTurns 超过 160 的部分）由按会话独立的随机数生成，分到关键句前后。
+function longSession(rand, needle, id, at, longTurns, seed) {
   const turns = [];
-  const count = baseTurns + Math.floor(rand() * 30);
+  const count = LONG_BASE_TURNS + Math.floor(rand() * 30);
   const pos = Math.floor(count * (0.3 + rand() * 0.4));
   for (let i = 0; i < count; i++) {
     if (i === pos) turns.push(["user", needle], ["assistant", "好的，我记下了。"]);
     else turns.push(CHATTER[Math.floor(rand() * CHATTER.length)]);
   }
-  return { ...session(id, at, turns), needleIndex: pos };
+  const extra = Math.max(0, longTurns - LONG_BASE_TURNS);
+  let needleIndex = pos;
+  if (extra > 0) {
+    const own = mulberry32((seed ^ hashId(id)) >>> 0);
+    const before = Math.floor(extra * (0.3 + own() * 0.4));
+    const filler = (n) => Array.from({ length: n }, () => CHATTER[Math.floor(own() * CHATTER.length)]);
+    turns.unshift(...filler(before));
+    turns.push(...filler(extra - before));
+    needleIndex += before;
+  }
+  return { ...session(id, at, turns), needleIndex };
 }
 
 // ── 干扰会话模板 ────────────────────────────────────────────────────────────
@@ -374,13 +392,13 @@ function distractor(rand, id, at) {
 /** 干扰会话和长会话的填充词里不得出现这些查询关键词。 */
 export const FORBIDDEN_IN_FILLER = [...generatedKeys(), "咖啡", "拿铁", "薄荷", "闹钟", "香菜", "自行车", "橘猫", "团子", "猫砂", "日语", "N2", "Aurora", "林舟", "pnpm", "npm", "MU53", "青禾", "琥珀", "银色", "杭州", "成都", "云迁移", "护照", "备份", "机械键盘", "改日期", "读书计划", "红叶", "徒步"];
 
-/** longTurns：长会话的基础轮数；0 或省略保持原来的 160，数据与之前逐字节相同。 */
+/** longTurns：长会话的目标轮数；0 或不超过 160 时与之前逐字节相同，更大时只给长会话补填充，其余会话不变。 */
 export function buildDataset({ size = 120, seed = 20261013, longTurns = 0 } = {}) {
   const rand = mulberry32(seed);
   const hand = coreCases();
   const generated = generatedCases();
   const queries = [...hand.queries, ...generated.queries];
-  const sessions = [...hand.sessions, ...generated.sessions].map((s) => (s.needle ? longSession(rand, s.needle, s.id, s.at, longTurns > 0 ? longTurns : 160) : s));
+  const sessions = [...hand.sessions, ...generated.sessions].map((s) => (s.needle ? longSession(rand, s.needle, s.id, s.at, longTurns, seed) : s));
   let i = 0;
   while (sessions.length < size) {
     const n = String(++i).padStart(4, "0");

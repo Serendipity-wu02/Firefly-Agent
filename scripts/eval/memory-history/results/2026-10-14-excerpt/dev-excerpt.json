@@ -13,13 +13,13 @@
    "granularity": "session",
    "units": "2",
    "long-turns": "450",
-   "split": "dev",
    "modes": "lexical,hybrid,hybrid+prodrecency",
-   "label": "pra-dev",
-   "out": "output/memory-eval/pra"
+   "out": "output/memory-eval/pra",
+   "split": "dev",
+   "label": "pra-dev"
   },
   "git": {
-   "commit": "57f641c661dd235b6e0cdbd54a908937bf1d5160",
+   "commit": "87feaf8b5372b3e6477fc089d791d6fb2d3ceb69",
    "dirty": true
   },
   "models": {
@@ -40,7 +40,7 @@
   "granularities": [
    "session"
   ],
-  "datasetDigest": "f83274533f197a0e1b76c25d033e398c6600e75e26def6dd18a84bcb0773fbe3",
+  "datasetDigest": "81b6dfee2de218b342d56a3c0b07eacde1e694d0d6179c0d8bafd54ebd0af6f6",
   "querySetDigests": {
    "dev": "1ccfa9eadf14722467ca8356bfbbdc2d3cae171ba8db7a305ecb2cbb0dcc4a6b",
    "holdout": "92b10874254f035e7802fde4e1c32f70eb74edb598782e9ebe58c187c4d6d700"
@@ -55,10 +55,10 @@
   "queries": 78,
   "node": "v24.19.0",
   "platform": "win32",
-  "embedLoadMs": 3534,
-  "rerankLoadMs": 1695,
-  "rssAfterLoadMb": 2159,
-  "rssPeakMb": 5793
+  "embedLoadMs": 1745,
+  "rerankLoadMs": 1063,
+  "rssAfterLoadMb": 2208,
+  "rssPeakMb": 3264
  },
  "runs": [
   {
@@ -72,7 +72,7 @@
      "mode": "lexical",
      "status": "ok",
      "ranked": [],
-     "ms": 134.71590000001015,
+     "ms": 135.51090000000022,
      "topScore": null,
      "hit1": 0,
      "hit3": 0,
@@ -89,14 +89,14 @@
      "ranked": [
       "n-coffee-machine",
       "gn-k07",
-      "s-long-client",
+      "g-n03",
+      "d-0074",
       "g-p11",
-      "d-0003",
       "g-p13",
-      "g-k07",
-      "g-n07"
+      "d-0023",
+      "g-k07"
      ],
-     "ms": 216.65609999996377,
+     "ms": 188.63709999999992,
      "topScore": null,
      "hit1": 0,
      "hit3": 0,
@@ -113,14 +113,14 @@
      "ranked": [
       "n-coffee-machine",
       "gn-k07",
-      "s-long-client",
+      "g-n03",
+      "d-0074",
       "g-p11",
-      "d-0003",
       "g-p13",
-      "g-k07",
-      "g-k09"
+      "d-0023",
+      "g-k07"
      ],
-     "ms": 221.1435000000056,
+     "ms": 179.08249999999998,
      "topScore": null,
      "hit1": 0,
      "hit3": 0,
@@ -140,11 +140,11 @@
       "s-long-passport",
       "s-flight",
       "g-p02",
+      "g-n01",
       "g-n03",
-      "s-long-client",
-      "g-p04"
+      "g-n00"
      ],
-     "ms": 138.63199999998324,
+     "ms": 136.01760000000013,
      "topScore": null,
      "hit1": 1,
      "hit3": 1,
@@ -161,14 +161,14 @@
      "ranked": [
       "s-sleep",
       "g-c06-new",
-      "g-n03",
+      "s-long-passport",
       "g-p02",
       "g-c06-old",
-      "g-p29",
       "s-flight",
-      "g-p20"
+      "g-p29",
+      "g-n00"
      ],
-     "ms": 182.9953000000096,
+     "ms": 188.4384999999993,
      "topScore": null,
      "hit1": 1,
      "hit3": 1,
@@ -185,14 +185,14 @@
      "ranked": [
       "g-c06-new",
       "s-sleep",
-      "g-n03",
+      "g-n00",
       "g-p02",
       "g-c06-old",
       "s-flight",
       "g-p29",
-      "g-p23"
+      "g-n01"
      ],
-     "ms": 177.06079999997746,
+     "ms": 189.67149999999947,
      "topScore": null,
      "hit1": 0,
      "hit3": 1,
@@ -209,14 +209,14 @@
      "ranked": [
       "n-alarm",
       "g-p21",
-      "g-n00",
-      "g-n01",
-      "g-n03",
-      "g-n04",
-      "g-n05",
-      "g-n06"
+      "d-0002",
+      "d-0004",
+      "d-0061",
+      "d-0073",
+      "d-0108",
+      "g-n01"
      ],
-     "ms": 135.4108000000124,
+     "ms": 135.01869999999963,
      "topScore": null,
      "hit1": 0,
      "hit3": 0,
@@ -231,23 +231,23 @@
      "mode": "hybrid",
      "status": "ok",
      "ranked": [
-      "g-n01",
-      "s-cilantro",
+      "g-n05",
       "g-p03",
-      "g-n07",
-      "g-n03",
-      "g-n06",
-      "g-n04",
-      "g-n11"
+      "g-p21",
+      "s-cilantro",
+      "g-n02",
+      "g-n01",
+      "g-p17",
+      "g-n06"
      ],
-     "ms": 181.8747999999905,
+     "ms": 185.42090000000007,
      "topScore": null,
      "hit1": 0,
-     "hit3": 1,
+     "hit3": 0,
      "hit5": 1,
      "recall8": 1,
-     "rr": 0.5,
-     "ndcg8": 0.6309297535714575
+     "rr": 0.25,
+     "ndcg8": 0.43067655807339306
     },
     {
      "query": "q-cilantro",
@@ -257,14 +257,14 @@
      "ranked": [
       "g-n01",
       "s-cilantro",
+      "g-p21",
+      "g-p17",
+      "g-n02",
       "g-p03",
-      "g-n03",
-      "g-n00",
-      "g-n04",
-      "g-n07",
-      "g-n06"
+      "g-n05",
+      "g-p00"
      ],
-     "ms": 178.03470000001835,
+     "ms": 196.08839999999964,
      "topScore": null,
      "hit1": 0,
      "hit3": 1,
@@ -279,16 +279,16 @@
      "mode": "lexical",
      "status": "ok",
      "ranked": [
-      "g-n00",
       "s-theme-old",
+      "g-n00",
+      "g-n01",
       "g-n03",
-      "g-n06",
-      "s-long-client",
-      "s-long-gift",
-      "s-long-passport",
-      "g-n02"
+      "g-n04",
+      "g-n08",
+      "s-long-backup",
+      "g-n05"
      ],
-     "ms": 129.79800000000978,
+     "ms": 131.71399999999994,
      "topScore": null,
      "hit1": 0,
      "hit3": 0,
@@ -303,16 +303,16 @@
      "mode": "hybrid",
      "status": "ok",
      "ranked": [
-      "s-long-gift",
+      "g-n04",
       "n-litter",
       "g-k10",
+      "g-n08",
+      "g-n01",
       "g-n02",
-      "g-n09",
       "g-n03",
-      "s-long-client",
       "g-n00"
      ],
-     "ms": 180.18390000000363,
+     "ms": 192.4939000000004,
      "topScore": null,
      "hit1": 0,
      "hit3": 0,
@@ -327,16 +327,16 @@
      "mode": "hybrid+prodrecency",
      "status": "ok",
      "ranked": [
-      "s-long-gift",
+      "g-n04",
       "n-litter",
       "g-k10",
+      "g-n08",
+      "g-n01",
       "g-n02",
       "g-n00",
-      "g-n09",
-      "g-n03",
-      "s-long-client"
+      "g-n03"
      ],
-     "ms": 177.59029999998165,
+     "ms": 191.83690000000024,
      "topScore": null,
      "hit1": 0,
      "hit3": 0,
@@ -353,14 +353,14 @@
      "ranked": [
       "s-japanese",
       "g-n01",
-      "g-n02",
-      "g-n06",
-      "g-n07",
+      "g-n05",
       "g-n09",
-      "s-long-backup",
-      "g-n00"
+      "s-long-passport",
+      "s-long-gift",
+      "g-n02",
+      "g-n03"
      ],
-     "ms": 130.3415999999852,
+     "ms": 147.67169999999987,
      "topScore": null,
      "hit1": 1,
      "hit3": 1,
@@ -375,16 +375,16 @@
      "mode": "hybrid",
      "status": "ok",
      "ranked": [
-      "g-n02",
+      "g-n05",
       "s-japanese",
-      "g-n07",
       "s-long-gift",
-      "g-n01",
-      "g-n09",
+      "g-n04",
       "g-n03",
-      "s-long-passport"
+      "g-n09",
+      "g-n01",
+      "g-n02"
      ],
-     "ms": 170.74929999996675,
+     "ms": 174.65650000000005,
      "topScore": null,
      "hit1": 0,
      "hit3": 1,
@@ -399,16 +399,16 @@
      "mode": "hybrid+prodrecency",
      "status": "ok",
      "ranked": [
-      "g-n02",
-      "s-japanese",
-      "g-n01",
       "s-long-gift",
+      "s-japanese",
+      "g-n05",
+      "g-n01",
       "g-n09",
-      "g-n07",
+      "g-n04",
       "g-n03",
-      "s-long-passport"
+      "g-n02"
      ],
-     "ms": 178.99629999999888,
+     "ms": 181.36020000000008,
      "topScore": null,
      "hit1": 0,
      "hit3": 1,
@@ -427,12 +427,12 @@
       "s-aurora-budget",
       "n-aurora-release",
       "gn-k00",
-      "d-0003",
-      "d-0005",
-      "d-0014",
-      "d-0016"
+      "d-0006",
+      "d-0019",
+      "d-0023",
+      "d-0041"
      ],
-     "ms": 128.59659999998985,
+     "ms": 139.14790000000085,
      "topScore": null,
      "hit1": 0,
      "hit3": 1,
@@ -451,12 +451,12 @@
       "n-aurora-release",
       "gn-k00",
       "s-aurora-budget",
-      "d-0014",
+      "d-0019",
       "s-cloud-new",
-      "d-0002",
-      "d-0051"
+      "d-0023",
+      "g-k10"
      ],
-     "ms": 164.8507999999565,
+     "ms": 187.21349999999984,
      "topScore": null,
      "hit1": 0,
      "hit3": 0,
@@ -475,12 +475,12 @@
       "gn-k00",
       "n-aurora-release",
       "s-cloud-new",
-      "d-0014",
       "n-aurora6",
-      "d-0002",
-      "d-0051"
+      "d-0056",
+      "g-k10",
+      "d-0019"
      ],
-     "ms": 164.2805000000517,
+     "ms": 180.67849999999999,
      "topScore": null,
      "hit1": 1,
      "hit3": 1,
@@ -504,7 +504,7 @@
       "gn-k00",
       "s-cloud-new"
      ],
-     "ms": 128.3691000000108,
+     "ms": 160.17160000000058,
      "topScore": null,
      "hit1": 1,
      "hit3": 1,
@@ -526,9 +526,9 @@
       "s-cloud-old",
       "gn-k00",
       "g-c01-new",
-      "g-n03"
+      "g-n04"
      ],
-     "ms": 162.9894000000204,
+     "ms": 180.52130000000034,
      "topScore": null,
      "hit1": 1,
      "hit3": 1,
@@ -550,9 +550,9 @@
       "g-c01-old",
       "s-cloud-old",
       "g-c01-new",
-      "g-n03"
+      "g-n08"
      ],
-     "ms": 160.0431999999564,
+     "ms": 167.6238000000003,
      "topScore": null,
      "hit1": 1,
      "hit3": 1,
@@ -576,7 +576,7 @@
       "g-n11",
       "g-k04"
      ],
-     "ms": 128.32869999995455,
+     "ms": 130.29439999999977,
      "topScore": null,
      "hit1": 1,
      "hit3": 1,
@@ -593,38 +593,38 @@
      "ranked": [
       "n-flight-other",
       "s-flight",
-      "g-n07",
-      "g-p28",
       "g-n02",
-      "g-n09",
-      "n-linzhou-leave",
-      "g-n08"
-     ],
-     "ms": 163.6143999999622,
-     "topScore": null,
-     "hit1": 0,
-     "hit3": 1,
-     "hit5": 1,
-     "recall8": 1,
-     "rr": 0.5,
-     "ndcg8": 0.6309297535714575
-    },
-    {
-     "query": "q-flight",
-     "category": "keyword",
-     "mode": "hybrid+prodrecency",
-     "status": "ok",
-     "ranked": [
-      "n-flight-other",
-      "s-flight",
-      "g-n02",
-      "g-n00",
-      "n-linzhou-leave",
       "g-p28",
-      "g-n08",
+      "g-n10",
+      "n-linzhou-leave",
+      "g-n01",
       "g-n09"
      ],
-     "ms": 164.34309999999823,
+     "ms": 166.5,
+     "topScore": null,
+     "hit1": 0,
+     "hit3": 1,
+     "hit5": 1,
+     "recall8": 1,
+     "rr": 0.5,
+     "ndcg8": 0.6309297535714575
+    },
+    {
+     "query": "q-flight",
+     "category": "keyword",
+     "mode": "hybrid+prodrecency",
+     "status": "ok",
+     "ranked": [
+      "n-flight-other",
+      "s-flight",
+      "g-n02",
+      "g-p28",
+      "n-linzhou-leave",
+      "g-n01",
+      "g-n10",
+      "g-n00"
+     ],
+     "ms": 165.58809999999994,
      "topScore": null,
      "hit1": 0,
      "hit3": 1,
@@ -643,87 +643,87 @@
       "n-qinghe-cover",
       "n-qinghe-price",
       "s-qinghe-old",
-      "d-0004",
-      "d-0038",
-      "d-0070",
-      "d-0072"
-     ],
-     "ms": 130.22889999998733,
-     "topScore": null,
-     "hit1": 1,
-     "hit3": 1,
-     "hit5": 1,
-     "recall8": 1,
-     "rr": 1,
-     "ndcg8": 1,
-     "order": 1
-    },
-    {
-     "query": "q-qinghe",
-     "category": "correction",
-     "mode": "hybrid",
-     "status": "ok",
-     "ranked": [
-      "s-qinghe-new",
-      "n-qinghe-price",
-      "n-qinghe-cover",
-      "s-qinghe-old",
-      "gn-k10",
-      "g-k08",
-      "g-k00",
-      "g-c05-old"
-     ],
-     "ms": 154.65069999999832,
-     "topScore": null,
-     "hit1": 1,
-     "hit3": 1,
-     "hit5": 1,
-     "recall8": 1,
-     "rr": 1,
-     "ndcg8": 1,
-     "order": 1
-    },
-    {
-     "query": "q-qinghe",
-     "category": "correction",
-     "mode": "hybrid+prodrecency",
-     "status": "ok",
-     "ranked": [
-      "s-qinghe-new",
-      "n-qinghe-price",
-      "n-qinghe-cover",
-      "s-qinghe-old",
-      "g-k08",
-      "gn-k10",
-      "g-k00",
-      "g-c05-old"
-     ],
-     "ms": 162.4148999999743,
-     "topScore": null,
-     "hit1": 1,
-     "hit3": 1,
-     "hit5": 1,
-     "recall8": 1,
-     "rr": 1,
-     "ndcg8": 1,
-     "order": 1
-    },
-    {
-     "query": "q-theme",
-     "category": "correction",
-     "mode": "lexical",
-     "status": "ok",
-     "ranked": [
-      "s-theme-old",
-      "d-0004",
-      "d-0100",
-      "g-c05-old",
-      "g-n03",
-      "g-p17",
-      "g-n02",
+      "d-0018",
+      "d-0032",
+      "d-0037",
       "d-0038"
      ],
-     "ms": 131.524000000034,
+     "ms": 131.3161,
+     "topScore": null,
+     "hit1": 1,
+     "hit3": 1,
+     "hit5": 1,
+     "recall8": 1,
+     "rr": 1,
+     "ndcg8": 1,
+     "order": 1
+    },
+    {
+     "query": "q-qinghe",
+     "category": "correction",
+     "mode": "hybrid",
+     "status": "ok",
+     "ranked": [
+      "s-qinghe-new",
+      "n-qinghe-price",
+      "n-qinghe-cover",
+      "s-qinghe-old",
+      "gn-k10",
+      "g-k08",
+      "g-k00",
+      "g-n03"
+     ],
+     "ms": 164.85729999999967,
+     "topScore": null,
+     "hit1": 1,
+     "hit3": 1,
+     "hit5": 1,
+     "recall8": 1,
+     "rr": 1,
+     "ndcg8": 1,
+     "order": 1
+    },
+    {
+     "query": "q-qinghe",
+     "category": "correction",
+     "mode": "hybrid+prodrecency",
+     "status": "ok",
+     "ranked": [
+      "s-qinghe-new",
+      "n-qinghe-price",
+      "n-qinghe-cover",
+      "s-qinghe-old",
+      "g-k08",
+      "gn-k10",
+      "g-k00",
+      "g-n03"
+     ],
+     "ms": 198.90110000000004,
+     "topScore": null,
+     "hit1": 1,
+     "hit3": 1,
+     "hit5": 1,
+     "recall8": 1,
+     "rr": 1,
+     "ndcg8": 1,
+     "order": 1
+    },
+    {
+     "query": "q-theme",
+     "category": "correction",
+     "mode": "lexical",
+     "status": "ok",
+     "ranked": [
+      "s-theme-old",
+      "d-0051",
+      "d-0087",
+      "g-c05-old",
+      "d-0037",
+      "g-n03",
+      "g-p17",
+      "g-n02"
+     ],
+     "ms": 130.59839999999986,
      "topScore": null,
      "hit1": 0,
      "hit3": 0,
@@ -744,11 +744,11 @@
       "g-c05-old",
       "g-p17",
       "g-p27",
-      "g-n02",
       "g-p01",
-      "g-k15"
+      "g-k15",
+      "g-k05"
      ],
-     "ms": 164.5843000000459,
+     "ms": 174.16200000000026,
      "topScore": null,
      "hit1": 0,
      "hit3": 0,
@@ -768,12 +768,12 @@
       "g-n03",
       "g-p17",
       "g-c05-old",
-      "g-p27",
-      "g-n02",
       "g-p01",
-      "g-k15"
+      "g-p27",
+      "g-k02",
+      "g-n02"
      ],
-     "ms": 165.01600000000326,
+     "ms": 169.28470000000016,
      "topScore": null,
      "hit1": 0,
      "hit3": 0,
@@ -790,15 +790,15 @@
      "status": "ok",
      "ranked": [
       "s-cloud-new",
+      "d-0007",
       "s-cloud-old",
-      "d-0041",
-      "d-0076",
-      "d-0082",
-      "d-0089",
       "gn-k10",
-      "g-k00"
+      "g-k00",
+      "g-k02",
+      "gn-k00",
+      "s-aurora-budget"
      ],
-     "ms": 131.21940000000177,
+     "ms": 132.39730000000054,
      "topScore": null,
      "hit1": 1,
      "hit3": 1,
@@ -816,14 +816,14 @@
      "ranked": [
       "s-cloud-new",
       "gn-k00",
-      "s-cloud-old",
       "s-aurora-budget",
       "g-k02",
+      "s-cloud-old",
       "g-k00",
       "n-aurora6",
-      "d-0051"
+      "d-0082"
      ],
-     "ms": 163.2612000000081,
+     "ms": 171.311099999999,
      "topScore": null,
      "hit1": 1,
      "hit3": 1,
@@ -842,13 +842,13 @@
       "s-cloud-new",
       "gn-k00",
       "s-aurora-budget",
-      "s-cloud-old",
       "g-k02",
+      "s-cloud-old",
       "g-k00",
-      "d-0051",
-      "n-aurora6"
+      "n-aurora6",
+      "d-0082"
      ],
-     "ms": 161.33909999998286,
+     "ms": 172.6849999999995,
      "topScore": null,
      "hit1": 1,
      "hit3": 1,
@@ -867,13 +867,13 @@
       "s-lang-ctx",
       "s-pnpm",
       "n-qinghe-cover",
+      "d-0038",
+      "d-0100",
       "g-n06",
       "s-long-client",
-      "s-schedule",
-      "g-p04",
-      "gn-p01"
+      "s-schedule"
      ],
-     "ms": 132.03649999998743,
+     "ms": 130.77480000000105,
      "topScore": null,
      "hit1": 1,
      "hit3": 1,
@@ -890,14 +890,14 @@
      "ranked": [
       "s-lang-ctx",
       "s-pnpm",
-      "g-n08",
       "s-schedule",
+      "g-n10",
       "g-p04",
-      "g-n07",
-      "g-n03",
-      "g-n02"
+      "g-n04",
+      "s-long-client",
+      "g-n03"
      ],
-     "ms": 162.3731999999727,
+     "ms": 169.48509999999987,
      "topScore": null,
      "hit1": 1,
      "hit3": 1,
@@ -914,14 +914,14 @@
      "ranked": [
       "s-lang-ctx",
       "s-pnpm",
-      "g-n08",
       "s-schedule",
+      "g-n10",
       "g-p04",
-      "g-n02",
-      "g-n03",
-      "g-n07"
+      "g-n04",
+      "s-long-client",
+      "g-n00"
      ],
-     "ms": 162.99629999999888,
+     "ms": 166.00110000000132,
      "topScore": null,
      "hit1": 1,
      "hit3": 1,
@@ -937,15 +937,15 @@
      "status": "ok",
      "ranked": [
       "s-lang-ctx",
-      "g-n00",
+      "g-n01",
       "g-n02",
-      "g-n03",
-      "g-n06",
       "g-n07",
-      "g-n10",
-      "g-n01"
+      "s-long-backup",
+      "s-long-gift",
+      "g-n05",
+      "g-n06"
      ],
-     "ms": 133.19089999998687,
+     "ms": 132.74269999999888,
      "topScore": null,
      "hit1": 1,
      "hit3": 1,
@@ -961,15 +961,15 @@
      "status": "ok",
      "ranked": [
       "s-lang-ctx",
-      "g-n02",
-      "g-n10",
-      "g-n03",
+      "s-long-gift",
+      "s-long-backup",
+      "g-n07",
+      "g-n05",
       "g-n01",
-      "g-n06",
-      "g-n00",
-      "g-n07"
+      "g-n02",
+      "g-n10"
      ],
-     "ms": 162.05430000001797,
+     "ms": 167.65869999999995,
      "topScore": null,
      "hit1": 1,
      "hit3": 1,
@@ -985,15 +985,15 @@
      "status": "ok",
      "ranked": [
       "s-lang-ctx",
-      "g-n02",
-      "g-n10",
+      "s-long-gift",
+      "s-long-backup",
       "g-n01",
-      "g-n00",
-      "g-n03",
-      "s-long-passport",
-      "g-n08"
+      "g-n08",
+      "g-n07",
+      "g-n02",
+      "g-n10"
      ],
-     "ms": 161.9659999999567,
+     "ms": 170.10540000000037,
      "topScore": null,
      "hit1": 1,
      "hit3": 1,
@@ -1008,16 +1008,16 @@
      "mode": "lexical",
      "status": "ok",
      "ranked": [
-      "s-trip-new",
       "g-k12",
+      "s-trip-new",
+      "d-0003",
+      "d-0011",
       "d-0026",
-      "d-0035",
-      "d-0049",
-      "d-0057",
+      "d-0050",
       "d-0058",
-      "d-0064"
+      "d-0067"
      ],
-     "ms": 126.88379999995232,
+     "ms": 133.5594000000001,
      "topScore": null,
      "hit1": 0,
      "hit3": 0,
@@ -1028,8 +1028,8 @@
      "evidence": {
       "whole": 0,
       "excerpt": 0,
-      "wholeChars": 655,
-      "excerptChars": 655
+      "wholeChars": 383,
+      "excerptChars": 383
      }
     },
     {
@@ -1040,14 +1040,14 @@
      "ranked": [
       "s-trip-new",
       "s-date-w1a",
-      "g-n00",
-      "d-0081",
-      "s-long-gift",
+      "g-n08",
+      "g-n04",
+      "d-0038",
+      "s-long-backup",
       "g-n03",
-      "s-long-client",
-      "g-n08"
+      "s-long-gift"
      ],
-     "ms": 158.83950000000186,
+     "ms": 195.65039999999863,
      "topScore": null,
      "hit1": 0,
      "hit3": 0,
@@ -1059,7 +1059,7 @@
       "whole": 0,
       "excerpt": 0,
       "wholeChars": 96,
-      "excerptChars": 535
+      "excerptChars": 506
      }
     },
     {
@@ -1070,14 +1070,14 @@
      "ranked": [
       "s-trip-new",
       "s-date-w1a",
-      "g-n00",
-      "d-0081",
+      "g-n08",
+      "d-0038",
+      "g-n04",
+      "s-long-backup",
       "s-long-gift",
-      "g-n03",
-      "s-long-client",
-      "g-n08"
+      "g-n00"
      ],
-     "ms": 159.2488000000012,
+     "ms": 166.33350000000064,
      "topScore": null,
      "hit1": 0,
      "hit3": 0,
@@ -1089,7 +1089,7 @@
       "whole": 0,
       "excerpt": 0,
       "wholeChars": 96,
-      "excerptChars": 535
+      "excerptChars": 521
      }
     },
     {
@@ -1101,7 +1101,7 @@
       "s-long-backup",
       "s-trip-new"
      ],
-     "ms": 130.18880000000354,
+     "ms": 134.9377999999997,
      "topScore": null,
      "hit1": 1,
      "hit3": 1,
@@ -1113,7 +1113,7 @@
       "whole": 0,
       "excerpt": 1,
       "wholeChars": 40,
-      "excerptChars": 125
+      "excerptChars": 133
      }
     },
     {
@@ -1129,9 +1129,9 @@
       "g-k08",
       "g-c06-old",
       "s-date-w1a",
-      "d-0023"
+      "g-k06"
      ],
-     "ms": 161.38889999996172,
+     "ms": 173.82409999999982,
      "topScore": null,
      "hit1": 1,
      "hit3": 1,
@@ -1142,7 +1142,7 @@
      "evidence": {
       "whole": 0,
       "excerpt": 1,
-      "wholeChars": 199,
+      "wholeChars": 191,
       "excerptChars": 284
      }
     },
@@ -1156,12 +1156,12 @@
       "gn-k01",
       "s-trip-new",
       "g-k08",
-      "s-date-w2",
-      "g-c06-old",
       "g-c00-old",
-      "d-0023"
+      "s-date-w1a",
+      "g-c06-old",
+      "g-k06"
      ],
-     "ms": 160.66539999999804,
+     "ms": 178.82849999999962,
      "topScore": null,
      "hit1": 1,
      "hit3": 1,
@@ -1172,8 +1172,8 @@
      "evidence": {
       "whole": 0,
       "excerpt": 1,
-      "wholeChars": 198,
-      "excerptChars": 283
+      "wholeChars": 191,
+      "excerptChars": 284
      }
     },
     {
@@ -1189,9 +1189,9 @@
       "s-trip-new",
       "s-lang-ctx",
       "g-n00",
-      "g-n01"
+      "g-n03"
      ],
-     "ms": 127.83830000000307,
+     "ms": 163.30699999999888,
      "topScore": null,
      "hit1": 0,
      "hit3": 0,
@@ -1203,7 +1203,7 @@
       "whole": 0,
       "excerpt": 1,
       "wholeChars": 159,
-      "excerptChars": 567
+      "excerptChars": 572
      }
     },
     {
@@ -1213,27 +1213,27 @@
      "status": "ok",
      "ranked": [
       "s-schedule",
-      "g-n00",
-      "s-pnpm",
-      "g-n05",
-      "s-long-gift",
       "s-long-client",
-      "g-n06",
-      "g-n02"
+      "s-pnpm",
+      "g-n00",
+      "g-n10",
+      "g-n08",
+      "g-n04",
+      "g-n03"
      ],
-     "ms": 162.15160000004107,
+     "ms": 174.57270000000062,
      "topScore": null,
      "hit1": 0,
-     "hit3": 0,
-     "hit5": 0,
+     "hit3": 1,
+     "hit5": 1,
      "recall8": 1,
-     "rr": 0.16666666666666666,
-     "ndcg8": 0.3562071871080222,
+     "rr": 0.5,
+     "ndcg8": 0.6309297535714575,
      "evidence": {
       "whole": 0,
       "excerpt": 1,
       "wholeChars": 85,
-      "excerptChars": 695
+      "excerptChars": 719
      }
     },
     {
@@ -1243,27 +1243,27 @@
      "status": "ok",
      "ranked": [
       "s-schedule",
-      "g-n00",
-      "s-pnpm",
-      "s-long-gift",
       "s-long-client",
-      "g-n05",
-      "g-n02",
-      "g-n08"
+      "s-pnpm",
+      "g-n00",
+      "g-n08",
+      "g-n10",
+      "g-n04",
+      "g-n03"
      ],
-     "ms": 162.1313000000082,
+     "ms": 175.34039999999914,
      "topScore": null,
      "hit1": 0,
-     "hit3": 0,
+     "hit3": 1,
      "hit5": 1,
      "recall8": 1,
-     "rr": 0.2,
-     "ndcg8": 0.38685280723454163,
+     "rr": 0.5,
+     "ndcg8": 0.6309297535714575,
      "evidence": {
       "whole": 0,
       "excerpt": 1,
       "wholeChars": 85,
-      "excerptChars": 721
+      "excerptChars": 719
      }
     },
     {
@@ -1278,10 +1278,10 @@
       "s-trip-new",
       "gn-k00",
       "s-city-new",
-      "d-0030",
-      "d-0047"
+      "d-0061",
+      "d-0056"
      ],
-     "ms": 10.741900000022724,
+     "ms": 9.472200000000157,
      "topScore": null,
      "hit1": 1,
      "hit3": 1,
@@ -1297,7 +1297,7 @@
      "mode": "hybrid",
      "status": "unsupported",
      "ranked": [],
-     "ms": 14.584700000006706,
+     "ms": 16.435099999998783,
      "topScore": null
     },
     {
@@ -1306,7 +1306,7 @@
      "mode": "hybrid+prodrecency",
      "status": "n/a",
      "ranked": [],
-     "ms": 0.02310000004945323,
+     "ms": 0.022100000000136788,
      "topScore": null
     },
     {
@@ -1315,16 +1315,16 @@
      "mode": "lexical",
      "status": "ok",
      "ranked": [
-      "d-0103",
+      "gn-p09",
       "s-trip-new",
       "s-trip-mid",
       "s-trip-old",
-      "d-0107",
-      "gn-p09",
-      "d-0097",
-      "d-0060"
+      "d-0012",
+      "d-0030",
+      "d-0083",
+      "d-0042"
      ],
-     "ms": 139.92960000003222,
+     "ms": 148.64979999999923,
      "topScore": null,
      "hit1": 0,
      "hit3": 1,
@@ -1339,7 +1339,7 @@
      "mode": "hybrid",
      "status": "unsupported",
      "ranked": [],
-     "ms": 14.248199999972712,
+     "ms": 15.753200000001016,
      "topScore": null
     },
     {
@@ -1348,7 +1348,7 @@
      "mode": "hybrid+prodrecency",
      "status": "n/a",
      "ranked": [],
-     "ms": 0.01840000000083819,
+     "ms": 0.017099999999118154,
      "topScore": null
     },
     {
@@ -1361,12 +1361,12 @@
       "g-n03",
       "g-n02",
       "g-p16",
-      "d-0004",
-      "d-0038",
-      "d-0070",
-      "d-0072"
+      "d-0037",
+      "d-0018",
+      "d-0032",
+      "d-0038"
      ],
-     "ms": 139.81890000001295,
+     "ms": 153.15229999999974,
      "topScore": null
     },
     {
@@ -1375,16 +1375,16 @@
      "mode": "hybrid",
      "status": "ok",
      "ranked": [
-      "g-n02",
+      "g-n03",
       "gn-k10",
       "g-c05-old",
-      "g-n03",
+      "g-n02",
+      "s-trip-new",
       "g-k15",
       "g-k14",
-      "s-trip-new",
-      "g-k10"
+      "g-k03"
      ],
-     "ms": 159.31500000000233,
+     "ms": 187.73899999999958,
      "topScore": null
     },
     {
@@ -1393,16 +1393,16 @@
      "mode": "hybrid+prodrecency",
      "status": "ok",
      "ranked": [
-      "g-n02",
+      "g-n03",
       "gn-k10",
       "g-c05-old",
-      "g-n03",
+      "g-n02",
       "s-trip-new",
-      "g-k15",
+      "g-k03",
       "g-k14",
-      "g-k10"
+      "g-k15"
      ],
-     "ms": 163.33809999999357,
+     "ms": 177.76569999999992,
      "topScore": null
     },
     {
@@ -1411,16 +1411,16 @@
      "mode": "lexical",
      "status": "ok",
      "ranked": [
+      "d-0069",
+      "d-0009",
       "g-n06",
       "g-c05-old",
       "g-n03",
       "g-n02",
       "g-p04",
-      "g-p16",
-      "s-sleep",
-      "d-0011"
+      "g-p16"
      ],
-     "ms": 130.90740000002552,
+     "ms": 137.07999999999993,
      "topScore": null
     },
     {
@@ -1429,16 +1429,16 @@
      "mode": "hybrid",
      "status": "ok",
      "ranked": [
-      "g-n02",
-      "g-c05-old",
       "g-n06",
+      "g-c05-old",
+      "g-n02",
       "g-p04",
-      "g-n03",
       "g-p17",
       "s-read-a",
+      "g-n03",
       "gn-k10"
      ],
-     "ms": 171.50209999998333,
+     "ms": 199.51490000000013,
      "topScore": null
     },
     {
@@ -1447,16 +1447,16 @@
      "mode": "hybrid+prodrecency",
      "status": "ok",
      "ranked": [
-      "g-n02",
-      "g-c05-old",
       "g-n06",
+      "g-c05-old",
+      "g-n02",
       "g-p04",
-      "g-n03",
       "g-p17",
-      "gn-k10",
-      "s-read-a"
+      "g-n03",
+      "s-read-a",
+      "g-k10"
      ],
-     "ms": 161.73179999995045,
+     "ms": 186.84679999999935,
      "topScore": null
     },
     {
@@ -1468,13 +1468,13 @@
       "s-trip-mid",
       "s-trip-old",
       "s-trip-new",
-      "s-long-passport",
       "gn-p01",
+      "g-n08",
+      "g-n00",
       "s-long-client",
-      "s-city-old",
-      "g-p04"
+      "s-long-passport"
      ],
-     "ms": 128.15750000003027,
+     "ms": 138.41970000000038,
      "topScore": null
     },
     {
@@ -1483,16 +1483,16 @@
      "mode": "hybrid",
      "status": "ok",
      "ranked": [
-      "s-trip-old",
       "s-trip-mid",
+      "s-trip-old",
       "s-long-client",
       "s-trip-new",
       "g-c04-old",
       "g-c05-new",
       "s-city-old",
-      "s-long-passport"
+      "g-n00"
      ],
-     "ms": 163.40600000001723,
+     "ms": 208.8775999999998,
      "topScore": null
     },
     {
@@ -1503,14 +1503,14 @@
      "ranked": [
       "s-trip-mid",
       "s-trip-old",
-      "s-long-client",
+      "g-n00",
       "s-trip-new",
-      "g-c04-old",
       "g-c05-new",
-      "s-city-old",
-      "s-long-passport"
+      "g-c04-old",
+      "s-long-client",
+      "s-city-old"
      ],
-     "ms": 160.8585000000312,
+     "ms": 169.08289999999943,
      "topScore": null
     },
     {
@@ -1519,16 +1519,16 @@
      "mode": "lexical",
      "status": "ok",
      "ranked": [
-      "d-0004",
+      "d-0037",
+      "d-0018",
+      "d-0032",
       "d-0038",
-      "d-0070",
-      "d-0072",
-      "d-0081",
-      "g-c05-old",
-      "g-n03",
-      "d-0006"
+      "d-0049",
+      "d-0051",
+      "d-0069",
+      "d-0084"
      ],
-     "ms": 130.60529999999562,
+     "ms": 131.59100000000035,
      "topScore": null
     },
     {
@@ -1537,16 +1537,16 @@
      "mode": "hybrid",
      "status": "ok",
      "ranked": [
-      "g-n03",
+      "d-0037",
       "g-k15",
+      "g-n02",
       "g-p01",
       "gn-k10",
-      "d-0072",
+      "d-0087",
       "g-p21",
-      "g-c05-old",
       "s-read-a"
      ],
-     "ms": 162.57170000002952,
+     "ms": 174.34990000000107,
      "topScore": null
     },
     {
@@ -1555,16 +1555,16 @@
      "mode": "hybrid+prodrecency",
      "status": "ok",
      "ranked": [
-      "g-n03",
-      "g-p01",
+      "d-0037",
       "g-k15",
+      "g-n02",
+      "g-p01",
       "gn-k10",
-      "d-0072",
+      "d-0087",
       "g-p21",
-      "g-c05-old",
       "s-read-a"
      ],
-     "ms": 161.85330000001704,
+     "ms": 165.04500000000007,
      "topScore": null
     },
     {
@@ -1575,14 +1575,14 @@
      "ranked": [
       "g-p11",
       "s-qinghe-old",
-      "g-n01",
+      "g-n00",
       "g-n03",
+      "g-n04",
       "g-n05",
-      "g-n08",
-      "g-n10",
-      "g-n11"
+      "g-n07",
+      "g-n08"
      ],
-     "ms": 130.61669999995502,
+     "ms": 131.327299999999,
      "topScore": null,
      "hit1": 0,
      "hit3": 0,
@@ -1598,15 +1598,15 @@
      "status": "ok",
      "ranked": [
       "g-p11",
-      "g-n01",
-      "s-coffee",
-      "g-n06",
-      "g-n03",
-      "s-long-gift",
       "g-n05",
-      "s-long-client"
+      "s-coffee",
+      "g-n03",
+      "g-n00",
+      "g-n06",
+      "g-n04",
+      "g-n02"
      ],
-     "ms": 175.20759999996517,
+     "ms": 182.70420000000013,
      "topScore": null,
      "hit1": 0,
      "hit3": 0,
@@ -1621,16 +1621,16 @@
      "mode": "hybrid+prodrecency",
      "status": "ok",
      "ranked": [
-      "g-n01",
       "g-p11",
+      "g-n00",
       "s-coffee",
-      "s-long-gift",
+      "g-n05",
       "g-n03",
-      "g-n06",
-      "d-0037",
-      "s-long-client"
+      "g-n08",
+      "s-long-gift",
+      "g-n02"
      ],
-     "ms": 174.52460000000428,
+     "ms": 183.3714,
      "topScore": null,
      "hit1": 0,
      "hit3": 0,
@@ -1652,9 +1652,9 @@
       "g-p21",
       "g-p00",
       "g-p03",
-      "d-0007"
+      "d-0039"
      ],
-     "ms": 129.95610000001034,
+     "ms": 130.67280000000028,
      "topScore": null,
      "hit1": 0,
      "hit3": 0,
@@ -1669,16 +1669,16 @@
      "mode": "hybrid",
      "status": "ok",
      "ranked": [
-      "g-n02",
+      "g-n10",
       "g-p17",
       "g-p21",
       "n-alarm",
       "g-c05-old",
-      "g-n07",
-      "g-n09",
-      "g-n03"
+      "g-n00",
+      "g-n02",
+      "s-coffee"
      ],
-     "ms": 172.86979999998584,
+     "ms": 177.46099999999933,
      "topScore": null,
      "hit1": 0,
      "hit3": 0,
@@ -1693,16 +1693,16 @@
      "mode": "hybrid+prodrecency",
      "status": "ok",
      "ranked": [
-      "g-n02",
+      "g-n00",
       "g-p17",
       "g-p21",
       "n-alarm",
-      "g-n09",
-      "g-n00",
+      "g-n10",
+      "g-n02",
       "g-c05-old",
-      "g-n07"
+      "g-n01"
      ],
-     "ms": 173.7676999999676,
+     "ms": 184.92069999999876,
      "topScore": null,
      "hit1": 0,
      "hit3": 0,
@@ -1718,15 +1718,15 @@
      "status": "ok",
      "ranked": [
       "g-c06-new",
-      "g-n03",
+      "g-n01",
+      "g-n02",
+      "g-n04",
+      "g-n05",
+      "g-n06",
       "g-n07",
-      "g-n08",
-      "g-n09",
-      "g-n11",
-      "s-long-backup",
-      "s-long-gift"
+      "g-n08"
      ],
-     "ms": 132.0345999999554,
+     "ms": 131.09890000000087,
      "topScore": null,
      "hit1": 0,
      "hit3": 0,
@@ -1742,22 +1742,22 @@
      "status": "ok",
      "ranked": [
       "g-c06-new",
+      "g-n01",
+      "g-n02",
       "g-n08",
-      "g-n07",
-      "s-long-gift",
-      "g-n03",
       "g-p02",
-      "s-long-backup",
-      "g-n00"
+      "g-n11",
+      "g-n10",
+      "g-n06"
      ],
-     "ms": 176.11269999999786,
+     "ms": 183.72190000000046,
      "topScore": null,
      "hit1": 0,
      "hit3": 0,
-     "hit5": 0,
+     "hit5": 1,
      "recall8": 1,
-     "rr": 0.16666666666666666,
-     "ndcg8": 0.3562071871080222
+     "rr": 0.2,
+     "ndcg8": 0.38685280723454163
     },
     {
      "query": "q-g-p02",
@@ -1766,22 +1766,22 @@
      "status": "ok",
      "ranked": [
       "g-c06-new",
+      "g-n01",
       "g-n08",
-      "s-long-gift",
-      "g-n07",
-      "g-n00",
+      "g-n02",
       "g-p02",
-      "g-n03",
-      "s-long-backup"
+      "g-n10",
+      "g-n00",
+      "g-n11"
      ],
-     "ms": 167.67029999999795,
+     "ms": 170.66619999999966,
      "topScore": null,
      "hit1": 0,
      "hit3": 0,
-     "hit5": 0,
+     "hit5": 1,
      "recall8": 1,
-     "rr": 0.16666666666666666,
-     "ndcg8": 0.3562071871080222
+     "rr": 0.2,
+     "ndcg8": 0.38685280723454163
     },
     {
      "query": "q-g-p04",
@@ -1792,13 +1792,13 @@
       "g-k04",
       "n-linzhou-leave",
       "g-n00",
+      "g-n01",
+      "g-n02",
       "g-n03",
       "g-n04",
-      "g-n05",
-      "g-n06",
       "g-n07"
      ],
-     "ms": 131.89919999998529,
+     "ms": 131.20039999999972,
      "topScore": null,
      "hit1": 0,
      "hit3": 0,
@@ -1814,15 +1814,15 @@
      "status": "ok",
      "ranked": [
       "g-k04",
-      "g-n03",
-      "g-n00",
-      "g-n04",
       "g-n01",
+      "g-n00",
       "s-long-client",
-      "s-long-backup",
-      "d-0097"
+      "g-n04",
+      "g-n11",
+      "g-n03",
+      "g-n02"
      ],
-     "ms": 163.73499999998603,
+     "ms": 164.97900000000118,
      "topScore": null,
      "hit1": 0,
      "hit3": 0,
@@ -1838,15 +1838,15 @@
      "status": "ok",
      "ranked": [
       "g-k04",
-      "g-n00",
-      "g-n03",
       "g-n01",
+      "g-n00",
+      "s-long-client",
       "g-n04",
-      "s-long-backup",
-      "d-0097",
-      "g-n09"
+      "g-n11",
+      "g-n03",
+      "g-n02"
      ],
-     "ms": 162.5353999999934,
+     "ms": 162.85930000000008,
      "topScore": null,
      "hit1": 0,
      "hit3": 0,
@@ -1862,15 +1862,15 @@
      "status": "ok",
      "ranked": [
       "g-n08",
+      "s-long-passport",
       "g-n00",
       "s-city-old",
-      "s-long-passport",
       "g-p05",
       "s-date-w2",
       "g-p23",
       "s-read-b"
      ],
-     "ms": 130.5346000000136,
+     "ms": 132.2482,
      "topScore": null,
      "hit1": 0,
      "hit3": 0,
@@ -1890,11 +1890,11 @@
       "s-city-old",
       "g-p23",
       "s-date-w2",
-      "s-long-passport",
+      "s-flight",
       "g-n08",
-      "s-flight"
+      "n-japan-trip"
      ],
-     "ms": 160.49840000004042,
+     "ms": 166.66039999999884,
      "topScore": null,
      "hit1": 1,
      "hit3": 1,
@@ -1914,11 +1914,11 @@
       "s-city-old",
       "g-p23",
       "s-date-w2",
+      "s-flight",
       "g-n08",
-      "s-long-passport",
-      "s-flight"
+      "n-japan-trip"
      ],
-     "ms": 160.21120000001974,
+     "ms": 171.47820000000138,
      "topScore": null,
      "hit1": 0,
      "hit3": 1,
@@ -1935,14 +1935,14 @@
      "ranked": [
       "s-commute",
       "g-p15",
-      "d-0012",
+      "d-0015",
+      "d-0034",
       "d-0048",
-      "d-0052",
-      "d-0068",
-      "d-0096",
-      "g-p25"
+      "d-0094",
+      "g-p25",
+      "g-p16"
      ],
-     "ms": 126.8401999999769,
+     "ms": 131.15410000000156,
      "topScore": null,
      "hit1": 0,
      "hit3": 0,
@@ -1958,15 +1958,15 @@
      "status": "ok",
      "ranked": [
       "s-commute",
-      "d-0048",
       "g-p15",
-      "g-n03",
+      "d-0048",
+      "g-n02",
       "s-trip-mid",
-      "d-0012",
+      "d-0015",
       "s-trip-old",
-      "d-0052"
+      "g-p12"
      ],
-     "ms": 164.39470000000438,
+     "ms": 166.48340000000098,
      "topScore": null,
      "hit1": 0,
      "hit3": 0,
@@ -1982,15 +1982,15 @@
      "status": "ok",
      "ranked": [
       "s-commute",
-      "d-0048",
       "g-p15",
-      "g-n00",
+      "d-0048",
+      "g-n02",
       "s-trip-mid",
-      "d-0012",
+      "d-0015",
       "s-trip-old",
-      "d-0096"
+      "d-0094"
      ],
-     "ms": 160.7658999999985,
+     "ms": 167.36039999999957,
      "topScore": null,
      "hit1": 0,
      "hit3": 0,
@@ -2010,11 +2010,11 @@
       "s-city-old",
       "gn-p08",
       "n-linzhou-leave",
-      "d-0001",
-      "d-0021",
-      "d-0027"
+      "d-0017",
+      "d-0024",
+      "d-0080"
      ],
-     "ms": 128.38250000000698,
+     "ms": 132.2310000000034,
      "topScore": null,
      "hit1": 0,
      "hit3": 0,
@@ -2029,16 +2029,16 @@
      "mode": "hybrid",
      "status": "ok",
      "ranked": [
+      "g-n00",
       "s-trip-mid",
       "g-k15",
-      "g-n09",
       "s-city-old",
       "n-linzhou-leave",
-      "g-n03",
-      "g-n08",
-      "n-flight-other"
+      "g-n01",
+      "n-flight-other",
+      "s-long-gift"
      ],
-     "ms": 163.09149999998044,
+     "ms": 166.16399999999703,
      "topScore": null,
      "hit1": 0,
      "hit3": 0,
@@ -2053,16 +2053,16 @@
      "mode": "hybrid+prodrecency",
      "status": "ok",
      "ranked": [
+      "g-n00",
       "s-trip-mid",
-      "g-n09",
       "g-k15",
       "n-linzhou-leave",
       "s-city-old",
       "n-flight-other",
-      "g-n08",
+      "g-n01",
       "s-long-gift"
      ],
-     "ms": 166.92430000001332,
+     "ms": 175.03039999999964,
      "topScore": null,
      "hit1": 0,
      "hit3": 0,
@@ -2078,15 +2078,15 @@
      "status": "ok",
      "ranked": [
       "s-lang-ctx",
-      "g-n00",
-      "g-n02",
+      "g-n03",
+      "g-n04",
+      "g-n05",
+      "g-n06",
       "g-n07",
       "g-n08",
-      "g-n09",
-      "g-n11",
-      "s-long-gift"
+      "g-n09"
      ],
-     "ms": 133.37670000002254,
+     "ms": 131.57110000000102,
      "topScore": null,
      "hit1": 0,
      "hit3": 0,
@@ -2101,16 +2101,16 @@
      "mode": "hybrid",
      "status": "ok",
      "ranked": [
-      "g-n07",
-      "g-n09",
-      "g-n02",
+      "g-n05",
       "g-p02",
+      "g-n03",
+      "g-n06",
+      "g-n04",
       "s-long-gift",
-      "g-n10",
-      "g-n00",
-      "g-n04"
+      "g-n02",
+      "s-long-passport"
      ],
-     "ms": 159.0505000000121,
+     "ms": 172.78700000000026,
      "topScore": null,
      "hit1": 0,
      "hit3": 0,
@@ -2125,16 +2125,16 @@
      "mode": "hybrid+prodrecency",
      "status": "ok",
      "ranked": [
-      "g-n09",
-      "g-n02",
-      "s-long-gift",
+      "g-n05",
       "g-p02",
-      "g-n07",
+      "g-n03",
+      "s-long-gift",
+      "g-n06",
+      "g-n02",
       "g-n00",
-      "g-n10",
-      "g-n08"
+      "g-n04"
      ],
-     "ms": 160.70850000000792,
+     "ms": 168.69420000000173,
      "topScore": null,
      "hit1": 0,
      "hit3": 0,
@@ -2149,16 +2149,16 @@
      "mode": "lexical",
      "status": "ok",
      "ranked": [
+      "d-0003",
+      "d-0011",
       "d-0026",
-      "d-0035",
-      "d-0049",
-      "d-0057",
+      "d-0050",
       "d-0058",
-      "d-0064",
-      "d-0091",
-      "d-0102"
+      "d-0067",
+      "gn-p09",
+      "n-tire"
      ],
-     "ms": 128.2779000000446,
+     "ms": 130.52409999999873,
      "topScore": null,
      "hit1": 0,
      "hit3": 0,
@@ -2173,16 +2173,16 @@
      "mode": "hybrid",
      "status": "ok",
      "ranked": [
-      "d-0035",
-      "d-0064",
-      "d-0057",
-      "d-0091",
-      "g-n08",
-      "d-0049",
+      "d-0011",
+      "g-n03",
+      "d-0067",
+      "d-0026",
+      "d-0003",
       "d-0058",
-      "d-0102"
+      "s-read-c",
+      "d-0050"
      ],
-     "ms": 160.14240000001155,
+     "ms": 166.62609999999768,
      "topScore": null,
      "hit1": 0,
      "hit3": 0,
@@ -2197,16 +2197,16 @@
      "mode": "hybrid+prodrecency",
      "status": "ok",
      "ranked": [
-      "d-0035",
-      "g-n08",
-      "d-0102",
-      "d-0057",
-      "d-0064",
-      "d-0049",
-      "d-0091",
-      "s-read-c"
+      "d-0011",
+      "g-n03",
+      "d-0003",
+      "d-0067",
+      "d-0026",
+      "s-read-c",
+      "d-0050",
+      "d-0058"
      ],
-     "ms": 162.51979999995092,
+     "ms": 165.95560000000114,
      "topScore": null,
      "hit1": 0,
      "hit3": 0,
@@ -2225,19 +2225,19 @@
       "s-date-w2",
       "s-read-b",
       "s-qinghe-old",
+      "g-k12",
       "g-p12",
       "g-p24",
-      "s-commute",
-      "s-qinghe-new"
+      "s-commute"
      ],
-     "ms": 130.4365000000107,
+     "ms": 131.97560000000158,
      "topScore": null,
      "hit1": 0,
      "hit3": 0,
-     "hit5": 1,
+     "hit5": 0,
      "recall8": 1,
-     "rr": 0.2,
-     "ndcg8": 0.38685280723454163
+     "rr": 0.16666666666666666,
+     "ndcg8": 0.3562071871080222
     },
     {
      "query": "q-g-p12",
@@ -2254,7 +2254,7 @@
       "s-date-w2",
       "s-japanese"
      ],
-     "ms": 160.32099999999627,
+     "ms": 169.77319999999963,
      "topScore": null,
      "hit1": 1,
      "hit3": 1,
@@ -2272,20 +2272,20 @@
       "s-commute",
       "g-n08",
       "g-p24",
-      "g-p12",
       "s-read-b",
-      "s-date-w2",
+      "g-p12",
       "g-k12",
+      "s-date-w2",
       "s-japanese"
      ],
-     "ms": 162.73020000004908,
+     "ms": 166.97609999999986,
      "topScore": null,
      "hit1": 0,
      "hit3": 0,
      "hit5": 1,
      "recall8": 1,
-     "rr": 0.25,
-     "ndcg8": 0.43067655807339306
+     "rr": 0.2,
+     "ndcg8": 0.38685280723454163
     },
     {
      "query": "q-g-p13",
@@ -2296,13 +2296,13 @@
       "g-p13",
       "g-p03",
       "g-n00",
-      "g-n01",
       "g-n03",
       "g-n04",
       "g-n05",
-      "g-n06"
+      "g-n06",
+      "g-n07"
      ],
-     "ms": 130.41749999998137,
+     "ms": 131.98159999999916,
      "topScore": null,
      "hit1": 1,
      "hit3": 1,
@@ -2320,13 +2320,13 @@
       "g-p13",
       "g-n00",
       "g-p03",
-      "d-0106",
+      "d-0009",
       "s-cilantro",
-      "d-0042",
-      "g-n03",
-      "g-n09"
+      "g-n04",
+      "g-n10",
+      "g-n05"
      ],
-     "ms": 162.81180000002496,
+     "ms": 166.50390000000334,
      "topScore": null,
      "hit1": 1,
      "hit3": 1,
@@ -2344,13 +2344,13 @@
       "g-p03",
       "g-n00",
       "g-p13",
-      "d-0042",
+      "d-0009",
       "s-cilantro",
-      "d-0106",
-      "g-n09",
-      "d-0093"
+      "g-n04",
+      "g-n10",
+      "n-litter"
      ],
-     "ms": 161.1211000000476,
+     "ms": 169.00049999999828,
      "topScore": null,
      "hit1": 0,
      "hit3": 1,
@@ -2369,12 +2369,12 @@
       "gn-p08",
       "n-linzhou-leave",
       "s-trip-mid",
-      "d-0001",
-      "d-0021",
-      "d-0027",
-      "d-0039"
+      "d-0017",
+      "d-0024",
+      "d-0080",
+      "d-0101"
      ],
-     "ms": 130.02559999999357,
+     "ms": 132.42180000000008,
      "topScore": null,
      "hit1": 0,
      "hit3": 0,
@@ -2390,15 +2390,15 @@
      "status": "ok",
      "ranked": [
       "g-p04",
-      "d-0090",
-      "g-n08",
-      "g-n07",
-      "d-0001",
-      "d-0042",
+      "g-n00",
+      "n-linzhou-leave",
+      "d-0106",
       "g-n05",
-      "g-n09"
+      "g-n01",
+      "g-n03",
+      "s-long-passport"
      ],
-     "ms": 159.648600000015,
+     "ms": 181.0168999999987,
      "topScore": null,
      "hit1": 0,
      "hit3": 0,
@@ -2414,15 +2414,15 @@
      "status": "ok",
      "ranked": [
       "g-p04",
-      "g-n08",
-      "d-0090",
-      "d-0042",
-      "g-n09",
-      "d-0001",
-      "g-n10",
-      "g-n07"
+      "g-n00",
+      "n-linzhou-leave",
+      "d-0106",
+      "g-n01",
+      "g-n05",
+      "g-n03",
+      "s-long-passport"
      ],
-     "ms": 162.0332000000053,
+     "ms": 178.1462999999967,
      "topScore": null,
      "hit1": 0,
      "hit3": 0,
@@ -2438,15 +2438,15 @@
      "status": "ok",
      "ranked": [
       "g-p16",
-      "d-0013",
-      "d-0046",
-      "d-0067",
-      "d-0105",
-      "d-0106",
-      "d-0011",
-      "d-0019"
+      "d-0009",
+      "d-0043",
+      "d-0071",
+      "d-0091",
+      "d-0097",
+      "d-0028",
+      "d-0036"
      ],
-     "ms": 128.2060000000056,
+     "ms": 132.28870000000097,
      "topScore": null,
      "hit1": 1,
      "hit3": 1,
@@ -2462,15 +2462,15 @@
      "status": "ok",
      "ranked": [
       "g-p16",
-      "d-0065",
-      "d-0046",
-      "s-long-gift",
-      "d-0067",
-      "s-lang-ctx",
-      "g-p09",
-      "d-0013"
+      "d-0095",
+      "d-0045",
+      "g-n04",
+      "d-0009",
+      "d-0071",
+      "d-0043",
+      "s-lang-ctx"
      ],
-     "ms": 158.33189999999013,
+     "ms": 163.88930000000255,
      "topScore": null,
      "hit1": 1,
      "hit3": 1,
@@ -2486,15 +2486,15 @@
      "status": "ok",
      "ranked": [
       "g-p16",
-      "d-0065",
+      "d-0095",
+      "d-0045",
       "s-long-gift",
-      "d-0046",
-      "d-0013",
+      "d-0071",
+      "d-0043",
       "s-lang-ctx",
-      "s-japanese",
-      "d-0106"
+      "d-0091"
      ],
-     "ms": 161.9491000000271,
+     "ms": 163.53930000000037,
      "topScore": null,
      "hit1": 1,
      "hit3": 1,
@@ -2511,14 +2511,14 @@
      "ranked": [
       "g-p27",
       "n-japan-trip",
+      "d-0003",
+      "d-0011",
       "d-0026",
-      "d-0035",
-      "d-0049",
-      "d-0057",
+      "d-0050",
       "d-0058",
-      "d-0064"
+      "d-0067"
      ],
-     "ms": 126.2050000000163,
+     "ms": 129.47940000000017,
      "topScore": null,
      "hit1": 0,
      "hit3": 0,
@@ -2533,16 +2533,16 @@
      "mode": "hybrid",
      "status": "ok",
      "ranked": [
-      "g-n09",
-      "g-p27",
-      "s-long-backup",
-      "g-n07",
       "g-n04",
-      "d-0012",
+      "g-p27",
+      "g-n01",
+      "g-n05",
+      "g-n06",
       "g-n02",
-      "g-n03"
+      "g-n10",
+      "s-long-passport"
      ],
-     "ms": 165.92009999998845,
+     "ms": 167.31009999999878,
      "topScore": null,
      "hit1": 0,
      "hit3": 0,
@@ -2557,16 +2557,16 @@
      "mode": "hybrid+prodrecency",
      "status": "ok",
      "ranked": [
-      "s-long-backup",
+      "g-n01",
       "g-p27",
-      "g-n09",
-      "g-n02",
-      "g-n07",
       "g-n04",
-      "d-0012",
-      "g-n03"
+      "g-n05",
+      "g-n02",
+      "g-n06",
+      "g-n10",
+      "s-long-passport"
      ],
-     "ms": 163.51699999999255,
+     "ms": 165.95520000000033,
      "topScore": null,
      "hit1": 0,
      "hit3": 0,
@@ -2581,16 +2581,16 @@
      "mode": "lexical",
      "status": "ok",
      "ranked": [
-      "g-n00",
       "g-n01",
       "g-n03",
       "g-n04",
+      "g-n05",
+      "g-n06",
       "g-n07",
       "g-n08",
-      "g-n10",
-      "g-n11"
+      "s-long-gift"
      ],
-     "ms": 134.55370000004768,
+     "ms": 141.39050000000134,
      "topScore": null,
      "hit1": 0,
      "hit3": 0,
@@ -2605,16 +2605,16 @@
      "mode": "hybrid",
      "status": "ok",
      "ranked": [
-      "g-n00",
+      "g-n05",
       "s-read-a",
-      "g-n08",
       "g-n03",
-      "g-n07",
-      "g-n10",
-      "s-long-gift",
-      "g-n09"
+      "g-n04",
+      "s-long-passport",
+      "g-n00",
+      "g-n01",
+      "s-long-gift"
      ],
-     "ms": 165.40600000001723,
+     "ms": 185.48909999999887,
      "topScore": null,
      "hit1": 0,
      "hit3": 0,
@@ -2629,71 +2629,71 @@
      "mode": "hybrid+prodrecency",
      "status": "ok",
      "ranked": [
-      "g-n00",
+      "g-n05",
       "s-read-a",
-      "g-n08",
-      "s-long-gift",
       "g-n03",
-      "g-n10",
-      "g-n01",
-      "g-n07"
-     ],
-     "ms": 167.12729999999283,
-     "topScore": null,
-     "hit1": 0,
-     "hit3": 0,
-     "hit5": 0,
-     "recall8": 0,
-     "rr": 0,
-     "ndcg8": 0
-    },
-    {
-     "query": "q-g-p20",
-     "category": "paraphrase",
-     "mode": "lexical",
-     "status": "ok",
-     "ranked": [
-      "g-p20",
-      "g-k07",
-      "s-pnpm",
-      "s-lang-ctx",
-      "s-coffee",
-      "g-n01",
-      "g-n02",
-      "g-n05"
-     ],
-     "ms": 130.35960000002524,
-     "topScore": null,
-     "hit1": 1,
-     "hit3": 1,
-     "hit5": 1,
-     "recall8": 1,
-     "rr": 1,
-     "ndcg8": 1
-    },
-    {
-     "query": "q-g-p20",
-     "category": "paraphrase",
-     "mode": "hybrid",
-     "status": "ok",
-     "ranked": [
-      "g-n02",
-      "g-p20",
-      "s-pnpm",
-      "s-date-w0",
-      "g-n08",
-      "g-n07",
-      "g-n09",
+      "g-n00",
+      "s-long-passport",
+      "s-long-gift",
+      "g-n04",
       "g-n01"
      ],
-     "ms": 161.7280000000028,
+     "ms": 180.35369999999966,
      "topScore": null,
      "hit1": 0,
+     "hit3": 0,
+     "hit5": 0,
+     "recall8": 0,
+     "rr": 0,
+     "ndcg8": 0
+    },
+    {
+     "query": "q-g-p20",
+     "category": "paraphrase",
+     "mode": "lexical",
+     "status": "ok",
+     "ranked": [
+      "g-p20",
+      "s-pnpm",
+      "g-k07",
+      "d-0062",
+      "d-0086",
+      "d-0109",
+      "s-lang-ctx",
+      "s-coffee"
+     ],
+     "ms": 134.17589999999836,
+     "topScore": null,
+     "hit1": 1,
      "hit3": 1,
      "hit5": 1,
      "recall8": 1,
-     "rr": 0.5,
-     "ndcg8": 0.6309297535714575
+     "rr": 1,
+     "ndcg8": 1
+    },
+    {
+     "query": "q-g-p20",
+     "category": "paraphrase",
+     "mode": "hybrid",
+     "status": "ok",
+     "ranked": [
+      "g-p20",
+      "g-n01",
+      "s-pnpm",
+      "s-date-w0",
+      "g-n00",
+      "g-n10",
+      "g-n02",
+      "g-n06"
+     ],
+     "ms": 172.04780000000028,
+     "topScore": null,
+     "hit1": 1,
+     "hit3": 1,
+     "hit5": 1,
+     "recall8": 1,
+     "rr": 1,
+     "ndcg8": 1
     },
     {
      "query": "q-g-p20",
@@ -2701,16 +2701,16 @@
      "mode": "hybrid+prodrecency",
      "status": "ok",
      "ranked": [
-      "g-n02",
+      "g-n00",
       "g-p20",
       "s-pnpm",
-      "s-date-w0",
-      "g-n08",
       "g-n01",
-      "g-n00",
-      "g-n09"
+      "s-date-w0",
+      "g-n10",
+      "g-n02",
+      "g-n03"
      ],
-     "ms": 165.6189000000013,
+     "ms": 171.44940000000133,
      "topScore": null,
      "hit1": 0,
      "hit3": 1,
@@ -2726,15 +2726,15 @@
      "status": "ok",
      "ranked": [
       "s-pnpm",
-      "gn-p08",
       "g-k12",
+      "d-0003",
+      "d-0085",
+      "s-date-w1a",
+      "gn-p08",
       "g-n10",
-      "g-p28",
-      "gn-p02",
-      "s-schedule",
-      "s-japanese"
+      "g-p28"
      ],
-     "ms": 132.41200000001118,
+     "ms": 136.96099999999933,
      "topScore": null,
      "hit1": 0,
      "hit3": 0,
@@ -2749,16 +2749,16 @@
      "mode": "hybrid",
      "status": "ok",
      "ranked": [
-      "s-pnpm",
       "g-n10",
+      "s-pnpm",
       "gn-p08",
       "g-n08",
-      "g-k04",
-      "g-k12",
-      "gn-p02",
-      "g-c08-new"
+      "g-n03",
+      "g-n05",
+      "g-n04",
+      "g-n00"
      ],
-     "ms": 161.28119999996852,
+     "ms": 169.25690000000031,
      "topScore": null,
      "hit1": 0,
      "hit3": 0,
@@ -2773,16 +2773,16 @@
      "mode": "hybrid+prodrecency",
      "status": "ok",
      "ranked": [
-      "s-pnpm",
       "g-n10",
+      "s-pnpm",
       "gn-p08",
       "g-n08",
-      "g-c08-new",
-      "g-k04",
-      "g-k12",
-      "gn-p02"
+      "g-n03",
+      "g-n00",
+      "g-n05",
+      "g-n04"
      ],
-     "ms": 164.37170000001788,
+     "ms": 166.2448000000004,
      "topScore": null,
      "hit1": 0,
      "hit3": 0,
@@ -2797,23 +2797,23 @@
      "mode": "lexical",
      "status": "ok",
      "ranked": [
-      "d-0086",
-      "d-0001",
-      "d-0027",
-      "d-0053",
+      "d-0024",
+      "d-0080",
       "g-k15",
       "g-p22",
-      "d-0042",
-      "d-0093"
+      "g-k12",
+      "d-0009",
+      "d-0013",
+      "d-0043"
      ],
-     "ms": 131.77969999995548,
+     "ms": 134.82790000000023,
      "topScore": null,
      "hit1": 0,
      "hit3": 0,
-     "hit5": 0,
+     "hit5": 1,
      "recall8": 1,
-     "rr": 0.16666666666666666,
-     "ndcg8": 0.3562071871080222
+     "rr": 0.25,
+     "ndcg8": 0.43067655807339306
     },
     {
      "query": "q-g-p22",
@@ -2822,15 +2822,15 @@
      "status": "ok",
      "ranked": [
       "g-p22",
-      "d-0027",
-      "g-n08",
+      "g-n06",
       "s-date-w1a",
       "g-p20",
       "g-p08",
-      "g-n03",
-      "g-n04"
+      "g-p15",
+      "g-n08",
+      "g-n02"
      ],
-     "ms": 166.80940000002738,
+     "ms": 168.32170000000042,
      "topScore": null,
      "hit1": 1,
      "hit3": 1,
@@ -2846,15 +2846,15 @@
      "status": "ok",
      "ranked": [
       "g-p22",
-      "d-0027",
       "g-n08",
       "s-date-w1a",
       "g-p08",
       "g-p20",
-      "g-n00",
-      "g-n03"
+      "g-p15",
+      "g-n02",
+      "g-n06"
      ],
-     "ms": 161.7949999999837,
+     "ms": 177.53640000000087,
      "topScore": null,
      "hit1": 1,
      "hit3": 1,
@@ -2870,15 +2870,15 @@
      "status": "ok",
      "ranked": [
       "n-qinghe-cover",
+      "d-0038",
       "s-pnpm",
+      "d-0100",
       "s-flight",
+      "d-0022",
       "g-p04",
-      "gn-p01",
-      "n-alarm",
-      "s-lang-ctx",
-      "d-0002"
+      "gn-p01"
      ],
-     "ms": 125.89220000000205,
+     "ms": 137.37449999999808,
      "topScore": null,
      "hit1": 0,
      "hit3": 0,
@@ -2893,16 +2893,16 @@
      "mode": "hybrid",
      "status": "ok",
      "ranked": [
-      "g-n06",
-      "g-p04",
-      "s-pnpm",
       "g-n03",
-      "s-long-gift",
+      "s-pnpm",
+      "g-p04",
+      "g-n02",
+      "g-n01",
       "g-n00",
-      "s-long-passport",
-      "g-n08"
+      "g-n08",
+      "s-long-passport"
      ],
-     "ms": 155.75959999999031,
+     "ms": 178.58380000000034,
      "topScore": null,
      "hit1": 0,
      "hit3": 0,
@@ -2917,16 +2917,16 @@
      "mode": "hybrid+prodrecency",
      "status": "ok",
      "ranked": [
-      "g-n00",
-      "g-p04",
+      "g-n01",
       "s-pnpm",
-      "s-long-gift",
-      "g-n06",
+      "g-p04",
+      "g-n00",
       "g-n03",
+      "g-n02",
       "g-n08",
       "s-long-passport"
      ],
-     "ms": 160.0899999999674,
+     "ms": 172.33160000000134,
      "topScore": null,
      "hit1": 0,
      "hit3": 0,
@@ -2942,15 +2942,15 @@
      "status": "ok",
      "ranked": [
       "g-p25",
-      "g-n00",
       "g-n01",
       "g-n03",
       "g-n05",
-      "g-n06",
-      "g-n04",
-      "g-n08"
+      "g-n09",
+      "g-n11",
+      "s-long-gift",
+      "s-long-passport"
      ],
-     "ms": 128.19559999997728,
+     "ms": 141.92629999999917,
      "topScore": null,
      "hit1": 1,
      "hit3": 1,
@@ -2966,15 +2966,15 @@
      "status": "ok",
      "ranked": [
       "g-p25",
-      "g-n01",
+      "g-n05",
       "s-coffee",
+      "g-n01",
       "g-n03",
-      "g-n04",
-      "g-n08",
-      "g-n00",
-      "s-long-gift"
+      "s-long-gift",
+      "s-city-old",
+      "s-long-backup"
      ],
-     "ms": 157.4613000000245,
+     "ms": 180.03589999999895,
      "topScore": null,
      "hit1": 1,
      "hit3": 1,
@@ -2989,23 +2989,23 @@
      "mode": "hybrid+prodrecency",
      "status": "ok",
      "ranked": [
-      "g-n01",
       "g-p25",
-      "g-n08",
+      "g-n01",
       "s-coffee",
-      "g-n00",
+      "g-n05",
       "s-long-gift",
       "g-n03",
-      "g-n04"
+      "s-long-backup",
+      "g-n08"
      ],
-     "ms": 161.6374000000069,
+     "ms": 170.83300000000236,
      "topScore": null,
-     "hit1": 0,
+     "hit1": 1,
      "hit3": 1,
      "hit5": 1,
      "recall8": 1,
-     "rr": 0.5,
-     "ndcg8": 0.6309297535714575
+     "rr": 1,
+     "ndcg8": 1
     },
     {
      "query": "q-g-p26",
@@ -3017,12 +3017,12 @@
       "g-p26",
       "n-alarm",
       "g-p11",
+      "n-coffee-machine",
+      "gn-p08",
       "s-sleep",
-      "d-0008",
-      "d-0010",
-      "d-0017"
+      "d-0002"
      ],
-     "ms": 131.15600000001723,
+     "ms": 138.71730000000025,
      "topScore": null,
      "hit1": 0,
      "hit3": 1,
@@ -3038,15 +3038,15 @@
      "status": "ok",
      "ranked": [
       "g-p26",
-      "s-sleep",
       "g-p11",
-      "g-n07",
+      "s-sleep",
+      "g-n08",
       "n-alarm",
       "s-trip-mid",
       "s-city-old",
-      "d-0001"
+      "d-0009"
      ],
-     "ms": 157.05499999999302,
+     "ms": 180.5356000000029,
      "topScore": null,
      "hit1": 1,
      "hit3": 1,
@@ -3062,15 +3062,15 @@
      "status": "ok",
      "ranked": [
       "g-p26",
-      "s-sleep",
       "g-p11",
-      "g-n09",
+      "g-n08",
       "n-alarm",
+      "s-sleep",
       "s-trip-mid",
       "s-city-old",
-      "d-0001"
+      "g-n10"
      ],
-     "ms": 152.71019999997225,
+     "ms": 248.48339999999735,
      "topScore": null,
      "hit1": 1,
      "hit3": 1,
@@ -3086,15 +3086,15 @@
      "status": "ok",
      "ranked": [
       "g-k09",
-      "g-k07",
       "g-n06",
       "s-pnpm",
-      "s-lang-ctx",
-      "s-coffee",
-      "g-n01",
-      "g-n02"
+      "g-k07",
+      "d-0062",
+      "d-0086",
+      "d-0109",
+      "s-lang-ctx"
      ],
-     "ms": 130.3181999999797,
+     "ms": 135.8239999999969,
      "topScore": null,
      "hit1": 0,
      "hit3": 0,
@@ -3109,16 +3109,16 @@
      "mode": "hybrid",
      "status": "ok",
      "ranked": [
-      "g-n07",
-      "g-k09",
       "g-n06",
-      "g-n02",
-      "g-n08",
-      "s-long-gift",
+      "g-k09",
+      "g-n01",
+      "g-n00",
       "g-n10",
-      "g-n01"
+      "g-n09",
+      "n-alarm",
+      "s-long-client"
      ],
-     "ms": 160.63250000000698,
+     "ms": 188.6707000000024,
      "topScore": null,
      "hit1": 0,
      "hit3": 0,
@@ -3133,16 +3133,16 @@
      "mode": "hybrid+prodrecency",
      "status": "ok",
      "ranked": [
-      "g-n02",
-      "g-k09",
-      "g-n08",
-      "s-long-gift",
-      "g-n07",
       "g-n06",
+      "g-k09",
+      "g-n01",
       "g-n00",
-      "g-n01"
+      "g-n10",
+      "g-n09",
+      "n-alarm",
+      "s-long-client"
      ],
-     "ms": 160.54570000001695,
+     "ms": 168.65780000000086,
      "topScore": null,
      "hit1": 0,
      "hit3": 0,
@@ -3157,16 +3157,16 @@
      "mode": "lexical",
      "status": "ok",
      "ranked": [
-      "d-0009",
-      "d-0031",
-      "d-0075",
+      "d-0015",
+      "d-0034",
+      "d-0048",
+      "d-0055",
       "d-0094",
-      "d-0097",
-      "d-0103",
-      "d-0012",
-      "d-0048"
+      "d-0010",
+      "d-0030",
+      "d-0031"
      ],
-     "ms": 131.37020000000484,
+     "ms": 135.8025000000016,
      "topScore": null,
      "hit1": 0,
      "hit3": 0,
@@ -3181,16 +3181,16 @@
      "mode": "hybrid",
      "status": "ok",
      "ranked": [
-      "d-0097",
-      "g-n07",
-      "d-0009",
+      "d-0030",
+      "g-n01",
+      "d-0110",
       "g-p02",
-      "d-0094",
-      "d-0075",
-      "d-0103",
-      "s-long-client"
+      "s-long-client",
+      "g-p20",
+      "g-n02",
+      "d-0014"
      ],
-     "ms": 162.86290000000736,
+     "ms": 169.3669000000009,
      "topScore": null,
      "hit1": 0,
      "hit3": 0,
@@ -3205,16 +3205,16 @@
      "mode": "hybrid+prodrecency",
      "status": "ok",
      "ranked": [
-      "d-0097",
-      "s-long-client",
-      "d-0009",
+      "d-0030",
+      "g-n01",
       "g-p02",
-      "d-0103",
-      "d-0094",
-      "d-0075",
-      "g-n08"
+      "d-0110",
+      "g-n00",
+      "s-long-client",
+      "g-n02",
+      "d-0042"
      ],
-     "ms": 161.266500000027,
+     "ms": 173.10499999999956,
      "topScore": null,
      "hit1": 0,
      "hit3": 0,
@@ -3237,7 +3237,7 @@
       "s-cloud-old",
       "s-cloud-new"
      ],
-     "ms": 130.8448999999673,
+     "ms": 134.3643000000011,
      "topScore": null,
      "hit1": 1,
      "hit3": 1,
@@ -3261,7 +3261,7 @@
       "s-cloud-new",
       "g-k06"
      ],
-     "ms": 157.07099999999627,
+     "ms": 172.45910000000003,
      "topScore": null,
      "hit1": 1,
      "hit3": 1,
@@ -3285,7 +3285,7 @@
       "s-cloud-old",
       "g-k08"
      ],
-     "ms": 158.83580000000075,
+     "ms": 196.29599999999846,
      "topScore": null,
      "hit1": 1,
      "hit3": 1,
@@ -3306,10 +3306,10 @@
       "g-k10",
       "g-k15",
       "g-k03",
-      "gn-k01",
-      "d-0041"
+      "d-0007",
+      "gn-k01"
      ],
-     "ms": 130.3411999999662,
+     "ms": 133.15879999999743,
      "topScore": null,
      "hit1": 1,
      "hit3": 1,
@@ -3333,7 +3333,7 @@
       "gn-k07",
       "g-k11"
      ],
-     "ms": 164.65659999998752,
+     "ms": 173.72729999999865,
      "topScore": null,
      "hit1": 1,
      "hit3": 1,
@@ -3354,10 +3354,10 @@
       "g-k15",
       "g-k14",
       "gn-k01",
-      "gn-k07",
-      "g-k11"
+      "g-k11",
+      "gn-k07"
      ],
-     "ms": 161.98729999997886,
+     "ms": 175.52669999999853,
      "topScore": null,
      "hit1": 1,
      "hit3": 1,
@@ -3373,15 +3373,15 @@
      "status": "ok",
      "ranked": [
       "g-k02",
-      "d-0072",
-      "d-0020",
+      "d-0018",
       "gn-p01",
-      "d-0004",
-      "d-0038",
-      "d-0070",
-      "d-0081"
+      "d-0036",
+      "d-0057",
+      "d-0037",
+      "d-0032",
+      "d-0038"
      ],
-     "ms": 126.3853999999701,
+     "ms": 138.20370000000185,
      "topScore": null,
      "hit1": 1,
      "hit3": 1,
@@ -3394,30 +3394,6 @@
      "query": "q-g-k02",
      "category": "keyword",
      "mode": "hybrid",
-     "status": "ok",
-     "ranked": [
-      "g-k02",
-      "g-k00",
-      "g-c05-old",
-      "g-c08-old",
-      "g-k05",
-      "gn-k10",
-      "g-c02-old",
-      "g-k06"
-     ],
-     "ms": 163.35339999996359,
-     "topScore": null,
-     "hit1": 1,
-     "hit3": 1,
-     "hit5": 1,
-     "recall8": 1,
-     "rr": 1,
-     "ndcg8": 1
-    },
-    {
-     "query": "q-g-k02",
-     "category": "keyword",
-     "mode": "hybrid+prodrecency",
      "status": "ok",
      "ranked": [
       "g-k02",
@@ -3429,7 +3405,31 @@
       "g-c02-new",
       "g-k06"
      ],
-     "ms": 158.96940000000177,
+     "ms": 188.74419999999736,
+     "topScore": null,
+     "hit1": 1,
+     "hit3": 1,
+     "hit5": 1,
+     "recall8": 1,
+     "rr": 1,
+     "ndcg8": 1
+    },
+    {
+     "query": "q-g-k02",
+     "category": "keyword",
+     "mode": "hybrid+prodrecency",
+     "status": "ok",
+     "ranked": [
+      "g-k02",
+      "g-k00",
+      "g-c08-old",
+      "g-c05-old",
+      "g-k05",
+      "g-c02-new",
+      "gn-k10",
+      "g-k06"
+     ],
+     "ms": 171.46350000000166,
      "topScore": null,
      "hit1": 1,
      "hit3": 1,
@@ -3446,14 +3446,14 @@
      "ranked": [
       "g-k04",
       "gn-p01",
-      "d-0029",
-      "d-0032",
-      "d-0060",
-      "d-0069",
-      "d-0107",
-      "d-0062"
+      "d-0008",
+      "d-0012",
+      "d-0020",
+      "d-0021",
+      "d-0059",
+      "d-0072"
      ],
-     "ms": 125.80839999997988,
+     "ms": 135.50049999999828,
      "topScore": null,
      "hit1": 1,
      "hit3": 1,
@@ -3469,15 +3469,15 @@
      "status": "ok",
      "ranked": [
       "g-k04",
-      "g-n00",
+      "g-n11",
       "gn-k10",
       "g-k02",
       "g-k11",
-      "g-n01",
+      "g-n07",
       "g-n03",
-      "g-n09"
+      "g-n05"
      ],
-     "ms": 161.28009999997448,
+     "ms": 166.28139999999985,
      "topScore": null,
      "hit1": 1,
      "hit3": 1,
@@ -3493,15 +3493,15 @@
      "status": "ok",
      "ranked": [
       "g-k04",
-      "g-n00",
-      "gn-k10",
+      "g-n11",
       "g-k02",
+      "gn-k10",
       "g-k11",
-      "g-n01",
-      "g-n09",
-      "g-n03"
+      "g-n07",
+      "g-n03",
+      "s-long-backup"
      ],
-     "ms": 165.70789999997942,
+     "ms": 174.59369999999763,
      "topScore": null,
      "hit1": 1,
      "hit3": 1,
@@ -3517,15 +3517,15 @@
      "status": "ok",
      "ranked": [
       "g-k05",
-      "d-0004",
+      "g-n07",
+      "d-0037",
+      "d-0018",
+      "d-0032",
       "d-0038",
-      "d-0070",
-      "d-0072",
-      "d-0081",
-      "g-n07",
-      "g-k10"
+      "d-0049",
+      "d-0051"
      ],
-     "ms": 129.6428999999771,
+     "ms": 135.36169999999765,
      "topScore": null,
      "hit1": 1,
      "hit3": 1,
@@ -3542,14 +3542,14 @@
      "ranked": [
       "g-k05",
       "g-n07",
+      "d-0044",
       "g-k00",
-      "g-k02",
       "gn-k10",
+      "g-k02",
       "g-k15",
-      "g-k08",
-      "d-0100"
+      "g-k08"
      ],
-     "ms": 160.91810000000987,
+     "ms": 166.28069999999934,
      "topScore": null,
      "hit1": 1,
      "hit3": 1,
@@ -3565,15 +3565,15 @@
      "status": "ok",
      "ranked": [
       "g-k05",
-      "g-n07",
       "g-k00",
+      "g-n07",
+      "d-0044",
       "g-k02",
       "gn-k10",
       "g-k08",
-      "g-k15",
-      "d-0100"
+      "g-k15"
      ],
-     "ms": 161.4881999999634,
+     "ms": 167.90539999999964,
      "topScore": null,
      "hit1": 1,
      "hit3": 1,
@@ -3589,15 +3589,15 @@
      "status": "ok",
      "ranked": [
       "g-k06",
-      "d-0009",
-      "d-0075",
-      "d-0094",
-      "d-0097",
-      "d-0103",
-      "n-npm-error",
-      "d-0004"
+      "d-0010",
+      "d-0014",
+      "d-0030",
+      "d-0031",
+      "d-0042",
+      "d-0110",
+      "n-npm-error"
      ],
-     "ms": 133.96220000000903,
+     "ms": 134.60239999999976,
      "topScore": null,
      "hit1": 1,
      "hit3": 1,
@@ -3613,15 +3613,15 @@
      "status": "ok",
      "ranked": [
       "g-k06",
-      "d-0006",
+      "d-0038",
       "gn-k10",
-      "d-0072",
-      "gn-k07",
+      "d-0100",
+      "d-0087",
       "gn-k06",
       "g-k02",
-      "d-0081"
+      "gn-k07"
      ],
-     "ms": 161.94449999998324,
+     "ms": 176.85629999999946,
      "topScore": null,
      "hit1": 1,
      "hit3": 1,
@@ -3637,15 +3637,15 @@
      "status": "ok",
      "ranked": [
       "g-k06",
-      "d-0072",
+      "d-0087",
       "gn-k10",
-      "d-0006",
-      "gn-k07",
+      "d-0100",
+      "d-0038",
       "gn-k06",
       "g-k02",
-      "d-0081"
+      "gn-k07"
      ],
-     "ms": 162.34660000004806,
+     "ms": 168.73849999999948,
      "topScore": null,
      "hit1": 1,
      "hit3": 1,
@@ -3664,12 +3664,12 @@
       "gn-k08",
       "s-trip-new",
       "g-n00",
+      "g-n01",
       "g-n03",
-      "g-n06",
-      "s-long-client",
-      "s-long-gift"
+      "g-n04",
+      "g-n08"
      ],
-     "ms": 130.4494999999879,
+     "ms": 135.85979999999836,
      "topScore": null,
      "hit1": 1,
      "hit3": 1,
@@ -3686,14 +3686,14 @@
      "ranked": [
       "g-k08",
       "gn-k08",
-      "s-long-client",
-      "g-n06",
+      "g-n04",
+      "g-n10",
       "g-n00",
-      "s-long-gift",
-      "g-n11",
-      "g-n03"
+      "s-long-client",
+      "g-n05",
+      "g-n02"
      ],
-     "ms": 158.53000000002794,
+     "ms": 172.27319999999963,
      "topScore": null,
      "hit1": 1,
      "hit3": 1,
@@ -3711,13 +3711,13 @@
       "g-k08",
       "gn-k08",
       "g-n00",
-      "s-long-client",
-      "s-long-gift",
-      "g-n06",
-      "g-n11",
-      "g-n03"
+      "g-n04",
+      "g-n10",
+      "g-n08",
+      "g-n02",
+      "s-long-client"
      ],
-     "ms": 160.61709999997402,
+     "ms": 196.9841000000015,
      "topScore": null,
      "hit1": 1,
      "hit3": 1,
@@ -3737,11 +3737,11 @@
       "g-k10",
       "g-k15",
       "g-k03",
-      "d-0041",
-      "d-0076",
-      "d-0082"
+      "d-0007",
+      "g-n06",
+      "d-0022"
      ],
-     "ms": 132.69229999999516,
+     "ms": 142.95770000000266,
      "topScore": null,
      "hit1": 1,
      "hit3": 1,
@@ -3762,10 +3762,10 @@
       "g-k15",
       "g-k11",
       "g-k10",
-      "g-k14",
-      "g-n06"
+      "g-n06",
+      "g-k14"
      ],
-     "ms": 159.55430000001797,
+     "ms": 177.01900000000023,
      "topScore": null,
      "hit1": 1,
      "hit3": 1,
@@ -3786,10 +3786,10 @@
       "g-k15",
       "g-k11",
       "g-k10",
-      "g-k14",
-      "g-n01"
+      "g-n06",
+      "g-k14"
      ],
-     "ms": 162.65479999996023,
+     "ms": 173.3133999999991,
      "topScore": null,
      "hit1": 1,
      "hit3": 1,
@@ -3810,10 +3810,10 @@
       "g-n03",
       "g-n02",
       "g-p16",
-      "d-0004",
-      "d-0038"
+      "d-0037",
+      "d-0018"
      ],
-     "ms": 129.49699999997392,
+     "ms": 136.85539999999673,
      "topScore": null,
      "hit1": 1,
      "hit3": 1,
@@ -3833,35 +3833,35 @@
       "gn-k10",
       "g-k14",
       "gn-k07",
-      "g-p21",
-      "g-k15",
-      "g-k07"
-     ],
-     "ms": 159.34990000003017,
-     "topScore": null,
-     "hit1": 1,
-     "hit3": 1,
-     "hit5": 1,
-     "recall8": 1,
-     "rr": 1,
-     "ndcg8": 1
-    },
-    {
-     "query": "q-g-k10",
-     "category": "keyword",
-     "mode": "hybrid+prodrecency",
-     "status": "ok",
-     "ranked": [
-      "g-k10",
-      "g-c05-old",
-      "gn-k10",
-      "g-k14",
-      "gn-k07",
+      "d-0038",
       "g-k08",
-      "g-p21",
       "g-k02"
      ],
-     "ms": 159.81549999996787,
+     "ms": 178.89270000000033,
+     "topScore": null,
+     "hit1": 1,
+     "hit3": 1,
+     "hit5": 1,
+     "recall8": 1,
+     "rr": 1,
+     "ndcg8": 1
+    },
+    {
+     "query": "q-g-k10",
+     "category": "keyword",
+     "mode": "hybrid+prodrecency",
+     "status": "ok",
+     "ranked": [
+      "g-k10",
+      "g-c05-old",
+      "gn-k10",
+      "g-k14",
+      "gn-k07",
+      "d-0038",
+      "g-k08",
+      "g-k02"
+     ],
+     "ms": 175.84379999999874,
      "topScore": null,
      "hit1": 1,
      "hit3": 1,
@@ -3877,15 +3877,15 @@
      "status": "ok",
      "ranked": [
       "g-k12",
-      "d-0009",
+      "d-0010",
+      "d-0030",
       "d-0031",
-      "d-0075",
-      "g-n00",
-      "g-n01",
-      "g-n02",
+      "d-0042",
+      "d-0098",
+      "d-0110",
       "g-n03"
      ],
-     "ms": 127.20069999998668,
+     "ms": 136.63700000000244,
      "topScore": null,
      "hit1": 1,
      "hit3": 1,
@@ -3901,15 +3901,15 @@
      "status": "ok",
      "ranked": [
       "g-k12",
-      "g-n02",
-      "g-p25",
-      "d-0097",
-      "gn-p08",
-      "g-n00",
+      "g-n04",
       "d-0110",
-      "g-n01"
+      "d-0033",
+      "g-p25",
+      "gn-p08",
+      "g-n06",
+      "s-long-backup"
      ],
-     "ms": 159.015699999989,
+     "ms": 171.66660000000047,
      "topScore": null,
      "hit1": 1,
      "hit3": 1,
@@ -3925,15 +3925,15 @@
      "status": "ok",
      "ranked": [
       "g-k12",
-      "g-n02",
-      "d-0097",
+      "s-long-backup",
+      "d-0033",
+      "d-0110",
       "g-p25",
-      "g-n00",
-      "g-n01",
-      "gn-p08",
-      "d-0110"
+      "g-n04",
+      "g-n08",
+      "g-n03"
      ],
-     "ms": 157.88850000000093,
+     "ms": 172.01529999999912,
      "topScore": null,
      "hit1": 1,
      "hit3": 1,
@@ -3951,13 +3951,13 @@
       "g-k13",
       "g-n10",
       "s-trip-new",
-      "d-0012",
-      "d-0048",
-      "d-0096",
+      "d-0015",
+      "d-0034",
       "g-p20",
+      "g-n00",
       "g-n01"
      ],
-     "ms": 130.57600000000093,
+     "ms": 135.16509999999835,
      "topScore": null,
      "hit1": 1,
      "hit3": 1,
@@ -3975,13 +3975,13 @@
       "g-k13",
       "g-n10",
       "s-trip-new",
-      "gn-k08",
-      "g-n04",
       "g-n00",
-      "g-n02",
+      "gn-k08",
+      "g-n03",
+      "g-n05",
       "g-n08"
      ],
-     "ms": 159.88159999996424,
+     "ms": 168.1189000000013,
      "topScore": null,
      "hit1": 1,
      "hit3": 1,
@@ -3999,13 +3999,13 @@
       "g-k13",
       "g-n10",
       "s-trip-new",
-      "gn-k08",
       "g-n00",
+      "gn-k08",
+      "g-n03",
       "g-n08",
-      "g-n02",
-      "g-n04"
+      "s-long-gift"
      ],
-     "ms": 162.8279999999795,
+     "ms": 171.88800000000265,
      "topScore": null,
      "hit1": 1,
      "hit3": 1,
@@ -4021,15 +4021,15 @@
      "status": "ok",
      "ranked": [
       "g-k14",
-      "d-0072",
-      "d-0103",
-      "d-0041",
-      "d-0076",
-      "d-0082",
-      "d-0089",
-      "d-0004"
+      "d-0014",
+      "d-0069",
+      "d-0100",
+      "d-0007",
+      "d-0022",
+      "d-0018",
+      "d-0032"
      ],
-     "ms": 128.75790000002598,
+     "ms": 135.58890000000247,
      "topScore": null,
      "hit1": 1,
      "hit3": 1,
@@ -4045,15 +4045,15 @@
      "status": "ok",
      "ranked": [
       "g-k14",
-      "d-0072",
-      "d-0103",
+      "d-0014",
       "g-k08",
-      "g-k10",
       "g-c05-old",
-      "d-0076",
-      "g-c08-old"
+      "g-k10",
+      "g-c08-old",
+      "d-0007",
+      "g-k15"
      ],
-     "ms": 159.02630000002682,
+     "ms": 186.90550000000076,
      "topScore": null,
      "hit1": 1,
      "hit3": 1,
@@ -4069,15 +4069,15 @@
      "status": "ok",
      "ranked": [
       "g-k14",
-      "d-0072",
-      "d-0103",
+      "d-0014",
       "g-k08",
       "g-k10",
       "g-c05-old",
-      "d-0076",
+      "d-0069",
+      "d-0007",
       "g-c08-old"
      ],
-     "ms": 161.6549000000232,
+     "ms": 170.1391999999978,
      "topScore": null,
      "hit1": 1,
      "hit3": 1,
@@ -4096,12 +4096,12 @@
       "g-c00-old",
       "s-trip-new",
       "g-n00",
+      "g-n01",
       "g-n03",
-      "g-n06",
-      "s-long-client",
-      "s-long-gift"
+      "g-n04",
+      "g-n08"
      ],
-     "ms": 131.18330000003334,
+     "ms": 136.73459999999977,
      "topScore": null,
      "hit1": 1,
      "hit3": 1,
@@ -4118,15 +4118,15 @@
      "status": "ok",
      "ranked": [
       "g-c00-new",
-      "s-long-client",
+      "g-n08",
       "g-c00-old",
-      "g-n03",
-      "g-n01",
-      "s-long-gift",
       "g-n04",
+      "g-n03",
+      "g-n10",
+      "g-n01",
       "g-n00"
      ],
-     "ms": 159.0187000000151,
+     "ms": 171.90859999999884,
      "topScore": null,
      "hit1": 1,
      "hit3": 1,
@@ -4143,165 +4143,165 @@
      "status": "ok",
      "ranked": [
       "g-c00-new",
-      "s-long-client",
+      "g-n08",
       "g-c00-old",
-      "s-long-gift",
+      "g-n04",
+      "g-n03",
       "g-n01",
+      "g-n00",
+      "g-n10"
+     ],
+     "ms": 168.09999999999854,
+     "topScore": null,
+     "hit1": 1,
+     "hit3": 1,
+     "hit5": 1,
+     "recall8": 1,
+     "rr": 1,
+     "ndcg8": 1,
+     "order": 1
+    },
+    {
+     "query": "q-g-c01",
+     "category": "correction",
+     "mode": "lexical",
+     "status": "ok",
+     "ranked": [
+      "g-c01-new",
+      "g-c01-old",
+      "d-0010",
+      "d-0014",
+      "d-0030",
+      "d-0031",
+      "d-0042",
+      "d-0110"
+     ],
+     "ms": 137.76650000000154,
+     "topScore": null,
+     "hit1": 1,
+     "hit3": 1,
+     "hit5": 1,
+     "recall8": 1,
+     "rr": 1,
+     "ndcg8": 1,
+     "order": 1
+    },
+    {
+     "query": "q-g-c01",
+     "category": "correction",
+     "mode": "hybrid",
+     "status": "ok",
+     "ranked": [
+      "g-c01-new",
+      "g-c01-old",
+      "g-n08",
+      "g-n04",
+      "g-n03",
+      "g-n05",
+      "g-n10",
+      "g-n01"
+     ],
+     "ms": 170.28050000000076,
+     "topScore": null,
+     "hit1": 1,
+     "hit3": 1,
+     "hit5": 1,
+     "recall8": 1,
+     "rr": 1,
+     "ndcg8": 1,
+     "order": 1
+    },
+    {
+     "query": "q-g-c01",
+     "category": "correction",
+     "mode": "hybrid+prodrecency",
+     "status": "ok",
+     "ranked": [
+      "g-c01-new",
+      "g-n08",
+      "g-c01-old",
+      "g-n04",
+      "g-n03",
+      "g-n10",
+      "g-n01",
+      "g-n05"
+     ],
+     "ms": 188.79179999999906,
+     "topScore": null,
+     "hit1": 1,
+     "hit3": 1,
+     "hit5": 1,
+     "recall8": 1,
+     "rr": 1,
+     "ndcg8": 1,
+     "order": 1
+    },
+    {
+     "query": "q-g-c02",
+     "category": "correction",
+     "mode": "lexical",
+     "status": "ok",
+     "ranked": [
+      "d-0022",
+      "g-c02-old",
+      "d-0007",
+      "n-japan-trip",
+      "gn-k10",
+      "g-k11",
+      "gn-k01",
+      "g-k00"
+     ],
+     "ms": 137.6805000000022,
+     "topScore": null,
+     "hit1": 0,
+     "hit3": 0,
+     "hit5": 0,
+     "recall8": 0,
+     "rr": 0,
+     "ndcg8": 0,
+     "order": 0
+    },
+    {
+     "query": "q-g-c02",
+     "category": "correction",
+     "mode": "hybrid",
+     "status": "ok",
+     "ranked": [
+      "g-c02-old",
+      "d-0022",
+      "gn-k10",
+      "g-n04",
+      "g-k02",
+      "g-n03",
+      "g-n05",
+      "g-n00"
+     ],
+     "ms": 170.40760000000228,
+     "topScore": null,
+     "hit1": 0,
+     "hit3": 0,
+     "hit5": 0,
+     "recall8": 0,
+     "rr": 0,
+     "ndcg8": 0,
+     "order": 0
+    },
+    {
+     "query": "q-g-c02",
+     "category": "correction",
+     "mode": "hybrid+prodrecency",
+     "status": "ok",
+     "ranked": [
+      "g-c02-old",
+      "d-0022",
+      "gn-k10",
+      "g-k02",
+      "g-n04",
       "g-n03",
       "g-n00",
-      "g-n04"
+      "g-n05"
      ],
-     "ms": 153.99629999999888,
-     "topScore": null,
-     "hit1": 1,
-     "hit3": 1,
-     "hit5": 1,
-     "recall8": 1,
-     "rr": 1,
-     "ndcg8": 1,
-     "order": 1
-    },
-    {
-     "query": "q-g-c01",
-     "category": "correction",
-     "mode": "lexical",
-     "status": "ok",
-     "ranked": [
-      "g-c01-new",
-      "g-c01-old",
-      "d-0009",
-      "d-0075",
-      "d-0094",
-      "d-0097",
-      "d-0103",
-      "d-0031"
-     ],
-     "ms": 131.33130000001984,
-     "topScore": null,
-     "hit1": 1,
-     "hit3": 1,
-     "hit5": 1,
-     "recall8": 1,
-     "rr": 1,
-     "ndcg8": 1,
-     "order": 1
-    },
-    {
-     "query": "q-g-c01",
-     "category": "correction",
-     "mode": "hybrid",
-     "status": "ok",
-     "ranked": [
-      "g-c01-new",
-      "g-n07",
-      "g-c01-old",
-      "d-0097",
-      "g-n01",
-      "g-n02",
-      "s-long-client",
-      "s-long-passport"
-     ],
-     "ms": 158.1198999999906,
-     "topScore": null,
-     "hit1": 1,
-     "hit3": 1,
-     "hit5": 1,
-     "recall8": 1,
-     "rr": 1,
-     "ndcg8": 1,
-     "order": 1
-    },
-    {
-     "query": "q-g-c01",
-     "category": "correction",
-     "mode": "hybrid+prodrecency",
-     "status": "ok",
-     "ranked": [
-      "g-c01-new",
-      "g-n01",
-      "g-c01-old",
-      "d-0097",
-      "g-n02",
-      "g-n07",
-      "s-long-client",
-      "s-long-gift"
-     ],
-     "ms": 173.56010000000242,
-     "topScore": null,
-     "hit1": 1,
-     "hit3": 1,
-     "hit5": 1,
-     "recall8": 1,
-     "rr": 1,
-     "ndcg8": 1,
-     "order": 1
-    },
-    {
-     "query": "q-g-c02",
-     "category": "correction",
-     "mode": "lexical",
-     "status": "ok",
-     "ranked": [
-      "d-0002",
-      "d-0056",
-      "d-0080",
-      "d-0082",
-      "d-0089",
-      "g-c02-old",
-      "d-0041",
-      "d-0076"
-     ],
-     "ms": 130.25559999997495,
-     "topScore": null,
-     "hit1": 0,
-     "hit3": 0,
-     "hit5": 0,
-     "recall8": 0,
-     "rr": 0,
-     "ndcg8": 0,
-     "order": 0
-    },
-    {
-     "query": "q-g-c02",
-     "category": "correction",
-     "mode": "hybrid",
-     "status": "ok",
-     "ranked": [
-      "g-c02-old",
-      "d-0080",
-      "gn-k10",
-      "d-0002",
-      "g-k02",
-      "d-0056",
-      "g-n00",
-      "d-0082"
-     ],
-     "ms": 158.21289999998407,
-     "topScore": null,
-     "hit1": 0,
-     "hit3": 0,
-     "hit5": 0,
-     "recall8": 0,
-     "rr": 0,
-     "ndcg8": 0,
-     "order": 0
-    },
-    {
-     "query": "q-g-c02",
-     "category": "correction",
-     "mode": "hybrid+prodrecency",
-     "status": "ok",
-     "ranked": [
-      "g-c02-old",
-      "d-0080",
-      "gn-k10",
-      "g-n00",
-      "g-k02",
-      "d-0002",
-      "d-0056",
-      "d-0082"
-     ],
-     "ms": 161.94449999998324,
+     "ms": 169.9291000000012,
      "topScore": null,
      "hit1": 0,
      "hit3": 0,
@@ -4321,12 +4321,12 @@
       "g-n10",
       "g-k10",
       "g-c04-new",
+      "d-0003",
+      "d-0011",
       "d-0026",
-      "d-0035",
-      "d-0049",
-      "d-0057"
+      "d-0050"
      ],
-     "ms": 127.4822999999742,
+     "ms": 138.52820000000065,
      "topScore": null,
      "hit1": 0,
      "hit3": 0,
@@ -4345,13 +4345,13 @@
       "g-c04-old",
       "g-n10",
       "g-c04-new",
-      "g-k10",
       "g-p28",
-      "d-0064",
-      "g-n03",
-      "g-n04"
+      "g-k10",
+      "d-0003",
+      "g-n00",
+      "g-n02"
      ],
-     "ms": 154.00299999996787,
+     "ms": 167.33889999999883,
      "topScore": null,
      "hit1": 0,
      "hit3": 1,
@@ -4371,12 +4371,12 @@
       "g-n10",
       "g-c04-old",
       "g-k10",
-      "d-0035",
       "g-p28",
-      "g-n08",
-      "g-n03"
+      "d-0003",
+      "g-n00",
+      "g-n02"
      ],
-     "ms": 159.24640000000363,
+     "ms": 172.46489999999903,
      "topScore": null,
      "hit1": 1,
      "hit3": 1,
@@ -4395,13 +4395,13 @@
       "g-c05-old",
       "g-c05-new",
       "g-p18",
-      "d-0004",
+      "d-0037",
+      "d-0018",
+      "d-0032",
       "d-0038",
-      "d-0070",
-      "d-0072",
-      "d-0081"
+      "d-0049"
      ],
-     "ms": 129.36200000002282,
+     "ms": 146.06039999999848,
      "topScore": null,
      "hit1": 0,
      "hit3": 1,
@@ -4418,22 +4418,22 @@
      "status": "ok",
      "ranked": [
       "g-c05-old",
-      "g-c05-new",
       "g-p18",
-      "d-0072",
+      "g-c05-new",
       "g-n03",
+      "d-0038",
       "g-k02",
       "gn-k10",
       "g-p01"
      ],
-     "ms": 157.85350000002654,
+     "ms": 175.15890000000218,
      "topScore": null,
      "hit1": 0,
      "hit3": 1,
      "hit5": 1,
      "recall8": 1,
-     "rr": 0.5,
-     "ndcg8": 0.6309297535714575,
+     "rr": 0.3333333333333333,
+     "ndcg8": 0.5,
      "order": 0
     },
     {
@@ -4443,15 +4443,15 @@
      "status": "ok",
      "ranked": [
       "g-c05-new",
-      "d-0072",
-      "g-c05-old",
       "g-p18",
+      "g-c05-old",
       "g-n03",
+      "d-0038",
       "g-k02",
       "g-p01",
       "gn-k10"
      ],
-     "ms": 158.41710000002058,
+     "ms": 185.68089999999938,
      "topScore": null,
      "hit1": 1,
      "hit3": 1,
@@ -4469,14 +4469,14 @@
      "ranked": [
       "g-c06-old",
       "g-c06-new",
-      "g-n07",
       "g-n00",
       "g-n01",
       "g-n02",
       "g-n03",
-      "g-n04"
+      "g-n04",
+      "g-n05"
      ],
-     "ms": 128.81620000000112,
+     "ms": 135.90990000000602,
      "topScore": null,
      "hit1": 0,
      "hit3": 1,
@@ -4493,15 +4493,15 @@
      "status": "ok",
      "ranked": [
       "g-c06-old",
-      "g-n07",
+      "g-n00",
       "g-c06-new",
       "g-p20",
       "g-n02",
-      "g-n00",
-      "g-n04",
-      "g-n03"
+      "g-n01",
+      "s-commute",
+      "g-n10"
      ],
-     "ms": 155.6685999999754,
+     "ms": 169.6756000000023,
      "topScore": null,
      "hit1": 0,
      "hit3": 1,
@@ -4518,15 +4518,15 @@
      "status": "ok",
      "ranked": [
       "g-c06-new",
-      "g-n07",
-      "g-c06-old",
       "g-n00",
+      "g-c06-old",
       "g-p20",
       "g-n02",
-      "g-n08",
-      "g-n04"
+      "g-n01",
+      "s-commute",
+      "g-n10"
      ],
-     "ms": 160.4375,
+     "ms": 172.06609999999637,
      "topScore": null,
      "hit1": 1,
      "hit3": 1,
@@ -4544,14 +4544,14 @@
      "ranked": [
       "g-c08-old",
       "g-c08-new",
-      "d-0041",
-      "d-0076",
-      "d-0082",
-      "d-0089",
-      "d-0004",
+      "d-0007",
+      "d-0022",
+      "d-0018",
+      "d-0032",
+      "d-0037",
       "d-0038"
      ],
-     "ms": 130.45009999995818,
+     "ms": 281.0112999999983,
      "topScore": null,
      "hit1": 0,
      "hit3": 1,
@@ -4569,14 +4569,14 @@
      "ranked": [
       "g-c08-old",
       "g-c08-new",
+      "d-0051",
       "g-k06",
+      "g-n03",
       "g-k08",
       "g-k07",
-      "g-n02",
-      "d-0072",
-      "gn-k06"
+      "d-0032"
      ],
-     "ms": 162.108099999954,
+     "ms": 190.03549999999814,
      "topScore": null,
      "hit1": 0,
      "hit3": 1,
@@ -4594,14 +4594,14 @@
      "ranked": [
       "g-c08-new",
       "g-c08-old",
+      "d-0051",
       "g-k08",
       "g-k06",
-      "g-n02",
+      "g-n03",
       "g-k07",
-      "d-0072",
       "gn-k06"
      ],
-     "ms": 160.76800000004005,
+     "ms": 183.4230000000025,
      "topScore": null,
      "hit1": 1,
      "hit3": 1,
@@ -4619,14 +4619,14 @@
      "ranked": [
       "g-n00",
       "s-trip-new",
+      "g-n01",
       "g-n03",
-      "g-n06",
-      "s-long-client",
-      "s-long-gift",
-      "s-long-passport",
-      "g-n01"
+      "g-n04",
+      "g-n08",
+      "g-n02",
+      "g-n05"
      ],
-     "ms": 133.14000000001397,
+     "ms": 138.73229999999603,
      "topScore": null,
      "hit1": 1,
      "hit3": 1,
@@ -4638,7 +4638,7 @@
       "whole": 0,
       "excerpt": 1,
       "wholeChars": 40,
-      "excerptChars": 632
+      "excerptChars": 615
      }
     },
     {
@@ -4647,28 +4647,28 @@
      "mode": "hybrid",
      "status": "ok",
      "ranked": [
-      "g-n00",
-      "g-n05",
-      "s-long-gift",
-      "s-long-client",
       "g-n04",
       "g-n08",
-      "g-n11",
+      "g-n00",
+      "g-n03",
+      "g-n10",
+      "s-long-gift",
+      "g-n02",
       "s-long-backup"
      ],
-     "ms": 164.1645000000135,
+     "ms": 183.05069999999978,
      "topScore": null,
-     "hit1": 1,
+     "hit1": 0,
      "hit3": 1,
      "hit5": 1,
      "recall8": 1,
-     "rr": 1,
-     "ndcg8": 1,
+     "rr": 0.3333333333333333,
+     "ndcg8": 0.5,
      "evidence": {
       "whole": 0,
       "excerpt": 1,
       "wholeChars": 0,
-      "excerptChars": 714
+      "excerptChars": 695
      }
     },
     {
@@ -4678,15 +4678,15 @@
      "status": "ok",
      "ranked": [
       "g-n00",
-      "s-long-gift",
-      "g-n05",
-      "s-long-client",
-      "g-n08",
       "g-n04",
-      "g-n11",
-      "s-long-backup"
+      "g-n08",
+      "g-n03",
+      "g-n10",
+      "s-long-gift",
+      "s-long-backup",
+      "g-n02"
      ],
-     "ms": 159.15259999997215,
+     "ms": 186.16279999999824,
      "topScore": null,
      "hit1": 1,
      "hit3": 1,
@@ -4698,7 +4698,7 @@
       "whole": 0,
       "excerpt": 1,
       "wholeChars": 0,
-      "excerptChars": 714
+      "excerptChars": 695
      }
     },
     {
@@ -4709,7 +4709,7 @@
      "ranked": [
       "g-n01"
      ],
-     "ms": 129.56560000003083,
+     "ms": 148.22869999999966,
      "topScore": null,
      "hit1": 1,
      "hit3": 1,
@@ -4721,7 +4721,7 @@
       "whole": 0,
       "excerpt": 1,
       "wholeChars": 0,
-      "excerptChars": 94
+      "excerptChars": 90
      }
     },
     {
@@ -4733,13 +4733,13 @@
       "g-n01",
       "g-c02-new",
       "s-date-w1a",
-      "g-p26",
       "g-c06-old",
+      "g-p26",
       "g-c00-old",
       "gn-k01",
       "g-k08"
      ],
-     "ms": 160.11759999999776,
+     "ms": 219.31429999999818,
      "topScore": null,
      "hit1": 1,
      "hit3": 1,
@@ -4751,7 +4751,7 @@
       "whole": 0,
       "excerpt": 1,
       "wholeChars": 176,
-      "excerptChars": 270
+      "excerptChars": 266
      }
     },
     {
@@ -4766,10 +4766,10 @@
       "g-p26",
       "g-c06-old",
       "gn-k01",
-      "g-k08",
-      "g-c00-old"
+      "g-c00-old",
+      "g-k08"
      ],
-     "ms": 159.28179999999702,
+     "ms": 174.3824999999997,
      "topScore": null,
      "hit1": 1,
      "hit3": 1,
@@ -4781,7 +4781,7 @@
       "whole": 0,
       "excerpt": 1,
       "wholeChars": 176,
-      "excerptChars": 270
+      "excerptChars": 266
      }
     },
     {
@@ -4791,9 +4791,9 @@
      "status": "ok",
      "ranked": [
       "g-n02",
-      "d-0016"
+      "d-0006"
      ],
-     "ms": 131.83319999999367,
+     "ms": 133.83499999999913,
      "topScore": null,
      "hit1": 1,
      "hit3": 1,
@@ -4804,8 +4804,8 @@
      "evidence": {
       "whole": 0,
       "excerpt": 1,
-      "wholeChars": 73,
-      "excerptChars": 149
+      "wholeChars": 108,
+      "excerptChars": 204
      }
     },
     {
@@ -4814,16 +4814,16 @@
      "mode": "hybrid",
      "status": "ok",
      "ranked": [
-      "d-0016",
+      "d-0006",
       "g-n02",
       "g-c00-new",
-      "g-p08",
       "g-c02-new",
-      "d-0081",
+      "g-p08",
       "g-c05-new",
-      "g-k11"
+      "g-k11",
+      "s-date-w2"
      ],
-     "ms": 156.41769999999087,
+     "ms": 165.97430000000168,
      "topScore": null,
      "hit1": 0,
      "hit3": 1,
@@ -4834,8 +4834,8 @@
      "evidence": {
       "whole": 0,
       "excerpt": 1,
-      "wholeChars": 225,
-      "excerptChars": 301
+      "wholeChars": 251,
+      "excerptChars": 347
      }
     },
     {
@@ -4844,16 +4844,16 @@
      "mode": "hybrid+prodrecency",
      "status": "ok",
      "ranked": [
-      "d-0016",
+      "d-0006",
       "g-n02",
       "g-c00-new",
-      "g-p08",
       "g-c02-new",
-      "d-0081",
+      "g-p08",
       "g-c05-new",
-      "s-date-w2"
+      "s-date-w2",
+      "g-k11"
      ],
-     "ms": 157.9981999999727,
+     "ms": 173.25890000000072,
      "topScore": null,
      "hit1": 0,
      "hit3": 1,
@@ -4864,8 +4864,8 @@
      "evidence": {
       "whole": 0,
       "excerpt": 1,
-      "wholeChars": 225,
-      "excerptChars": 301
+      "wholeChars": 251,
+      "excerptChars": 347
      }
     },
     {
@@ -4875,15 +4875,15 @@
      "status": "ok",
      "ranked": [
       "g-n04",
-      "g-n01",
+      "g-n00",
       "g-n02",
-      "g-n03",
+      "g-n05",
       "g-n09",
-      "g-n10",
-      "s-long-backup",
-      "g-n00"
+      "g-n11",
+      "g-k06",
+      "g-n01"
      ],
-     "ms": 127.86639999999898,
+     "ms": 134.87200000000303,
      "topScore": null,
      "hit1": 1,
      "hit3": 1,
@@ -4894,8 +4894,8 @@
      "evidence": {
       "whole": 0,
       "excerpt": 1,
-      "wholeChars": 0,
-      "excerptChars": 603
+      "wholeChars": 30,
+      "excerptChars": 570
      }
     },
     {
@@ -4905,15 +4905,15 @@
      "status": "ok",
      "ranked": [
       "g-k06",
-      "g-n01",
-      "g-n02",
-      "g-n04",
-      "g-n00",
       "g-n10",
-      "g-n09",
-      "s-long-passport"
+      "s-pnpm",
+      "g-n04",
+      "g-n11",
+      "g-n00",
+      "s-long-client",
+      "g-n06"
      ],
-     "ms": 157.16379999998026,
+     "ms": 171.30129999999917,
      "topScore": null,
      "hit1": 0,
      "hit3": 0,
@@ -4924,8 +4924,8 @@
      "evidence": {
       "whole": 0,
       "excerpt": 1,
-      "wholeChars": 30,
-      "excerptChars": 543
+      "wholeChars": 76,
+      "excerptChars": 557
      }
     },
     {
@@ -4935,15 +4935,15 @@
      "status": "ok",
      "ranked": [
       "g-k06",
-      "g-n01",
-      "g-n02",
+      "g-n10",
+      "s-pnpm",
       "g-n00",
       "g-n04",
-      "g-n10",
-      "g-n09",
-      "s-long-gift"
+      "g-n11",
+      "g-n08",
+      "g-n01"
      ],
-     "ms": 162.0971000000136,
+     "ms": 165.91079999999783,
      "topScore": null,
      "hit1": 0,
      "hit3": 0,
@@ -4954,8 +4954,8 @@
      "evidence": {
       "whole": 0,
       "excerpt": 1,
-      "wholeChars": 30,
-      "excerptChars": 593
+      "wholeChars": 76,
+      "excerptChars": 562
      }
     },
     {
@@ -4967,13 +4967,13 @@
       "g-p21",
       "s-trip-new",
       "g-n05",
+      "g-n00",
       "g-p00",
       "gn-p01",
       "s-cloud-new",
-      "d-0001",
-      "d-0021"
+      "d-0017"
      ],
-     "ms": 127.5734999999986,
+     "ms": 133.56699999999546,
      "topScore": null,
      "hit1": 0,
      "hit3": 1,
@@ -4984,8 +4984,8 @@
      "evidence": {
       "whole": 0,
       "excerpt": 1,
-      "wholeChars": 320,
-      "excerptChars": 398
+      "wholeChars": 248,
+      "excerptChars": 428
      }
     },
     {
@@ -4995,27 +4995,27 @@
      "status": "ok",
      "ranked": [
       "g-p21",
-      "g-n05",
       "g-n00",
-      "d-0081",
+      "g-n05",
+      "g-n04",
+      "g-n08",
+      "d-0038",
       "g-n02",
-      "s-long-client",
-      "g-n11",
-      "s-long-passport"
+      "s-long-gift"
      ],
-     "ms": 167.84989999997197,
+     "ms": 166.36390000000392,
      "topScore": null,
      "hit1": 0,
      "hit3": 1,
      "hit5": 1,
      "recall8": 1,
-     "rr": 0.5,
-     "ndcg8": 0.6309297535714575,
+     "rr": 0.3333333333333333,
+     "ndcg8": 0.5,
      "evidence": {
       "whole": 0,
       "excerpt": 1,
       "wholeChars": 67,
-      "excerptChars": 571
+      "excerptChars": 583
      }
     },
     {
@@ -5025,27 +5025,27 @@
      "status": "ok",
      "ranked": [
       "g-p21",
-      "g-n05",
       "g-n00",
+      "g-n08",
+      "g-n05",
+      "g-n04",
+      "d-0038",
       "g-n02",
-      "d-0081",
-      "s-long-client",
-      "s-long-gift",
-      "g-n08"
+      "s-long-gift"
      ],
-     "ms": 162.2821999999578,
+     "ms": 172.89370000000054,
      "topScore": null,
      "hit1": 0,
-     "hit3": 1,
+     "hit3": 0,
      "hit5": 1,
      "recall8": 1,
-     "rr": 0.5,
-     "ndcg8": 0.6309297535714575,
+     "rr": 0.25,
+     "ndcg8": 0.43067655807339306,
      "evidence": {
       "whole": 0,
       "excerpt": 1,
       "wholeChars": 67,
-      "excerptChars": 597
+      "excerptChars": 583
      }
     },
     {
@@ -5057,13 +5057,13 @@
       "g-n06",
       "s-lang-ctx",
       "g-n00",
-      "g-n01",
-      "g-n02",
-      "g-n03",
+      "g-n05",
       "g-n07",
-      "s-long-backup"
+      "g-n08",
+      "g-n09",
+      "g-n11"
      ],
-     "ms": 131.51559999998426,
+     "ms": 133.95370000000548,
      "topScore": null,
      "hit1": 1,
      "hit3": 1,
@@ -5075,7 +5075,7 @@
       "whole": 0,
       "excerpt": 1,
       "wholeChars": 34,
-      "excerptChars": 615
+      "excerptChars": 640
      }
     },
     {
@@ -5084,28 +5084,28 @@
      "mode": "hybrid",
      "status": "ok",
      "ranked": [
-      "g-n06",
-      "s-lang-ctx",
-      "g-n03",
-      "g-n01",
-      "g-n02",
       "g-n00",
-      "g-n08",
+      "s-lang-ctx",
+      "s-long-gift",
+      "g-n06",
+      "g-n05",
+      "s-long-client",
+      "g-n01",
       "g-n07"
      ],
-     "ms": 156.97060000000056,
+     "ms": 167.26450000000477,
      "topScore": null,
-     "hit1": 1,
-     "hit3": 1,
+     "hit1": 0,
+     "hit3": 0,
      "hit5": 1,
      "recall8": 1,
-     "rr": 1,
-     "ndcg8": 1,
+     "rr": 0.25,
+     "ndcg8": 0.43067655807339306,
      "evidence": {
       "whole": 0,
       "excerpt": 1,
       "wholeChars": 34,
-      "excerptChars": 620
+      "excerptChars": 656
      }
     },
     {
@@ -5114,16 +5114,16 @@
      "mode": "hybrid+prodrecency",
      "status": "ok",
      "ranked": [
-      "g-n01",
-      "s-lang-ctx",
       "g-n00",
-      "g-n02",
-      "g-n03",
+      "s-lang-ctx",
+      "s-long-gift",
+      "g-n01",
+      "s-long-client",
       "g-n06",
-      "g-n08",
-      "s-long-passport"
+      "g-n05",
+      "g-n09"
      ],
-     "ms": 159.65320000000065,
+     "ms": 172.29430000000139,
      "topScore": null,
      "hit1": 0,
      "hit3": 0,
@@ -5135,7 +5135,7 @@
       "whole": 0,
       "excerpt": 1,
       "wholeChars": 34,
-      "excerptChars": 650
+      "excerptChars": 668
      }
     },
     {
@@ -5146,14 +5146,14 @@
      "ranked": [
       "g-n08",
       "s-trip-new",
-      "g-n00",
-      "g-n01",
+      "g-n02",
       "g-n03",
       "g-n04",
       "g-n06",
-      "g-n09"
+      "g-n09",
+      "s-long-backup"
      ],
-     "ms": 130.62089999997988,
+     "ms": 146.33690000000206,
      "topScore": null,
      "hit1": 1,
      "hit3": 1,
@@ -5176,14 +5176,14 @@
      "ranked": [
       "s-trip-new",
       "g-n08",
-      "d-0081",
-      "g-n00",
+      "d-0084",
+      "d-0037",
+      "g-n10",
+      "g-n11",
       "s-long-gift",
-      "g-n04",
-      "s-trip-old",
-      "g-n01"
+      "s-trip-old"
      ],
-     "ms": 159.33559999999125,
+     "ms": 165.40469999999914,
      "topScore": null,
      "hit1": 0,
      "hit3": 1,
@@ -5194,8 +5194,8 @@
      "evidence": {
       "whole": 0,
       "excerpt": 1,
-      "wholeChars": 98,
-      "excerptChars": 528
+      "wholeChars": 194,
+      "excerptChars": 533
      }
     },
     {
@@ -5206,14 +5206,14 @@
      "ranked": [
       "s-trip-new",
       "g-n08",
-      "d-0081",
-      "g-n00",
+      "d-0084",
       "s-long-gift",
-      "g-n01",
-      "g-n09",
-      "g-n04"
+      "g-n00",
+      "g-n10",
+      "d-0037",
+      "s-trip-old"
      ],
-     "ms": 157.03680000000168,
+     "ms": 168.74860000000626,
      "topScore": null,
      "hit1": 0,
      "hit3": 1,
@@ -5224,8 +5224,8 @@
      "evidence": {
       "whole": 0,
       "excerpt": 1,
-      "wholeChars": 72,
-      "excerptChars": 584
+      "wholeChars": 194,
+      "excerptChars": 561
      }
     },
     {
@@ -5235,15 +5235,15 @@
      "status": "ok",
      "ranked": [
       "s-trip-new",
-      "d-0004",
+      "d-0018",
+      "d-0032",
+      "d-0037",
       "d-0038",
-      "d-0070",
-      "d-0072",
-      "d-0081",
-      "d-0006",
-      "d-0020"
+      "d-0049",
+      "d-0051",
+      "d-0069"
      ],
-     "ms": 216.60739999997895,
+     "ms": 136.64770000000135,
      "topScore": null,
      "hit1": 0,
      "hit3": 0,
@@ -5254,8 +5254,8 @@
      "evidence": {
       "whole": 0,
       "excerpt": 0,
-      "wholeChars": 444,
-      "excerptChars": 444
+      "wholeChars": 544,
+      "excerptChars": 544
      }
     },
     {
@@ -5267,13 +5267,13 @@
       "s-trip-new",
       "g-k03",
       "g-k08",
-      "g-n03",
+      "s-long-backup",
       "g-c02-old",
       "g-c04-new",
-      "g-c00-old",
-      "g-k00"
+      "g-k00",
+      "g-c00-old"
      ],
-     "ms": 162.71590000001015,
+     "ms": 169.38880000000063,
      "topScore": null,
      "hit1": 0,
      "hit3": 0,
@@ -5285,7 +5285,7 @@
       "whole": 0,
       "excerpt": 0,
       "wholeChars": 198,
-      "excerptChars": 274
+      "excerptChars": 291
      }
     },
     {
@@ -5297,13 +5297,13 @@
       "s-trip-new",
       "g-k03",
       "g-k08",
-      "g-n02",
+      "s-long-backup",
       "g-c04-new",
       "g-c02-old",
       "g-k00",
       "g-c00-old"
      ],
-     "ms": 173.23810000001686,
+     "ms": 177.16509999999835,
      "topScore": null,
      "hit1": 0,
      "hit3": 0,
@@ -5315,7 +5315,7 @@
       "whole": 0,
       "excerpt": 0,
       "wholeChars": 198,
-      "excerptChars": 274
+      "excerptChars": 291
      }
     },
     {
@@ -5328,12 +5328,12 @@
       "g-k10",
       "g-c04-new",
       "g-c04-old",
-      "d-0004",
-      "d-0038",
-      "d-0070",
-      "d-0072"
+      "d-0018",
+      "d-0032",
+      "d-0037",
+      "d-0038"
      ],
-     "ms": 128.52539999998407,
+     "ms": 142.0228999999963,
      "topScore": null,
      "hit1": 1,
      "hit3": 1,
@@ -5344,8 +5344,8 @@
      "evidence": {
       "whole": 0,
       "excerpt": 1,
-      "wholeChars": 283,
-      "excerptChars": 366
+      "wholeChars": 391,
+      "excerptChars": 481
      }
     },
     {
@@ -5355,45 +5355,15 @@
      "status": "ok",
      "ranked": [
       "g-c04-new",
-      "g-n10",
-      "g-k10",
-      "g-c04-old",
-      "d-0091",
-      "g-k00",
-      "d-0064",
-      "g-k15"
-     ],
-     "ms": 158.84809999994468,
-     "topScore": null,
-     "hit1": 0,
-     "hit3": 1,
-     "hit5": 1,
-     "recall8": 1,
-     "rr": 0.5,
-     "ndcg8": 0.6309297535714575,
-     "evidence": {
-      "whole": 0,
-      "excerpt": 1,
-      "wholeChars": 360,
-      "excerptChars": 443
-     }
-    },
-    {
-     "query": "q-g-n10",
-     "category": "needle",
-     "mode": "hybrid+prodrecency",
-     "status": "ok",
-     "ranked": [
-      "g-c04-new",
       "g-k10",
       "g-n10",
       "g-c04-old",
-      "d-0091",
+      "d-0011",
       "g-k00",
-      "d-0102",
-      "d-0064"
+      "g-k15",
+      "d-0003"
      ],
-     "ms": 174.72830000001704,
+     "ms": 167.48129999999946,
      "topScore": null,
      "hit1": 0,
      "hit3": 1,
@@ -5404,8 +5374,38 @@
      "evidence": {
       "whole": 0,
       "excerpt": 1,
-      "wholeChars": 371,
-      "excerptChars": 454
+      "wholeChars": 273,
+      "excerptChars": 363
+     }
+    },
+    {
+     "query": "q-g-n10",
+     "category": "needle",
+     "mode": "hybrid+prodrecency",
+     "status": "ok",
+     "ranked": [
+      "g-c04-new",
+      "g-k10",
+      "g-n10",
+      "g-c04-old",
+      "d-0011",
+      "g-k00",
+      "g-k15",
+      "d-0050"
+     ],
+     "ms": 167.98390000000654,
+     "topScore": null,
+     "hit1": 0,
+     "hit3": 1,
+     "hit5": 1,
+     "recall8": 1,
+     "rr": 0.3333333333333333,
+     "ndcg8": 0.5,
+     "evidence": {
+      "whole": 0,
+      "excerpt": 1,
+      "wholeChars": 237,
+      "excerptChars": 327
      }
     },
     {
@@ -5414,16 +5414,16 @@
      "mode": "lexical",
      "status": "ok",
      "ranked": [
-      "d-0003",
-      "d-0005",
-      "d-0015",
-      "d-0016",
-      "d-0030",
-      "d-0033",
-      "d-0108",
-      "g-n00"
+      "d-0006",
+      "d-0052",
+      "d-0074",
+      "d-0079",
+      "g-n00",
+      "g-n01",
+      "g-n03",
+      "g-n04"
      ],
-     "ms": 128.29119999997783,
+     "ms": 134.45690000000468,
      "topScore": null
     },
     {
@@ -5432,16 +5432,16 @@
      "mode": "hybrid",
      "status": "ok",
      "ranked": [
-      "d-0015",
-      "s-long-client",
-      "d-0003",
-      "d-0005",
-      "d-0033",
-      "d-0108",
-      "d-0030",
-      "d-0016"
+      "d-0074",
+      "g-n00",
+      "d-0006",
+      "d-0079",
+      "d-0052",
+      "g-c05-old",
+      "g-n04",
+      "g-n10"
      ],
-     "ms": 159.45750000001863,
+     "ms": 185.53889999999956,
      "topScore": null
     },
     {
@@ -5450,16 +5450,16 @@
      "mode": "hybrid+prodrecency",
      "status": "ok",
      "ranked": [
-      "d-0015",
-      "s-long-client",
-      "d-0108",
-      "d-0005",
-      "d-0003",
-      "d-0033",
-      "d-0030",
-      "s-long-gift"
+      "d-0074",
+      "g-n00",
+      "d-0052",
+      "d-0006",
+      "d-0079",
+      "g-c05-old",
+      "g-n10",
+      "g-n04"
      ],
-     "ms": 168.84759999997914,
+     "ms": 175.32510000000184,
      "topScore": null
     },
     {
@@ -5472,12 +5472,12 @@
       "g-n03",
       "g-n02",
       "g-p16",
-      "d-0004",
-      "d-0038",
-      "d-0070",
-      "d-0072"
+      "d-0037",
+      "d-0018",
+      "d-0032",
+      "d-0038"
      ],
-     "ms": 128.67719999997644,
+     "ms": 136.34900000000198,
      "topScore": null
     },
     {
@@ -5487,15 +5487,15 @@
      "status": "ok",
      "ranked": [
       "g-k05",
+      "d-0038",
       "g-c00-old",
       "g-k14",
-      "g-n03",
-      "gn-k10",
+      "g-n02",
       "g-k02",
-      "g-c05-old",
+      "gn-k10",
       "s-coffee"
      ],
-     "ms": 157.05910000001313,
+     "ms": 197.25280000000203,
      "topScore": null
     },
     {
@@ -5505,15 +5505,15 @@
      "status": "ok",
      "ranked": [
       "g-k05",
+      "d-0038",
       "g-c00-old",
+      "g-n02",
       "g-k14",
-      "g-n03",
-      "gn-k10",
       "g-k02",
-      "g-c05-old",
-      "gn-k06"
+      "gn-k10",
+      "s-coffee"
      ],
-     "ms": 173.16889999998966,
+     "ms": 187.85889999999927,
      "topScore": null
     },
     {
@@ -5522,16 +5522,16 @@
      "mode": "lexical",
      "status": "ok",
      "ranked": [
-      "d-0004",
+      "d-0037",
+      "d-0018",
+      "d-0032",
       "d-0038",
-      "d-0070",
-      "d-0072",
-      "d-0081",
-      "g-c05-old",
-      "g-n03",
-      "d-0006"
+      "d-0049",
+      "d-0051",
+      "d-0069",
+      "d-0084"
      ],
-     "ms": 131.75949999998556,
+     "ms": 136.5737999999983,
      "topScore": null
     },
     {
@@ -5542,14 +5542,14 @@
      "ranked": [
       "g-k14",
       "g-k05",
-      "g-n02",
       "g-k02",
       "g-c05-old",
       "g-c00-old",
       "g-k03",
-      "g-k15"
+      "g-k15",
+      "gn-k10"
      ],
-     "ms": 158.7950000000419,
+     "ms": 170.80709999999817,
      "topScore": null
     },
     {
@@ -5560,14 +5560,14 @@
      "ranked": [
       "g-k14",
       "g-k05",
-      "g-n02",
       "g-k02",
+      "g-k03",
       "g-c05-old",
       "g-c00-old",
-      "g-k03",
-      "gn-k10"
+      "gn-k10",
+      "d-0038"
      ],
-     "ms": 174.76510000001872,
+     "ms": 180.86640000000625,
      "topScore": null
     },
     {
@@ -5576,16 +5576,16 @@
      "mode": "lexical",
      "status": "ok",
      "ranked": [
-      "g-n07",
       "g-n00",
       "g-n01",
       "g-n02",
       "g-n03",
       "g-n04",
       "g-n05",
-      "g-n06"
+      "g-n06",
+      "g-n07"
      ],
-     "ms": 131.82090000004973,
+     "ms": 137.07620000000315,
      "topScore": null
     },
     {
@@ -5594,16 +5594,16 @@
      "mode": "hybrid",
      "status": "ok",
      "ranked": [
-      "g-n07",
+      "g-n00",
       "g-c04-old",
       "g-c03-old",
-      "g-n01",
+      "g-n02",
       "g-n04",
-      "s-long-client",
-      "g-n03",
-      "g-n10"
+      "s-long-gift",
+      "g-n06",
+      "g-n05"
      ],
-     "ms": 157.75740000000224,
+     "ms": 161.40110000000277,
      "topScore": null
     },
     {
@@ -5612,16 +5612,16 @@
      "mode": "hybrid+prodrecency",
      "status": "ok",
      "ranked": [
-      "g-n01",
-      "g-c04-old",
-      "g-c03-old",
-      "g-n07",
       "g-n00",
-      "g-n04",
+      "g-c04-old",
+      "g-n02",
       "s-long-gift",
-      "s-long-client"
+      "g-c03-old",
+      "g-n04",
+      "g-n01",
+      "s-city-old"
      ],
-     "ms": 157.52049999998417,
+     "ms": 164.2638999999981,
      "topScore": null
     },
     {
@@ -5634,12 +5634,12 @@
       "g-p03",
       "s-pet",
       "g-n00",
+      "g-n01",
       "g-n03",
-      "g-n06",
-      "s-long-client",
-      "s-long-gift"
+      "g-n04",
+      "g-n08"
      ],
-     "ms": 128.25330000004033,
+     "ms": 133.18129999999655,
      "topScore": null
     },
     {
@@ -5649,15 +5649,15 @@
      "status": "ok",
      "ranked": [
       "g-p03",
-      "g-n00",
-      "s-long-client",
       "g-n07",
+      "g-n10",
+      "g-n04",
+      "s-long-backup",
       "g-n03",
-      "g-n02",
-      "g-n06",
-      "s-long-passport"
+      "g-n00",
+      "g-n02"
      ],
-     "ms": 161.4140999999945,
+     "ms": 166.6088000000018,
      "topScore": null
     },
     {
@@ -5667,15 +5667,15 @@
      "status": "ok",
      "ranked": [
       "g-p03",
+      "s-long-backup",
       "g-n00",
-      "s-long-client",
-      "g-n02",
+      "g-n10",
+      "g-n04",
+      "g-n07",
       "g-n03",
-      "s-long-passport",
-      "g-n08",
-      "g-n07"
+      "g-n01"
      ],
-     "ms": 159.87209999997867,
+     "ms": 161.46020000000135,
      "topScore": null
     }
    ]
@@ -5685,9 +5685,9 @@
   {
    "granularity": "session",
    "docs": 250,
-   "embedded": 50,
-   "ms": 269023,
-   "msPerDoc": 5380.5
+   "embedded": 0,
+   "ms": 1,
+   "msPerDoc": 0
   }
  ],
  "queries": [

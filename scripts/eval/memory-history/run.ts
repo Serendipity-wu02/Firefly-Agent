@@ -361,7 +361,7 @@ function report(result, queries) {
     }
     const evid = MODES.map((mode) => [mode, run.rows.filter((r) => r.mode === mode && r.evidence)]).filter(([, r]) => r.length);
     if (evid.length) {
-      console.log("\n证据召回（长会话里的关键句有没有真的送达；整份返回遇到超预算的会话会丢弃，摘录是只对被丢弃的会话改为最佳窗口加上下文）：");
+      console.log("\n证据召回（长会话里的关键句有没有真的送达；整份返回遇到超预算的会话会丢弃，摘录是只对单份就超过上限的会话改为最佳窗口加上下文）：");
       console.log("\n| 方式 | 题数 | 整份或丢弃 | 摘录（仅超长） | 整份 平均字数 | 摘录 平均字数 |");
       console.log("|---|---|---|---|---|---|");
       for (const [mode, rs] of evid) console.log(`| ${mode} | ${rs.length} | ${pct(mean(rs.map((r) => r.evidence.whole)))} | ${pct(mean(rs.map((r) => r.evidence.excerpt)))} | ${Math.round(mean(rs.map((r) => r.evidence.wholeChars)))} | ${Math.round(mean(rs.map((r) => r.evidence.excerptChars)))} |`);

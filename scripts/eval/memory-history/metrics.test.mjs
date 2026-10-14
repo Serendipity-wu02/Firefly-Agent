@@ -121,3 +121,10 @@ test("evidenceContains tells whether the needle message was actually delivered",
   assert.equal(evidenceContains(packed, "other", 9), 0);
   assert.equal(evidenceContains([], "x", 9), 0);
 });
+
+test("under 'excerpt' a document within the single-document limit but over the remaining total is skipped, not cut", () => {
+  const sizes = { a: Array(9).fill(10), b: Array(9).fill(10), c: Array(9).fill(10) };
+  const items = ["a", "b", "c"].map((id) => ({ id, unit: 0 }));
+  // c 单份 90 ≤ 100，但累计会到 270 > 250：口径是"只摘录单份超限的会话"，所以直接跳过。
+  assert.deepEqual(pack(items, sizes, "excerpt").map((p) => p.id), ["a", "b"]);
+});

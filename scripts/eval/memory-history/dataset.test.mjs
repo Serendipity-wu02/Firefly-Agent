@@ -63,3 +63,21 @@ test("longTurns 0 leaves the dataset exactly as before", () => {
   const strip = (d) => d.sessions.map((s) => [s.id, s.turns.map((t) => [t.role, t.text, t.occurredAt])]);
   assert.deepEqual(strip(buildDataset({ size: 120 })), strip(buildDataset({ size: 120, longTurns: 0 })));
 });
+
+test("raising longTurns changes only the long sessions, never the other sessions or the queries", () => {
+  const a = buildDataset({ size: 300 });
+  const b = buildDataset({ size: 300, longTurns: 450 });
+  const rest = (d) => d.sessions.filter((s) => s.needleIndex === undefined);
+  assert.ok(rest(a).length > 200);
+  assert.deepEqual(rest(a), rest(b));
+  assert.deepEqual(a.queries, b.queries);
+  assert.deepEqual(a.sessions.map((s) => s.id), b.sessions.map((s) => s.id));
+});
+
+test("a long session keeps the same needle message when it is lengthened", () => {
+  const needleOf = (s) => s.turns[s.needleIndex].text;
+  const a = buildDataset({ size: 300 }).sessions.filter((s) => s.needleIndex !== undefined);
+  const b = buildDataset({ size: 300, longTurns: 450 }).sessions.filter((s) => s.needleIndex !== undefined);
+  assert.deepEqual(b.map(needleOf), a.map(needleOf));
+  for (const s of b) assert.ok(s.turns.length >= 450, `${s.id} has ${s.turns.length} turns`);
+});

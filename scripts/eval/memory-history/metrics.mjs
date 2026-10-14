@@ -117,7 +117,7 @@ const sum = (xs) => xs.reduce((a, b) => a + b, 0);
 
 /**
  * 复刻 history-repository 的摘录预算循环：按名次逐个放入，整份超过单份上限或累计超过总上限就跳过。
- * policy "whole"：跳过的就丢掉（生产现状）；"excerpt"：只对被跳过的会话，用最佳窗口加邻近上下文切一段。
+ * policy "whole"：跳过的就丢掉（生产现状）；"excerpt"：只对单份就超过上限的会话，用最佳窗口加邻近上下文切一段。
  * 摘录选择由调用方注入（run.ts 传入生产的 selectExcerpt），这里不重复实现。
  * items：按名次排列的 {id, unit?}；sizesOf(id)：该会话每条消息计入预算的字符数。
  */
@@ -132,7 +132,8 @@ export function packEvidence({ items, sizesOf, policy, select, maxExcerptChars, 
       out.push({ id: item.id, start: 0, end: sizes.length, chars: whole });
       continue;
     }
-    if (policy !== "excerpt" || item.unit === undefined) continue;
+    // 只有单份就超过上限的会话才摘录；放得下单份上限、只是总预算不够的会话照旧跳过。
+    if (policy !== "excerpt" || item.unit === undefined || whole <= maxExcerptChars) continue;
     const range = select({ sizes, windowTurns, bestUnit: item.unit, maxChars: Math.min(maxExcerptChars, maxTotalChars - used), contextWindows });
     if (!range) continue;
     const chars = sum(sizes.slice(range.start, range.end));
