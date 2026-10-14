@@ -11,19 +11,17 @@ const label = (key: string, values?: Record<string, string | number>) => t(`sett
  * https://www.electronjs.org/docs/latest/tutorial/ipc#pattern-2-renderer-to-main-two-way
  */
 export function mountMcpManagement(addButton: HTMLButtonElement | null): { add: () => Promise<void>; dispose: () => void } | undefined {
-  const panel = addButton?.closest("#plugins-panel");
-  const anchor = panel?.querySelector(".plugin-list");
-  if (!addButton || !anchor) return;
+  // The MCP page owns its heading and Add button; this module fills in the list below them.
+  const host = addButton?.closest("#mcp-panel")?.querySelector(".mcp-server-host");
+  if (!addButton || !host) return;
 
   const section = document.createElement("section");
   section.id = "mcp-management";
   section.className = "mcp-management";
-  section.setAttribute("aria-labelledby", "mcp-management-title");
+  section.setAttribute("aria-labelledby", "mcp-panel-title");
   // All interpolated content below uses textContent, never service-provided HTML.
-  section.innerHTML = '<div class="mcp-management__heading"><div><h2 id="mcp-management-title"></h2><p class="panel-hint" id="mcp-management-hint"></p></div><button type="button" class="btn-secondary" id="mcp-refresh-btn"></button></div><p id="mcp-server-feedback" role="status" aria-live="polite"></p><div id="mcp-server-list" class="plugin-list"></div>';
-  anchor.before(section);
-  const heading = section.querySelector<HTMLElement>("#mcp-management-title")!;
-  const hint = section.querySelector<HTMLElement>("#mcp-management-hint")!;
+  section.innerHTML = '<div class="mcp-management__toolbar"><button type="button" class="btn-secondary" id="mcp-refresh-btn"></button></div><p id="mcp-server-feedback" role="status" aria-live="polite"></p><div id="mcp-server-list" class="plugin-list"></div>';
+  host.append(section);
   const refreshButton = section.querySelector<HTMLButtonElement>("#mcp-refresh-btn")!;
   const feedback = section.querySelector<HTMLElement>("#mcp-server-feedback")!;
   const list = section.querySelector<HTMLElement>("#mcp-server-list")!;
@@ -38,10 +36,7 @@ export function mountMcpManagement(addButton: HTMLButtonElement | null): { add: 
 
   function render(): void {
     if (!alive()) return;
-    heading.textContent = label("title");
-    hint.textContent = label("hint");
-    addButton!.setAttribute("aria-label", label("add"));
-    addButton!.title = label("add");
+    addButton!.textContent = label("add");
     addButton!.disabled = pending || !window.settings?.addMcpServer;
     refreshButton.textContent = label(loading ? "loading" : "refresh");
     refreshButton.disabled = pending || loading || !window.settings?.listMcpServers;

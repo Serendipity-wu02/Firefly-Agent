@@ -25,8 +25,8 @@ const html = fs.readFileSync(
 );
 
 describe("MCP Server 管理 UI - 事件绑定", () => {
-  it("绑定了 pluginAddBtn 的 click 事件用于添加 MCP Server", () => {
-    expect(mcpSource).toContain('pluginAddBtn?.addEventListener("click"');
+  it("绑定了 MCP 页面里添加按钮的 click 事件用于添加 MCP Server", () => {
+    expect(mcpSource).toContain('mcpAddBtn?.addEventListener("click"');
   });
 
   it("绑定了 customEndpointGuideBtn 的 click 事件用于显示接入说明", () => {
@@ -148,8 +148,13 @@ describe("模态框 overlay 交互结构", () => {
 });
 
 describe("HTML 元素存在性", () => {
-  it("index.html 包含 plugin-add-btn 按钮", () => {
-    expect(html).toContain('class="plugin-add-btn"');
+  it("MCP 有单独的导航项和页面，添加按钮在该页标题旁", () => {
+    expect(html).toContain('aria-controls="mcp-panel" data-section="mcp"');
+    expect(html).toMatch(/id="mcp-panel" data-panel="mcp"[\s\S]*?class="plugin-panel-heading"[\s\S]*?class="btn-secondary mcp-add-btn"[\s\S]*?class="mcp-server-host"/);
+  });
+
+  it("工具配置页不再带一个只用于 MCP 的加号按钮", () => {
+    expect(html).not.toContain('class="plugin-add-btn"');
   });
 
   it("index.html 包含 custom-endpoint-guide-btn 按钮", () => {

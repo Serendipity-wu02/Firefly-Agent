@@ -130,6 +130,7 @@
       "user": "用户信息",
       "tasks": "定时任务",
       "plugins": "工具配置",
+      "mcp": "MCP 服务器",
       "preferences": "偏好设置",
       "appearance": "外观设置",
       "general": "通用设置",

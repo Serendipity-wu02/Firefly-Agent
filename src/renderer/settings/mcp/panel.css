@@ -1,13 +1,10 @@
 .mcp-management {
   margin: 0 0 20px;
 }
-.mcp-management__heading {
+.mcp-management__toolbar {
   display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-  gap: 16px;
+  justify-content: flex-end;
 }
-.mcp-management__heading h2,
 .mcp-server-card h3 {
   margin: 0;
   color: var(--rb-text-strong);
