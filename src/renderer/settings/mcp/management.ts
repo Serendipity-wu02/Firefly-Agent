@@ -62,6 +62,13 @@ export function mountMcpManagement(addButton: HTMLButtonElement | null): { add: 
         note.className = "panel-hint";
         note.textContent = label("builtin");
         body.append(note);
+        // The Playwright toggle lives on the Tools page, which is hidden while this page is open.
+        const openTools = document.createElement("button");
+        openTools.type = "button";
+        openTools.className = "btn-secondary";
+        openTools.textContent = label("openTools");
+        openTools.addEventListener("click", () => { document.querySelector<HTMLButtonElement>('.nav-item[data-section="plugins"]')?.click(); });
+        card.append(openTools);
       } else {
         const removeButton = document.createElement("button");
         removeButton.type = "button";

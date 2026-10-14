@@ -119,7 +119,10 @@ describe("MCP management UI", () => {
   });
   it("leaves built-in Playwright under its existing setting instead of offering conflicting deletion", async () => {
     api.listMcpServers.mockResolvedValueOnce([row("playwright-mcp", "Playwright")]); await mount();
-    expect(list()?.textContent).toContain("开关"); expect(list()?.querySelector("[data-mcp-remove]")).toBeNull();
+    expect(list()?.textContent).toContain("工具配置"); expect(list()?.querySelector("[data-mcp-remove]")).toBeNull();
+    const nav = document.createElement("button"); nav.className = "nav-item"; nav.dataset.section = "plugins"; const opened = vi.fn(); nav.addEventListener("click", opened); document.body.append(nav);
+    const open = [...list()!.querySelectorAll<HTMLButtonElement>("button")].find(button => button.textContent === "前往工具配置");
+    expect(open).toBeDefined(); open!.click(); expect(opened).toHaveBeenCalledTimes(1);
   });
   it("ignores an older list result after a confirmed add refresh", async () => {
     const stale = deferred<ReturnType<typeof row>[]>(); api.listMcpServers.mockReturnValueOnce(stale.promise); await mount();
