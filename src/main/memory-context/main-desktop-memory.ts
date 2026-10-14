@@ -11,6 +11,8 @@ import type {NativeHistoryEndpointFactory} from "../memory-sources/native-histor
 import {createMainPolicy} from "../memory-policy/main-policy";
 import {createMainRecall} from "../memory-recall/main-recall";
 import {createMainHistory} from "../memory-history/main-history";
+import {lazyHistoryBudgetStatsRecorder} from "../memory-history/history-budget-stats";
+import {getStorageContext} from "../storage-context";
 import {createMainUserFactCoordinator} from "../memory-policy/main-user-fact-coordinator";
 import {createMainFactSelector} from "../memory-recall/main-fact-selector";
 import {createConversationTranscriptAdapter} from "./conversation-transcript-adapter";
@@ -63,7 +65,7 @@ export function createMainDesktopMemory(options:Options){
    const actorAuthority=createMainActorAuthority({resolveActor:(scope,id)=>scope===SCOPE&&id.providerId===PROVIDER&&owned(id.sessionId)?ACTOR:null});
    const registry=createMainSourceRegistry(backend.transport,{coordinate:actorAuthority.coordinate}),access=registry.authority.access(SCOPE);
    const policy=createMainPolicy({registry,transport:backend.transport,actorAuthority,resolveActor:()=>ACTOR}),recall=createMainRecall({actorAuthority,transport:backend.transport});
-   const history=createMainHistory({actorAuthority,registry,transport:backend.transport,localRetrieval:backend.localRetrieval});
+   const history=createMainHistory({actorAuthority,registry,transport:backend.transport,localRetrieval:backend.localRetrieval,onBudgetStats:lazyHistoryBudgetStatsRecorder(()=>getStorageContext().files.historyBudgetStats)});
    const coordinator=createMainUserFactCoordinator({actorAuthority,registry,policy}),selector=createMainFactSelector({actorAuthority,registry,policy,recall});
    resolvedBackend=backend;return {backend,actorAuthority,registry,access,policy,history,coordinator,selector};
   }catch(error){await backend.close();throw error}

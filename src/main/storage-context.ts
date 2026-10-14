@@ -10,7 +10,7 @@ export interface StorageContext {
   readonly logsRoot: string;
   readonly sessionRoot: string;
   readonly memory: Readonly<{ dataRoot: string; indexRoot: string; tempRoot: string }>;
-  readonly files: Readonly<{ mcp: string; tokenUsage: string; contentManifest: string; mainLog: string }>;
+  readonly files: Readonly<{ mcp: string; tokenUsage: string; contentManifest: string; historyBudgetStats: string; mainLog: string }>;
 }
 /** Logical ownership only: config/data/state retain the existing production layout. */
 export function createStorageContext(profile: RuntimeProfile): StorageContext {
@@ -43,6 +43,7 @@ export function createStorageContext(profile: RuntimeProfile): StorageContext {
       get mcp() { return ownedFile(profile.userData, "mcp-servers.json"); },
       get tokenUsage() { return ownedFile(profile.userData, "token-usage.json"); },
       get contentManifest() { return ownedFile(profile.userData, "content-manifest.json"); },
+      get historyBudgetStats() { return ownedFile(profile.userData, "memory-history-budget.json"); },
       get mainLog() { return ownedFile(profile.logs, "firefly.log"); },
     }),
   });

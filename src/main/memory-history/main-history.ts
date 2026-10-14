@@ -16,7 +16,7 @@ import {historyTranscriptDigest} from './history-transcript-digest';
 import {parseHistoryDocument} from './history-repository';
 import {normalizeVector} from './history-ranking';
 import {parseHistoryTemporal,type HistoryTemporalQuery} from './history-temporal';
-import {DEFAULT_HISTORY_SETTINGS,type HistoryTransport,type HistoryDocument,type HistoryPartition,type HistoryDependency,type HistoryResult,type HistorySettings} from './history-contracts';
+import {DEFAULT_HISTORY_SETTINGS,type HistoryTransport,type HistoryDocument,type HistoryPartition,type HistoryDependency,type HistoryResult,type HistorySettings,type HistoryBudgetStats} from './history-contracts';
 export interface HistoryResponseBinding {actorToken:object;bootId:string;providerId:string;sessionId:string;snapshotId:string;requestDigest:string;runId:string;assistantTurnId:string;assistantEntryId:string;userTurnId:string;userRevision:number;throughSeq:number;contentDigest:string}
 export interface HistoryResponseSelection {locator:string;digest:string;ref:TranscriptDependency}
 export interface HistoryResponseWitness {readonly providerId:string;readonly sessionId:string;readonly refs:TranscriptDependency[];validate(ticket?:object,signal?:AbortSignal):Promise<void>;observe(entry:TranscriptEntry,ticket:object):Promise<void>;check():void;retire():void}
@@ -47,6 +47,8 @@ interface Options {actorAuthority:MainActorAuthority;registry:ReturnType<typeof 
  syntheticEmbedding?:EmbeddingProvider;
  /** Explicit trusted local model injection; never calls legacy RAG or falls back. */
  localRetrieval?:{embedding:EmbeddingProvider;reranker:RerankerProvider};
+ /** Receives numbers-only budget counts after each query; never document text, ids or the query. Failures are ignored. */
+ onBudgetStats?:(stats:HistoryBudgetStats)=>void;
 }
 export function createMainHistory(options:Options){
  if(options.registry.coordinator!==options.actorAuthority.coordinate)fail('MEMORY_CONTEXT_COORDINATOR_REQUIRED');
@@ -136,6 +138,7 @@ export function createMainHistory(options:Options){
   for(const [head,state] of transcriptStates){if(state.actor.scopeKey!==a.scopeKey||state.actor.actorKey!==a.actorKey||!p.sessions.some(s=>s.providerId===state.actor.providerId&&s.sessionId===state.actor.sessionId))continue;if(state.failure)fail(state.failure);state.provider.checkEvidence?.();try{await refreshTranscript(state,input.signal);transcriptHeads.push(head)}catch(e){if(!(e instanceof Error)||e.message!=='MEMORY_HISTORY_STALE')throw e}}
   const v=await embeddingVector(input.query);
   const result=await options.actorAuthority.coordinate(()=>command<HistoryResult>(a,'query',{sessions:p.sessions,query:input.query,settings:local?{...config,limit:Math.min(8,config.candidateLimit)}:config,customWords,transcriptHeads,...(temporal?{temporal}:{}),...(v?{vector:v}:{})}));if(input.signal?.aborted)fail('MEMORY_HISTORY_CANCELLED');
+  if(result.budget&&options.onBudgetStats){try{options.onBudgetStats(structuredClone(result.budget))}catch{/* statistics must never affect retrieval */}}
   await validateHits(a.scopeKey,result.hits,input.signal);
   if(local&&result.hits.length){
    checkModels();const text=(hit:HistoryResult['hits'][number])=>hit.document.messages.map(m=>m.text).join('\n');

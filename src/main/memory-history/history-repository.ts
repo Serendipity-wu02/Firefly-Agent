@@ -1,5 +1,6 @@
 import {historyTranscriptDigest} from './history-transcript-digest';
 import {historyMessageChars} from './history-message';
+import {countHistoryBudgetDrop,emptyHistoryBudgetStats} from './history-budget-stats';
 import {createHash,createHmac} from 'node:crypto';
 import type {DatabaseSync} from 'node:sqlite';
 import {objectFields,parseInternalId,parseSourceRef,positiveRevision} from '../memory-core/command-validation';
@@ -170,7 +171,8 @@ export class HistoryRepository {
     const candidateDocuments=new Map(documents.map(d=>[this.id(scope,d.actorKey,d,d.id),d]));
     const ranked=rankHistory([...candidateDocuments].map(([id,d])=>({id,text:d.messages.map(m=>m.text).join('\n'),...(()=>{const units=toWindows(d.messages,config.windowTurns);return units?{units}:{}})(),timeSpan:historyTimeSpan(d.messages),exactIdentity:createHmac('sha256',this.key).update(canonicalJson({origin:d.origin,providerId:d.providerId,sessionId:d.sessionId,messages:d.messages,sourceDeps:d.sourceDeps,transcriptRef:d.transcriptRef??null,...(!d.sourceDeps.length?{documentId:d.id,incarnation:d.incarnation}:{})})).digest('hex'),...(v?{vector:d.vector!.values}:{})})),query,{limit:config.limit,candidateLimit:config.candidateLimit,rrfK:config.rrfK,mmrLambda:config.mmrLambda,...(temporal?{temporal}:{}),...(v?{queryVector:v.values}:{}),...(config.recencyAlpha>0?{recency:{alpha:config.recencyAlpha,halfLifeDays:config.recencyHalfLifeDays,now:transactionNow(this.db)}}:{}),tokenizer});
     if(ranked.temporal)result.temporal=ranked.temporal;
-    let used=0;for(const candidate of ranked.items){const d=candidateDocuments.get(candidate.id)!,length=d.messages.reduce((n,m)=>n+historyMessageChars(m),0);if(length>config.maxExcerptChars||used+length>config.maxTotalChars){result.status='excerpt-budget-exhausted';continue}used+=length;
+    const budget=result.budget=emptyHistoryBudgetStats();budget.ranked=ranked.items.length;
+    let used=0;for(const candidate of ranked.items){const d=candidateDocuments.get(candidate.id)!,sizes=d.messages.map(historyMessageChars),length=sizes.reduce((n,x)=>n+x,0);if(length>config.maxExcerptChars||used+length>config.maxTotalChars){result.status='excerpt-budget-exhausted';countHistoryBudgetDrop(budget,length,sizes,config.maxExcerptChars);continue}used+=length;budget.returned++;
      result.hits.push({document:d,score:candidate.score,dependency:{documentId:d.id,providerId:d.providerId,sessionId:d.sessionId,incarnation:d.incarnation,revision:d.revision,digest:d.digest,generation:this.generation(scope,owner.actorKey),partition,indexVersion:'history-index-v1',tokenizerVersion:ranked.tokenizerVersion,rankingVersion:ranked.version,recallDeps:this.checkedDocument(scope,d)}});
     }return result;
    }fail();
