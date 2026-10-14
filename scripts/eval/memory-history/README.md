@@ -23,6 +23,10 @@ npm run test:eval                                 # 指标与数据集的单元�
 
 参数：`--sizes`（会话数，逗号分隔）、`--granularity`（`session`、`window`）、`--split`（`dev`、`holdout`、`all`）、`--seed`、`--out`。
 
+其余参数：`--modes`（只跑指定方式）、`--label`（结果文件名）、`--cache`（向量缓存路径）、`--units N`（整段粒度下词法按 N 轮一个窗口计分，对应生产设置 `windowTurns`）、`--recency-alpha`、`--recency-halflife`、`--long-turns N`（长会话基础轮数，默认 160 约 3000 字；450 约 7500 字，超过 6000 字摘录预算）、`--context-windows N`（摘录时最佳窗口两侧各扩几个窗口）。
+
+带 `--units` 的整段粒度运行，对 needle 类题额外输出**证据召回**：按生产的摘录预算打包后，关键句有没有真的送达（"整份或丢弃"对"仅对超长会话摘录"）。
+
 首次运行会为每个会话算向量，几分钟。结果打印为表格，并把完整的逐查询排名写到 `output/memory-eval/*.json`（已被 git 忽略）。
 需要本机已有 `models/Xenova/bge-m3` 和 `models/bge-reranker-base`。
 

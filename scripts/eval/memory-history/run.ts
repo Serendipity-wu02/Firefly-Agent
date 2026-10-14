@@ -15,8 +15,10 @@ import { createLocalEmbeddingProvider } from "../../../src/main/rag/embedding";
 import { createStandardReranker } from "../../../src/main/rag/reranker";
 import { tokenizeJieba } from "../../../src/main/rag/jieba-tokenizer";
 import { toWindows } from "../../../src/main/memory-history/history-windows";
+import { selectExcerpt } from "../../../src/main/memory-history/history-excerpts";
+import { DEFAULT_HISTORY_SETTINGS } from "../../../src/main/memory-history/history-contracts";
 import { assertNoLeakage, buildDataset, sessionText } from "./dataset.mjs";
-import { auc, bootstrapCi, dedupe, hitAtK, mean, ndcgAtK, percentile, recallAtK, reciprocalRank, supersededOrder } from "./metrics.mjs";
+import { auc, bootstrapCi, dedupe, evidenceContains, hitAtK, mean, ndcgAtK, packEvidence, percentile, recallAtK, reciprocalRank, supersededOrder } from "./metrics.mjs";
 
 const args = parseArgs(process.argv.slice(2));
 const SIZES = (args.sizes ?? "250,512").split(",").map(Number);
@@ -27,6 +29,10 @@ const SEED = Number(args.seed ?? 20261013);
 // 新近度加权：相关度乘 (1 + α·exp(-age·ln2/半衰期))。只在候选之间做微调，不改变候选集合。
 // --units N：整段粒度下，词法按 N 轮一个窗口计分（向量仍是文档级）。这正是生产里不改存储就能做到的配置。
 const UNITS = Number(args.units ?? 0);
+// --long-turns N：长会话的基础轮数（默认 160，约 3000 字，低于 6000 字的摘录预算）；450 约 7500 字，能覆盖预算问题。
+const LONG_TURNS = Number(args["long-turns"] ?? 0);
+// --context-windows N：摘录时最佳窗口两侧各最多再扩几个窗口（证据召回对照用）。
+const CONTEXT_WINDOWS = Number(args["context-windows"] ?? 1);
 // 近似并列时新的优先（词法路线用）：相邻两项相关度差不超过 delta、且后者更新超过 gap 天时交换。
 const NEARTIE_DELTA = Number(args["neartie-delta"] ?? 0.05);
 const NEARTIE_GAP_DAYS = Number(args["neartie-gap"] ?? 7);
@@ -126,6 +132,7 @@ async function runMode(mode, ctx, query) {
   const temporal = query.temporal;
   const t0 = performance.now();
   let ids = [];
+  let items = null; // 带窗口下标的排序结果，供证据打包用；只有直接来自 rankHistory 的方式才有
   let topScore = null;
   let note;
 
@@ -143,9 +150,11 @@ async function runMode(mode, ctx, query) {
 
   try {
     if (mode === "lexical") {
-      ids = rankHistory(rankDocs(false), query.text, { limit: 8, candidateLimit: 50, ...(temporal ? { temporal } : {}) }).items.map((r) => r.id);
+      items = rankHistory(rankDocs(false), query.text, { limit: 8, candidateLimit: 50, ...(temporal ? { temporal } : {}) }).items;
+      ids = items.map((r) => r.id);
     } else if (mode === "lexical+stop") {
-      ids = rankHistory(rankDocs(false), query.text, { limit: 8, candidateLimit: 50, tokenizer: getStopTokenizer(), ...(temporal ? { temporal } : {}) }).items.map((r) => r.id);
+      items = rankHistory(rankDocs(false), query.text, { limit: 8, candidateLimit: 50, tokenizer: getStopTokenizer(), ...(temporal ? { temporal } : {}) }).items;
+      ids = items.map((r) => r.id);
     } else if (mode === "dense") {
       if (temporal) throw new Error("MEMORY_HISTORY_TEMPORAL_VECTOR_UNSUPPORTED");
       const v = await embedQuery();
@@ -155,7 +164,7 @@ async function runMode(mode, ctx, query) {
     } else if (mode === "hybrid" || mode === "hybrid+stop" || mode === "hybrid+rerank8" || mode === "hybrid+rerank30") {
       const queryVector = await embedQuery();
       const ranked = rankHistory(rankDocs(true), query.text, { limit: 8, candidateLimit: 50, queryVector, ...(mode === "hybrid+stop" ? { tokenizer: getStopTokenizer() } : {}), ...(temporal ? { temporal } : {}) });
-      if (mode === "hybrid" || mode === "hybrid+stop") ids = ranked.items.map((r) => r.id);
+      if (mode === "hybrid" || mode === "hybrid+stop") { items = ranked.items; ids = items.map((r) => r.id); }
       else if (mode === "hybrid+rerank8") ids = await rerank(ranked.items.map((r) => r.id), 8);
       else ids = await rerank(ranked.fused.slice(0, 30).map((r) => r.id), 8);
     } else if (mode === "lexical+rerank30" || mode === "lexical+stop+rerank30") {
@@ -182,7 +191,8 @@ async function runMode(mode, ctx, query) {
       // 生产代码里的新近度：rankHistory 的 recency 选项（在多样性去重之前作用于融合后的前 30 个候选）。
       if (temporal) throw new Error("not-applicable");
       const queryVector = await embedQuery();
-      ids = rankHistory(rankDocs(true), query.text, { limit: 8, candidateLimit: 50, queryVector, recency: { alpha: RECENCY_ALPHA, halfLifeDays: RECENCY_HALF_LIFE_DAYS, now: ctx.now } }).items.map((r) => r.id);
+      items = rankHistory(rankDocs(true), query.text, { limit: 8, candidateLimit: 50, queryVector, recency: { alpha: RECENCY_ALPHA, halfLifeDays: RECENCY_HALF_LIFE_DAYS, now: ctx.now } }).items;
+      ids = items.map((r) => r.id);
     } else if (mode === "lexical+recency" || mode === "hybrid+recency" || mode === "hybrid+stop+recency") {
       if (temporal) throw new Error("not-applicable");
       const useVector = mode !== "lexical+recency";
@@ -209,13 +219,13 @@ async function runMode(mode, ctx, query) {
     return { mode, status: message === "not-applicable" ? "n/a" : message.includes("TEMPORAL_VECTOR") ? "unsupported" : "error", note: message, ids: [], topScore: null, ms: performance.now() - t0 };
   }
   sample();
-  return { mode, status: "ok", ids, topScore, ms: performance.now() - t0, note };
+  return { mode, status: "ok", ids, items, topScore, ms: performance.now() - t0, note };
 }
 
 // ── 主流程 ────────────────────────────────────────────────────────────────────
 async function main() {
   const maxSize = Math.max(...SIZES);
-  const full = buildDataset({ size: maxSize, seed: SEED });
+  const full = buildDataset({ size: maxSize, seed: SEED, longTurns: LONG_TURNS });
   assertNoLeakage(full);
   const queries = full.queries.filter((q) => SPLIT === "all" || q.split === SPLIT);
   console.log(`# H 检索评测  split=${SPLIT}  sizes=${SIZES.join(",")}  queries=${queries.length}  seed=${SEED}`);
@@ -233,7 +243,7 @@ async function main() {
   const rssAfterLoad = rssMb();
 
   const querySet = (split) => full.queries.filter((q) => q.split === split).map((q) => ({ id: q.id, category: q.category, text: q.text, gold: q.gold, newer: q.newer, older: q.older, temporal: q.temporal }));
-  const result = { meta: { label: args.label ?? null, units: UNITS, args, git: gitInfo(), models: { embedding: emb.name, embeddingDims: emb.dims, embeddingIdentity: emb.cacheIdentity ?? null, reranker: reranker.name }, modes: MODES, granularities: GRANULARITIES,
+  const result = { meta: { label: args.label ?? null, units: UNITS, longTurns: LONG_TURNS, contextWindows: CONTEXT_WINDOWS, evidenceBudget: { maxExcerptChars: DEFAULT_HISTORY_SETTINGS.maxExcerptChars, maxTotalChars: DEFAULT_HISTORY_SETTINGS.maxTotalChars }, args, git: gitInfo(), models: { embedding: emb.name, embeddingDims: emb.dims, embeddingIdentity: emb.cacheIdentity ?? null, reranker: reranker.name }, modes: MODES, granularities: GRANULARITIES,
     datasetDigest: digest({ seed: SEED, size: maxSize, sessions: full.sessions.map((s) => [s.id, s.turns.map((t) => [t.role, t.text, t.occurredAt])]) }),
     querySetDigests: { dev: digest(querySet("dev")), holdout: digest(querySet("holdout")) },
     recencyAlpha: RECENCY_ALPHA, recencyHalfLifeDays: RECENCY_HALF_LIFE_DAYS, split: SPLIT, sizes: SIZES, seed: SEED, queries: queries.length, node: process.version, platform: process.platform, embedLoadMs, rerankLoadMs, rssAfterLoadMb: rssAfterLoad }, runs: [], index: [] };
@@ -258,11 +268,13 @@ async function main() {
     result.index.push({ granularity, docs: maxDocs.length, embedded, ms: Math.round(performance.now() - t), msPerDoc: embedded ? +((performance.now() - t) / embedded).toFixed(1) : 0 });
 
     for (const size of SIZES) {
-      const dataset = buildDataset({ size, seed: SEED });
+      const dataset = buildDataset({ size, seed: SEED, longTurns: LONG_TURNS });
       const docs = buildDocs(dataset, granularity);
       const ctx = { docs, emb, reranker, vectors: vectorCache, now: dataset.now };
       const sessionTime = new Map(dataset.sessions.map((s) => [s.id, { start: Math.min(...s.turns.map((x) => x.occurredAt)), end: Math.max(...s.turns.map((x) => x.occurredAt)) }]));
       const sessionOf = new Map(docs.map((d) => [d.id, d.sessionId]));
+      const sessionById = new Map(dataset.sessions.map((s) => [s.id, s]));
+      const sizesOf = (id) => sessionById.get(id).turns.map((t) => t.text.length);
 
       // 先热身一遍，避免首次调用拉高延迟
       for (const mode of MODES) await runMode(mode, ctx, queries[0]);
@@ -284,6 +296,16 @@ async function main() {
             if (query.temporal?.kind === "range") {
               const top = ranked.slice(0, 3);
               row.leak3 = top.length ? top.filter((id) => { const s = sessionTime.get(id); return !(s.start <= query.temporal.to && s.end >= query.temporal.from); }).length / top.length : 0;
+            }
+          }
+          // 证据召回：关键句（needle）有没有真的送达模型。整段粒度才有"一份文档 = 一个会话"，才能按预算打包。
+          if (run.status === "ok" && run.items && granularity === "session" && query.category === "needle") {
+            const needleIndex = sessionById.get(query.gold[0])?.needleIndex;
+            if (needleIndex !== undefined) {
+              const pack = (policy) => packEvidence({ items: run.items, sizesOf, policy, select: selectExcerpt, maxExcerptChars: DEFAULT_HISTORY_SETTINGS.maxExcerptChars, maxTotalChars: DEFAULT_HISTORY_SETTINGS.maxTotalChars, windowTurns: UNITS, contextWindows: CONTEXT_WINDOWS });
+              const whole = pack("whole");
+              const excerpt = pack("excerpt");
+              row.evidence = { whole: evidenceContains(whole, query.gold[0], needleIndex), excerpt: evidenceContains(excerpt, query.gold[0], needleIndex), wholeChars: whole.reduce((n, p) => n + p.chars, 0), excerptChars: excerpt.reduce((n, p) => n + p.chars, 0) };
             }
           }
           rows.push(row);
@@ -336,6 +358,13 @@ function report(result, queries) {
         return rows.length ? pct(mean(rows.map((r) => r.hit1 ?? 0))) : "–";
       });
       console.log(`| ${mode} | ${cells.join(" | ")} |`);
+    }
+    const evid = MODES.map((mode) => [mode, run.rows.filter((r) => r.mode === mode && r.evidence)]).filter(([, r]) => r.length);
+    if (evid.length) {
+      console.log("\n证据召回（长会话里的关键句有没有真的送达；整份返回遇到超预算的会话会丢弃，摘录是只对单份就超过上限的会话改为最佳窗口加上下文）：");
+      console.log("\n| 方式 | 题数 | 整份或丢弃 | 摘录（仅超长） | 整份 平均字数 | 摘录 平均字数 |");
+      console.log("|---|---|---|---|---|---|");
+      for (const [mode, rs] of evid) console.log(`| ${mode} | ${rs.length} | ${pct(mean(rs.map((r) => r.evidence.whole)))} | ${pct(mean(rs.map((r) => r.evidence.excerpt)))} | ${Math.round(mean(rs.map((r) => r.evidence.wholeChars)))} | ${Math.round(mean(rs.map((r) => r.evidence.excerptChars)))} |`);
     }
     const leaks = MODES.map((mode) => [mode, run.rows.filter((r) => r.mode === mode && r.leak3 !== undefined)]).filter(([, r]) => r.length);
     if (leaks.length) console.log("\n时间范围泄漏（前 3 名里落在窗口外的比例，越低越好）：" + leaks.map(([m, r]) => `${m} ${pct(mean(r.map((x) => x.leak3)))}`).join("；"));
