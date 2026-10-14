@@ -64,7 +64,7 @@ export function validateShadowResponse(raw:unknown,turn:ShadowTurn):ShadowValida
    ||!['user','other'].includes(item.subject as string)||!SHADOW_ATTRIBUTES.includes(item.attribute as ShadowAttribute)
    ||!['positive','negative'].includes(item.polarity as string)||!['asserted','needs-confirmation'].includes(item.status as string)
    ||!short(item.value,SHADOW_LIMITS.maxValueChars)||!short(item.quote,SHADOW_LIMITS.maxQuoteChars)||!short(item.reason,SHADOW_LIMITS.maxReasonChars)){dropped.schema++;continue}
-  const value=(item.value as string).trim(),quote=item.quote as string;
+  const value=(item.value as string).trim(),quote=item.quote as string,reason=(item.reason as string).trim();
   // 过短的引用（如单个"我"）不足以支撑事实；唯一例外是附和词（"嗯"），它只会成为待确认。
   if(quote.trim().length<SHADOW_LIMITS.minQuoteChars&&!AFFIRMATION.test(quote.normalize('NFKC').trim())){dropped.schema++;continue}
   if(item.subject!=='user'){dropped['about-other']++;continue}
@@ -72,7 +72,8 @@ export function validateShadowResponse(raw:unknown,turn:ShadowTurn):ShadowValida
   if(!userText.includes(quote)){dropped['quote-not-in-user']++;continue}
   const sentence=sentenceAround(userText,quote).normalize('NFKC');
   if(OTHER_PERSON.test(sentence)){dropped['about-other']++;continue}
-  if([value,quote,sentence].some(t=>{const n=t.normalize('NFKC');return SENSITIVE.test(n)||SENSITIVE_SHAPE.test(n)})){dropped.sensitive++;continue}
+  // reason 也会被保存和导出：模型可能把助手语境里的敏感内容写进理由，一并检查。
+  if([value,quote,sentence,reason].some(t=>{const n=t.normalize('NFKC');return SENSITIVE.test(n)||SENSITIVE_SHAPE.test(n)})){dropped.sensitive++;continue}
   if(TEMPORARY.test(sentence)){dropped.temporary++;continue}
   const key=`${item.attribute}\u0000${item.polarity}\u0000${value.toLowerCase()}`;
   if(seen.has(key)){dropped.duplicate++;continue}
@@ -80,7 +81,7 @@ export function validateShadowResponse(raw:unknown,turn:ShadowTurn):ShadowValida
   seen.add(key);
   let status=item.status as ShadowCandidate['status'];
   if(status==='asserted'&&(affirmationOnly||AFFIRMATION.test(quote.normalize('NFKC').trim()))){status='needs-confirmation';result.downgraded++}
-  result.candidates.push({attribute:item.attribute as ShadowAttribute,value,polarity:item.polarity as ShadowCandidate['polarity'],status,evidence:{messageId:turn.user.id,quote},reason:(item.reason as string).trim()});
+  result.candidates.push({attribute:item.attribute as ShadowAttribute,value,polarity:item.polarity as ShadowCandidate['polarity'],status,evidence:{messageId:turn.user.id,quote},reason});
  }
  return result;
 }

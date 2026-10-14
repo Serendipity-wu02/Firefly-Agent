@@ -96,6 +96,18 @@ describe('validateShadowResponse',()=>{
  });
 
  it.each([
+  ['a phone number from the assistant context','助手上文提到用户电话 13800138000'],
+  ['a health detail from the assistant context','结合上文的过敏情况判断'],
+ ])('drops a candidate whose saved reason leaks sensitive content: %s',(_label,reason)=>{
+  const v=validateShadowResponse(respond(fact({reason})),turn('我平时用 VS Code','你的电话是 13800138000，过敏情况也记下了'));
+  expect(v.candidates).toEqual([]);expect(v.dropped.sensitive).toBe(1);
+ });
+
+ it('keeps a reason that refers to the user as "they"',()=>{
+  expect(validateShadowResponse(respond(fact({reason:'They say they use VS Code'})),turn('我平时用 VS Code')).candidates).toHaveLength(1);
+ });
+
+ it.each([
   ['a friend, mislabelled as the user','My friend uses Vim','Vim','uses Vim'],
   ['a colleague, quote cut before the subject','我同事一直用 Emacs','Emacs','一直用 Emacs'],
   ['she','她喜欢深色主题','深色主题','喜欢深色主题'],
