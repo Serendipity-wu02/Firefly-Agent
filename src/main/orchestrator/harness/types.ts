@@ -356,12 +356,35 @@ export interface HarnessResult {
 
 // ── 辅助类型 ─────────────────────────────────────────────
 
-/** 把 ToolCall 的 arguments JSON 字符串解析为对象 */
+export class ToolCallArgumentsError extends Error {
+  constructor() {
+    super("工具参数必须是有效的 JSON 对象");
+    this.name = "ToolCallArgumentsError";
+  }
+}
+
+export function invalidToolCallArguments(call: ToolCall): ToolObservation {
+  return { outcome: "failure", category: "invalid_arguments", tool: call.name, toolSideEffect: "read_only", message: "工具参数必须是有效的 JSON 对象" };
+}
+
+/** 拒绝语法错误和非对象 JSON；不得将无效输入转换成可执行的空参数。 */
 export function parseToolCallArgs(call: ToolCall): Record<string, unknown> {
+  let args: unknown;
   try {
-    return JSON.parse(call.arguments) as Record<string, unknown>;
+    args = JSON.parse(call.arguments);
   } catch {
-    return {};
+    throw new ToolCallArgumentsError();
+  }
+  if (args === null || typeof args !== "object" || Array.isArray(args)) throw new ToolCallArgumentsError();
+  return args as Record<string, unknown>;
+}
+
+/** 分类和历史恢复可保守处理缺失参数；实际派发仍必须严格拒绝。 */
+export function tryParseToolCallArgs(call: ToolCall): Record<string, unknown> | undefined {
+  try { return parseToolCallArgs(call); }
+  catch (error) {
+    if (error instanceof ToolCallArgumentsError) return undefined;
+    throw error;
   }
 }
 

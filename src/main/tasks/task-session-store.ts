@@ -113,6 +113,7 @@ function cloneUncertainEffects(value: unknown): TaskUncertainEffect[] {
     if (typeof effect.id !== "string" || typeof effect.toolCallId !== "string"
       || typeof effect.fingerprint !== "string" || typeof effect.toolName !== "string"
       || typeof effect.message !== "string") throw new Error("TASK_SESSION_READ_FAILED");
+    if (effect.argumentsUnavailable !== undefined && effect.argumentsUnavailable !== true) throw new Error("TASK_SESSION_READ_FAILED");
     if (effect.repeatAuthorization !== undefined
       && (effect.repeatAuthorization?.source !== "user"
         || !Number.isFinite(effect.repeatAuthorization.grantedAt))) {
@@ -121,6 +122,7 @@ function cloneUncertainEffects(value: unknown): TaskUncertainEffect[] {
     return {
       id: effect.id, toolCallId: effect.toolCallId, fingerprint: effect.fingerprint,
       toolName: effect.toolName, message: effect.message,
+      ...(effect.argumentsUnavailable === true ? { argumentsUnavailable: true as const } : {}),
       ...(effect.repeatAuthorization ? { repeatAuthorization: { ...effect.repeatAuthorization } } : {}),
     };
   });

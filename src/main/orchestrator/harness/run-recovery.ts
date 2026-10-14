@@ -1,5 +1,5 @@
 import type { ChatMessage, ToolCall } from "../vendors/types";
-import { parseToolCallArgs, toolCallFingerprint, type AgentState, type HarnessCacheState } from "./types";
+import { tryParseToolCallArgs, toolCallFingerprint, type AgentState, type HarnessCacheState } from "./types";
 import type { HarnessRunSession } from "./run-store";
 
 export interface HarnessRecoveryEnvironment {
@@ -39,19 +39,23 @@ export function prepareHarnessRecovery(
 
   const persistedById = new Map(session.toolCalls.map(call => [call.toolCallId, call]));
   for (const call of callById.values()) {
+    // A paired unknown result may still have an unresolved guard from the old parser.
+    const existing = state.uncertainEffects.find((effect) => effect.toolCallId === call.id);
+    const args = tryParseToolCallArgs(call);
+    if (existing && args === undefined) existing.argumentsUnavailable = true;
     if (resolvedCallIds.has(call.id)) continue;
     const persisted = persistedById.get(call.id);
     // Match canonical materialization: queued/planned is not dispatched, irrespective
     // of side-effect category. A started/unknown invocation has no confirmed result.
     const isUnknown = persisted?.status === "started" || persisted?.status === "unknown";
     if (isUnknown && persisted?.sideEffect !== "read_only") {
-      const args = parseToolCallArgs(call);
-      const fingerprint = toolCallFingerprint(call.name, args);
-      if (!state.uncertainEffects.some((effect) => effect.toolCallId === call.id)) {
+      const fingerprint = toolCallFingerprint(call.name, args ?? {});
+      if (!existing) {
         state.uncertainEffects.push({
           id: `${session.runId}:${call.id}`,
           toolCallId: call.id,
           fingerprint,
+          ...(args === undefined ? { argumentsUnavailable: true as const } : {}),
           toolName: call.name,
           message: "该外部副作用在应用中断时尚未确认结果",
         });

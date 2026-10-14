@@ -54,8 +54,9 @@ export function classifyToolExecutionMode(
   const tool = tools.find((candidate) => candidate.id === call.name);
   if (!tool) return "exclusive";
 
-  const args = parseToolCallArgs(call);
+  let args: Record<string, unknown>;
   try {
+    args = parseToolCallArgs(call);
     const effectKind = resolveEffectKind(tool, args);
     if (effectKind !== "read" && effectKind !== "verification") return "exclusive";
     if (resolveSideEffect(tool, args) !== "read_only") return "exclusive";

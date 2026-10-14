@@ -263,6 +263,37 @@ it("restart_preserves_unknown_without_replay_before_a_tool_result_checkpoint", a
   expect(repaired.messages.find(message => message.toolCallId === call.id)?.content).toContain("unknown_after_interruption");
 });
 
+it("restart_merges_the_stronger_guard_into_an_existing_legacy_task_effect", async () => {
+  const { HarnessRunStore } = await import("./harness/run-store");
+  const { AgentSessionRegistry } = await import("../tasks/agent-session-registry");
+  const { store, parent } = setup(), root = parent.resolvedWorkspaceRoot!, runs = new HarnessRunStore(root);
+  const session = new AgentSessionRegistry(store).acquire({ agentId: profile.id, modelProfile: profile.modelProfile,
+    savedModelProfileId: "saved-code", parentConversationId: parent.parentConversationId, parentRunId: "old-parent",
+    mode: "code", resolvedWorkspaceRoot: root, description: "fixture", prompt: "old write" });
+  const call = { id: "legacy", name: "write_file", arguments: "null" };
+  const effects = [{ id: `${session.childRunId}:${call.id}`, toolCallId: call.id, toolName: call.name, fingerprint: "write_file()", message: "unknown" }];
+  const messages = [{ role: "user" as const, content: "old write" }, { role: "assistant" as const, content: "", toolCalls: [call] }];
+  store.checkpoint(session.id, { status: "interrupted", messages, uncertainEffects: effects });
+  runs.create({ conversationId: session.id, runId: session.childRunId, messages, state: { todoItems: [], uncertainEffects: effects },
+    request: { provider: "fixture", model: "fixture-model", contextWindowTokens: 64000, promptFingerprint: "p", toolSchemaFingerprint: "t", workspaceRoot: root } });
+  runs.recordTool(session.childRunId, { toolCallId: call.id, toolName: call.name, sideEffect: "non_idempotent_side_effect", status: "started" });
+  let executions = 0;
+  const write: ToolDefinition = { id: call.name, name: "write", description: "fixture", enabled: true, inputSchema: { type: "object" },
+    effectKind: "mutation", execute: async () => { executions++; return "unexpected replay"; } };
+  const execute = createAgentExecutor({ parent: { ...parent, tools: [write] }, store: new TaskSessionStore(root), runStore: new HarnessRunStore(root),
+    profiles: [{ ...profile, allowedToolIds: [write.id] }], modelSettings: models, runHarness: async input => {
+      const result = await dispatchToolCall({ ...call, id: "corrected", arguments: '{"path":"new"}' }, { tools: input.tools,
+        state: { todoItems: [], uncertainEffects: input.initialState?.uncertainEffects ?? [] }, toolContext: input.toolContext });
+      expect(result).toMatchObject({ outcome: "not_executed", category: "runtime_safety" });
+      expect(input.initialState?.uncertainEffects).toEqual([{ ...effects[0], argumentsUnavailable: true }]);
+      return { finalAnswer: "unknown effect retained", finalState: { todoItems: [], uncertainEffects: input.initialState?.uncertainEffects ?? [] }, terminated: false, rounds: 0 };
+    } });
+  const result = await execute({ agentId: profile.id, prompt: "continue" });
+  expect(result.status).toBe("completed");
+  expect(executions).toBe(0);
+  expect(new TaskSessionStore(root).get(result.sessionId)?.uncertainEffects).toEqual([{ ...effects[0], argumentsUnavailable: true }]);
+});
+
 it("quiesces_a_failed_child_before_draining_a_retained_operation_and_releasing_its_lease", async () => {
   const { RunExecutionCoordinator } = await import("./harness/execution-coordinator");
   const { store, parent } = setup(), coordinator = new RunExecutionCoordinator(parent.resolvedWorkspaceRoot!), parentController = new AbortController();

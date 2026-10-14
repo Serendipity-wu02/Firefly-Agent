@@ -12,14 +12,14 @@ import type { ToolCall } from "../vendors/types";
 import type { ToolDefinition } from "../tools/registry/tool-registry";
 import type { ToolCallResult } from "../types";
 import type { AgentState, HarnessEvent, ToolObservation } from "./types";
-import { parseToolCallArgs, toolCallFingerprint } from "./types";
+import { parseToolCallArgs, toolCallFingerprint, ToolCallArgumentsError, invalidToolCallArguments } from "./types";
 import { isHarnessBuiltin, isInteractiveHarnessBuiltin, DELEGATE_AGENT_TOOL_ID } from "./builtin-tools";
-import { executeUpdateTodo, executeAskUser, executeDelegateAgent } from "./builtin-tools";
+import { executeUpdateTodo, executeAskUser, executeDelegateAgent, executeConfirmUncertainEffect, CONFIRM_UNCERTAIN_EFFECT_TOOL_ID } from "./builtin-tools";
 import { ENTER_PLAN_MODE_TOOL_ID, WRITE_PLAN_TOOL_ID, executeEnterPlanMode, executeWritePlan } from "./plan-tools";
 import { executeReadToolResult, READ_TOOL_RESULT_TOOL_ID } from "./tool-output/read-tool-result";
 import { resolveSideEffect } from "./side-effect-resolver";
 import { extractFileChangesFromOutput } from "../tools/registry/tool-evidence";
-import { isBlockedByUncertainEffect } from "./uncertain-effect-guard";
+import { findBlockingUncertainEffect } from "./uncertain-effect-guard";
 import { ExecutionLedger } from "../execution-ledger";
 import type { ToolExecutionOutcome } from "../types";
 import { executeToolDefinition } from "../tools/registry/tool-executor";
@@ -117,6 +117,12 @@ export async function dispatchToolCall(
   ctx: ToolDispatchContext,
 ): Promise<ToolDispatchResult> {
   if (ctx.toolContext?.signal?.aborted) return cancelledBeforeDispatch(call);
+  let args: Record<string, unknown>;
+  try { args = parseToolCallArgs(call); }
+  catch (error) {
+    if (!(error instanceof ToolCallArgumentsError)) throw error;
+    return invalidToolCallArguments(call);
+  }
   // ── 内置工具 ──
   if (isHarnessBuiltin(call.name)) {
     if (ctx.allowedBuiltinToolIds && !ctx.allowedBuiltinToolIds.has(call.name)) {
@@ -149,13 +155,12 @@ export async function dispatchToolCall(
   }
 
   // ── 普通工具 ──
-  const args = parseToolCallArgs(call);
   const tool = ctx.tools.find((t) => t.id === call.name);
 
   // fingerprint 拦截（已不确定的副作用在授权前禁止自动重放）
   const fingerprint = toolCallFingerprint(call.name, args);
-  const blockingEffect = ctx.state.uncertainEffects.find((effect) => effect.fingerprint === fingerprint);
-  if (isBlockedByUncertainEffect(ctx.state, fingerprint)) {
+  const blockingEffect = findBlockingUncertainEffect(ctx.state, fingerprint, call.name);
+  if (blockingEffect) {
     return {
       outcome: "not_executed",
       category: "runtime_safety",
@@ -371,6 +376,8 @@ async function executeHarnessBuiltin(
 
     case "ask_user":
       return executeAskUser(call, ctx.requestUserClarification, ctx.onEvent);
+    case CONFIRM_UNCERTAIN_EFFECT_TOOL_ID:
+      return executeConfirmUncertainEffect(call, ctx.state, ctx.requestUserClarification, ctx.toolContext?.signal);
     case ENTER_PLAN_MODE_TOOL_ID:
       return executeEnterPlanMode(call, ctx.toolContext, ctx.onEvent);
     case WRITE_PLAN_TOOL_ID:

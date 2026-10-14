@@ -345,6 +345,7 @@ function createRun(input: HarnessInput): HarnessRun {
     includeInteractiveTools: input.includeInteractiveTools,
     allowedBuiltinToolIds: input.allowedBuiltinToolIds,
     toolOutputStore: input.toolOutputStore,
+    toolContext: { userQuery: input.toolContext?.userQuery ?? "", ...input.toolContext, signal: input.signal },
   };
 
   return {

@@ -13,7 +13,7 @@ import { findSafeCutPointForRetainedTokens } from "./harness/compaction";
 import type { HarnessRunSession } from "./harness/run-store";
 import {
   DEFAULT_HARNESS_CONFIG,
-  parseToolCallArgs,
+  tryParseToolCallArgs,
   toolCallFingerprint,
   type UncertainEffect,
 } from "./harness/types";
@@ -101,10 +101,12 @@ function addUncertainEffect(
   call: ToolCall,
 ): void {
   if (effects.some((effect) => effect.toolCallId === call.id)) return;
+  const args = tryParseToolCallArgs(call);
   effects.push({
     id: `${runId ?? "unknown-run"}:${call.id}`,
     toolCallId: call.id,
-    fingerprint: toolCallFingerprint(call.name, parseToolCallArgs(call)),
+    fingerprint: toolCallFingerprint(call.name, args ?? {}),
+    ...(args === undefined ? { argumentsUnavailable: true as const } : {}),
     toolName: call.name,
     message: "该外部副作用在应用中断时尚未确认结果",
   });
