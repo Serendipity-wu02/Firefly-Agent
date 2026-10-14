@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Input, Modal } from "antd";
 import { useTranslation } from "../../../i18n";
+import { Button, IconButton } from "../../../components/ui/Button";
 import type { CodeGitChangedPayload, CodeGitStatus } from "../../../../../shared/code-git-types";
 import type { TodoState } from "../../../../../shared/todo-types";
 import { buildGitStatusCopy } from "./code-git-presentation";
@@ -46,6 +47,8 @@ export function CodeGitPanel({ sessionId, projectName, todoState, planPhase, onO
   const [commitMessage, setCommitMessage] = useState("");
   const [operationError, setOperationError] = useState<string | null>(null);
   const [operating, setOperating] = useState(false);
+  // Which action is running, so only that button shows the spinner while the others stay disabled.
+  const [pendingKey, setPendingKey] = useState<string | null>(null);
   const refreshControllerRef = useRef<CodeGitRefreshController | null>(null);
   const api = codeGitApi();
   const floating = useFloatingCard({ width: 260, defaultCollapsed: docked && !expanded });
@@ -76,8 +79,9 @@ export function CodeGitPanel({ sessionId, projectName, todoState, planPhase, onO
   const completed = todos.filter((todo) => todo.status === "completed").length;
   const branchName = status?.branch?.current ?? (status?.branch?.detached ? "detached HEAD" : t("codeGit.noBranch"));
   const statusCopy = status ? buildGitStatusCopy(status) : t("codeGit.readingStatus");
-  const runOperation = async (action: () => Promise<void>, onSuccess?: () => void) => {
+  const runOperation = async (action: () => Promise<void>, onSuccess?: () => void, key: string | null = null) => {
     setOperating(true);
+    setPendingKey(key);
     setOperationError(null);
     try {
       await action();
@@ -87,6 +91,7 @@ export function CodeGitPanel({ sessionId, projectName, todoState, planPhase, onO
       setOperationError(error instanceof Error ? error.message : t("codeGit.operationFailed"));
     } finally {
       setOperating(false);
+      setPendingKey(null);
     }
   };
 
@@ -108,7 +113,7 @@ export function CodeGitPanel({ sessionId, projectName, todoState, planPhase, onO
             <strong>{projectName ?? t("codeGit.noWorkspace")}</strong>
             <span title={statusCopy}>{statusCopy}</span>
           </div>
-          <button className="ff-code-git__refresh" type="button" onClick={() => refreshControllerRef.current?.request()} disabled={!api || refreshing} aria-label={t("codeGit.refresh")}>↻</button>
+          <IconButton className="ff-code-git__refresh" size="sm" label={t("codeGit.refresh")} onClick={() => refreshControllerRef.current?.request()} disabled={!api} loading={refreshing}>↻</IconButton>
         </div>
 
         <div className="ff-code-git__git-actions">
@@ -145,11 +150,14 @@ export function CodeGitPanel({ sessionId, projectName, todoState, planPhase, onO
       <Modal open={dialog === "branch"} title={t("codeGit.switchBranch")} footer={null} onCancel={() => setDialog(null)} className="ff-code-git-modal">
         <p className="ff-code-git-modal__hint">{t("codeGit.currentBranch")}<code>{branchName}</code></p>
         <div className="ff-code-git-modal__branch-list">
-          {status?.branch?.branches.map((branch) => <button key={branch} type="button" disabled={branch === status.branch?.current || operating} onClick={() => api && void runOperation(() => api.switchBranch(sessionId, branch), () => setDialog(null))}>{branch === status.branch?.current ? "✓ " : ""}{branch}</button>)}
+          {status?.branch?.branches.map((branch) => {
+            const key = `switch:${branch}`;
+            return <Button key={branch} block disabled={branch === status.branch?.current || (operating && pendingKey !== key)} loading={pendingKey === key} onClick={() => api && void runOperation(() => api.switchBranch(sessionId, branch), () => setDialog(null), key)}>{branch === status.branch?.current ? "✓ " : ""}{branch}</Button>;
+          })}
         </div>
         <div className="ff-code-git-modal__new-branch">
-          <Input value={newBranch} onChange={(event) => setNewBranch(event.target.value)} placeholder={t("codeGit.newBranchPlaceholder")} disabled={operating} onPressEnter={() => api && newBranch.trim() && void runOperation(() => api.switchBranch(sessionId, newBranch.trim(), true), () => { setNewBranch(""); setDialog(null); })} />
-          <button type="button" disabled={!api || !newBranch.trim() || operating} onClick={() => api && void runOperation(() => api.switchBranch(sessionId, newBranch.trim(), true), () => { setNewBranch(""); setDialog(null); })}>{t("codeGit.createAndSwitch")}</button>
+          <Input value={newBranch} onChange={(event) => setNewBranch(event.target.value)} placeholder={t("codeGit.newBranchPlaceholder")} disabled={operating} onPressEnter={() => api && newBranch.trim() && !operating && void runOperation(() => api.switchBranch(sessionId, newBranch.trim(), true), () => { setNewBranch(""); setDialog(null); }, "create")} />
+          <Button variant="primary" disabled={!api || !newBranch.trim() || (operating && pendingKey !== "create")} loading={pendingKey === "create"} onClick={() => api && void runOperation(() => api.switchBranch(sessionId, newBranch.trim(), true), () => { setNewBranch(""); setDialog(null); }, "create")}>{t("codeGit.createAndSwitch")}</Button>
         </div>
       </Modal>
 
@@ -157,11 +165,11 @@ export function CodeGitPanel({ sessionId, projectName, todoState, planPhase, onO
         {status?.files.length ? <section className="ff-code-git-modal__commit-section">
           <p className="ff-code-git-modal__hint">{t("codeGit.commitHint", { count: status.files.length })}</p>
           <Input value={commitMessage} onChange={(event) => setCommitMessage(event.target.value)} placeholder={t("codeGit.commitMessagePlaceholder")} disabled={operating} />
-          <button type="button" disabled={!api || !commitMessage.trim() || operating} onClick={() => api && void runOperation(() => api.commit(sessionId, commitMessage, status.files.map((file) => file.path)), () => { setCommitMessage(""); setDialog(null); })}>{t("codeGit.commitAll")}</button>
+          <Button variant="primary" block disabled={!api || !commitMessage.trim() || (operating && pendingKey !== "commit")} loading={pendingKey === "commit"} onClick={() => api && void runOperation(() => api.commit(sessionId, commitMessage, status.files.map((file) => file.path)), () => { setCommitMessage(""); setDialog(null); }, "commit")}>{t("codeGit.commitAll")}</Button>
         </section> : null}
         {status?.ahead ? <section className="ff-code-git-modal__commit-section">
           <p className="ff-code-git-modal__hint">{t("codeGit.pushHint", { count: status.ahead })}</p>
-          <button type="button" disabled={!api || operating} onClick={() => api && void runOperation(() => api.push(sessionId), () => setDialog(null))}>{t("codeGit.pushCommits", { count: status.ahead })}</button>
+          <Button variant="primary" block disabled={!api || (operating && pendingKey !== "push")} loading={pendingKey === "push"} onClick={() => api && void runOperation(() => api.push(sessionId), () => setDialog(null), "push")}>{t("codeGit.pushCommits", { count: status.ahead })}</Button>
         </section> : null}
         {operationError && <p className="ff-code-git__operation-error">{operationError}</p>}
       </Modal>

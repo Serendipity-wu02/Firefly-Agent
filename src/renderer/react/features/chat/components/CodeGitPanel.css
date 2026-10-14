@@ -16,8 +16,8 @@
 .ff-code-git__project { min-width:0; display:flex; flex:1; flex-direction:column; gap:3px; }
 .ff-code-git__project strong { overflow:hidden; font-size:14px; white-space:nowrap; text-overflow:ellipsis; }
 .ff-code-git__project span { overflow:hidden; color:var(--ff-text-muted); font-size:11px; white-space:nowrap; text-overflow:ellipsis; }
-.ff-code-git__refresh { width:24px; height:24px; border:0; border-radius:50%; background:transparent; color:var(--ff-text-muted); cursor:pointer; font-size:18px; }
-.ff-code-git__refresh:hover:not(:disabled) { color:var(--ff-accent); background:rgba(var(--ff-accent-rgb),.08); }
+/* Shape only: the colours and every state (hover, pressed, focus, disabled, loading) come from the shared IconButton. */
+.ff-btn.ff-code-git__refresh { --ff-btn-fg:var(--ff-text-muted); width:24px; height:24px; min-height:0; border-radius:50%; font-size:18px; }
 .ff-code-git__git-actions { display:flex; flex-direction:column; gap:2px; margin-top:10px; }
 .ff-code-git__git-actions button,.ff-code-git__change-row { min-height:28px; display:grid; grid-template-columns:1fr auto auto; align-items:center; gap:7px; padding:3px 5px; border:0; border-radius: 12px; background:transparent; color:var(--ff-text); font-size:12px; text-align:left; }
 .ff-code-git__git-actions button { cursor:pointer; }
@@ -42,8 +42,9 @@
 .ff-code-git-modal .ant-modal-title { color:var(--ff-text); }
 .ff-code-git-modal__hint { margin:0 0 12px; color:var(--ff-text-muted); font-size:13px; }.ff-code-git-modal__hint code { color:var(--ff-accent); }
 .ff-code-git-modal__branch-list { display:flex; max-height:220px; flex-direction:column; gap:4px; overflow:auto; padding-right:4px; }
-.ff-code-git-modal__branch-list button { min-height:34px; border:0; border-radius: 12px; background:var(--ff-surface); color:var(--ff-text); text-align:left; cursor:pointer; }.ff-code-git-modal__branch-list button:hover:not(:disabled) { background:var(--ff-bg-hover); }.ff-code-git-modal__branch-list button:disabled { color:var(--ff-text-muted); cursor:default; }
-.ff-code-git-modal__new-branch { display:flex; gap:8px; margin-top:14px; }.ff-code-git-modal__new-branch button,.ff-code-git-modal__commit-section > button { border:0; border-radius: 12px; background:var(--ff-accent-solid); color:var(--ff-on-accent); cursor:pointer; font-weight:600; }.ff-code-git-modal__new-branch button { flex:0 0 auto; padding:0 12px; }.ff-code-git-modal__new-branch button:disabled,.ff-code-git-modal__commit-section > button:disabled { background:var(--ff-bg-active); color:var(--ff-text-muted); cursor:default; }
+/* Layout only: the modal buttons are shared Buttons, which own their colours and states. */
+.ff-code-git-modal__branch-list .ff-btn { justify-content:flex-start; font-weight:400; text-align:left; }
+.ff-code-git-modal__new-branch { display:flex; gap:8px; margin-top:14px; }.ff-code-git-modal__new-branch .ff-btn { flex:0 0 auto; }
 .ff-code-git-modal__commit-section { display:flex; flex-direction:column; gap:10px; }.ff-code-git-modal__commit-section + .ff-code-git-modal__commit-section { margin-top:18px; padding-top:18px; border-top:1px solid var(--ff-border); }.ff-code-git-modal__commit-section > button { min-height:36px; padding:0 14px; }
 
 /* Docked in the right-hand workspace panel: a flat section like the task list, not a floating card. */
@@ -70,4 +71,5 @@
 .ff-code-git--docked .ff-code-git__todos i { width: 16px; height: 16px; margin-top: 2px; box-sizing: border-box; border: 1.5px solid var(--ff-text-muted); }
 .ff-code-git--docked .ff-code-git__todos .is-completed i { border-color: var(--ff-accent-solid); }
 .ff-code-git--docked .ff-code-git__plan-status { border-top-color: var(--ff-border); }
-.ff-code-git--docked .ff-code-git__refresh:hover:not(:disabled) { background: var(--ff-bg-hover); color: var(--ff-text); }
+/* The row buttons are not Buttons (they are grid rows), so they get the pressed state here; keyboard focus comes from the baseline ring. */
+.ff-code-git__git-actions button:active:not(:disabled) { background: var(--ff-bg-active); }

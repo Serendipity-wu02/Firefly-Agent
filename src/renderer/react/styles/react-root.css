@@ -45,6 +45,16 @@
   --ff-accent-solid: #4d4e69;
   --ff-accent-rgb: 77, 78, 105;
   --ff-on-accent: #ffffff;
+  /* Interaction states, shared by Button and the baseline focus ring. The focus ring is the solid accent (at least 3:1 against every
+     surface in both themes); a translucent accent fell to about 2:1 in the light theme. Primary buttons get their own background so the
+     white label keeps 4.5:1 in the dark theme, where --ff-accent-solid is too light for text. */
+  --ff-focus-ring-color: var(--ff-accent);
+  --ff-focus-ring: 2px solid var(--ff-focus-ring-color);
+  --ff-primary-bg: var(--ff-accent-solid);
+  --ff-primary-bg-hover: color-mix(in srgb, var(--ff-primary-bg) 88%, black);
+  --ff-primary-bg-active: color-mix(in srgb, var(--ff-primary-bg) 78%, black);
+  --ff-disabled-opacity: 0.5;
+  --ff-state-duration: 120ms;
   --ff-success: #3f8f5e;
   --ff-warning: #9a6a12;
   --ff-add-bg: #e6ffec;
@@ -78,6 +88,7 @@
   --ff-text-muted: #86998f;
   --ff-accent: #7bd8ae;
   --ff-accent-solid: #3b9a76;
+  --ff-primary-bg: #318364;
   --ff-accent-rgb: 123, 216, 174;
   --ff-on-accent: #ffffff;
   --ff-danger: #f28b82;
@@ -672,7 +683,14 @@ body {
 .ff-page-more .ff-side-action { height: 36px; border-radius: 10px; color: var(--ff-text-secondary, var(--ff-text)); font: 500 13px/1 var(--rb-font-sans, sans-serif); }
 .ff-page-more .ff-side-action:hover { background: var(--ff-bg-hover); color: var(--ff-text); }
 
-.ff-page button:focus-visible, .ff-page-more button:focus-visible { outline: 2px solid rgba(var(--ff-accent-rgb), 0.45); outline-offset: 1px; }
+.ff-page button:focus-visible, .ff-page-more button:focus-visible { outline: var(--ff-focus-ring); outline-offset: 1px; }
+
+/* Baseline keyboard focus ring for every interactive element that has no ring of its own. :where() keeps the specificity at zero, so any
+   component rule (including ones that deliberately draw their own ring) still wins. Text inputs keep their existing :focus styling. */
+:where(button, a[href], summary, select, [role="button"], [role="tab"], [role="menuitem"], [role="menuitemradio"], [role="option"], [tabindex]:not([tabindex="-1"])):focus-visible {
+  outline: var(--ff-focus-ring);
+  outline-offset: 2px;
+}
 
 /* The slate custom-endpoint icon turns Firefly green in the dark theme. */
 :root[data-ui-theme="firefly-dark"] img[src$="custom-endpoint.svg"] { filter: hue-rotate(-85deg) saturate(3) brightness(1.9); }
