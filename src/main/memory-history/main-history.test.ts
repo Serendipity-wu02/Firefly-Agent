@@ -189,7 +189,7 @@ it('other-session-only grants keep scope, actor, temporary and opaque capability
 it('budget statistics reach the optional sink as numbers only, and a failing sink never affects the query',async()=>{
  const seen:any[]=[],f=fixture({onBudgetStats:stats=>seen.push(stats)});await capture(f,'cat SECRET_BUDGET_TEXT');
  const q=await f.history.query(f.actor,{query:'cat'});expect(q.hits).toHaveLength(1);
- expect(seen).toEqual([expect.objectContaining({ranked:1,returned:1,droppedOversized:0,droppedOverTotal:0,oversizedWithLongMessage:0})]);
+ expect(seen).toEqual([expect.objectContaining({ranked:1,returned:1,droppedOversized:0,droppedOverTotal:0,oversizedExcerptable:0})]);
  expect(JSON.stringify(seen)).not.toMatch(/SECRET_BUDGET_TEXT|cat|session|actor/);
  const failing=fixture({onBudgetStats:()=>{throw new Error('disk full')}});await capture(failing,'cat B');
  expect((await failing.history.query(failing.actor,{query:'cat'})).hits).toHaveLength(1);

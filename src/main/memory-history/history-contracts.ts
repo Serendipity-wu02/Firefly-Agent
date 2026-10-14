@@ -20,7 +20,7 @@ export interface HistoryBudgetStats {
  /** 排序后进入预算环节的文档数。 */ ranked:number;returned:number;
  /** 单份字符数超过 maxExcerptChars 而被丢弃。 */ droppedOversized:number;
  /** 单份不超限、但总预算 maxTotalChars 已用完而被丢弃。 */ droppedOverTotal:number;
- /** 单份超限的文档里，至少有一条消息自身就超过 maxExcerptChars（摘录也救不回来）。 */ oversizedWithLongMessage:number;
+ /** 单份超限的文档里，排序选中的最佳窗口本身能放进 maxExcerptChars 的份数（摘录可能救得回来；上限估计）。 */ oversizedExcerptable:number;
  /** 被丢弃文档按字符数分段计数。 */ droppedSizes:Record<HistoryBudgetSizeBucket,number>;
 }
 export interface HistoryResult {status:'ok'|'index-budget-exhausted'|'excerpt-budget-exhausted';hits:HistoryHit[];diversity:'vector-mmr'|'lexical-dedup';settingsVersion:string;temporal?:HistoryTemporalResult;budget?:HistoryBudgetStats}
