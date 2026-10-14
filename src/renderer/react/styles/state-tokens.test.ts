@@ -65,6 +65,26 @@ describe("state token wiring", () => {
   });
 });
 
+describe("focus ring placement", () => {
+  const composerCss = fs.readFileSync(path.join(__dirname, "../features/chat/components/ChatComposer.css"), "utf8");
+  const windowControlsCss = fs.readFileSync(path.join(__dirname, "../components/ui/WindowControls.css"), "utf8");
+
+  it("the model-connection button draws its ring on the status dot, not on its mostly empty 24px hit area", () => {
+    expect(css).toMatch(/\.ff-page-role \.ff-model-connection:focus-visible\s*\{\s*outline:\s*none;\s*\}/);
+    expect(css).toMatch(/\.ff-page-role \.ff-model-connection:focus-visible \.ff-model-connection__dot\s*\{[^}]*outline:\s*var\(--ff-focus-ring\)/);
+  });
+
+  it("window controls keep the ring inside the button because the three buttons touch", () => {
+    expect(windowControlsCss).toMatch(/\.ff-page \.ff-winbtn:focus-visible\s*\{\s*outline-offset:\s*-\d+px;/);
+  });
+
+  it("the composer width does not animate, so it does not glide while a panel or the window edge is dragged", () => {
+    const rule = composerCss.match(/\.ff-composer-stack\s*\{[^}]*\}/)?.[0] ?? "";
+    expect(rule).toContain("transition: transform");
+    expect(rule).not.toMatch(/transition:[^;]*width/);
+  });
+});
+
 describe("Button.css", () => {
   it.each([
     [":hover", /\.ff-btn:hover:not\(:disabled\)/],

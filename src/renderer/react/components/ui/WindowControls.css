@@ -23,6 +23,9 @@
   color: var(--ff-text);
 }
 
+/* The three buttons touch each other, so an outside ring would be drawn over its neighbour; keep the ring inside the button. */
+.ff-page .ff-winbtn:focus-visible { outline-offset: -3px; }
+
 /* The close button turns the standard window red, never the soft pink of the danger text colour. */
 .ff-winbtn--close:hover {
   background: #c42b1c;
