@@ -24,7 +24,7 @@ it('explicit historical interval preserves a complete straddling tool turn and e
 it('bad temporal input is refused before any transcript provider read',async()=>{
  const f=fixture(),b=await secondScope(f);b.reads.count=0;await expect(f.history.query(b.actor,{query:'cat',temporal:{kind:'range',from:2,to:1}} as any)).rejects.toThrow('MEMORY_HISTORY_INPUT_INVALID');expect(b.reads.count).toBe(0);
 });
-function fixture(){const f=recallFixture();fixtures.push(f);const transport={...f.transport,historyCommand:async(c:any)=>f.repo.historyCommand(c)},history=createMainHistory({actorAuthority:f.authority,registry:f.registry,transport});
+function fixture(extra:{onBudgetStats?:(stats:any)=>void}={}){const f=recallFixture();fixtures.push(f);const transport={...f.transport,historyCommand:async(c:any)=>f.repo.historyCommand(c)},history=createMainHistory({actorAuthority:f.authority,registry:f.registry,transport,...extra});
  const identity={providerId:'synthetic',model:'fixture',transport:'synthetic',framingVersion:'v1'},prepare=(units:any[],facts:any[]=[])=>({...identity,inputTypes:['text'],body:{messages:units.flatMap(u=>u.messages),facts:facts.map(f=>f.assertion)}});
  const options={actorAuthority:f.authority,registry:f.registry,transport,clock:f.now,counter:{capability:{...identity,mode:'exact' as const,inputTypes:['text']},count:async(r:any)=>JSON.stringify(r.body).length},budget:{maxContextTokens:20000,reservedOutputTokens:64,safetyMarginTokens:16,maxSTokens:16000,minRecentCompleteTurns:0},prepare,prepareS:prepare};
  return {...f,history,transport,options,context:createMainContext(options)};
@@ -185,4 +185,12 @@ it('other-session-only grants keep scope, actor, temporary and opaque capability
  const authority=createMainActorAuthority({resolveActor:(_scope,identity)=>identity.sessionId==='session-a'?'actor-a':'actor-b'}),registry=createMainSourceRegistry(f.transport,{coordinate:authority.coordinate}),access=registry.authority.access('scope-a');
  const history=createMainHistory({actorAuthority:authority,registry,transport:f.transport}),owner=authority.bindActor(access,f.provider.adapter,f.identity),foreign=authority.bindActor(access,f.provider.adapter,{...f.identity,sessionId:'session-b'});
  expect(()=>history.grantSessions(owner,[foreign],{includeCurrent:false})).toThrow('MEMORY_HISTORY_ACCESS_DENIED');
+});
+it('budget statistics reach the optional sink as numbers only, and a failing sink never affects the query',async()=>{
+ const seen:any[]=[],f=fixture({onBudgetStats:stats=>seen.push(stats)});await capture(f,'cat SECRET_BUDGET_TEXT');
+ const q=await f.history.query(f.actor,{query:'cat'});expect(q.hits).toHaveLength(1);
+ expect(seen).toEqual([expect.objectContaining({ranked:1,returned:1,droppedOversized:0,droppedOverTotal:0,oversizedExcerptable:0})]);
+ expect(JSON.stringify(seen)).not.toMatch(/SECRET_BUDGET_TEXT|cat|session|actor/);
+ const failing=fixture({onBudgetStats:()=>{throw new Error('disk full')}});await capture(failing,'cat B');
+ expect((await failing.history.query(failing.actor,{query:'cat'})).hits).toHaveLength(1);
 });

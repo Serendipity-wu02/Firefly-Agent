@@ -117,3 +117,15 @@ it('the default settings window a long conversation and still return the whole d
  // 关掉窗口化后同一个查询仍然命中，说明窗口化只改排序，不改返回的内容
  const off=query(f,{query:'zebra passport',settings:{...DEFAULT_HISTORY_SETTINGS,windowTurns:0}});expect(off.hits).toHaveLength(1);expect(off.hits[0].document.messages).toHaveLength(41);
 });
+it('query reports numbers-only budget drop counts, separating oversized documents from total-budget drops',async()=>{
+ const f=fixture(),small=await document(f,'cat small');put(f,small);
+ const imported=(id:string,sizes:number[],words=sizes.map(()=>'cat '))=>({id,incarnation:'v1',revision:1,origin:'synthetic-import',sourceDeps:[],vector:null,messages:sizes.map((size,i)=>({id:id+'-m'+i,role:i%2===0?'user':'assistant',text:words[i].repeat(size).slice(0,size),occurredAt:null,timeZone:null}))});
+ // long-message: the only window is 7000 chars; split: the only window (2 turns) is 8000; tail: the matched first window is short and the long message sits in a later window.
+ put(f,imported('long-message',[7000]));put(f,imported('split',[4000,4000]));put(f,imported('tail',[100,100,7000,10],['cat ','cat ','zz ','zz ']));
+ const q=query(f);expect(q.status).toBe('excerpt-budget-exhausted');expect(q.hits.map((h:any)=>h.document.id)).toEqual([small.id]);
+ expect(q.budget).toEqual({ranked:4,returned:1,droppedOversized:3,droppedOverTotal:0,oversizedExcerptable:1,droppedSizes:{'le-6k':0,'6k-12k':3,'12k-24k':0,'24k-48k':0,'gt-48k':0}});
+ expect(JSON.stringify(q.budget)).not.toMatch(/cat|zz|split|tail|long-message|session/);
+ const total=query(f,{settings:{...DEFAULT_HISTORY_SETTINGS,maxExcerptChars:65536,maxTotalChars:9000}});
+ expect(total.budget).toMatchObject({ranked:4,droppedOversized:0,oversizedExcerptable:0});expect(total.budget.returned+total.budget.droppedOverTotal).toBe(4);expect(total.budget.droppedOverTotal).toBeGreaterThanOrEqual(1);
+ expect(query(f,{settings:{...DEFAULT_HISTORY_SETTINGS,maxIndexDocuments:1}}).budget).toBeUndefined();
+});

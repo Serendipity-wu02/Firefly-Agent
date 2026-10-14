@@ -21,6 +21,8 @@ import { createNativeHistoryProvider } from "../memory-sources/native-history-pr
 import { createMainPolicy } from "../memory-policy/main-policy";
 import { createMainRecall } from "../memory-recall/main-recall";
 import { createMainHistory } from "../memory-history/main-history";
+import { createHistoryBudgetStatsRecorder } from "../memory-history/history-budget-stats";
+import { getStorageContext } from "../storage-context";
 import { createMainUserFactCoordinator } from "../memory-policy/main-user-fact-coordinator";
 import { createMainFactSelector } from "../memory-recall/main-fact-selector";
 import type { ConversationTranscriptStore } from "../orchestrator/conversation-transcript-store";
@@ -218,7 +220,7 @@ export function createMainDefaultMemory(options: MainDefaultMemoryOptions) {
       const settingsActor = actorAuthority.bindActor(access, router.token, { providerId: PROVIDER, sessionId: SETTINGS_SESSION, messageId: "main-actor-binding" });
       const policy = createMainPolicy({ registry, transport: backend.transport, actorAuthority, resolveActor });
       const recall = createMainRecall({ actorAuthority, transport: backend.transport });
-      const history = createMainHistory({ actorAuthority, registry, transport: backend.transport, localRetrieval: backend.localRetrieval });
+      const history = createMainHistory({ actorAuthority, registry, transport: backend.transport, localRetrieval: backend.localRetrieval, onBudgetStats: createHistoryBudgetStatsRecorder(() => getStorageContext().files.historyBudgetStats).record });
       const coordinator = createMainUserFactCoordinator({ actorAuthority, registry, policy });
       const selector = createMainFactSelector({ actorAuthority, registry, policy, recall });
       const runAuthority: ReturnType<typeof createMemoryRunAuthority> = createMemoryRunAuthority({ actors: actorAuthority, sessionModes, resolveProfile: models.profile,
