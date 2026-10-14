@@ -38,7 +38,8 @@ export interface RankDocument {id:string;text:string;units?:ReadonlyArray<{text:
 /** 新近度加权：相关度乘 (1 + alpha·exp(−ln2·天数/半衰期))，只作用在融合后的前 30 个候选，且只在有向量路线且没有显式时间意图时生效。 */
 export interface RecencyOptions {alpha:number;halfLifeDays:number;now:number}
 export interface RankOptions {limit?:number;candidateLimit?:number;rrfK?:number;mmrLambda?:number;queryVector?:number[];signal?:AbortSignal;tokenizer?:HistoryTokenizer;temporal?:HistoryTemporalQuery;recency?:RecencyOptions}
-export interface Ranked {id:string;score:number}
+/** unit：词法得分最高的排序窗口下标，只有文档按窗口排序时才有。 */
+export interface Ranked {id:string;score:number;unit?:number}
 const dot=(a:number[],b:number[])=>a.reduce((sum,v,i)=>sum+v*b[i],0);
 export function rankHistory(docs:RankDocument[],query:string,options:RankOptions={}){
  const {limit=8,candidateLimit=50,rrfK=60,mmrLambda=.7,signal}=options;
@@ -53,12 +54,12 @@ export function rankHistory(docs:RankDocument[],query:string,options:RankOptions
  if(temporal?.kind==='range')docs=docs.filter(d=>d.timeSpan&&d.timeSpan.start<=temporal.to&&d.timeSpan.end>=temporal.from);
  const tokenizer=options.tokenizer??createHistoryTokenizer(),q=[...new Set(tokenizer.tokens(query))];
  // 排序单元：文档给了窗口就按窗口计分，否则整段文本一个单元；文档得分取最佳单元。
- const rows=docs.flatMap(d=>(d.units?.length?d.units.map(u=>u.text):[d.text]).map(text=>({id:d.id,tokens:tokenizer.tokens(text)})));
+ const rows=docs.flatMap(d=>(d.units?.length?d.units.map(u=>u.text):[d.text]).map((text,unit)=>({id:d.id,unit:d.units?.length?unit:undefined,tokens:tokenizer.tokens(text)})));
  const tokens=new Map<string,string[]>();for(const r of rows)tokens.set(r.id,[...(tokens.get(r.id)??[]),...r.tokens]);
  const df=new Map<string,number>();for(const r of rows)for(const t of new Set(r.tokens))df.set(t,(df.get(t)??0)+1);
- const avg=rows.length?rows.reduce((n,r)=>n+r.tokens.length,0)/rows.length:1,best=new Map<string,number>();
- for(const r of rows){const freq=new Map<string,number>();for(const t of r.tokens)freq.set(t,(freq.get(t)??0)+1);const score=q.reduce((sum,t)=>{const tf=freq.get(t)??0;if(!tf)return sum;const idf=Math.log(1+(rows.length-(df.get(t)??0)+.5)/((df.get(t)??0)+.5));return sum+idf*(tf*2.2)/(tf+1.2*(.25+.75*r.tokens.length/(avg||1)))},0);if(score>(best.get(r.id)??0))best.set(r.id,score)}
- const lexical:Ranked[]=[...best].map(([id,score])=>({id,score}));
+ const avg=rows.length?rows.reduce((n,r)=>n+r.tokens.length,0)/rows.length:1,best=new Map<string,number>(),bestUnit=new Map<string,number>();
+ for(const r of rows){const freq=new Map<string,number>();for(const t of r.tokens)freq.set(t,(freq.get(t)??0)+1);const score=q.reduce((sum,t)=>{const tf=freq.get(t)??0;if(!tf)return sum;const idf=Math.log(1+(rows.length-(df.get(t)??0)+.5)/((df.get(t)??0)+.5));return sum+idf*(tf*2.2)/(tf+1.2*(.25+.75*r.tokens.length/(avg||1)))},0);if(score>(best.get(r.id)??0)){best.set(r.id,score);if(r.unit!==undefined)bestUnit.set(r.id,r.unit)}}
+ const lexical:Ranked[]=[...best].map(([id,score])=>({id,score,...(bestUnit.has(id)?{unit:bestUnit.get(id)}:{})}));
  const order=(a:Ranked,b:Ranked)=>b.score-a.score||compare(a.id,b.id);lexical.sort(order);
  let vector:Ranked[]=[],vectors=new Map<string,number[]>();
  if(options.queryVector){const v=normalizeVector(options.queryVector,options.queryVector.length);vectors=new Map(docs.map(d=>[d.id,normalizeVector(d.vector!,v.length)]));vector=docs.map(d=>({id:d.id,score:dot(v,vectors.get(d.id)!)})).sort(order)}
@@ -85,5 +86,5 @@ export function rankHistory(docs:RankDocument[],query:string,options:RankOptions
   }
  // Only trusted full-evidence identity can prove duplication; text/span are insufficient.
  }else{const seen=new Set<string>(),byId=new Map(docs.map(d=>[d.id,d]));for(const r of selectedOrder){const key=JSON.stringify(byId.get(r.id)!.exactIdentity===undefined?{candidateId:r.id}:{exactIdentity:byId.get(r.id)!.exactIdentity});if(seen.has(key))continue;seen.add(key);items.push(r);if(items.length===limit)break}}
- return {version:'history-ranking-v4' as const,units:rows.length,tokenizerVersion:tokenizer.version,diversity:options.queryVector?'vector-mmr' as const:'lexical-dedup' as const,routeRanks:routes,fused,items,...(timeResult?{temporal:timeResult}:{})};
+ return {version:'history-ranking-v4' as const,units:rows.length,tokenizerVersion:tokenizer.version,diversity:options.queryVector?'vector-mmr' as const:'lexical-dedup' as const,routeRanks:routes,fused,items:items.map(r=>bestUnit.has(r.id)?{...r,unit:bestUnit.get(r.id)}:r),...(timeResult?{temporal:timeResult}:{})};
 }

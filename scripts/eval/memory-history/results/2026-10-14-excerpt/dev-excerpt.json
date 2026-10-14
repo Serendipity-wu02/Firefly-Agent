@@ -1,0 +1,6486 @@
+{
+ "meta": {
+  "label": "pra-dev",
+  "units": 2,
+  "longTurns": 450,
+  "contextWindows": 1,
+  "evidenceBudget": {
+   "maxExcerptChars": 6000,
+   "maxTotalChars": 16000
+  },
+  "args": {
+   "sizes": "250",
+   "granularity": "session",
+   "units": "2",
+   "long-turns": "450",
+   "split": "dev",
+   "modes": "lexical,hybrid,hybrid+prodrecency",
+   "label": "pra-dev",
+   "out": "output/memory-eval/pra"
+  },
+  "git": {
+   "commit": "57f641c661dd235b6e0cdbd54a908937bf1d5160",
+   "dirty": true
+  },
+  "models": {
+   "embedding": "local-bge-m3",
+   "embeddingDims": 1024,
+   "embeddingIdentity": {
+    "provider": "local",
+    "model": "Xenova/bge-m3@4de13258303883538bd53b696b452bf8099f0858:cls-normalized-q8-v1",
+    "dimensions": 1024
+   },
+   "reranker": "bge-reranker-base@280bcc27a84e0b898c251e06fddb25171bd9b101:text-pair-sigmoid-q8-v1"
+  },
+  "modes": [
+   "lexical",
+   "hybrid",
+   "hybrid+prodrecency"
+  ],
+  "granularities": [
+   "session"
+  ],
+  "datasetDigest": "f83274533f197a0e1b76c25d033e398c6600e75e26def6dd18a84bcb0773fbe3",
+  "querySetDigests": {
+   "dev": "1ccfa9eadf14722467ca8356bfbbdc2d3cae171ba8db7a305ecb2cbb0dcc4a6b",
+   "holdout": "92b10874254f035e7802fde4e1c32f70eb74edb598782e9ebe58c187c4d6d700"
+  },
+  "recencyAlpha": 0.1,
+  "recencyHalfLifeDays": 30,
+  "split": "dev",
+  "sizes": [
+   250
+  ],
+  "seed": 20261013,
+  "queries": 78,
+  "node": "v24.19.0",
+  "platform": "win32",
+  "embedLoadMs": 3534,
+  "rerankLoadMs": 1695,
+  "rssAfterLoadMb": 2159,
+  "rssPeakMb": 5793
+ },
+ "runs": [
+  {
+   "granularity": "session",
+   "size": 250,
+   "docs": 250,
+   "rows": [
+    {
+     "query": "q-coffee",
+     "category": "paraphrase",
+     "mode": "lexical",
+     "status": "ok",
+     "ranked": [],
+     "ms": 134.71590000001015,
+     "topScore": null,
+     "hit1": 0,
+     "hit3": 0,
+     "hit5": 0,
+     "recall8": 0,
+     "rr": 0,
+     "ndcg8": 0
+    },
+    {
+     "query": "q-coffee",
+     "category": "paraphrase",
+     "mode": "hybrid",
+     "status": "ok",
+     "ranked": [
+      "n-coffee-machine",
+      "gn-k07",
+      "s-long-client",
+      "g-p11",
+      "d-0003",
+      "g-p13",
+      "g-k07",
+      "g-n07"
+     ],
+     "ms": 216.65609999996377,
+     "topScore": null,
+     "hit1": 0,
+     "hit3": 0,
+     "hit5": 0,
+     "recall8": 0,
+     "rr": 0,
+     "ndcg8": 0
+    },
+    {
+     "query": "q-coffee",
+     "category": "paraphrase",
+     "mode": "hybrid+prodrecency",
+     "status": "ok",
+     "ranked": [
+      "n-coffee-machine",
+      "gn-k07",
+      "s-long-client",
+      "g-p11",
+      "d-0003",
+      "g-p13",
+      "g-k07",
+      "g-k09"
+     ],
+     "ms": 221.1435000000056,
+     "topScore": null,
+     "hit1": 0,
+     "hit3": 0,
+     "hit5": 0,
+     "recall8": 0,
+     "rr": 0,
+     "ndcg8": 0
+    },
+    {
+     "query": "q-sleep",
+     "category": "paraphrase",
+     "mode": "lexical",
+     "status": "ok",
+     "ranked": [
+      "s-sleep",
+      "g-c06-new",
+      "s-long-passport",
+      "s-flight",
+      "g-p02",
+      "g-n03",
+      "s-long-client",
+      "g-p04"
+     ],
+     "ms": 138.63199999998324,
+     "topScore": null,
+     "hit1": 1,
+     "hit3": 1,
+     "hit5": 1,
+     "recall8": 1,
+     "rr": 1,
+     "ndcg8": 1
+    },
+    {
+     "query": "q-sleep",
+     "category": "paraphrase",
+     "mode": "hybrid",
+     "status": "ok",
+     "ranked": [
+      "s-sleep",
+      "g-c06-new",
+      "g-n03",
+      "g-p02",
+      "g-c06-old",
+      "g-p29",
+      "s-flight",
+      "g-p20"
+     ],
+     "ms": 182.9953000000096,
+     "topScore": null,
+     "hit1": 1,
+     "hit3": 1,
+     "hit5": 1,
+     "recall8": 1,
+     "rr": 1,
+     "ndcg8": 1
+    },
+    {
+     "query": "q-sleep",
+     "category": "paraphrase",
+     "mode": "hybrid+prodrecency",
+     "status": "ok",
+     "ranked": [
+      "g-c06-new",
+      "s-sleep",
+      "g-n03",
+      "g-p02",
+      "g-c06-old",
+      "s-flight",
+      "g-p29",
+      "g-p23"
+     ],
+     "ms": 177.06079999997746,
+     "topScore": null,
+     "hit1": 0,
+     "hit3": 1,
+     "hit5": 1,
+     "recall8": 1,
+     "rr": 0.5,
+     "ndcg8": 0.6309297535714575
+    },
+    {
+     "query": "q-cilantro",
+     "category": "paraphrase",
+     "mode": "lexical",
+     "status": "ok",
+     "ranked": [
+      "n-alarm",
+      "g-p21",
+      "g-n00",
+      "g-n01",
+      "g-n03",
+      "g-n04",
+      "g-n05",
+      "g-n06"
+     ],
+     "ms": 135.4108000000124,
+     "topScore": null,
+     "hit1": 0,
+     "hit3": 0,
+     "hit5": 0,
+     "recall8": 0,
+     "rr": 0,
+     "ndcg8": 0
+    },
+    {
+     "query": "q-cilantro",
+     "category": "paraphrase",
+     "mode": "hybrid",
+     "status": "ok",
+     "ranked": [
+      "g-n01",
+      "s-cilantro",
+      "g-p03",
+      "g-n07",
+      "g-n03",
+      "g-n06",
+      "g-n04",
+      "g-n11"
+     ],
+     "ms": 181.8747999999905,
+     "topScore": null,
+     "hit1": 0,
+     "hit3": 1,
+     "hit5": 1,
+     "recall8": 1,
+     "rr": 0.5,
+     "ndcg8": 0.6309297535714575
+    },
+    {
+     "query": "q-cilantro",
+     "category": "paraphrase",
+     "mode": "hybrid+prodrecency",
+     "status": "ok",
+     "ranked": [
+      "g-n01",
+      "s-cilantro",
+      "g-p03",
+      "g-n03",
+      "g-n00",
+      "g-n04",
+      "g-n07",
+      "g-n06"
+     ],
+     "ms": 178.03470000001835,
+     "topScore": null,
+     "hit1": 0,
+     "hit3": 1,
+     "hit5": 1,
+     "recall8": 1,
+     "rr": 0.5,
+     "ndcg8": 0.6309297535714575
+    },
+    {
+     "query": "q-pet",
+     "category": "paraphrase",
+     "mode": "lexical",
+     "status": "ok",
+     "ranked": [
+      "g-n00",
+      "s-theme-old",
+      "g-n03",
+      "g-n06",
+      "s-long-client",
+      "s-long-gift",
+      "s-long-passport",
+      "g-n02"
+     ],
+     "ms": 129.79800000000978,
+     "topScore": null,
+     "hit1": 0,
+     "hit3": 0,
+     "hit5": 0,
+     "recall8": 0,
+     "rr": 0,
+     "ndcg8": 0
+    },
+    {
+     "query": "q-pet",
+     "category": "paraphrase",
+     "mode": "hybrid",
+     "status": "ok",
+     "ranked": [
+      "s-long-gift",
+      "n-litter",
+      "g-k10",
+      "g-n02",
+      "g-n09",
+      "g-n03",
+      "s-long-client",
+      "g-n00"
+     ],
+     "ms": 180.18390000000363,
+     "topScore": null,
+     "hit1": 0,
+     "hit3": 0,
+     "hit5": 0,
+     "recall8": 0,
+     "rr": 0,
+     "ndcg8": 0
+    },
+    {
+     "query": "q-pet",
+     "category": "paraphrase",
+     "mode": "hybrid+prodrecency",
+     "status": "ok",
+     "ranked": [
+      "s-long-gift",
+      "n-litter",
+      "g-k10",
+      "g-n02",
+      "g-n00",
+      "g-n09",
+      "g-n03",
+      "s-long-client"
+     ],
+     "ms": 177.59029999998165,
+     "topScore": null,
+     "hit1": 0,
+     "hit3": 0,
+     "hit5": 0,
+     "recall8": 0,
+     "rr": 0,
+     "ndcg8": 0
+    },
+    {
+     "query": "q-japanese",
+     "category": "paraphrase",
+     "mode": "lexical",
+     "status": "ok",
+     "ranked": [
+      "s-japanese",
+      "g-n01",
+      "g-n02",
+      "g-n06",
+      "g-n07",
+      "g-n09",
+      "s-long-backup",
+      "g-n00"
+     ],
+     "ms": 130.3415999999852,
+     "topScore": null,
+     "hit1": 1,
+     "hit3": 1,
+     "hit5": 1,
+     "recall8": 1,
+     "rr": 1,
+     "ndcg8": 1
+    },
+    {
+     "query": "q-japanese",
+     "category": "paraphrase",
+     "mode": "hybrid",
+     "status": "ok",
+     "ranked": [
+      "g-n02",
+      "s-japanese",
+      "g-n07",
+      "s-long-gift",
+      "g-n01",
+      "g-n09",
+      "g-n03",
+      "s-long-passport"
+     ],
+     "ms": 170.74929999996675,
+     "topScore": null,
+     "hit1": 0,
+     "hit3": 1,
+     "hit5": 1,
+     "recall8": 1,
+     "rr": 0.5,
+     "ndcg8": 0.6309297535714575
+    },
+    {
+     "query": "q-japanese",
+     "category": "paraphrase",
+     "mode": "hybrid+prodrecency",
+     "status": "ok",
+     "ranked": [
+      "g-n02",
+      "s-japanese",
+      "g-n01",
+      "s-long-gift",
+      "g-n09",
+      "g-n07",
+      "g-n03",
+      "s-long-passport"
+     ],
+     "ms": 178.99629999999888,
+     "topScore": null,
+     "hit1": 0,
+     "hit3": 1,
+     "hit5": 1,
+     "recall8": 1,
+     "rr": 0.5,
+     "ndcg8": 0.6309297535714575
+    },
+    {
+     "query": "q-aurora",
+     "category": "keyword",
+     "mode": "lexical",
+     "status": "ok",
+     "ranked": [
+      "n-aurora6",
+      "s-aurora-budget",
+      "n-aurora-release",
+      "gn-k00",
+      "d-0003",
+      "d-0005",
+      "d-0014",
+      "d-0016"
+     ],
+     "ms": 128.59659999998985,
+     "topScore": null,
+     "hit1": 0,
+     "hit3": 1,
+     "hit5": 1,
+     "recall8": 1,
+     "rr": 0.5,
+     "ndcg8": 0.6309297535714575
+    },
+    {
+     "query": "q-aurora",
+     "category": "keyword",
+     "mode": "hybrid",
+     "status": "ok",
+     "ranked": [
+      "n-aurora6",
+      "n-aurora-release",
+      "gn-k00",
+      "s-aurora-budget",
+      "d-0014",
+      "s-cloud-new",
+      "d-0002",
+      "d-0051"
+     ],
+     "ms": 164.8507999999565,
+     "topScore": null,
+     "hit1": 0,
+     "hit3": 0,
+     "hit5": 1,
+     "recall8": 1,
+     "rr": 0.25,
+     "ndcg8": 0.43067655807339306
+    },
+    {
+     "query": "q-aurora",
+     "category": "keyword",
+     "mode": "hybrid+prodrecency",
+     "status": "ok",
+     "ranked": [
+      "s-aurora-budget",
+      "gn-k00",
+      "n-aurora-release",
+      "s-cloud-new",
+      "d-0014",
+      "n-aurora6",
+      "d-0002",
+      "d-0051"
+     ],
+     "ms": 164.2805000000517,
+     "topScore": null,
+     "hit1": 1,
+     "hit3": 1,
+     "hit5": 1,
+     "recall8": 1,
+     "rr": 1,
+     "ndcg8": 1
+    },
+    {
+     "query": "q-linzhou",
+     "category": "keyword",
+     "mode": "lexical",
+     "status": "ok",
+     "ranked": [
+      "s-linzhou",
+      "g-c01-old",
+      "g-k00",
+      "s-cloud-old",
+      "n-linzhou-leave",
+      "g-c01-new",
+      "gn-k00",
+      "s-cloud-new"
+     ],
+     "ms": 128.3691000000108,
+     "topScore": null,
+     "hit1": 1,
+     "hit3": 1,
+     "hit5": 1,
+     "recall8": 1,
+     "rr": 1,
+     "ndcg8": 1
+    },
+    {
+     "query": "q-linzhou",
+     "category": "keyword",
+     "mode": "hybrid",
+     "status": "ok",
+     "ranked": [
+      "s-linzhou",
+      "g-k00",
+      "g-c01-old",
+      "n-linzhou-leave",
+      "s-cloud-old",
+      "gn-k00",
+      "g-c01-new",
+      "g-n03"
+     ],
+     "ms": 162.9894000000204,
+     "topScore": null,
+     "hit1": 1,
+     "hit3": 1,
+     "hit5": 1,
+     "recall8": 1,
+     "rr": 1,
+     "ndcg8": 1
+    },
+    {
+     "query": "q-linzhou",
+     "category": "keyword",
+     "mode": "hybrid+prodrecency",
+     "status": "ok",
+     "ranked": [
+      "s-linzhou",
+      "g-k00",
+      "n-linzhou-leave",
+      "gn-k00",
+      "g-c01-old",
+      "s-cloud-old",
+      "g-c01-new",
+      "g-n03"
+     ],
+     "ms": 160.0431999999564,
+     "topScore": null,
+     "hit1": 1,
+     "hit3": 1,
+     "hit5": 1,
+     "recall8": 1,
+     "rr": 1,
+     "ndcg8": 1
+    },
+    {
+     "query": "q-flight",
+     "category": "keyword",
+     "mode": "lexical",
+     "status": "ok",
+     "ranked": [
+      "s-flight",
+      "n-flight-other",
+      "g-n02",
+      "g-k10",
+      "g-c05-old",
+      "gn-k07",
+      "g-n11",
+      "g-k04"
+     ],
+     "ms": 128.32869999995455,
+     "topScore": null,
+     "hit1": 1,
+     "hit3": 1,
+     "hit5": 1,
+     "recall8": 1,
+     "rr": 1,
+     "ndcg8": 1
+    },
+    {
+     "query": "q-flight",
+     "category": "keyword",
+     "mode": "hybrid",
+     "status": "ok",
+     "ranked": [
+      "n-flight-other",
+      "s-flight",
+      "g-n07",
+      "g-p28",
+      "g-n02",
+      "g-n09",
+      "n-linzhou-leave",
+      "g-n08"
+     ],
+     "ms": 163.6143999999622,
+     "topScore": null,
+     "hit1": 0,
+     "hit3": 1,
+     "hit5": 1,
+     "recall8": 1,
+     "rr": 0.5,
+     "ndcg8": 0.6309297535714575
+    },
+    {
+     "query": "q-flight",
+     "category": "keyword",
+     "mode": "hybrid+prodrecency",
+     "status": "ok",
+     "ranked": [
+      "n-flight-other",
+      "s-flight",
+      "g-n02",
+      "g-n00",
+      "n-linzhou-leave",
+      "g-p28",
+      "g-n08",
+      "g-n09"
+     ],
+     "ms": 164.34309999999823,
+     "topScore": null,
+     "hit1": 0,
+     "hit3": 1,
+     "hit5": 1,
+     "recall8": 1,
+     "rr": 0.5,
+     "ndcg8": 0.6309297535714575
+    },
+    {
+     "query": "q-qinghe",
+     "category": "correction",
+     "mode": "lexical",
+     "status": "ok",
+     "ranked": [
+      "s-qinghe-new",
+      "n-qinghe-cover",
+      "n-qinghe-price",
+      "s-qinghe-old",
+      "d-0004",
+      "d-0038",
+      "d-0070",
+      "d-0072"
+     ],
+     "ms": 130.22889999998733,
+     "topScore": null,
+     "hit1": 1,
+     "hit3": 1,
+     "hit5": 1,
+     "recall8": 1,
+     "rr": 1,
+     "ndcg8": 1,
+     "order": 1
+    },
+    {
+     "query": "q-qinghe",
+     "category": "correction",
+     "mode": "hybrid",
+     "status": "ok",
+     "ranked": [
+      "s-qinghe-new",
+      "n-qinghe-price",
+      "n-qinghe-cover",
+      "s-qinghe-old",
+      "gn-k10",
+      "g-k08",
+      "g-k00",
+      "g-c05-old"
+     ],
+     "ms": 154.65069999999832,
+     "topScore": null,
+     "hit1": 1,
+     "hit3": 1,
+     "hit5": 1,
+     "recall8": 1,
+     "rr": 1,
+     "ndcg8": 1,
+     "order": 1
+    },
+    {
+     "query": "q-qinghe",
+     "category": "correction",
+     "mode": "hybrid+prodrecency",
+     "status": "ok",
+     "ranked": [
+      "s-qinghe-new",
+      "n-qinghe-price",
+      "n-qinghe-cover",
+      "s-qinghe-old",
+      "g-k08",
+      "gn-k10",
+      "g-k00",
+      "g-c05-old"
+     ],
+     "ms": 162.4148999999743,
+     "topScore": null,
+     "hit1": 1,
+     "hit3": 1,
+     "hit5": 1,
+     "recall8": 1,
+     "rr": 1,
+     "ndcg8": 1,
+     "order": 1
+    },
+    {
+     "query": "q-theme",
+     "category": "correction",
+     "mode": "lexical",
+     "status": "ok",
+     "ranked": [
+      "s-theme-old",
+      "d-0004",
+      "d-0100",
+      "g-c05-old",
+      "g-n03",
+      "g-p17",
+      "g-n02",
+      "d-0038"
+     ],
+     "ms": 131.524000000034,
+     "topScore": null,
+     "hit1": 0,
+     "hit3": 0,
+     "hit5": 0,
+     "recall8": 0,
+     "rr": 0,
+     "ndcg8": 0,
+     "order": 0
+    },
+    {
+     "query": "q-theme",
+     "category": "correction",
+     "mode": "hybrid",
+     "status": "ok",
+     "ranked": [
+      "s-theme-old",
+      "g-n03",
+      "g-c05-old",
+      "g-p17",
+      "g-p27",
+      "g-n02",
+      "g-p01",
+      "g-k15"
+     ],
+     "ms": 164.5843000000459,
+     "topScore": null,
+     "hit1": 0,
+     "hit3": 0,
+     "hit5": 0,
+     "recall8": 0,
+     "rr": 0,
+     "ndcg8": 0,
+     "order": 0
+    },
+    {
+     "query": "q-theme",
+     "category": "correction",
+     "mode": "hybrid+prodrecency",
+     "status": "ok",
+     "ranked": [
+      "s-theme-old",
+      "g-n03",
+      "g-p17",
+      "g-c05-old",
+      "g-p27",
+      "g-n02",
+      "g-p01",
+      "g-k15"
+     ],
+     "ms": 165.01600000000326,
+     "topScore": null,
+     "hit1": 0,
+     "hit3": 0,
+     "hit5": 0,
+     "recall8": 0,
+     "rr": 0,
+     "ndcg8": 0,
+     "order": 0
+    },
+    {
+     "query": "q-cloud",
+     "category": "correction",
+     "mode": "lexical",
+     "status": "ok",
+     "ranked": [
+      "s-cloud-new",
+      "s-cloud-old",
+      "d-0041",
+      "d-0076",
+      "d-0082",
+      "d-0089",
+      "gn-k10",
+      "g-k00"
+     ],
+     "ms": 131.21940000000177,
+     "topScore": null,
+     "hit1": 1,
+     "hit3": 1,
+     "hit5": 1,
+     "recall8": 1,
+     "rr": 1,
+     "ndcg8": 1,
+     "order": 1
+    },
+    {
+     "query": "q-cloud",
+     "category": "correction",
+     "mode": "hybrid",
+     "status": "ok",
+     "ranked": [
+      "s-cloud-new",
+      "gn-k00",
+      "s-cloud-old",
+      "s-aurora-budget",
+      "g-k02",
+      "g-k00",
+      "n-aurora6",
+      "d-0051"
+     ],
+     "ms": 163.2612000000081,
+     "topScore": null,
+     "hit1": 1,
+     "hit3": 1,
+     "hit5": 1,
+     "recall8": 1,
+     "rr": 1,
+     "ndcg8": 1,
+     "order": 1
+    },
+    {
+     "query": "q-cloud",
+     "category": "correction",
+     "mode": "hybrid+prodrecency",
+     "status": "ok",
+     "ranked": [
+      "s-cloud-new",
+      "gn-k00",
+      "s-aurora-budget",
+      "s-cloud-old",
+      "g-k02",
+      "g-k00",
+      "d-0051",
+      "n-aurora6"
+     ],
+     "ms": 161.33909999998286,
+     "topScore": null,
+     "hit1": 1,
+     "hit3": 1,
+     "hit5": 1,
+     "recall8": 1,
+     "rr": 1,
+     "ndcg8": 1,
+     "order": 1
+    },
+    {
+     "query": "q-lang-client",
+     "category": "context",
+     "mode": "lexical",
+     "status": "ok",
+     "ranked": [
+      "s-lang-ctx",
+      "s-pnpm",
+      "n-qinghe-cover",
+      "g-n06",
+      "s-long-client",
+      "s-schedule",
+      "g-p04",
+      "gn-p01"
+     ],
+     "ms": 132.03649999998743,
+     "topScore": null,
+     "hit1": 1,
+     "hit3": 1,
+     "hit5": 1,
+     "recall8": 1,
+     "rr": 1,
+     "ndcg8": 1
+    },
+    {
+     "query": "q-lang-client",
+     "category": "context",
+     "mode": "hybrid",
+     "status": "ok",
+     "ranked": [
+      "s-lang-ctx",
+      "s-pnpm",
+      "g-n08",
+      "s-schedule",
+      "g-p04",
+      "g-n07",
+      "g-n03",
+      "g-n02"
+     ],
+     "ms": 162.3731999999727,
+     "topScore": null,
+     "hit1": 1,
+     "hit3": 1,
+     "hit5": 1,
+     "recall8": 1,
+     "rr": 1,
+     "ndcg8": 1
+    },
+    {
+     "query": "q-lang-client",
+     "category": "context",
+     "mode": "hybrid+prodrecency",
+     "status": "ok",
+     "ranked": [
+      "s-lang-ctx",
+      "s-pnpm",
+      "g-n08",
+      "s-schedule",
+      "g-p04",
+      "g-n02",
+      "g-n03",
+      "g-n07"
+     ],
+     "ms": 162.99629999999888,
+     "topScore": null,
+     "hit1": 1,
+     "hit3": 1,
+     "hit5": 1,
+     "recall8": 1,
+     "rr": 1,
+     "ndcg8": 1
+    },
+    {
+     "query": "q-lang-notes",
+     "category": "context",
+     "mode": "lexical",
+     "status": "ok",
+     "ranked": [
+      "s-lang-ctx",
+      "g-n00",
+      "g-n02",
+      "g-n03",
+      "g-n06",
+      "g-n07",
+      "g-n10",
+      "g-n01"
+     ],
+     "ms": 133.19089999998687,
+     "topScore": null,
+     "hit1": 1,
+     "hit3": 1,
+     "hit5": 1,
+     "recall8": 1,
+     "rr": 1,
+     "ndcg8": 1
+    },
+    {
+     "query": "q-lang-notes",
+     "category": "context",
+     "mode": "hybrid",
+     "status": "ok",
+     "ranked": [
+      "s-lang-ctx",
+      "g-n02",
+      "g-n10",
+      "g-n03",
+      "g-n01",
+      "g-n06",
+      "g-n00",
+      "g-n07"
+     ],
+     "ms": 162.05430000001797,
+     "topScore": null,
+     "hit1": 1,
+     "hit3": 1,
+     "hit5": 1,
+     "recall8": 1,
+     "rr": 1,
+     "ndcg8": 1
+    },
+    {
+     "query": "q-lang-notes",
+     "category": "context",
+     "mode": "hybrid+prodrecency",
+     "status": "ok",
+     "ranked": [
+      "s-lang-ctx",
+      "g-n02",
+      "g-n10",
+      "g-n01",
+      "g-n00",
+      "g-n03",
+      "s-long-passport",
+      "g-n08"
+     ],
+     "ms": 161.9659999999567,
+     "topScore": null,
+     "hit1": 1,
+     "hit3": 1,
+     "hit5": 1,
+     "recall8": 1,
+     "rr": 1,
+     "ndcg8": 1
+    },
+    {
+     "query": "q-long-passport",
+     "category": "needle",
+     "mode": "lexical",
+     "status": "ok",
+     "ranked": [
+      "s-trip-new",
+      "g-k12",
+      "d-0026",
+      "d-0035",
+      "d-0049",
+      "d-0057",
+      "d-0058",
+      "d-0064"
+     ],
+     "ms": 126.88379999995232,
+     "topScore": null,
+     "hit1": 0,
+     "hit3": 0,
+     "hit5": 0,
+     "recall8": 0,
+     "rr": 0,
+     "ndcg8": 0,
+     "evidence": {
+      "whole": 0,
+      "excerpt": 0,
+      "wholeChars": 655,
+      "excerptChars": 655
+     }
+    },
+    {
+     "query": "q-long-passport",
+     "category": "needle",
+     "mode": "hybrid",
+     "status": "ok",
+     "ranked": [
+      "s-trip-new",
+      "s-date-w1a",
+      "g-n00",
+      "d-0081",
+      "s-long-gift",
+      "g-n03",
+      "s-long-client",
+      "g-n08"
+     ],
+     "ms": 158.83950000000186,
+     "topScore": null,
+     "hit1": 0,
+     "hit3": 0,
+     "hit5": 0,
+     "recall8": 0,
+     "rr": 0,
+     "ndcg8": 0,
+     "evidence": {
+      "whole": 0,
+      "excerpt": 0,
+      "wholeChars": 96,
+      "excerptChars": 535
+     }
+    },
+    {
+     "query": "q-long-passport",
+     "category": "needle",
+     "mode": "hybrid+prodrecency",
+     "status": "ok",
+     "ranked": [
+      "s-trip-new",
+      "s-date-w1a",
+      "g-n00",
+      "d-0081",
+      "s-long-gift",
+      "g-n03",
+      "s-long-client",
+      "g-n08"
+     ],
+     "ms": 159.2488000000012,
+     "topScore": null,
+     "hit1": 0,
+     "hit3": 0,
+     "hit5": 0,
+     "recall8": 0,
+     "rr": 0,
+     "ndcg8": 0,
+     "evidence": {
+      "whole": 0,
+      "excerpt": 0,
+      "wholeChars": 96,
+      "excerptChars": 535
+     }
+    },
+    {
+     "query": "q-long-backup",
+     "category": "needle",
+     "mode": "lexical",
+     "status": "ok",
+     "ranked": [
+      "s-long-backup",
+      "s-trip-new"
+     ],
+     "ms": 130.18880000000354,
+     "topScore": null,
+     "hit1": 1,
+     "hit3": 1,
+     "hit5": 1,
+     "recall8": 1,
+     "rr": 1,
+     "ndcg8": 1,
+     "evidence": {
+      "whole": 0,
+      "excerpt": 1,
+      "wholeChars": 40,
+      "excerptChars": 125
+     }
+    },
+    {
+     "query": "q-long-backup",
+     "category": "needle",
+     "mode": "hybrid",
+     "status": "ok",
+     "ranked": [
+      "s-long-backup",
+      "gn-k01",
+      "s-trip-new",
+      "g-c00-old",
+      "g-k08",
+      "g-c06-old",
+      "s-date-w1a",
+      "d-0023"
+     ],
+     "ms": 161.38889999996172,
+     "topScore": null,
+     "hit1": 1,
+     "hit3": 1,
+     "hit5": 1,
+     "recall8": 1,
+     "rr": 1,
+     "ndcg8": 1,
+     "evidence": {
+      "whole": 0,
+      "excerpt": 1,
+      "wholeChars": 199,
+      "excerptChars": 284
+     }
+    },
+    {
+     "query": "q-long-backup",
+     "category": "needle",
+     "mode": "hybrid+prodrecency",
+     "status": "ok",
+     "ranked": [
+      "s-long-backup",
+      "gn-k01",
+      "s-trip-new",
+      "g-k08",
+      "s-date-w2",
+      "g-c06-old",
+      "g-c00-old",
+      "d-0023"
+     ],
+     "ms": 160.66539999999804,
+     "topScore": null,
+     "hit1": 1,
+     "hit3": 1,
+     "hit5": 1,
+     "recall8": 1,
+     "rr": 1,
+     "ndcg8": 1,
+     "evidence": {
+      "whole": 0,
+      "excerpt": 1,
+      "wholeChars": 198,
+      "excerptChars": 283
+     }
+    },
+    {
+     "query": "q-long-client",
+     "category": "needle",
+     "mode": "lexical",
+     "status": "ok",
+     "ranked": [
+      "s-schedule",
+      "s-pnpm",
+      "g-n06",
+      "s-long-client",
+      "s-trip-new",
+      "s-lang-ctx",
+      "g-n00",
+      "g-n01"
+     ],
+     "ms": 127.83830000000307,
+     "topScore": null,
+     "hit1": 0,
+     "hit3": 0,
+     "hit5": 1,
+     "recall8": 1,
+     "rr": 0.25,
+     "ndcg8": 0.43067655807339306,
+     "evidence": {
+      "whole": 0,
+      "excerpt": 1,
+      "wholeChars": 159,
+      "excerptChars": 567
+     }
+    },
+    {
+     "query": "q-long-client",
+     "category": "needle",
+     "mode": "hybrid",
+     "status": "ok",
+     "ranked": [
+      "s-schedule",
+      "g-n00",
+      "s-pnpm",
+      "g-n05",
+      "s-long-gift",
+      "s-long-client",
+      "g-n06",
+      "g-n02"
+     ],
+     "ms": 162.15160000004107,
+     "topScore": null,
+     "hit1": 0,
+     "hit3": 0,
+     "hit5": 0,
+     "recall8": 1,
+     "rr": 0.16666666666666666,
+     "ndcg8": 0.3562071871080222,
+     "evidence": {
+      "whole": 0,
+      "excerpt": 1,
+      "wholeChars": 85,
+      "excerptChars": 695
+     }
+    },
+    {
+     "query": "q-long-client",
+     "category": "needle",
+     "mode": "hybrid+prodrecency",
+     "status": "ok",
+     "ranked": [
+      "s-schedule",
+      "g-n00",
+      "s-pnpm",
+      "s-long-gift",
+      "s-long-client",
+      "g-n05",
+      "g-n02",
+      "g-n08"
+     ],
+     "ms": 162.1313000000082,
+     "topScore": null,
+     "hit1": 0,
+     "hit3": 0,
+     "hit5": 1,
+     "recall8": 1,
+     "rr": 0.2,
+     "ndcg8": 0.38685280723454163,
+     "evidence": {
+      "whole": 0,
+      "excerpt": 1,
+      "wholeChars": 85,
+      "excerptChars": 721
+     }
+    },
+    {
+     "query": "q-date-range",
+     "category": "temporal",
+     "mode": "lexical",
+     "status": "ok",
+     "ranked": [
+      "s-date-w1a",
+      "s-date-w1b",
+      "g-n00",
+      "s-trip-new",
+      "gn-k00",
+      "s-city-new",
+      "d-0030",
+      "d-0047"
+     ],
+     "ms": 10.741900000022724,
+     "topScore": null,
+     "hit1": 1,
+     "hit3": 1,
+     "hit5": 1,
+     "recall8": 1,
+     "rr": 1,
+     "ndcg8": 1,
+     "leak3": 0
+    },
+    {
+     "query": "q-date-range",
+     "category": "temporal",
+     "mode": "hybrid",
+     "status": "unsupported",
+     "ranked": [],
+     "ms": 14.584700000006706,
+     "topScore": null
+    },
+    {
+     "query": "q-date-range",
+     "category": "temporal",
+     "mode": "hybrid+prodrecency",
+     "status": "n/a",
+     "ranked": [],
+     "ms": 0.02310000004945323,
+     "topScore": null
+    },
+    {
+     "query": "q-trip-latest",
+     "category": "temporal",
+     "mode": "lexical",
+     "status": "ok",
+     "ranked": [
+      "d-0103",
+      "s-trip-new",
+      "s-trip-mid",
+      "s-trip-old",
+      "d-0107",
+      "gn-p09",
+      "d-0097",
+      "d-0060"
+     ],
+     "ms": 139.92960000003222,
+     "topScore": null,
+     "hit1": 0,
+     "hit3": 1,
+     "hit5": 1,
+     "recall8": 1,
+     "rr": 0.5,
+     "ndcg8": 0.6309297535714575
+    },
+    {
+     "query": "q-trip-latest",
+     "category": "temporal",
+     "mode": "hybrid",
+     "status": "unsupported",
+     "ranked": [],
+     "ms": 14.248199999972712,
+     "topScore": null
+    },
+    {
+     "query": "q-trip-latest",
+     "category": "temporal",
+     "mode": "hybrid+prodrecency",
+     "status": "n/a",
+     "ranked": [],
+     "ms": 0.01840000000083819,
+     "topScore": null
+    },
+    {
+     "query": "q-none-seat",
+     "category": "no-answer",
+     "mode": "lexical",
+     "status": "ok",
+     "ranked": [
+      "g-c05-old",
+      "g-n03",
+      "g-n02",
+      "g-p16",
+      "d-0004",
+      "d-0038",
+      "d-0070",
+      "d-0072"
+     ],
+     "ms": 139.81890000001295,
+     "topScore": null
+    },
+    {
+     "query": "q-none-seat",
+     "category": "no-answer",
+     "mode": "hybrid",
+     "status": "ok",
+     "ranked": [
+      "g-n02",
+      "gn-k10",
+      "g-c05-old",
+      "g-n03",
+      "g-k15",
+      "g-k14",
+      "s-trip-new",
+      "g-k10"
+     ],
+     "ms": 159.31500000000233,
+     "topScore": null
+    },
+    {
+     "query": "q-none-seat",
+     "category": "no-answer",
+     "mode": "hybrid+prodrecency",
+     "status": "ok",
+     "ranked": [
+      "g-n02",
+      "gn-k10",
+      "g-c05-old",
+      "g-n03",
+      "s-trip-new",
+      "g-k15",
+      "g-k14",
+      "g-k10"
+     ],
+     "ms": 163.33809999999357,
+     "topScore": null
+    },
+    {
+     "query": "q-none-team",
+     "category": "no-answer",
+     "mode": "lexical",
+     "status": "ok",
+     "ranked": [
+      "g-n06",
+      "g-c05-old",
+      "g-n03",
+      "g-n02",
+      "g-p04",
+      "g-p16",
+      "s-sleep",
+      "d-0011"
+     ],
+     "ms": 130.90740000002552,
+     "topScore": null
+    },
+    {
+     "query": "q-none-team",
+     "category": "no-answer",
+     "mode": "hybrid",
+     "status": "ok",
+     "ranked": [
+      "g-n02",
+      "g-c05-old",
+      "g-n06",
+      "g-p04",
+      "g-n03",
+      "g-p17",
+      "s-read-a",
+      "gn-k10"
+     ],
+     "ms": 171.50209999998333,
+     "topScore": null
+    },
+    {
+     "query": "q-none-team",
+     "category": "no-answer",
+     "mode": "hybrid+prodrecency",
+     "status": "ok",
+     "ranked": [
+      "g-n02",
+      "g-c05-old",
+      "g-n06",
+      "g-p04",
+      "g-n03",
+      "g-p17",
+      "gn-k10",
+      "s-read-a"
+     ],
+     "ms": 161.73179999995045,
+     "topScore": null
+    },
+    {
+     "query": "q-none-trip",
+     "category": "no-answer",
+     "mode": "lexical",
+     "status": "ok",
+     "ranked": [
+      "s-trip-mid",
+      "s-trip-old",
+      "s-trip-new",
+      "s-long-passport",
+      "gn-p01",
+      "s-long-client",
+      "s-city-old",
+      "g-p04"
+     ],
+     "ms": 128.15750000003027,
+     "topScore": null
+    },
+    {
+     "query": "q-none-trip",
+     "category": "no-answer",
+     "mode": "hybrid",
+     "status": "ok",
+     "ranked": [
+      "s-trip-old",
+      "s-trip-mid",
+      "s-long-client",
+      "s-trip-new",
+      "g-c04-old",
+      "g-c05-new",
+      "s-city-old",
+      "s-long-passport"
+     ],
+     "ms": 163.40600000001723,
+     "topScore": null
+    },
+    {
+     "query": "q-none-trip",
+     "category": "no-answer",
+     "mode": "hybrid+prodrecency",
+     "status": "ok",
+     "ranked": [
+      "s-trip-mid",
+      "s-trip-old",
+      "s-long-client",
+      "s-trip-new",
+      "g-c04-old",
+      "g-c05-new",
+      "s-city-old",
+      "s-long-passport"
+     ],
+     "ms": 160.8585000000312,
+     "topScore": null
+    },
+    {
+     "query": "q-none-blood",
+     "category": "no-answer",
+     "mode": "lexical",
+     "status": "ok",
+     "ranked": [
+      "d-0004",
+      "d-0038",
+      "d-0070",
+      "d-0072",
+      "d-0081",
+      "g-c05-old",
+      "g-n03",
+      "d-0006"
+     ],
+     "ms": 130.60529999999562,
+     "topScore": null
+    },
+    {
+     "query": "q-none-blood",
+     "category": "no-answer",
+     "mode": "hybrid",
+     "status": "ok",
+     "ranked": [
+      "g-n03",
+      "g-k15",
+      "g-p01",
+      "gn-k10",
+      "d-0072",
+      "g-p21",
+      "g-c05-old",
+      "s-read-a"
+     ],
+     "ms": 162.57170000002952,
+     "topScore": null
+    },
+    {
+     "query": "q-none-blood",
+     "category": "no-answer",
+     "mode": "hybrid+prodrecency",
+     "status": "ok",
+     "ranked": [
+      "g-n03",
+      "g-p01",
+      "g-k15",
+      "gn-k10",
+      "d-0072",
+      "g-p21",
+      "g-c05-old",
+      "s-read-a"
+     ],
+     "ms": 161.85330000001704,
+     "topScore": null
+    },
+    {
+     "query": "q-g-p00",
+     "category": "paraphrase",
+     "mode": "lexical",
+     "status": "ok",
+     "ranked": [
+      "g-p11",
+      "s-qinghe-old",
+      "g-n01",
+      "g-n03",
+      "g-n05",
+      "g-n08",
+      "g-n10",
+      "g-n11"
+     ],
+     "ms": 130.61669999995502,
+     "topScore": null,
+     "hit1": 0,
+     "hit3": 0,
+     "hit5": 0,
+     "recall8": 0,
+     "rr": 0,
+     "ndcg8": 0
+    },
+    {
+     "query": "q-g-p00",
+     "category": "paraphrase",
+     "mode": "hybrid",
+     "status": "ok",
+     "ranked": [
+      "g-p11",
+      "g-n01",
+      "s-coffee",
+      "g-n06",
+      "g-n03",
+      "s-long-gift",
+      "g-n05",
+      "s-long-client"
+     ],
+     "ms": 175.20759999996517,
+     "topScore": null,
+     "hit1": 0,
+     "hit3": 0,
+     "hit5": 0,
+     "recall8": 0,
+     "rr": 0,
+     "ndcg8": 0
+    },
+    {
+     "query": "q-g-p00",
+     "category": "paraphrase",
+     "mode": "hybrid+prodrecency",
+     "status": "ok",
+     "ranked": [
+      "g-n01",
+      "g-p11",
+      "s-coffee",
+      "s-long-gift",
+      "g-n03",
+      "g-n06",
+      "d-0037",
+      "s-long-client"
+     ],
+     "ms": 174.52460000000428,
+     "topScore": null,
+     "hit1": 0,
+     "hit3": 0,
+     "hit5": 0,
+     "recall8": 0,
+     "rr": 0,
+     "ndcg8": 0
+    },
+    {
+     "query": "q-g-p01",
+     "category": "paraphrase",
+     "mode": "lexical",
+     "status": "ok",
+     "ranked": [
+      "g-p05",
+      "g-p19",
+      "g-p24",
+      "g-p11",
+      "g-p21",
+      "g-p00",
+      "g-p03",
+      "d-0007"
+     ],
+     "ms": 129.95610000001034,
+     "topScore": null,
+     "hit1": 0,
+     "hit3": 0,
+     "hit5": 0,
+     "recall8": 0,
+     "rr": 0,
+     "ndcg8": 0
+    },
+    {
+     "query": "q-g-p01",
+     "category": "paraphrase",
+     "mode": "hybrid",
+     "status": "ok",
+     "ranked": [
+      "g-n02",
+      "g-p17",
+      "g-p21",
+      "n-alarm",
+      "g-c05-old",
+      "g-n07",
+      "g-n09",
+      "g-n03"
+     ],
+     "ms": 172.86979999998584,
+     "topScore": null,
+     "hit1": 0,
+     "hit3": 0,
+     "hit5": 0,
+     "recall8": 0,
+     "rr": 0,
+     "ndcg8": 0
+    },
+    {
+     "query": "q-g-p01",
+     "category": "paraphrase",
+     "mode": "hybrid+prodrecency",
+     "status": "ok",
+     "ranked": [
+      "g-n02",
+      "g-p17",
+      "g-p21",
+      "n-alarm",
+      "g-n09",
+      "g-n00",
+      "g-c05-old",
+      "g-n07"
+     ],
+     "ms": 173.7676999999676,
+     "topScore": null,
+     "hit1": 0,
+     "hit3": 0,
+     "hit5": 0,
+     "recall8": 0,
+     "rr": 0,
+     "ndcg8": 0
+    },
+    {
+     "query": "q-g-p02",
+     "category": "paraphrase",
+     "mode": "lexical",
+     "status": "ok",
+     "ranked": [
+      "g-c06-new",
+      "g-n03",
+      "g-n07",
+      "g-n08",
+      "g-n09",
+      "g-n11",
+      "s-long-backup",
+      "s-long-gift"
+     ],
+     "ms": 132.0345999999554,
+     "topScore": null,
+     "hit1": 0,
+     "hit3": 0,
+     "hit5": 0,
+     "recall8": 0,
+     "rr": 0,
+     "ndcg8": 0
+    },
+    {
+     "query": "q-g-p02",
+     "category": "paraphrase",
+     "mode": "hybrid",
+     "status": "ok",
+     "ranked": [
+      "g-c06-new",
+      "g-n08",
+      "g-n07",
+      "s-long-gift",
+      "g-n03",
+      "g-p02",
+      "s-long-backup",
+      "g-n00"
+     ],
+     "ms": 176.11269999999786,
+     "topScore": null,
+     "hit1": 0,
+     "hit3": 0,
+     "hit5": 0,
+     "recall8": 1,
+     "rr": 0.16666666666666666,
+     "ndcg8": 0.3562071871080222
+    },
+    {
+     "query": "q-g-p02",
+     "category": "paraphrase",
+     "mode": "hybrid+prodrecency",
+     "status": "ok",
+     "ranked": [
+      "g-c06-new",
+      "g-n08",
+      "s-long-gift",
+      "g-n07",
+      "g-n00",
+      "g-p02",
+      "g-n03",
+      "s-long-backup"
+     ],
+     "ms": 167.67029999999795,
+     "topScore": null,
+     "hit1": 0,
+     "hit3": 0,
+     "hit5": 0,
+     "recall8": 1,
+     "rr": 0.16666666666666666,
+     "ndcg8": 0.3562071871080222
+    },
+    {
+     "query": "q-g-p04",
+     "category": "paraphrase",
+     "mode": "lexical",
+     "status": "ok",
+     "ranked": [
+      "g-k04",
+      "n-linzhou-leave",
+      "g-n00",
+      "g-n03",
+      "g-n04",
+      "g-n05",
+      "g-n06",
+      "g-n07"
+     ],
+     "ms": 131.89919999998529,
+     "topScore": null,
+     "hit1": 0,
+     "hit3": 0,
+     "hit5": 0,
+     "recall8": 0,
+     "rr": 0,
+     "ndcg8": 0
+    },
+    {
+     "query": "q-g-p04",
+     "category": "paraphrase",
+     "mode": "hybrid",
+     "status": "ok",
+     "ranked": [
+      "g-k04",
+      "g-n03",
+      "g-n00",
+      "g-n04",
+      "g-n01",
+      "s-long-client",
+      "s-long-backup",
+      "d-0097"
+     ],
+     "ms": 163.73499999998603,
+     "topScore": null,
+     "hit1": 0,
+     "hit3": 0,
+     "hit5": 0,
+     "recall8": 0,
+     "rr": 0,
+     "ndcg8": 0
+    },
+    {
+     "query": "q-g-p04",
+     "category": "paraphrase",
+     "mode": "hybrid+prodrecency",
+     "status": "ok",
+     "ranked": [
+      "g-k04",
+      "g-n00",
+      "g-n03",
+      "g-n01",
+      "g-n04",
+      "s-long-backup",
+      "d-0097",
+      "g-n09"
+     ],
+     "ms": 162.5353999999934,
+     "topScore": null,
+     "hit1": 0,
+     "hit3": 0,
+     "hit5": 0,
+     "recall8": 0,
+     "rr": 0,
+     "ndcg8": 0
+    },
+    {
+     "query": "q-g-p05",
+     "category": "paraphrase",
+     "mode": "lexical",
+     "status": "ok",
+     "ranked": [
+      "g-n08",
+      "g-n00",
+      "s-city-old",
+      "s-long-passport",
+      "g-p05",
+      "s-date-w2",
+      "g-p23",
+      "s-read-b"
+     ],
+     "ms": 130.5346000000136,
+     "topScore": null,
+     "hit1": 0,
+     "hit3": 0,
+     "hit5": 1,
+     "recall8": 1,
+     "rr": 0.2,
+     "ndcg8": 0.38685280723454163
+    },
+    {
+     "query": "q-g-p05",
+     "category": "paraphrase",
+     "mode": "hybrid",
+     "status": "ok",
+     "ranked": [
+      "g-p05",
+      "g-n00",
+      "s-city-old",
+      "g-p23",
+      "s-date-w2",
+      "s-long-passport",
+      "g-n08",
+      "s-flight"
+     ],
+     "ms": 160.49840000004042,
+     "topScore": null,
+     "hit1": 1,
+     "hit3": 1,
+     "hit5": 1,
+     "recall8": 1,
+     "rr": 1,
+     "ndcg8": 1
+    },
+    {
+     "query": "q-g-p05",
+     "category": "paraphrase",
+     "mode": "hybrid+prodrecency",
+     "status": "ok",
+     "ranked": [
+      "g-n00",
+      "g-p05",
+      "s-city-old",
+      "g-p23",
+      "s-date-w2",
+      "g-n08",
+      "s-long-passport",
+      "s-flight"
+     ],
+     "ms": 160.21120000001974,
+     "topScore": null,
+     "hit1": 0,
+     "hit3": 1,
+     "hit5": 1,
+     "recall8": 1,
+     "rr": 0.5,
+     "ndcg8": 0.6309297535714575
+    },
+    {
+     "query": "q-g-p06",
+     "category": "paraphrase",
+     "mode": "lexical",
+     "status": "ok",
+     "ranked": [
+      "s-commute",
+      "g-p15",
+      "d-0012",
+      "d-0048",
+      "d-0052",
+      "d-0068",
+      "d-0096",
+      "g-p25"
+     ],
+     "ms": 126.8401999999769,
+     "topScore": null,
+     "hit1": 0,
+     "hit3": 0,
+     "hit5": 0,
+     "recall8": 0,
+     "rr": 0,
+     "ndcg8": 0
+    },
+    {
+     "query": "q-g-p06",
+     "category": "paraphrase",
+     "mode": "hybrid",
+     "status": "ok",
+     "ranked": [
+      "s-commute",
+      "d-0048",
+      "g-p15",
+      "g-n03",
+      "s-trip-mid",
+      "d-0012",
+      "s-trip-old",
+      "d-0052"
+     ],
+     "ms": 164.39470000000438,
+     "topScore": null,
+     "hit1": 0,
+     "hit3": 0,
+     "hit5": 0,
+     "recall8": 0,
+     "rr": 0,
+     "ndcg8": 0
+    },
+    {
+     "query": "q-g-p06",
+     "category": "paraphrase",
+     "mode": "hybrid+prodrecency",
+     "status": "ok",
+     "ranked": [
+      "s-commute",
+      "d-0048",
+      "g-p15",
+      "g-n00",
+      "s-trip-mid",
+      "d-0012",
+      "s-trip-old",
+      "d-0096"
+     ],
+     "ms": 160.7658999999985,
+     "topScore": null,
+     "hit1": 0,
+     "hit3": 0,
+     "hit5": 0,
+     "recall8": 0,
+     "rr": 0,
+     "ndcg8": 0
+    },
+    {
+     "query": "q-g-p08",
+     "category": "paraphrase",
+     "mode": "lexical",
+     "status": "ok",
+     "ranked": [
+      "g-k15",
+      "s-trip-mid",
+      "s-city-old",
+      "gn-p08",
+      "n-linzhou-leave",
+      "d-0001",
+      "d-0021",
+      "d-0027"
+     ],
+     "ms": 128.38250000000698,
+     "topScore": null,
+     "hit1": 0,
+     "hit3": 0,
+     "hit5": 0,
+     "recall8": 0,
+     "rr": 0,
+     "ndcg8": 0
+    },
+    {
+     "query": "q-g-p08",
+     "category": "paraphrase",
+     "mode": "hybrid",
+     "status": "ok",
+     "ranked": [
+      "s-trip-mid",
+      "g-k15",
+      "g-n09",
+      "s-city-old",
+      "n-linzhou-leave",
+      "g-n03",
+      "g-n08",
+      "n-flight-other"
+     ],
+     "ms": 163.09149999998044,
+     "topScore": null,
+     "hit1": 0,
+     "hit3": 0,
+     "hit5": 0,
+     "recall8": 0,
+     "rr": 0,
+     "ndcg8": 0
+    },
+    {
+     "query": "q-g-p08",
+     "category": "paraphrase",
+     "mode": "hybrid+prodrecency",
+     "status": "ok",
+     "ranked": [
+      "s-trip-mid",
+      "g-n09",
+      "g-k15",
+      "n-linzhou-leave",
+      "s-city-old",
+      "n-flight-other",
+      "g-n08",
+      "s-long-gift"
+     ],
+     "ms": 166.92430000001332,
+     "topScore": null,
+     "hit1": 0,
+     "hit3": 0,
+     "hit5": 0,
+     "recall8": 0,
+     "rr": 0,
+     "ndcg8": 0
+    },
+    {
+     "query": "q-g-p09",
+     "category": "paraphrase",
+     "mode": "lexical",
+     "status": "ok",
+     "ranked": [
+      "s-lang-ctx",
+      "g-n00",
+      "g-n02",
+      "g-n07",
+      "g-n08",
+      "g-n09",
+      "g-n11",
+      "s-long-gift"
+     ],
+     "ms": 133.37670000002254,
+     "topScore": null,
+     "hit1": 0,
+     "hit3": 0,
+     "hit5": 0,
+     "recall8": 0,
+     "rr": 0,
+     "ndcg8": 0
+    },
+    {
+     "query": "q-g-p09",
+     "category": "paraphrase",
+     "mode": "hybrid",
+     "status": "ok",
+     "ranked": [
+      "g-n07",
+      "g-n09",
+      "g-n02",
+      "g-p02",
+      "s-long-gift",
+      "g-n10",
+      "g-n00",
+      "g-n04"
+     ],
+     "ms": 159.0505000000121,
+     "topScore": null,
+     "hit1": 0,
+     "hit3": 0,
+     "hit5": 0,
+     "recall8": 0,
+     "rr": 0,
+     "ndcg8": 0
+    },
+    {
+     "query": "q-g-p09",
+     "category": "paraphrase",
+     "mode": "hybrid+prodrecency",
+     "status": "ok",
+     "ranked": [
+      "g-n09",
+      "g-n02",
+      "s-long-gift",
+      "g-p02",
+      "g-n07",
+      "g-n00",
+      "g-n10",
+      "g-n08"
+     ],
+     "ms": 160.70850000000792,
+     "topScore": null,
+     "hit1": 0,
+     "hit3": 0,
+     "hit5": 0,
+     "recall8": 0,
+     "rr": 0,
+     "ndcg8": 0
+    },
+    {
+     "query": "q-g-p10",
+     "category": "paraphrase",
+     "mode": "lexical",
+     "status": "ok",
+     "ranked": [
+      "d-0026",
+      "d-0035",
+      "d-0049",
+      "d-0057",
+      "d-0058",
+      "d-0064",
+      "d-0091",
+      "d-0102"
+     ],
+     "ms": 128.2779000000446,
+     "topScore": null,
+     "hit1": 0,
+     "hit3": 0,
+     "hit5": 0,
+     "recall8": 0,
+     "rr": 0,
+     "ndcg8": 0
+    },
+    {
+     "query": "q-g-p10",
+     "category": "paraphrase",
+     "mode": "hybrid",
+     "status": "ok",
+     "ranked": [
+      "d-0035",
+      "d-0064",
+      "d-0057",
+      "d-0091",
+      "g-n08",
+      "d-0049",
+      "d-0058",
+      "d-0102"
+     ],
+     "ms": 160.14240000001155,
+     "topScore": null,
+     "hit1": 0,
+     "hit3": 0,
+     "hit5": 0,
+     "recall8": 0,
+     "rr": 0,
+     "ndcg8": 0
+    },
+    {
+     "query": "q-g-p10",
+     "category": "paraphrase",
+     "mode": "hybrid+prodrecency",
+     "status": "ok",
+     "ranked": [
+      "d-0035",
+      "g-n08",
+      "d-0102",
+      "d-0057",
+      "d-0064",
+      "d-0049",
+      "d-0091",
+      "s-read-c"
+     ],
+     "ms": 162.51979999995092,
+     "topScore": null,
+     "hit1": 0,
+     "hit3": 0,
+     "hit5": 0,
+     "recall8": 0,
+     "rr": 0,
+     "ndcg8": 0
+    },
+    {
+     "query": "q-g-p12",
+     "category": "paraphrase",
+     "mode": "lexical",
+     "status": "ok",
+     "ranked": [
+      "g-n08",
+      "s-date-w2",
+      "s-read-b",
+      "s-qinghe-old",
+      "g-p12",
+      "g-p24",
+      "s-commute",
+      "s-qinghe-new"
+     ],
+     "ms": 130.4365000000107,
+     "topScore": null,
+     "hit1": 0,
+     "hit3": 0,
+     "hit5": 1,
+     "recall8": 1,
+     "rr": 0.2,
+     "ndcg8": 0.38685280723454163
+    },
+    {
+     "query": "q-g-p12",
+     "category": "paraphrase",
+     "mode": "hybrid",
+     "status": "ok",
+     "ranked": [
+      "g-p12",
+      "g-p24",
+      "g-n08",
+      "s-commute",
+      "s-read-b",
+      "g-k12",
+      "s-date-w2",
+      "s-japanese"
+     ],
+     "ms": 160.32099999999627,
+     "topScore": null,
+     "hit1": 1,
+     "hit3": 1,
+     "hit5": 1,
+     "recall8": 1,
+     "rr": 1,
+     "ndcg8": 1
+    },
+    {
+     "query": "q-g-p12",
+     "category": "paraphrase",
+     "mode": "hybrid+prodrecency",
+     "status": "ok",
+     "ranked": [
+      "s-commute",
+      "g-n08",
+      "g-p24",
+      "g-p12",
+      "s-read-b",
+      "s-date-w2",
+      "g-k12",
+      "s-japanese"
+     ],
+     "ms": 162.73020000004908,
+     "topScore": null,
+     "hit1": 0,
+     "hit3": 0,
+     "hit5": 1,
+     "recall8": 1,
+     "rr": 0.25,
+     "ndcg8": 0.43067655807339306
+    },
+    {
+     "query": "q-g-p13",
+     "category": "paraphrase",
+     "mode": "lexical",
+     "status": "ok",
+     "ranked": [
+      "g-p13",
+      "g-p03",
+      "g-n00",
+      "g-n01",
+      "g-n03",
+      "g-n04",
+      "g-n05",
+      "g-n06"
+     ],
+     "ms": 130.41749999998137,
+     "topScore": null,
+     "hit1": 1,
+     "hit3": 1,
+     "hit5": 1,
+     "recall8": 1,
+     "rr": 1,
+     "ndcg8": 1
+    },
+    {
+     "query": "q-g-p13",
+     "category": "paraphrase",
+     "mode": "hybrid",
+     "status": "ok",
+     "ranked": [
+      "g-p13",
+      "g-n00",
+      "g-p03",
+      "d-0106",
+      "s-cilantro",
+      "d-0042",
+      "g-n03",
+      "g-n09"
+     ],
+     "ms": 162.81180000002496,
+     "topScore": null,
+     "hit1": 1,
+     "hit3": 1,
+     "hit5": 1,
+     "recall8": 1,
+     "rr": 1,
+     "ndcg8": 1
+    },
+    {
+     "query": "q-g-p13",
+     "category": "paraphrase",
+     "mode": "hybrid+prodrecency",
+     "status": "ok",
+     "ranked": [
+      "g-p03",
+      "g-n00",
+      "g-p13",
+      "d-0042",
+      "s-cilantro",
+      "d-0106",
+      "g-n09",
+      "d-0093"
+     ],
+     "ms": 161.1211000000476,
+     "topScore": null,
+     "hit1": 0,
+     "hit3": 1,
+     "hit5": 1,
+     "recall8": 1,
+     "rr": 0.3333333333333333,
+     "ndcg8": 0.5
+    },
+    {
+     "query": "q-g-p14",
+     "category": "paraphrase",
+     "mode": "lexical",
+     "status": "ok",
+     "ranked": [
+      "g-p04",
+      "gn-p08",
+      "n-linzhou-leave",
+      "s-trip-mid",
+      "d-0001",
+      "d-0021",
+      "d-0027",
+      "d-0039"
+     ],
+     "ms": 130.02559999999357,
+     "topScore": null,
+     "hit1": 0,
+     "hit3": 0,
+     "hit5": 0,
+     "recall8": 0,
+     "rr": 0,
+     "ndcg8": 0
+    },
+    {
+     "query": "q-g-p14",
+     "category": "paraphrase",
+     "mode": "hybrid",
+     "status": "ok",
+     "ranked": [
+      "g-p04",
+      "d-0090",
+      "g-n08",
+      "g-n07",
+      "d-0001",
+      "d-0042",
+      "g-n05",
+      "g-n09"
+     ],
+     "ms": 159.648600000015,
+     "topScore": null,
+     "hit1": 0,
+     "hit3": 0,
+     "hit5": 0,
+     "recall8": 0,
+     "rr": 0,
+     "ndcg8": 0
+    },
+    {
+     "query": "q-g-p14",
+     "category": "paraphrase",
+     "mode": "hybrid+prodrecency",
+     "status": "ok",
+     "ranked": [
+      "g-p04",
+      "g-n08",
+      "d-0090",
+      "d-0042",
+      "g-n09",
+      "d-0001",
+      "g-n10",
+      "g-n07"
+     ],
+     "ms": 162.0332000000053,
+     "topScore": null,
+     "hit1": 0,
+     "hit3": 0,
+     "hit5": 0,
+     "recall8": 0,
+     "rr": 0,
+     "ndcg8": 0
+    },
+    {
+     "query": "q-g-p16",
+     "category": "paraphrase",
+     "mode": "lexical",
+     "status": "ok",
+     "ranked": [
+      "g-p16",
+      "d-0013",
+      "d-0046",
+      "d-0067",
+      "d-0105",
+      "d-0106",
+      "d-0011",
+      "d-0019"
+     ],
+     "ms": 128.2060000000056,
+     "topScore": null,
+     "hit1": 1,
+     "hit3": 1,
+     "hit5": 1,
+     "recall8": 1,
+     "rr": 1,
+     "ndcg8": 1
+    },
+    {
+     "query": "q-g-p16",
+     "category": "paraphrase",
+     "mode": "hybrid",
+     "status": "ok",
+     "ranked": [
+      "g-p16",
+      "d-0065",
+      "d-0046",
+      "s-long-gift",
+      "d-0067",
+      "s-lang-ctx",
+      "g-p09",
+      "d-0013"
+     ],
+     "ms": 158.33189999999013,
+     "topScore": null,
+     "hit1": 1,
+     "hit3": 1,
+     "hit5": 1,
+     "recall8": 1,
+     "rr": 1,
+     "ndcg8": 1
+    },
+    {
+     "query": "q-g-p16",
+     "category": "paraphrase",
+     "mode": "hybrid+prodrecency",
+     "status": "ok",
+     "ranked": [
+      "g-p16",
+      "d-0065",
+      "s-long-gift",
+      "d-0046",
+      "d-0013",
+      "s-lang-ctx",
+      "s-japanese",
+      "d-0106"
+     ],
+     "ms": 161.9491000000271,
+     "topScore": null,
+     "hit1": 1,
+     "hit3": 1,
+     "hit5": 1,
+     "recall8": 1,
+     "rr": 1,
+     "ndcg8": 1
+    },
+    {
+     "query": "q-g-p17",
+     "category": "paraphrase",
+     "mode": "lexical",
+     "status": "ok",
+     "ranked": [
+      "g-p27",
+      "n-japan-trip",
+      "d-0026",
+      "d-0035",
+      "d-0049",
+      "d-0057",
+      "d-0058",
+      "d-0064"
+     ],
+     "ms": 126.2050000000163,
+     "topScore": null,
+     "hit1": 0,
+     "hit3": 0,
+     "hit5": 0,
+     "recall8": 0,
+     "rr": 0,
+     "ndcg8": 0
+    },
+    {
+     "query": "q-g-p17",
+     "category": "paraphrase",
+     "mode": "hybrid",
+     "status": "ok",
+     "ranked": [
+      "g-n09",
+      "g-p27",
+      "s-long-backup",
+      "g-n07",
+      "g-n04",
+      "d-0012",
+      "g-n02",
+      "g-n03"
+     ],
+     "ms": 165.92009999998845,
+     "topScore": null,
+     "hit1": 0,
+     "hit3": 0,
+     "hit5": 0,
+     "recall8": 0,
+     "rr": 0,
+     "ndcg8": 0
+    },
+    {
+     "query": "q-g-p17",
+     "category": "paraphrase",
+     "mode": "hybrid+prodrecency",
+     "status": "ok",
+     "ranked": [
+      "s-long-backup",
+      "g-p27",
+      "g-n09",
+      "g-n02",
+      "g-n07",
+      "g-n04",
+      "d-0012",
+      "g-n03"
+     ],
+     "ms": 163.51699999999255,
+     "topScore": null,
+     "hit1": 0,
+     "hit3": 0,
+     "hit5": 0,
+     "recall8": 0,
+     "rr": 0,
+     "ndcg8": 0
+    },
+    {
+     "query": "q-g-p18",
+     "category": "paraphrase",
+     "mode": "lexical",
+     "status": "ok",
+     "ranked": [
+      "g-n00",
+      "g-n01",
+      "g-n03",
+      "g-n04",
+      "g-n07",
+      "g-n08",
+      "g-n10",
+      "g-n11"
+     ],
+     "ms": 134.55370000004768,
+     "topScore": null,
+     "hit1": 0,
+     "hit3": 0,
+     "hit5": 0,
+     "recall8": 0,
+     "rr": 0,
+     "ndcg8": 0
+    },
+    {
+     "query": "q-g-p18",
+     "category": "paraphrase",
+     "mode": "hybrid",
+     "status": "ok",
+     "ranked": [
+      "g-n00",
+      "s-read-a",
+      "g-n08",
+      "g-n03",
+      "g-n07",
+      "g-n10",
+      "s-long-gift",
+      "g-n09"
+     ],
+     "ms": 165.40600000001723,
+     "topScore": null,
+     "hit1": 0,
+     "hit3": 0,
+     "hit5": 0,
+     "recall8": 0,
+     "rr": 0,
+     "ndcg8": 0
+    },
+    {
+     "query": "q-g-p18",
+     "category": "paraphrase",
+     "mode": "hybrid+prodrecency",
+     "status": "ok",
+     "ranked": [
+      "g-n00",
+      "s-read-a",
+      "g-n08",
+      "s-long-gift",
+      "g-n03",
+      "g-n10",
+      "g-n01",
+      "g-n07"
+     ],
+     "ms": 167.12729999999283,
+     "topScore": null,
+     "hit1": 0,
+     "hit3": 0,
+     "hit5": 0,
+     "recall8": 0,
+     "rr": 0,
+     "ndcg8": 0
+    },
+    {
+     "query": "q-g-p20",
+     "category": "paraphrase",
+     "mode": "lexical",
+     "status": "ok",
+     "ranked": [
+      "g-p20",
+      "g-k07",
+      "s-pnpm",
+      "s-lang-ctx",
+      "s-coffee",
+      "g-n01",
+      "g-n02",
+      "g-n05"
+     ],
+     "ms": 130.35960000002524,
+     "topScore": null,
+     "hit1": 1,
+     "hit3": 1,
+     "hit5": 1,
+     "recall8": 1,
+     "rr": 1,
+     "ndcg8": 1
+    },
+    {
+     "query": "q-g-p20",
+     "category": "paraphrase",
+     "mode": "hybrid",
+     "status": "ok",
+     "ranked": [
+      "g-n02",
+      "g-p20",
+      "s-pnpm",
+      "s-date-w0",
+      "g-n08",
+      "g-n07",
+      "g-n09",
+      "g-n01"
+     ],
+     "ms": 161.7280000000028,
+     "topScore": null,
+     "hit1": 0,
+     "hit3": 1,
+     "hit5": 1,
+     "recall8": 1,
+     "rr": 0.5,
+     "ndcg8": 0.6309297535714575
+    },
+    {
+     "query": "q-g-p20",
+     "category": "paraphrase",
+     "mode": "hybrid+prodrecency",
+     "status": "ok",
+     "ranked": [
+      "g-n02",
+      "g-p20",
+      "s-pnpm",
+      "s-date-w0",
+      "g-n08",
+      "g-n01",
+      "g-n00",
+      "g-n09"
+     ],
+     "ms": 165.6189000000013,
+     "topScore": null,
+     "hit1": 0,
+     "hit3": 1,
+     "hit5": 1,
+     "recall8": 1,
+     "rr": 0.5,
+     "ndcg8": 0.6309297535714575
+    },
+    {
+     "query": "q-g-p21",
+     "category": "paraphrase",
+     "mode": "lexical",
+     "status": "ok",
+     "ranked": [
+      "s-pnpm",
+      "gn-p08",
+      "g-k12",
+      "g-n10",
+      "g-p28",
+      "gn-p02",
+      "s-schedule",
+      "s-japanese"
+     ],
+     "ms": 132.41200000001118,
+     "topScore": null,
+     "hit1": 0,
+     "hit3": 0,
+     "hit5": 0,
+     "recall8": 0,
+     "rr": 0,
+     "ndcg8": 0
+    },
+    {
+     "query": "q-g-p21",
+     "category": "paraphrase",
+     "mode": "hybrid",
+     "status": "ok",
+     "ranked": [
+      "s-pnpm",
+      "g-n10",
+      "gn-p08",
+      "g-n08",
+      "g-k04",
+      "g-k12",
+      "gn-p02",
+      "g-c08-new"
+     ],
+     "ms": 161.28119999996852,
+     "topScore": null,
+     "hit1": 0,
+     "hit3": 0,
+     "hit5": 0,
+     "recall8": 0,
+     "rr": 0,
+     "ndcg8": 0
+    },
+    {
+     "query": "q-g-p21",
+     "category": "paraphrase",
+     "mode": "hybrid+prodrecency",
+     "status": "ok",
+     "ranked": [
+      "s-pnpm",
+      "g-n10",
+      "gn-p08",
+      "g-n08",
+      "g-c08-new",
+      "g-k04",
+      "g-k12",
+      "gn-p02"
+     ],
+     "ms": 164.37170000001788,
+     "topScore": null,
+     "hit1": 0,
+     "hit3": 0,
+     "hit5": 0,
+     "recall8": 0,
+     "rr": 0,
+     "ndcg8": 0
+    },
+    {
+     "query": "q-g-p22",
+     "category": "paraphrase",
+     "mode": "lexical",
+     "status": "ok",
+     "ranked": [
+      "d-0086",
+      "d-0001",
+      "d-0027",
+      "d-0053",
+      "g-k15",
+      "g-p22",
+      "d-0042",
+      "d-0093"
+     ],
+     "ms": 131.77969999995548,
+     "topScore": null,
+     "hit1": 0,
+     "hit3": 0,
+     "hit5": 0,
+     "recall8": 1,
+     "rr": 0.16666666666666666,
+     "ndcg8": 0.3562071871080222
+    },
+    {
+     "query": "q-g-p22",
+     "category": "paraphrase",
+     "mode": "hybrid",
+     "status": "ok",
+     "ranked": [
+      "g-p22",
+      "d-0027",
+      "g-n08",
+      "s-date-w1a",
+      "g-p20",
+      "g-p08",
+      "g-n03",
+      "g-n04"
+     ],
+     "ms": 166.80940000002738,
+     "topScore": null,
+     "hit1": 1,
+     "hit3": 1,
+     "hit5": 1,
+     "recall8": 1,
+     "rr": 1,
+     "ndcg8": 1
+    },
+    {
+     "query": "q-g-p22",
+     "category": "paraphrase",
+     "mode": "hybrid+prodrecency",
+     "status": "ok",
+     "ranked": [
+      "g-p22",
+      "d-0027",
+      "g-n08",
+      "s-date-w1a",
+      "g-p08",
+      "g-p20",
+      "g-n00",
+      "g-n03"
+     ],
+     "ms": 161.7949999999837,
+     "topScore": null,
+     "hit1": 1,
+     "hit3": 1,
+     "hit5": 1,
+     "recall8": 1,
+     "rr": 1,
+     "ndcg8": 1
+    },
+    {
+     "query": "q-g-p24",
+     "category": "paraphrase",
+     "mode": "lexical",
+     "status": "ok",
+     "ranked": [
+      "n-qinghe-cover",
+      "s-pnpm",
+      "s-flight",
+      "g-p04",
+      "gn-p01",
+      "n-alarm",
+      "s-lang-ctx",
+      "d-0002"
+     ],
+     "ms": 125.89220000000205,
+     "topScore": null,
+     "hit1": 0,
+     "hit3": 0,
+     "hit5": 0,
+     "recall8": 0,
+     "rr": 0,
+     "ndcg8": 0
+    },
+    {
+     "query": "q-g-p24",
+     "category": "paraphrase",
+     "mode": "hybrid",
+     "status": "ok",
+     "ranked": [
+      "g-n06",
+      "g-p04",
+      "s-pnpm",
+      "g-n03",
+      "s-long-gift",
+      "g-n00",
+      "s-long-passport",
+      "g-n08"
+     ],
+     "ms": 155.75959999999031,
+     "topScore": null,
+     "hit1": 0,
+     "hit3": 0,
+     "hit5": 0,
+     "recall8": 0,
+     "rr": 0,
+     "ndcg8": 0
+    },
+    {
+     "query": "q-g-p24",
+     "category": "paraphrase",
+     "mode": "hybrid+prodrecency",
+     "status": "ok",
+     "ranked": [
+      "g-n00",
+      "g-p04",
+      "s-pnpm",
+      "s-long-gift",
+      "g-n06",
+      "g-n03",
+      "g-n08",
+      "s-long-passport"
+     ],
+     "ms": 160.0899999999674,
+     "topScore": null,
+     "hit1": 0,
+     "hit3": 0,
+     "hit5": 0,
+     "recall8": 0,
+     "rr": 0,
+     "ndcg8": 0
+    },
+    {
+     "query": "q-g-p25",
+     "category": "paraphrase",
+     "mode": "lexical",
+     "status": "ok",
+     "ranked": [
+      "g-p25",
+      "g-n00",
+      "g-n01",
+      "g-n03",
+      "g-n05",
+      "g-n06",
+      "g-n04",
+      "g-n08"
+     ],
+     "ms": 128.19559999997728,
+     "topScore": null,
+     "hit1": 1,
+     "hit3": 1,
+     "hit5": 1,
+     "recall8": 1,
+     "rr": 1,
+     "ndcg8": 1
+    },
+    {
+     "query": "q-g-p25",
+     "category": "paraphrase",
+     "mode": "hybrid",
+     "status": "ok",
+     "ranked": [
+      "g-p25",
+      "g-n01",
+      "s-coffee",
+      "g-n03",
+      "g-n04",
+      "g-n08",
+      "g-n00",
+      "s-long-gift"
+     ],
+     "ms": 157.4613000000245,
+     "topScore": null,
+     "hit1": 1,
+     "hit3": 1,
+     "hit5": 1,
+     "recall8": 1,
+     "rr": 1,
+     "ndcg8": 1
+    },
+    {
+     "query": "q-g-p25",
+     "category": "paraphrase",
+     "mode": "hybrid+prodrecency",
+     "status": "ok",
+     "ranked": [
+      "g-n01",
+      "g-p25",
+      "g-n08",
+      "s-coffee",
+      "g-n00",
+      "s-long-gift",
+      "g-n03",
+      "g-n04"
+     ],
+     "ms": 161.6374000000069,
+     "topScore": null,
+     "hit1": 0,
+     "hit3": 1,
+     "hit5": 1,
+     "recall8": 1,
+     "rr": 0.5,
+     "ndcg8": 0.6309297535714575
+    },
+    {
+     "query": "q-g-p26",
+     "category": "paraphrase",
+     "mode": "lexical",
+     "status": "ok",
+     "ranked": [
+      "gn-p03",
+      "g-p26",
+      "n-alarm",
+      "g-p11",
+      "s-sleep",
+      "d-0008",
+      "d-0010",
+      "d-0017"
+     ],
+     "ms": 131.15600000001723,
+     "topScore": null,
+     "hit1": 0,
+     "hit3": 1,
+     "hit5": 1,
+     "recall8": 1,
+     "rr": 0.5,
+     "ndcg8": 0.6309297535714575
+    },
+    {
+     "query": "q-g-p26",
+     "category": "paraphrase",
+     "mode": "hybrid",
+     "status": "ok",
+     "ranked": [
+      "g-p26",
+      "s-sleep",
+      "g-p11",
+      "g-n07",
+      "n-alarm",
+      "s-trip-mid",
+      "s-city-old",
+      "d-0001"
+     ],
+     "ms": 157.05499999999302,
+     "topScore": null,
+     "hit1": 1,
+     "hit3": 1,
+     "hit5": 1,
+     "recall8": 1,
+     "rr": 1,
+     "ndcg8": 1
+    },
+    {
+     "query": "q-g-p26",
+     "category": "paraphrase",
+     "mode": "hybrid+prodrecency",
+     "status": "ok",
+     "ranked": [
+      "g-p26",
+      "s-sleep",
+      "g-p11",
+      "g-n09",
+      "n-alarm",
+      "s-trip-mid",
+      "s-city-old",
+      "d-0001"
+     ],
+     "ms": 152.71019999997225,
+     "topScore": null,
+     "hit1": 1,
+     "hit3": 1,
+     "hit5": 1,
+     "recall8": 1,
+     "rr": 1,
+     "ndcg8": 1
+    },
+    {
+     "query": "q-g-p28",
+     "category": "paraphrase",
+     "mode": "lexical",
+     "status": "ok",
+     "ranked": [
+      "g-k09",
+      "g-k07",
+      "g-n06",
+      "s-pnpm",
+      "s-lang-ctx",
+      "s-coffee",
+      "g-n01",
+      "g-n02"
+     ],
+     "ms": 130.3181999999797,
+     "topScore": null,
+     "hit1": 0,
+     "hit3": 0,
+     "hit5": 0,
+     "recall8": 0,
+     "rr": 0,
+     "ndcg8": 0
+    },
+    {
+     "query": "q-g-p28",
+     "category": "paraphrase",
+     "mode": "hybrid",
+     "status": "ok",
+     "ranked": [
+      "g-n07",
+      "g-k09",
+      "g-n06",
+      "g-n02",
+      "g-n08",
+      "s-long-gift",
+      "g-n10",
+      "g-n01"
+     ],
+     "ms": 160.63250000000698,
+     "topScore": null,
+     "hit1": 0,
+     "hit3": 0,
+     "hit5": 0,
+     "recall8": 0,
+     "rr": 0,
+     "ndcg8": 0
+    },
+    {
+     "query": "q-g-p28",
+     "category": "paraphrase",
+     "mode": "hybrid+prodrecency",
+     "status": "ok",
+     "ranked": [
+      "g-n02",
+      "g-k09",
+      "g-n08",
+      "s-long-gift",
+      "g-n07",
+      "g-n06",
+      "g-n00",
+      "g-n01"
+     ],
+     "ms": 160.54570000001695,
+     "topScore": null,
+     "hit1": 0,
+     "hit3": 0,
+     "hit5": 0,
+     "recall8": 0,
+     "rr": 0,
+     "ndcg8": 0
+    },
+    {
+     "query": "q-g-p29",
+     "category": "paraphrase",
+     "mode": "lexical",
+     "status": "ok",
+     "ranked": [
+      "d-0009",
+      "d-0031",
+      "d-0075",
+      "d-0094",
+      "d-0097",
+      "d-0103",
+      "d-0012",
+      "d-0048"
+     ],
+     "ms": 131.37020000000484,
+     "topScore": null,
+     "hit1": 0,
+     "hit3": 0,
+     "hit5": 0,
+     "recall8": 0,
+     "rr": 0,
+     "ndcg8": 0
+    },
+    {
+     "query": "q-g-p29",
+     "category": "paraphrase",
+     "mode": "hybrid",
+     "status": "ok",
+     "ranked": [
+      "d-0097",
+      "g-n07",
+      "d-0009",
+      "g-p02",
+      "d-0094",
+      "d-0075",
+      "d-0103",
+      "s-long-client"
+     ],
+     "ms": 162.86290000000736,
+     "topScore": null,
+     "hit1": 0,
+     "hit3": 0,
+     "hit5": 0,
+     "recall8": 0,
+     "rr": 0,
+     "ndcg8": 0
+    },
+    {
+     "query": "q-g-p29",
+     "category": "paraphrase",
+     "mode": "hybrid+prodrecency",
+     "status": "ok",
+     "ranked": [
+      "d-0097",
+      "s-long-client",
+      "d-0009",
+      "g-p02",
+      "d-0103",
+      "d-0094",
+      "d-0075",
+      "g-n08"
+     ],
+     "ms": 161.266500000027,
+     "topScore": null,
+     "hit1": 0,
+     "hit3": 0,
+     "hit5": 0,
+     "recall8": 0,
+     "rr": 0,
+     "ndcg8": 0
+    },
+    {
+     "query": "q-g-k00",
+     "category": "keyword",
+     "mode": "lexical",
+     "status": "ok",
+     "ranked": [
+      "g-k00",
+      "s-linzhou",
+      "gn-k00",
+      "g-c01-old",
+      "g-c01-new",
+      "s-cloud-old",
+      "s-cloud-new"
+     ],
+     "ms": 130.8448999999673,
+     "topScore": null,
+     "hit1": 1,
+     "hit3": 1,
+     "hit5": 1,
+     "recall8": 1,
+     "rr": 1,
+     "ndcg8": 1
+    },
+    {
+     "query": "q-g-k00",
+     "category": "keyword",
+     "mode": "hybrid",
+     "status": "ok",
+     "ranked": [
+      "g-k00",
+      "s-linzhou",
+      "gn-k00",
+      "g-c01-old",
+      "g-c01-new",
+      "s-cloud-old",
+      "s-cloud-new",
+      "g-k06"
+     ],
+     "ms": 157.07099999999627,
+     "topScore": null,
+     "hit1": 1,
+     "hit3": 1,
+     "hit5": 1,
+     "recall8": 1,
+     "rr": 1,
+     "ndcg8": 1
+    },
+    {
+     "query": "q-g-k00",
+     "category": "keyword",
+     "mode": "hybrid+prodrecency",
+     "status": "ok",
+     "ranked": [
+      "g-k00",
+      "s-linzhou",
+      "gn-k00",
+      "g-c01-new",
+      "g-c01-old",
+      "s-cloud-new",
+      "s-cloud-old",
+      "g-k08"
+     ],
+     "ms": 158.83580000000075,
+     "topScore": null,
+     "hit1": 1,
+     "hit3": 1,
+     "hit5": 1,
+     "recall8": 1,
+     "rr": 1,
+     "ndcg8": 1
+    },
+    {
+     "query": "q-g-k01",
+     "category": "keyword",
+     "mode": "lexical",
+     "status": "ok",
+     "ranked": [
+      "g-k01",
+      "g-k09",
+      "g-k14",
+      "g-k10",
+      "g-k15",
+      "g-k03",
+      "gn-k01",
+      "d-0041"
+     ],
+     "ms": 130.3411999999662,
+     "topScore": null,
+     "hit1": 1,
+     "hit3": 1,
+     "hit5": 1,
+     "recall8": 1,
+     "rr": 1,
+     "ndcg8": 1
+    },
+    {
+     "query": "q-g-k01",
+     "category": "keyword",
+     "mode": "hybrid",
+     "status": "ok",
+     "ranked": [
+      "g-k01",
+      "g-k09",
+      "g-k10",
+      "g-k15",
+      "g-k14",
+      "gn-k01",
+      "gn-k07",
+      "g-k11"
+     ],
+     "ms": 164.65659999998752,
+     "topScore": null,
+     "hit1": 1,
+     "hit3": 1,
+     "hit5": 1,
+     "recall8": 1,
+     "rr": 1,
+     "ndcg8": 1
+    },
+    {
+     "query": "q-g-k01",
+     "category": "keyword",
+     "mode": "hybrid+prodrecency",
+     "status": "ok",
+     "ranked": [
+      "g-k01",
+      "g-k09",
+      "g-k10",
+      "g-k15",
+      "g-k14",
+      "gn-k01",
+      "gn-k07",
+      "g-k11"
+     ],
+     "ms": 161.98729999997886,
+     "topScore": null,
+     "hit1": 1,
+     "hit3": 1,
+     "hit5": 1,
+     "recall8": 1,
+     "rr": 1,
+     "ndcg8": 1
+    },
+    {
+     "query": "q-g-k02",
+     "category": "keyword",
+     "mode": "lexical",
+     "status": "ok",
+     "ranked": [
+      "g-k02",
+      "d-0072",
+      "d-0020",
+      "gn-p01",
+      "d-0004",
+      "d-0038",
+      "d-0070",
+      "d-0081"
+     ],
+     "ms": 126.3853999999701,
+     "topScore": null,
+     "hit1": 1,
+     "hit3": 1,
+     "hit5": 1,
+     "recall8": 1,
+     "rr": 1,
+     "ndcg8": 1
+    },
+    {
+     "query": "q-g-k02",
+     "category": "keyword",
+     "mode": "hybrid",
+     "status": "ok",
+     "ranked": [
+      "g-k02",
+      "g-k00",
+      "g-c05-old",
+      "g-c08-old",
+      "g-k05",
+      "gn-k10",
+      "g-c02-old",
+      "g-k06"
+     ],
+     "ms": 163.35339999996359,
+     "topScore": null,
+     "hit1": 1,
+     "hit3": 1,
+     "hit5": 1,
+     "recall8": 1,
+     "rr": 1,
+     "ndcg8": 1
+    },
+    {
+     "query": "q-g-k02",
+     "category": "keyword",
+     "mode": "hybrid+prodrecency",
+     "status": "ok",
+     "ranked": [
+      "g-k02",
+      "g-k00",
+      "g-c05-old",
+      "g-c08-old",
+      "g-k05",
+      "gn-k10",
+      "g-c02-new",
+      "g-k06"
+     ],
+     "ms": 158.96940000000177,
+     "topScore": null,
+     "hit1": 1,
+     "hit3": 1,
+     "hit5": 1,
+     "recall8": 1,
+     "rr": 1,
+     "ndcg8": 1
+    },
+    {
+     "query": "q-g-k04",
+     "category": "keyword",
+     "mode": "lexical",
+     "status": "ok",
+     "ranked": [
+      "g-k04",
+      "gn-p01",
+      "d-0029",
+      "d-0032",
+      "d-0060",
+      "d-0069",
+      "d-0107",
+      "d-0062"
+     ],
+     "ms": 125.80839999997988,
+     "topScore": null,
+     "hit1": 1,
+     "hit3": 1,
+     "hit5": 1,
+     "recall8": 1,
+     "rr": 1,
+     "ndcg8": 1
+    },
+    {
+     "query": "q-g-k04",
+     "category": "keyword",
+     "mode": "hybrid",
+     "status": "ok",
+     "ranked": [
+      "g-k04",
+      "g-n00",
+      "gn-k10",
+      "g-k02",
+      "g-k11",
+      "g-n01",
+      "g-n03",
+      "g-n09"
+     ],
+     "ms": 161.28009999997448,
+     "topScore": null,
+     "hit1": 1,
+     "hit3": 1,
+     "hit5": 1,
+     "recall8": 1,
+     "rr": 1,
+     "ndcg8": 1
+    },
+    {
+     "query": "q-g-k04",
+     "category": "keyword",
+     "mode": "hybrid+prodrecency",
+     "status": "ok",
+     "ranked": [
+      "g-k04",
+      "g-n00",
+      "gn-k10",
+      "g-k02",
+      "g-k11",
+      "g-n01",
+      "g-n09",
+      "g-n03"
+     ],
+     "ms": 165.70789999997942,
+     "topScore": null,
+     "hit1": 1,
+     "hit3": 1,
+     "hit5": 1,
+     "recall8": 1,
+     "rr": 1,
+     "ndcg8": 1
+    },
+    {
+     "query": "q-g-k05",
+     "category": "keyword",
+     "mode": "lexical",
+     "status": "ok",
+     "ranked": [
+      "g-k05",
+      "d-0004",
+      "d-0038",
+      "d-0070",
+      "d-0072",
+      "d-0081",
+      "g-n07",
+      "g-k10"
+     ],
+     "ms": 129.6428999999771,
+     "topScore": null,
+     "hit1": 1,
+     "hit3": 1,
+     "hit5": 1,
+     "recall8": 1,
+     "rr": 1,
+     "ndcg8": 1
+    },
+    {
+     "query": "q-g-k05",
+     "category": "keyword",
+     "mode": "hybrid",
+     "status": "ok",
+     "ranked": [
+      "g-k05",
+      "g-n07",
+      "g-k00",
+      "g-k02",
+      "gn-k10",
+      "g-k15",
+      "g-k08",
+      "d-0100"
+     ],
+     "ms": 160.91810000000987,
+     "topScore": null,
+     "hit1": 1,
+     "hit3": 1,
+     "hit5": 1,
+     "recall8": 1,
+     "rr": 1,
+     "ndcg8": 1
+    },
+    {
+     "query": "q-g-k05",
+     "category": "keyword",
+     "mode": "hybrid+prodrecency",
+     "status": "ok",
+     "ranked": [
+      "g-k05",
+      "g-n07",
+      "g-k00",
+      "g-k02",
+      "gn-k10",
+      "g-k08",
+      "g-k15",
+      "d-0100"
+     ],
+     "ms": 161.4881999999634,
+     "topScore": null,
+     "hit1": 1,
+     "hit3": 1,
+     "hit5": 1,
+     "recall8": 1,
+     "rr": 1,
+     "ndcg8": 1
+    },
+    {
+     "query": "q-g-k06",
+     "category": "keyword",
+     "mode": "lexical",
+     "status": "ok",
+     "ranked": [
+      "g-k06",
+      "d-0009",
+      "d-0075",
+      "d-0094",
+      "d-0097",
+      "d-0103",
+      "n-npm-error",
+      "d-0004"
+     ],
+     "ms": 133.96220000000903,
+     "topScore": null,
+     "hit1": 1,
+     "hit3": 1,
+     "hit5": 1,
+     "recall8": 1,
+     "rr": 1,
+     "ndcg8": 1
+    },
+    {
+     "query": "q-g-k06",
+     "category": "keyword",
+     "mode": "hybrid",
+     "status": "ok",
+     "ranked": [
+      "g-k06",
+      "d-0006",
+      "gn-k10",
+      "d-0072",
+      "gn-k07",
+      "gn-k06",
+      "g-k02",
+      "d-0081"
+     ],
+     "ms": 161.94449999998324,
+     "topScore": null,
+     "hit1": 1,
+     "hit3": 1,
+     "hit5": 1,
+     "recall8": 1,
+     "rr": 1,
+     "ndcg8": 1
+    },
+    {
+     "query": "q-g-k06",
+     "category": "keyword",
+     "mode": "hybrid+prodrecency",
+     "status": "ok",
+     "ranked": [
+      "g-k06",
+      "d-0072",
+      "gn-k10",
+      "d-0006",
+      "gn-k07",
+      "gn-k06",
+      "g-k02",
+      "d-0081"
+     ],
+     "ms": 162.34660000004806,
+     "topScore": null,
+     "hit1": 1,
+     "hit3": 1,
+     "hit5": 1,
+     "recall8": 1,
+     "rr": 1,
+     "ndcg8": 1
+    },
+    {
+     "query": "q-g-k08",
+     "category": "keyword",
+     "mode": "lexical",
+     "status": "ok",
+     "ranked": [
+      "g-k08",
+      "gn-k08",
+      "s-trip-new",
+      "g-n00",
+      "g-n03",
+      "g-n06",
+      "s-long-client",
+      "s-long-gift"
+     ],
+     "ms": 130.4494999999879,
+     "topScore": null,
+     "hit1": 1,
+     "hit3": 1,
+     "hit5": 1,
+     "recall8": 1,
+     "rr": 1,
+     "ndcg8": 1
+    },
+    {
+     "query": "q-g-k08",
+     "category": "keyword",
+     "mode": "hybrid",
+     "status": "ok",
+     "ranked": [
+      "g-k08",
+      "gn-k08",
+      "s-long-client",
+      "g-n06",
+      "g-n00",
+      "s-long-gift",
+      "g-n11",
+      "g-n03"
+     ],
+     "ms": 158.53000000002794,
+     "topScore": null,
+     "hit1": 1,
+     "hit3": 1,
+     "hit5": 1,
+     "recall8": 1,
+     "rr": 1,
+     "ndcg8": 1
+    },
+    {
+     "query": "q-g-k08",
+     "category": "keyword",
+     "mode": "hybrid+prodrecency",
+     "status": "ok",
+     "ranked": [
+      "g-k08",
+      "gn-k08",
+      "g-n00",
+      "s-long-client",
+      "s-long-gift",
+      "g-n06",
+      "g-n11",
+      "g-n03"
+     ],
+     "ms": 160.61709999997402,
+     "topScore": null,
+     "hit1": 1,
+     "hit3": 1,
+     "hit5": 1,
+     "recall8": 1,
+     "rr": 1,
+     "ndcg8": 1
+    },
+    {
+     "query": "q-g-k09",
+     "category": "keyword",
+     "mode": "lexical",
+     "status": "ok",
+     "ranked": [
+      "g-k09",
+      "g-k01",
+      "g-k10",
+      "g-k15",
+      "g-k03",
+      "d-0041",
+      "d-0076",
+      "d-0082"
+     ],
+     "ms": 132.69229999999516,
+     "topScore": null,
+     "hit1": 1,
+     "hit3": 1,
+     "hit5": 1,
+     "recall8": 1,
+     "rr": 1,
+     "ndcg8": 1
+    },
+    {
+     "query": "q-g-k09",
+     "category": "keyword",
+     "mode": "hybrid",
+     "status": "ok",
+     "ranked": [
+      "g-k09",
+      "g-k01",
+      "g-k03",
+      "g-k15",
+      "g-k11",
+      "g-k10",
+      "g-k14",
+      "g-n06"
+     ],
+     "ms": 159.55430000001797,
+     "topScore": null,
+     "hit1": 1,
+     "hit3": 1,
+     "hit5": 1,
+     "recall8": 1,
+     "rr": 1,
+     "ndcg8": 1
+    },
+    {
+     "query": "q-g-k09",
+     "category": "keyword",
+     "mode": "hybrid+prodrecency",
+     "status": "ok",
+     "ranked": [
+      "g-k09",
+      "g-k01",
+      "g-k03",
+      "g-k15",
+      "g-k11",
+      "g-k10",
+      "g-k14",
+      "g-n01"
+     ],
+     "ms": 162.65479999996023,
+     "topScore": null,
+     "hit1": 1,
+     "hit3": 1,
+     "hit5": 1,
+     "recall8": 1,
+     "rr": 1,
+     "ndcg8": 1
+    },
+    {
+     "query": "q-g-k10",
+     "category": "keyword",
+     "mode": "lexical",
+     "status": "ok",
+     "ranked": [
+      "g-k10",
+      "gn-k10",
+      "g-c05-old",
+      "g-n03",
+      "g-n02",
+      "g-p16",
+      "d-0004",
+      "d-0038"
+     ],
+     "ms": 129.49699999997392,
+     "topScore": null,
+     "hit1": 1,
+     "hit3": 1,
+     "hit5": 1,
+     "recall8": 1,
+     "rr": 1,
+     "ndcg8": 1
+    },
+    {
+     "query": "q-g-k10",
+     "category": "keyword",
+     "mode": "hybrid",
+     "status": "ok",
+     "ranked": [
+      "g-k10",
+      "g-c05-old",
+      "gn-k10",
+      "g-k14",
+      "gn-k07",
+      "g-p21",
+      "g-k15",
+      "g-k07"
+     ],
+     "ms": 159.34990000003017,
+     "topScore": null,
+     "hit1": 1,
+     "hit3": 1,
+     "hit5": 1,
+     "recall8": 1,
+     "rr": 1,
+     "ndcg8": 1
+    },
+    {
+     "query": "q-g-k10",
+     "category": "keyword",
+     "mode": "hybrid+prodrecency",
+     "status": "ok",
+     "ranked": [
+      "g-k10",
+      "g-c05-old",
+      "gn-k10",
+      "g-k14",
+      "gn-k07",
+      "g-k08",
+      "g-p21",
+      "g-k02"
+     ],
+     "ms": 159.81549999996787,
+     "topScore": null,
+     "hit1": 1,
+     "hit3": 1,
+     "hit5": 1,
+     "recall8": 1,
+     "rr": 1,
+     "ndcg8": 1
+    },
+    {
+     "query": "q-g-k12",
+     "category": "keyword",
+     "mode": "lexical",
+     "status": "ok",
+     "ranked": [
+      "g-k12",
+      "d-0009",
+      "d-0031",
+      "d-0075",
+      "g-n00",
+      "g-n01",
+      "g-n02",
+      "g-n03"
+     ],
+     "ms": 127.20069999998668,
+     "topScore": null,
+     "hit1": 1,
+     "hit3": 1,
+     "hit5": 1,
+     "recall8": 1,
+     "rr": 1,
+     "ndcg8": 1
+    },
+    {
+     "query": "q-g-k12",
+     "category": "keyword",
+     "mode": "hybrid",
+     "status": "ok",
+     "ranked": [
+      "g-k12",
+      "g-n02",
+      "g-p25",
+      "d-0097",
+      "gn-p08",
+      "g-n00",
+      "d-0110",
+      "g-n01"
+     ],
+     "ms": 159.015699999989,
+     "topScore": null,
+     "hit1": 1,
+     "hit3": 1,
+     "hit5": 1,
+     "recall8": 1,
+     "rr": 1,
+     "ndcg8": 1
+    },
+    {
+     "query": "q-g-k12",
+     "category": "keyword",
+     "mode": "hybrid+prodrecency",
+     "status": "ok",
+     "ranked": [
+      "g-k12",
+      "g-n02",
+      "d-0097",
+      "g-p25",
+      "g-n00",
+      "g-n01",
+      "gn-p08",
+      "d-0110"
+     ],
+     "ms": 157.88850000000093,
+     "topScore": null,
+     "hit1": 1,
+     "hit3": 1,
+     "hit5": 1,
+     "recall8": 1,
+     "rr": 1,
+     "ndcg8": 1
+    },
+    {
+     "query": "q-g-k13",
+     "category": "keyword",
+     "mode": "lexical",
+     "status": "ok",
+     "ranked": [
+      "g-k13",
+      "g-n10",
+      "s-trip-new",
+      "d-0012",
+      "d-0048",
+      "d-0096",
+      "g-p20",
+      "g-n01"
+     ],
+     "ms": 130.57600000000093,
+     "topScore": null,
+     "hit1": 1,
+     "hit3": 1,
+     "hit5": 1,
+     "recall8": 1,
+     "rr": 1,
+     "ndcg8": 1
+    },
+    {
+     "query": "q-g-k13",
+     "category": "keyword",
+     "mode": "hybrid",
+     "status": "ok",
+     "ranked": [
+      "g-k13",
+      "g-n10",
+      "s-trip-new",
+      "gn-k08",
+      "g-n04",
+      "g-n00",
+      "g-n02",
+      "g-n08"
+     ],
+     "ms": 159.88159999996424,
+     "topScore": null,
+     "hit1": 1,
+     "hit3": 1,
+     "hit5": 1,
+     "recall8": 1,
+     "rr": 1,
+     "ndcg8": 1
+    },
+    {
+     "query": "q-g-k13",
+     "category": "keyword",
+     "mode": "hybrid+prodrecency",
+     "status": "ok",
+     "ranked": [
+      "g-k13",
+      "g-n10",
+      "s-trip-new",
+      "gn-k08",
+      "g-n00",
+      "g-n08",
+      "g-n02",
+      "g-n04"
+     ],
+     "ms": 162.8279999999795,
+     "topScore": null,
+     "hit1": 1,
+     "hit3": 1,
+     "hit5": 1,
+     "recall8": 1,
+     "rr": 1,
+     "ndcg8": 1
+    },
+    {
+     "query": "q-g-k14",
+     "category": "keyword",
+     "mode": "lexical",
+     "status": "ok",
+     "ranked": [
+      "g-k14",
+      "d-0072",
+      "d-0103",
+      "d-0041",
+      "d-0076",
+      "d-0082",
+      "d-0089",
+      "d-0004"
+     ],
+     "ms": 128.75790000002598,
+     "topScore": null,
+     "hit1": 1,
+     "hit3": 1,
+     "hit5": 1,
+     "recall8": 1,
+     "rr": 1,
+     "ndcg8": 1
+    },
+    {
+     "query": "q-g-k14",
+     "category": "keyword",
+     "mode": "hybrid",
+     "status": "ok",
+     "ranked": [
+      "g-k14",
+      "d-0072",
+      "d-0103",
+      "g-k08",
+      "g-k10",
+      "g-c05-old",
+      "d-0076",
+      "g-c08-old"
+     ],
+     "ms": 159.02630000002682,
+     "topScore": null,
+     "hit1": 1,
+     "hit3": 1,
+     "hit5": 1,
+     "recall8": 1,
+     "rr": 1,
+     "ndcg8": 1
+    },
+    {
+     "query": "q-g-k14",
+     "category": "keyword",
+     "mode": "hybrid+prodrecency",
+     "status": "ok",
+     "ranked": [
+      "g-k14",
+      "d-0072",
+      "d-0103",
+      "g-k08",
+      "g-k10",
+      "g-c05-old",
+      "d-0076",
+      "g-c08-old"
+     ],
+     "ms": 161.6549000000232,
+     "topScore": null,
+     "hit1": 1,
+     "hit3": 1,
+     "hit5": 1,
+     "recall8": 1,
+     "rr": 1,
+     "ndcg8": 1
+    },
+    {
+     "query": "q-g-c00",
+     "category": "correction",
+     "mode": "lexical",
+     "status": "ok",
+     "ranked": [
+      "g-c00-new",
+      "g-c00-old",
+      "s-trip-new",
+      "g-n00",
+      "g-n03",
+      "g-n06",
+      "s-long-client",
+      "s-long-gift"
+     ],
+     "ms": 131.18330000003334,
+     "topScore": null,
+     "hit1": 1,
+     "hit3": 1,
+     "hit5": 1,
+     "recall8": 1,
+     "rr": 1,
+     "ndcg8": 1,
+     "order": 1
+    },
+    {
+     "query": "q-g-c00",
+     "category": "correction",
+     "mode": "hybrid",
+     "status": "ok",
+     "ranked": [
+      "g-c00-new",
+      "s-long-client",
+      "g-c00-old",
+      "g-n03",
+      "g-n01",
+      "s-long-gift",
+      "g-n04",
+      "g-n00"
+     ],
+     "ms": 159.0187000000151,
+     "topScore": null,
+     "hit1": 1,
+     "hit3": 1,
+     "hit5": 1,
+     "recall8": 1,
+     "rr": 1,
+     "ndcg8": 1,
+     "order": 1
+    },
+    {
+     "query": "q-g-c00",
+     "category": "correction",
+     "mode": "hybrid+prodrecency",
+     "status": "ok",
+     "ranked": [
+      "g-c00-new",
+      "s-long-client",
+      "g-c00-old",
+      "s-long-gift",
+      "g-n01",
+      "g-n03",
+      "g-n00",
+      "g-n04"
+     ],
+     "ms": 153.99629999999888,
+     "topScore": null,
+     "hit1": 1,
+     "hit3": 1,
+     "hit5": 1,
+     "recall8": 1,
+     "rr": 1,
+     "ndcg8": 1,
+     "order": 1
+    },
+    {
+     "query": "q-g-c01",
+     "category": "correction",
+     "mode": "lexical",
+     "status": "ok",
+     "ranked": [
+      "g-c01-new",
+      "g-c01-old",
+      "d-0009",
+      "d-0075",
+      "d-0094",
+      "d-0097",
+      "d-0103",
+      "d-0031"
+     ],
+     "ms": 131.33130000001984,
+     "topScore": null,
+     "hit1": 1,
+     "hit3": 1,
+     "hit5": 1,
+     "recall8": 1,
+     "rr": 1,
+     "ndcg8": 1,
+     "order": 1
+    },
+    {
+     "query": "q-g-c01",
+     "category": "correction",
+     "mode": "hybrid",
+     "status": "ok",
+     "ranked": [
+      "g-c01-new",
+      "g-n07",
+      "g-c01-old",
+      "d-0097",
+      "g-n01",
+      "g-n02",
+      "s-long-client",
+      "s-long-passport"
+     ],
+     "ms": 158.1198999999906,
+     "topScore": null,
+     "hit1": 1,
+     "hit3": 1,
+     "hit5": 1,
+     "recall8": 1,
+     "rr": 1,
+     "ndcg8": 1,
+     "order": 1
+    },
+    {
+     "query": "q-g-c01",
+     "category": "correction",
+     "mode": "hybrid+prodrecency",
+     "status": "ok",
+     "ranked": [
+      "g-c01-new",
+      "g-n01",
+      "g-c01-old",
+      "d-0097",
+      "g-n02",
+      "g-n07",
+      "s-long-client",
+      "s-long-gift"
+     ],
+     "ms": 173.56010000000242,
+     "topScore": null,
+     "hit1": 1,
+     "hit3": 1,
+     "hit5": 1,
+     "recall8": 1,
+     "rr": 1,
+     "ndcg8": 1,
+     "order": 1
+    },
+    {
+     "query": "q-g-c02",
+     "category": "correction",
+     "mode": "lexical",
+     "status": "ok",
+     "ranked": [
+      "d-0002",
+      "d-0056",
+      "d-0080",
+      "d-0082",
+      "d-0089",
+      "g-c02-old",
+      "d-0041",
+      "d-0076"
+     ],
+     "ms": 130.25559999997495,
+     "topScore": null,
+     "hit1": 0,
+     "hit3": 0,
+     "hit5": 0,
+     "recall8": 0,
+     "rr": 0,
+     "ndcg8": 0,
+     "order": 0
+    },
+    {
+     "query": "q-g-c02",
+     "category": "correction",
+     "mode": "hybrid",
+     "status": "ok",
+     "ranked": [
+      "g-c02-old",
+      "d-0080",
+      "gn-k10",
+      "d-0002",
+      "g-k02",
+      "d-0056",
+      "g-n00",
+      "d-0082"
+     ],
+     "ms": 158.21289999998407,
+     "topScore": null,
+     "hit1": 0,
+     "hit3": 0,
+     "hit5": 0,
+     "recall8": 0,
+     "rr": 0,
+     "ndcg8": 0,
+     "order": 0
+    },
+    {
+     "query": "q-g-c02",
+     "category": "correction",
+     "mode": "hybrid+prodrecency",
+     "status": "ok",
+     "ranked": [
+      "g-c02-old",
+      "d-0080",
+      "gn-k10",
+      "g-n00",
+      "g-k02",
+      "d-0002",
+      "d-0056",
+      "d-0082"
+     ],
+     "ms": 161.94449999998324,
+     "topScore": null,
+     "hit1": 0,
+     "hit3": 0,
+     "hit5": 0,
+     "recall8": 0,
+     "rr": 0,
+     "ndcg8": 0,
+     "order": 0
+    },
+    {
+     "query": "q-g-c04",
+     "category": "correction",
+     "mode": "lexical",
+     "status": "ok",
+     "ranked": [
+      "g-c04-old",
+      "g-n10",
+      "g-k10",
+      "g-c04-new",
+      "d-0026",
+      "d-0035",
+      "d-0049",
+      "d-0057"
+     ],
+     "ms": 127.4822999999742,
+     "topScore": null,
+     "hit1": 0,
+     "hit3": 0,
+     "hit5": 1,
+     "recall8": 1,
+     "rr": 0.25,
+     "ndcg8": 0.43067655807339306,
+     "order": 0
+    },
+    {
+     "query": "q-g-c04",
+     "category": "correction",
+     "mode": "hybrid",
+     "status": "ok",
+     "ranked": [
+      "g-c04-old",
+      "g-n10",
+      "g-c04-new",
+      "g-k10",
+      "g-p28",
+      "d-0064",
+      "g-n03",
+      "g-n04"
+     ],
+     "ms": 154.00299999996787,
+     "topScore": null,
+     "hit1": 0,
+     "hit3": 1,
+     "hit5": 1,
+     "recall8": 1,
+     "rr": 0.3333333333333333,
+     "ndcg8": 0.5,
+     "order": 0
+    },
+    {
+     "query": "q-g-c04",
+     "category": "correction",
+     "mode": "hybrid+prodrecency",
+     "status": "ok",
+     "ranked": [
+      "g-c04-new",
+      "g-n10",
+      "g-c04-old",
+      "g-k10",
+      "d-0035",
+      "g-p28",
+      "g-n08",
+      "g-n03"
+     ],
+     "ms": 159.24640000000363,
+     "topScore": null,
+     "hit1": 1,
+     "hit3": 1,
+     "hit5": 1,
+     "recall8": 1,
+     "rr": 1,
+     "ndcg8": 1,
+     "order": 1
+    },
+    {
+     "query": "q-g-c05",
+     "category": "correction",
+     "mode": "lexical",
+     "status": "ok",
+     "ranked": [
+      "g-c05-old",
+      "g-c05-new",
+      "g-p18",
+      "d-0004",
+      "d-0038",
+      "d-0070",
+      "d-0072",
+      "d-0081"
+     ],
+     "ms": 129.36200000002282,
+     "topScore": null,
+     "hit1": 0,
+     "hit3": 1,
+     "hit5": 1,
+     "recall8": 1,
+     "rr": 0.5,
+     "ndcg8": 0.6309297535714575,
+     "order": 0
+    },
+    {
+     "query": "q-g-c05",
+     "category": "correction",
+     "mode": "hybrid",
+     "status": "ok",
+     "ranked": [
+      "g-c05-old",
+      "g-c05-new",
+      "g-p18",
+      "d-0072",
+      "g-n03",
+      "g-k02",
+      "gn-k10",
+      "g-p01"
+     ],
+     "ms": 157.85350000002654,
+     "topScore": null,
+     "hit1": 0,
+     "hit3": 1,
+     "hit5": 1,
+     "recall8": 1,
+     "rr": 0.5,
+     "ndcg8": 0.6309297535714575,
+     "order": 0
+    },
+    {
+     "query": "q-g-c05",
+     "category": "correction",
+     "mode": "hybrid+prodrecency",
+     "status": "ok",
+     "ranked": [
+      "g-c05-new",
+      "d-0072",
+      "g-c05-old",
+      "g-p18",
+      "g-n03",
+      "g-k02",
+      "g-p01",
+      "gn-k10"
+     ],
+     "ms": 158.41710000002058,
+     "topScore": null,
+     "hit1": 1,
+     "hit3": 1,
+     "hit5": 1,
+     "recall8": 1,
+     "rr": 1,
+     "ndcg8": 1,
+     "order": 1
+    },
+    {
+     "query": "q-g-c06",
+     "category": "correction",
+     "mode": "lexical",
+     "status": "ok",
+     "ranked": [
+      "g-c06-old",
+      "g-c06-new",
+      "g-n07",
+      "g-n00",
+      "g-n01",
+      "g-n02",
+      "g-n03",
+      "g-n04"
+     ],
+     "ms": 128.81620000000112,
+     "topScore": null,
+     "hit1": 0,
+     "hit3": 1,
+     "hit5": 1,
+     "recall8": 1,
+     "rr": 0.5,
+     "ndcg8": 0.6309297535714575,
+     "order": 0
+    },
+    {
+     "query": "q-g-c06",
+     "category": "correction",
+     "mode": "hybrid",
+     "status": "ok",
+     "ranked": [
+      "g-c06-old",
+      "g-n07",
+      "g-c06-new",
+      "g-p20",
+      "g-n02",
+      "g-n00",
+      "g-n04",
+      "g-n03"
+     ],
+     "ms": 155.6685999999754,
+     "topScore": null,
+     "hit1": 0,
+     "hit3": 1,
+     "hit5": 1,
+     "recall8": 1,
+     "rr": 0.3333333333333333,
+     "ndcg8": 0.5,
+     "order": 0
+    },
+    {
+     "query": "q-g-c06",
+     "category": "correction",
+     "mode": "hybrid+prodrecency",
+     "status": "ok",
+     "ranked": [
+      "g-c06-new",
+      "g-n07",
+      "g-c06-old",
+      "g-n00",
+      "g-p20",
+      "g-n02",
+      "g-n08",
+      "g-n04"
+     ],
+     "ms": 160.4375,
+     "topScore": null,
+     "hit1": 1,
+     "hit3": 1,
+     "hit5": 1,
+     "recall8": 1,
+     "rr": 1,
+     "ndcg8": 1,
+     "order": 1
+    },
+    {
+     "query": "q-g-c08",
+     "category": "correction",
+     "mode": "lexical",
+     "status": "ok",
+     "ranked": [
+      "g-c08-old",
+      "g-c08-new",
+      "d-0041",
+      "d-0076",
+      "d-0082",
+      "d-0089",
+      "d-0004",
+      "d-0038"
+     ],
+     "ms": 130.45009999995818,
+     "topScore": null,
+     "hit1": 0,
+     "hit3": 1,
+     "hit5": 1,
+     "recall8": 1,
+     "rr": 0.5,
+     "ndcg8": 0.6309297535714575,
+     "order": 0
+    },
+    {
+     "query": "q-g-c08",
+     "category": "correction",
+     "mode": "hybrid",
+     "status": "ok",
+     "ranked": [
+      "g-c08-old",
+      "g-c08-new",
+      "g-k06",
+      "g-k08",
+      "g-k07",
+      "g-n02",
+      "d-0072",
+      "gn-k06"
+     ],
+     "ms": 162.108099999954,
+     "topScore": null,
+     "hit1": 0,
+     "hit3": 1,
+     "hit5": 1,
+     "recall8": 1,
+     "rr": 0.5,
+     "ndcg8": 0.6309297535714575,
+     "order": 0
+    },
+    {
+     "query": "q-g-c08",
+     "category": "correction",
+     "mode": "hybrid+prodrecency",
+     "status": "ok",
+     "ranked": [
+      "g-c08-new",
+      "g-c08-old",
+      "g-k08",
+      "g-k06",
+      "g-n02",
+      "g-k07",
+      "d-0072",
+      "gn-k06"
+     ],
+     "ms": 160.76800000004005,
+     "topScore": null,
+     "hit1": 1,
+     "hit3": 1,
+     "hit5": 1,
+     "recall8": 1,
+     "rr": 1,
+     "ndcg8": 1,
+     "order": 1
+    },
+    {
+     "query": "q-g-n00",
+     "category": "needle",
+     "mode": "lexical",
+     "status": "ok",
+     "ranked": [
+      "g-n00",
+      "s-trip-new",
+      "g-n03",
+      "g-n06",
+      "s-long-client",
+      "s-long-gift",
+      "s-long-passport",
+      "g-n01"
+     ],
+     "ms": 133.14000000001397,
+     "topScore": null,
+     "hit1": 1,
+     "hit3": 1,
+     "hit5": 1,
+     "recall8": 1,
+     "rr": 1,
+     "ndcg8": 1,
+     "evidence": {
+      "whole": 0,
+      "excerpt": 1,
+      "wholeChars": 40,
+      "excerptChars": 632
+     }
+    },
+    {
+     "query": "q-g-n00",
+     "category": "needle",
+     "mode": "hybrid",
+     "status": "ok",
+     "ranked": [
+      "g-n00",
+      "g-n05",
+      "s-long-gift",
+      "s-long-client",
+      "g-n04",
+      "g-n08",
+      "g-n11",
+      "s-long-backup"
+     ],
+     "ms": 164.1645000000135,
+     "topScore": null,
+     "hit1": 1,
+     "hit3": 1,
+     "hit5": 1,
+     "recall8": 1,
+     "rr": 1,
+     "ndcg8": 1,
+     "evidence": {
+      "whole": 0,
+      "excerpt": 1,
+      "wholeChars": 0,
+      "excerptChars": 714
+     }
+    },
+    {
+     "query": "q-g-n00",
+     "category": "needle",
+     "mode": "hybrid+prodrecency",
+     "status": "ok",
+     "ranked": [
+      "g-n00",
+      "s-long-gift",
+      "g-n05",
+      "s-long-client",
+      "g-n08",
+      "g-n04",
+      "g-n11",
+      "s-long-backup"
+     ],
+     "ms": 159.15259999997215,
+     "topScore": null,
+     "hit1": 1,
+     "hit3": 1,
+     "hit5": 1,
+     "recall8": 1,
+     "rr": 1,
+     "ndcg8": 1,
+     "evidence": {
+      "whole": 0,
+      "excerpt": 1,
+      "wholeChars": 0,
+      "excerptChars": 714
+     }
+    },
+    {
+     "query": "q-g-n01",
+     "category": "needle",
+     "mode": "lexical",
+     "status": "ok",
+     "ranked": [
+      "g-n01"
+     ],
+     "ms": 129.56560000003083,
+     "topScore": null,
+     "hit1": 1,
+     "hit3": 1,
+     "hit5": 1,
+     "recall8": 1,
+     "rr": 1,
+     "ndcg8": 1,
+     "evidence": {
+      "whole": 0,
+      "excerpt": 1,
+      "wholeChars": 0,
+      "excerptChars": 94
+     }
+    },
+    {
+     "query": "q-g-n01",
+     "category": "needle",
+     "mode": "hybrid",
+     "status": "ok",
+     "ranked": [
+      "g-n01",
+      "g-c02-new",
+      "s-date-w1a",
+      "g-p26",
+      "g-c06-old",
+      "g-c00-old",
+      "gn-k01",
+      "g-k08"
+     ],
+     "ms": 160.11759999999776,
+     "topScore": null,
+     "hit1": 1,
+     "hit3": 1,
+     "hit5": 1,
+     "recall8": 1,
+     "rr": 1,
+     "ndcg8": 1,
+     "evidence": {
+      "whole": 0,
+      "excerpt": 1,
+      "wholeChars": 176,
+      "excerptChars": 270
+     }
+    },
+    {
+     "query": "q-g-n01",
+     "category": "needle",
+     "mode": "hybrid+prodrecency",
+     "status": "ok",
+     "ranked": [
+      "g-n01",
+      "g-c02-new",
+      "s-date-w1a",
+      "g-p26",
+      "g-c06-old",
+      "gn-k01",
+      "g-k08",
+      "g-c00-old"
+     ],
+     "ms": 159.28179999999702,
+     "topScore": null,
+     "hit1": 1,
+     "hit3": 1,
+     "hit5": 1,
+     "recall8": 1,
+     "rr": 1,
+     "ndcg8": 1,
+     "evidence": {
+      "whole": 0,
+      "excerpt": 1,
+      "wholeChars": 176,
+      "excerptChars": 270
+     }
+    },
+    {
+     "query": "q-g-n02",
+     "category": "needle",
+     "mode": "lexical",
+     "status": "ok",
+     "ranked": [
+      "g-n02",
+      "d-0016"
+     ],
+     "ms": 131.83319999999367,
+     "topScore": null,
+     "hit1": 1,
+     "hit3": 1,
+     "hit5": 1,
+     "recall8": 1,
+     "rr": 1,
+     "ndcg8": 1,
+     "evidence": {
+      "whole": 0,
+      "excerpt": 1,
+      "wholeChars": 73,
+      "excerptChars": 149
+     }
+    },
+    {
+     "query": "q-g-n02",
+     "category": "needle",
+     "mode": "hybrid",
+     "status": "ok",
+     "ranked": [
+      "d-0016",
+      "g-n02",
+      "g-c00-new",
+      "g-p08",
+      "g-c02-new",
+      "d-0081",
+      "g-c05-new",
+      "g-k11"
+     ],
+     "ms": 156.41769999999087,
+     "topScore": null,
+     "hit1": 0,
+     "hit3": 1,
+     "hit5": 1,
+     "recall8": 1,
+     "rr": 0.5,
+     "ndcg8": 0.6309297535714575,
+     "evidence": {
+      "whole": 0,
+      "excerpt": 1,
+      "wholeChars": 225,
+      "excerptChars": 301
+     }
+    },
+    {
+     "query": "q-g-n02",
+     "category": "needle",
+     "mode": "hybrid+prodrecency",
+     "status": "ok",
+     "ranked": [
+      "d-0016",
+      "g-n02",
+      "g-c00-new",
+      "g-p08",
+      "g-c02-new",
+      "d-0081",
+      "g-c05-new",
+      "s-date-w2"
+     ],
+     "ms": 157.9981999999727,
+     "topScore": null,
+     "hit1": 0,
+     "hit3": 1,
+     "hit5": 1,
+     "recall8": 1,
+     "rr": 0.5,
+     "ndcg8": 0.6309297535714575,
+     "evidence": {
+      "whole": 0,
+      "excerpt": 1,
+      "wholeChars": 225,
+      "excerptChars": 301
+     }
+    },
+    {
+     "query": "q-g-n04",
+     "category": "needle",
+     "mode": "lexical",
+     "status": "ok",
+     "ranked": [
+      "g-n04",
+      "g-n01",
+      "g-n02",
+      "g-n03",
+      "g-n09",
+      "g-n10",
+      "s-long-backup",
+      "g-n00"
+     ],
+     "ms": 127.86639999999898,
+     "topScore": null,
+     "hit1": 1,
+     "hit3": 1,
+     "hit5": 1,
+     "recall8": 1,
+     "rr": 1,
+     "ndcg8": 1,
+     "evidence": {
+      "whole": 0,
+      "excerpt": 1,
+      "wholeChars": 0,
+      "excerptChars": 603
+     }
+    },
+    {
+     "query": "q-g-n04",
+     "category": "needle",
+     "mode": "hybrid",
+     "status": "ok",
+     "ranked": [
+      "g-k06",
+      "g-n01",
+      "g-n02",
+      "g-n04",
+      "g-n00",
+      "g-n10",
+      "g-n09",
+      "s-long-passport"
+     ],
+     "ms": 157.16379999998026,
+     "topScore": null,
+     "hit1": 0,
+     "hit3": 0,
+     "hit5": 1,
+     "recall8": 1,
+     "rr": 0.25,
+     "ndcg8": 0.43067655807339306,
+     "evidence": {
+      "whole": 0,
+      "excerpt": 1,
+      "wholeChars": 30,
+      "excerptChars": 543
+     }
+    },
+    {
+     "query": "q-g-n04",
+     "category": "needle",
+     "mode": "hybrid+prodrecency",
+     "status": "ok",
+     "ranked": [
+      "g-k06",
+      "g-n01",
+      "g-n02",
+      "g-n00",
+      "g-n04",
+      "g-n10",
+      "g-n09",
+      "s-long-gift"
+     ],
+     "ms": 162.0971000000136,
+     "topScore": null,
+     "hit1": 0,
+     "hit3": 0,
+     "hit5": 1,
+     "recall8": 1,
+     "rr": 0.2,
+     "ndcg8": 0.38685280723454163,
+     "evidence": {
+      "whole": 0,
+      "excerpt": 1,
+      "wholeChars": 30,
+      "excerptChars": 593
+     }
+    },
+    {
+     "query": "q-g-n05",
+     "category": "needle",
+     "mode": "lexical",
+     "status": "ok",
+     "ranked": [
+      "g-p21",
+      "s-trip-new",
+      "g-n05",
+      "g-p00",
+      "gn-p01",
+      "s-cloud-new",
+      "d-0001",
+      "d-0021"
+     ],
+     "ms": 127.5734999999986,
+     "topScore": null,
+     "hit1": 0,
+     "hit3": 1,
+     "hit5": 1,
+     "recall8": 1,
+     "rr": 0.3333333333333333,
+     "ndcg8": 0.5,
+     "evidence": {
+      "whole": 0,
+      "excerpt": 1,
+      "wholeChars": 320,
+      "excerptChars": 398
+     }
+    },
+    {
+     "query": "q-g-n05",
+     "category": "needle",
+     "mode": "hybrid",
+     "status": "ok",
+     "ranked": [
+      "g-p21",
+      "g-n05",
+      "g-n00",
+      "d-0081",
+      "g-n02",
+      "s-long-client",
+      "g-n11",
+      "s-long-passport"
+     ],
+     "ms": 167.84989999997197,
+     "topScore": null,
+     "hit1": 0,
+     "hit3": 1,
+     "hit5": 1,
+     "recall8": 1,
+     "rr": 0.5,
+     "ndcg8": 0.6309297535714575,
+     "evidence": {
+      "whole": 0,
+      "excerpt": 1,
+      "wholeChars": 67,
+      "excerptChars": 571
+     }
+    },
+    {
+     "query": "q-g-n05",
+     "category": "needle",
+     "mode": "hybrid+prodrecency",
+     "status": "ok",
+     "ranked": [
+      "g-p21",
+      "g-n05",
+      "g-n00",
+      "g-n02",
+      "d-0081",
+      "s-long-client",
+      "s-long-gift",
+      "g-n08"
+     ],
+     "ms": 162.2821999999578,
+     "topScore": null,
+     "hit1": 0,
+     "hit3": 1,
+     "hit5": 1,
+     "recall8": 1,
+     "rr": 0.5,
+     "ndcg8": 0.6309297535714575,
+     "evidence": {
+      "whole": 0,
+      "excerpt": 1,
+      "wholeChars": 67,
+      "excerptChars": 597
+     }
+    },
+    {
+     "query": "q-g-n06",
+     "category": "needle",
+     "mode": "lexical",
+     "status": "ok",
+     "ranked": [
+      "g-n06",
+      "s-lang-ctx",
+      "g-n00",
+      "g-n01",
+      "g-n02",
+      "g-n03",
+      "g-n07",
+      "s-long-backup"
+     ],
+     "ms": 131.51559999998426,
+     "topScore": null,
+     "hit1": 1,
+     "hit3": 1,
+     "hit5": 1,
+     "recall8": 1,
+     "rr": 1,
+     "ndcg8": 1,
+     "evidence": {
+      "whole": 0,
+      "excerpt": 1,
+      "wholeChars": 34,
+      "excerptChars": 615
+     }
+    },
+    {
+     "query": "q-g-n06",
+     "category": "needle",
+     "mode": "hybrid",
+     "status": "ok",
+     "ranked": [
+      "g-n06",
+      "s-lang-ctx",
+      "g-n03",
+      "g-n01",
+      "g-n02",
+      "g-n00",
+      "g-n08",
+      "g-n07"
+     ],
+     "ms": 156.97060000000056,
+     "topScore": null,
+     "hit1": 1,
+     "hit3": 1,
+     "hit5": 1,
+     "recall8": 1,
+     "rr": 1,
+     "ndcg8": 1,
+     "evidence": {
+      "whole": 0,
+      "excerpt": 1,
+      "wholeChars": 34,
+      "excerptChars": 620
+     }
+    },
+    {
+     "query": "q-g-n06",
+     "category": "needle",
+     "mode": "hybrid+prodrecency",
+     "status": "ok",
+     "ranked": [
+      "g-n01",
+      "s-lang-ctx",
+      "g-n00",
+      "g-n02",
+      "g-n03",
+      "g-n06",
+      "g-n08",
+      "s-long-passport"
+     ],
+     "ms": 159.65320000000065,
+     "topScore": null,
+     "hit1": 0,
+     "hit3": 0,
+     "hit5": 0,
+     "recall8": 1,
+     "rr": 0.16666666666666666,
+     "ndcg8": 0.3562071871080222,
+     "evidence": {
+      "whole": 0,
+      "excerpt": 1,
+      "wholeChars": 34,
+      "excerptChars": 650
+     }
+    },
+    {
+     "query": "q-g-n08",
+     "category": "needle",
+     "mode": "lexical",
+     "status": "ok",
+     "ranked": [
+      "g-n08",
+      "s-trip-new",
+      "g-n00",
+      "g-n01",
+      "g-n03",
+      "g-n04",
+      "g-n06",
+      "g-n09"
+     ],
+     "ms": 130.62089999997988,
+     "topScore": null,
+     "hit1": 1,
+     "hit3": 1,
+     "hit5": 1,
+     "recall8": 1,
+     "rr": 1,
+     "ndcg8": 1,
+     "evidence": {
+      "whole": 0,
+      "excerpt": 1,
+      "wholeChars": 40,
+      "excerptChars": 637
+     }
+    },
+    {
+     "query": "q-g-n08",
+     "category": "needle",
+     "mode": "hybrid",
+     "status": "ok",
+     "ranked": [
+      "s-trip-new",
+      "g-n08",
+      "d-0081",
+      "g-n00",
+      "s-long-gift",
+      "g-n04",
+      "s-trip-old",
+      "g-n01"
+     ],
+     "ms": 159.33559999999125,
+     "topScore": null,
+     "hit1": 0,
+     "hit3": 1,
+     "hit5": 1,
+     "recall8": 1,
+     "rr": 0.5,
+     "ndcg8": 0.6309297535714575,
+     "evidence": {
+      "whole": 0,
+      "excerpt": 1,
+      "wholeChars": 98,
+      "excerptChars": 528
+     }
+    },
+    {
+     "query": "q-g-n08",
+     "category": "needle",
+     "mode": "hybrid+prodrecency",
+     "status": "ok",
+     "ranked": [
+      "s-trip-new",
+      "g-n08",
+      "d-0081",
+      "g-n00",
+      "s-long-gift",
+      "g-n01",
+      "g-n09",
+      "g-n04"
+     ],
+     "ms": 157.03680000000168,
+     "topScore": null,
+     "hit1": 0,
+     "hit3": 1,
+     "hit5": 1,
+     "recall8": 1,
+     "rr": 0.5,
+     "ndcg8": 0.6309297535714575,
+     "evidence": {
+      "whole": 0,
+      "excerpt": 1,
+      "wholeChars": 72,
+      "excerptChars": 584
+     }
+    },
+    {
+     "query": "q-g-n09",
+     "category": "needle",
+     "mode": "lexical",
+     "status": "ok",
+     "ranked": [
+      "s-trip-new",
+      "d-0004",
+      "d-0038",
+      "d-0070",
+      "d-0072",
+      "d-0081",
+      "d-0006",
+      "d-0020"
+     ],
+     "ms": 216.60739999997895,
+     "topScore": null,
+     "hit1": 0,
+     "hit3": 0,
+     "hit5": 0,
+     "recall8": 0,
+     "rr": 0,
+     "ndcg8": 0,
+     "evidence": {
+      "whole": 0,
+      "excerpt": 0,
+      "wholeChars": 444,
+      "excerptChars": 444
+     }
+    },
+    {
+     "query": "q-g-n09",
+     "category": "needle",
+     "mode": "hybrid",
+     "status": "ok",
+     "ranked": [
+      "s-trip-new",
+      "g-k03",
+      "g-k08",
+      "g-n03",
+      "g-c02-old",
+      "g-c04-new",
+      "g-c00-old",
+      "g-k00"
+     ],
+     "ms": 162.71590000001015,
+     "topScore": null,
+     "hit1": 0,
+     "hit3": 0,
+     "hit5": 0,
+     "recall8": 0,
+     "rr": 0,
+     "ndcg8": 0,
+     "evidence": {
+      "whole": 0,
+      "excerpt": 0,
+      "wholeChars": 198,
+      "excerptChars": 274
+     }
+    },
+    {
+     "query": "q-g-n09",
+     "category": "needle",
+     "mode": "hybrid+prodrecency",
+     "status": "ok",
+     "ranked": [
+      "s-trip-new",
+      "g-k03",
+      "g-k08",
+      "g-n02",
+      "g-c04-new",
+      "g-c02-old",
+      "g-k00",
+      "g-c00-old"
+     ],
+     "ms": 173.23810000001686,
+     "topScore": null,
+     "hit1": 0,
+     "hit3": 0,
+     "hit5": 0,
+     "recall8": 0,
+     "rr": 0,
+     "ndcg8": 0,
+     "evidence": {
+      "whole": 0,
+      "excerpt": 0,
+      "wholeChars": 198,
+      "excerptChars": 274
+     }
+    },
+    {
+     "query": "q-g-n10",
+     "category": "needle",
+     "mode": "lexical",
+     "status": "ok",
+     "ranked": [
+      "g-n10",
+      "g-k10",
+      "g-c04-new",
+      "g-c04-old",
+      "d-0004",
+      "d-0038",
+      "d-0070",
+      "d-0072"
+     ],
+     "ms": 128.52539999998407,
+     "topScore": null,
+     "hit1": 1,
+     "hit3": 1,
+     "hit5": 1,
+     "recall8": 1,
+     "rr": 1,
+     "ndcg8": 1,
+     "evidence": {
+      "whole": 0,
+      "excerpt": 1,
+      "wholeChars": 283,
+      "excerptChars": 366
+     }
+    },
+    {
+     "query": "q-g-n10",
+     "category": "needle",
+     "mode": "hybrid",
+     "status": "ok",
+     "ranked": [
+      "g-c04-new",
+      "g-n10",
+      "g-k10",
+      "g-c04-old",
+      "d-0091",
+      "g-k00",
+      "d-0064",
+      "g-k15"
+     ],
+     "ms": 158.84809999994468,
+     "topScore": null,
+     "hit1": 0,
+     "hit3": 1,
+     "hit5": 1,
+     "recall8": 1,
+     "rr": 0.5,
+     "ndcg8": 0.6309297535714575,
+     "evidence": {
+      "whole": 0,
+      "excerpt": 1,
+      "wholeChars": 360,
+      "excerptChars": 443
+     }
+    },
+    {
+     "query": "q-g-n10",
+     "category": "needle",
+     "mode": "hybrid+prodrecency",
+     "status": "ok",
+     "ranked": [
+      "g-c04-new",
+      "g-k10",
+      "g-n10",
+      "g-c04-old",
+      "d-0091",
+      "g-k00",
+      "d-0102",
+      "d-0064"
+     ],
+     "ms": 174.72830000001704,
+     "topScore": null,
+     "hit1": 0,
+     "hit3": 1,
+     "hit5": 1,
+     "recall8": 1,
+     "rr": 0.3333333333333333,
+     "ndcg8": 0.5,
+     "evidence": {
+      "whole": 0,
+      "excerpt": 1,
+      "wholeChars": 371,
+      "excerptChars": 454
+     }
+    },
+    {
+     "query": "q-none-g0",
+     "category": "no-answer",
+     "mode": "lexical",
+     "status": "ok",
+     "ranked": [
+      "d-0003",
+      "d-0005",
+      "d-0015",
+      "d-0016",
+      "d-0030",
+      "d-0033",
+      "d-0108",
+      "g-n00"
+     ],
+     "ms": 128.29119999997783,
+     "topScore": null
+    },
+    {
+     "query": "q-none-g0",
+     "category": "no-answer",
+     "mode": "hybrid",
+     "status": "ok",
+     "ranked": [
+      "d-0015",
+      "s-long-client",
+      "d-0003",
+      "d-0005",
+      "d-0033",
+      "d-0108",
+      "d-0030",
+      "d-0016"
+     ],
+     "ms": 159.45750000001863,
+     "topScore": null
+    },
+    {
+     "query": "q-none-g0",
+     "category": "no-answer",
+     "mode": "hybrid+prodrecency",
+     "status": "ok",
+     "ranked": [
+      "d-0015",
+      "s-long-client",
+      "d-0108",
+      "d-0005",
+      "d-0003",
+      "d-0033",
+      "d-0030",
+      "s-long-gift"
+     ],
+     "ms": 168.84759999997914,
+     "topScore": null
+    },
+    {
+     "query": "q-none-g1",
+     "category": "no-answer",
+     "mode": "lexical",
+     "status": "ok",
+     "ranked": [
+      "g-c05-old",
+      "g-n03",
+      "g-n02",
+      "g-p16",
+      "d-0004",
+      "d-0038",
+      "d-0070",
+      "d-0072"
+     ],
+     "ms": 128.67719999997644,
+     "topScore": null
+    },
+    {
+     "query": "q-none-g1",
+     "category": "no-answer",
+     "mode": "hybrid",
+     "status": "ok",
+     "ranked": [
+      "g-k05",
+      "g-c00-old",
+      "g-k14",
+      "g-n03",
+      "gn-k10",
+      "g-k02",
+      "g-c05-old",
+      "s-coffee"
+     ],
+     "ms": 157.05910000001313,
+     "topScore": null
+    },
+    {
+     "query": "q-none-g1",
+     "category": "no-answer",
+     "mode": "hybrid+prodrecency",
+     "status": "ok",
+     "ranked": [
+      "g-k05",
+      "g-c00-old",
+      "g-k14",
+      "g-n03",
+      "gn-k10",
+      "g-k02",
+      "g-c05-old",
+      "gn-k06"
+     ],
+     "ms": 173.16889999998966,
+     "topScore": null
+    },
+    {
+     "query": "q-none-g2",
+     "category": "no-answer",
+     "mode": "lexical",
+     "status": "ok",
+     "ranked": [
+      "d-0004",
+      "d-0038",
+      "d-0070",
+      "d-0072",
+      "d-0081",
+      "g-c05-old",
+      "g-n03",
+      "d-0006"
+     ],
+     "ms": 131.75949999998556,
+     "topScore": null
+    },
+    {
+     "query": "q-none-g2",
+     "category": "no-answer",
+     "mode": "hybrid",
+     "status": "ok",
+     "ranked": [
+      "g-k14",
+      "g-k05",
+      "g-n02",
+      "g-k02",
+      "g-c05-old",
+      "g-c00-old",
+      "g-k03",
+      "g-k15"
+     ],
+     "ms": 158.7950000000419,
+     "topScore": null
+    },
+    {
+     "query": "q-none-g2",
+     "category": "no-answer",
+     "mode": "hybrid+prodrecency",
+     "status": "ok",
+     "ranked": [
+      "g-k14",
+      "g-k05",
+      "g-n02",
+      "g-k02",
+      "g-c05-old",
+      "g-c00-old",
+      "g-k03",
+      "gn-k10"
+     ],
+     "ms": 174.76510000001872,
+     "topScore": null
+    },
+    {
+     "query": "q-none-g4",
+     "category": "no-answer",
+     "mode": "lexical",
+     "status": "ok",
+     "ranked": [
+      "g-n07",
+      "g-n00",
+      "g-n01",
+      "g-n02",
+      "g-n03",
+      "g-n04",
+      "g-n05",
+      "g-n06"
+     ],
+     "ms": 131.82090000004973,
+     "topScore": null
+    },
+    {
+     "query": "q-none-g4",
+     "category": "no-answer",
+     "mode": "hybrid",
+     "status": "ok",
+     "ranked": [
+      "g-n07",
+      "g-c04-old",
+      "g-c03-old",
+      "g-n01",
+      "g-n04",
+      "s-long-client",
+      "g-n03",
+      "g-n10"
+     ],
+     "ms": 157.75740000000224,
+     "topScore": null
+    },
+    {
+     "query": "q-none-g4",
+     "category": "no-answer",
+     "mode": "hybrid+prodrecency",
+     "status": "ok",
+     "ranked": [
+      "g-n01",
+      "g-c04-old",
+      "g-c03-old",
+      "g-n07",
+      "g-n00",
+      "g-n04",
+      "s-long-gift",
+      "s-long-client"
+     ],
+     "ms": 157.52049999998417,
+     "topScore": null
+    },
+    {
+     "query": "q-none-g5",
+     "category": "no-answer",
+     "mode": "lexical",
+     "status": "ok",
+     "ranked": [
+      "g-k08",
+      "g-p03",
+      "s-pet",
+      "g-n00",
+      "g-n03",
+      "g-n06",
+      "s-long-client",
+      "s-long-gift"
+     ],
+     "ms": 128.25330000004033,
+     "topScore": null
+    },
+    {
+     "query": "q-none-g5",
+     "category": "no-answer",
+     "mode": "hybrid",
+     "status": "ok",
+     "ranked": [
+      "g-p03",
+      "g-n00",
+      "s-long-client",
+      "g-n07",
+      "g-n03",
+      "g-n02",
+      "g-n06",
+      "s-long-passport"
+     ],
+     "ms": 161.4140999999945,
+     "topScore": null
+    },
+    {
+     "query": "q-none-g5",
+     "category": "no-answer",
+     "mode": "hybrid+prodrecency",
+     "status": "ok",
+     "ranked": [
+      "g-p03",
+      "g-n00",
+      "s-long-client",
+      "g-n02",
+      "g-n03",
+      "s-long-passport",
+      "g-n08",
+      "g-n07"
+     ],
+     "ms": 159.87209999997867,
+     "topScore": null
+    }
+   ]
+  }
+ ],
+ "index": [
+  {
+   "granularity": "session",
+   "docs": 250,
+   "embedded": 50,
+   "ms": 269023,
+   "msPerDoc": 5380.5
+  }
+ ],
+ "queries": [
+  {
+   "id": "q-coffee",
+   "category": "paraphrase",
+   "split": "dev",
+   "text": "来杯热拿铁怎么样？",
+   "gold": [
+    "s-coffee"
+   ],
+   "answerable": true
+  },
+  {
+   "id": "q-sleep",
+   "category": "paraphrase",
+   "split": "dev",
+   "text": "晚上十点提醒我休息，会不会太早了？",
+   "gold": [
+    "s-sleep"
+   ],
+   "answerable": true
+  },
+  {
+   "id": "q-cilantro",
+   "category": "paraphrase",
+   "split": "dev",
+   "text": "帮我点一碗牛肉面，配菜有什么推荐？",
+   "gold": [
+    "s-cilantro"
+   ],
+   "answerable": true
+  },
+  {
+   "id": "q-pet",
+   "category": "paraphrase",
+   "split": "dev",
+   "text": "宠物梳毛用什么刷子好？",
+   "gold": [
+    "s-pet"
+   ],
+   "answerable": true
+  },
+  {
+   "id": "q-japanese",
+   "category": "paraphrase",
+   "split": "dev",
+   "text": "有什么适合备考的背单词方法？",
+   "gold": [
+    "s-japanese"
+   ],
+   "answerable": true
+  },
+  {
+   "id": "q-aurora",
+   "category": "keyword",
+   "split": "dev",
+   "text": "Aurora-7 的预算上限是多少？",
+   "gold": [
+    "s-aurora-budget"
+   ],
+   "answerable": true
+  },
+  {
+   "id": "q-linzhou",
+   "category": "keyword",
+   "split": "dev",
+   "text": "项目乙的林舟负责什么？",
+   "gold": [
+    "s-linzhou"
+   ],
+   "answerable": true
+  },
+  {
+   "id": "q-flight",
+   "category": "keyword",
+   "split": "dev",
+   "text": "周五的航班几点起飞？",
+   "gold": [
+    "s-flight"
+   ],
+   "answerable": true
+  },
+  {
+   "id": "q-qinghe",
+   "category": "correction",
+   "split": "dev",
+   "text": "青禾演示是几号？",
+   "gold": [
+    "s-qinghe-new"
+   ],
+   "answerable": true,
+   "newer": "s-qinghe-new",
+   "older": "s-qinghe-old"
+  },
+  {
+   "id": "q-theme",
+   "category": "correction",
+   "split": "dev",
+   "text": "我的界面主题偏好是什么颜色？",
+   "gold": [
+    "s-theme-new"
+   ],
+   "answerable": true,
+   "newer": "s-theme-new",
+   "older": "s-theme-old"
+  },
+  {
+   "id": "q-cloud",
+   "category": "correction",
+   "split": "dev",
+   "text": "云迁移项目现在的预算是多少？",
+   "gold": [
+    "s-cloud-new"
+   ],
+   "answerable": true,
+   "newer": "s-cloud-new",
+   "older": "s-cloud-old"
+  },
+  {
+   "id": "q-lang-client",
+   "category": "context",
+   "split": "dev",
+   "text": "给客户发邮件应该用什么语言？",
+   "gold": [
+    "s-lang-ctx"
+   ],
+   "answerable": true
+  },
+  {
+   "id": "q-lang-notes",
+   "category": "context",
+   "split": "dev",
+   "text": "我的笔记用什么语言写？",
+   "gold": [
+    "s-lang-ctx"
+   ],
+   "answerable": true
+  },
+  {
+   "id": "q-long-passport",
+   "category": "needle",
+   "split": "dev",
+   "text": "什么时候要换护照？",
+   "gold": [
+    "s-long-passport"
+   ],
+   "answerable": true
+  },
+  {
+   "id": "q-long-backup",
+   "category": "needle",
+   "split": "dev",
+   "text": "备份任务什么时候执行？",
+   "gold": [
+    "s-long-backup"
+   ],
+   "answerable": true
+  },
+  {
+   "id": "q-long-client",
+   "category": "needle",
+   "split": "dev",
+   "text": "什么时候不能约客户开会？",
+   "gold": [
+    "s-long-client"
+   ],
+   "answerable": true
+  },
+  {
+   "id": "q-date-range",
+   "category": "temporal",
+   "split": "dev",
+   "text": "上周改日期的事",
+   "gold": [
+    "s-date-w1a",
+    "s-date-w1b"
+   ],
+   "answerable": true,
+   "temporal": {
+    "kind": "range",
+    "from": 1791129600000,
+    "to": 1791734340000
+   }
+  },
+  {
+   "id": "q-trip-latest",
+   "category": "temporal",
+   "split": "dev",
+   "text": "最近一次聊到旅行",
+   "gold": [
+    "s-trip-new"
+   ],
+   "answerable": true,
+   "temporal": {
+    "kind": "latest"
+   }
+  },
+  {
+   "id": "q-none-seat",
+   "category": "no-answer",
+   "split": "dev",
+   "text": "我上次坐的是第几排？",
+   "gold": [],
+   "answerable": false
+  },
+  {
+   "id": "q-none-team",
+   "category": "no-answer",
+   "split": "dev",
+   "text": "我最喜欢的足球队是哪支？",
+   "gold": [],
+   "answerable": false
+  },
+  {
+   "id": "q-none-trip",
+   "category": "no-answer",
+   "split": "dev",
+   "text": "我去年夏天去哪里旅行了？",
+   "gold": [],
+   "answerable": false
+  },
+  {
+   "id": "q-none-blood",
+   "category": "no-answer",
+   "split": "dev",
+   "text": "我的血型是什么？",
+   "gold": [],
+   "answerable": false
+  },
+  {
+   "id": "q-g-p00",
+   "category": "paraphrase",
+   "split": "dev",
+   "text": "帮我挑个下午茶的点心吧。",
+   "gold": [
+    "g-p00"
+   ],
+   "answerable": true
+  },
+  {
+   "id": "q-g-p01",
+   "category": "paraphrase",
+   "split": "dev",
+   "text": "推荐一款适合我的办公鼠标。",
+   "gold": [
+    "g-p01"
+   ],
+   "answerable": true
+  },
+  {
+   "id": "q-g-p02",
+   "category": "paraphrase",
+   "split": "dev",
+   "text": "晚上十点开视频会议可以吗？",
+   "gold": [
+    "g-p02"
+   ],
+   "answerable": true
+  },
+  {
+   "id": "q-g-p04",
+   "category": "paraphrase",
+   "split": "dev",
+   "text": "给我的文档换个看着舒服点的显示效果。",
+   "gold": [
+    "g-p04"
+   ],
+   "answerable": true
+  },
+  {
+   "id": "q-g-p05",
+   "category": "paraphrase",
+   "split": "dev",
+   "text": "下个月出差订哪类住宿合适？",
+   "gold": [
+    "g-p05"
+   ],
+   "answerable": true
+  },
+  {
+   "id": "q-g-p06",
+   "category": "paraphrase",
+   "split": "dev",
+   "text": "去郊外玩选什么交通方式好？",
+   "gold": [
+    "g-p06"
+   ],
+   "answerable": true
+  },
+  {
+   "id": "q-g-p08",
+   "category": "paraphrase",
+   "split": "dev",
+   "text": "下周自驾去外地需要注意什么？",
+   "gold": [
+    "g-p08"
+   ],
+   "answerable": true
+  },
+  {
+   "id": "q-g-p09",
+   "category": "paraphrase",
+   "split": "dev",
+   "text": "晚上适合做点什么提升自己？",
+   "gold": [
+    "g-p09"
+   ],
+   "answerable": true
+  },
+  {
+   "id": "q-g-p10",
+   "category": "paraphrase",
+   "split": "dev",
+   "text": "最近训练量怎么安排比较合理？",
+   "gold": [
+    "g-p10"
+   ],
+   "answerable": true
+  },
+  {
+   "id": "q-g-p12",
+   "category": "paraphrase",
+   "split": "dev",
+   "text": "要不要办一张通勤月卡？",
+   "gold": [
+    "g-p12"
+   ],
+   "answerable": true
+  },
+  {
+   "id": "q-g-p13",
+   "category": "paraphrase",
+   "split": "dev",
+   "text": "晚饭点个川菜外卖，选什么菜好？",
+   "gold": [
+    "g-p13"
+   ],
+   "answerable": true
+  },
+  {
+   "id": "q-g-p14",
+   "category": "paraphrase",
+   "split": "dev",
+   "text": "打羽毛球时需要注意眼睛方面什么？",
+   "gold": [
+    "g-p14"
+   ],
+   "answerable": true
+  },
+  {
+   "id": "q-g-p16",
+   "category": "paraphrase",
+   "split": "dev",
+   "text": "怎么提高外语听力？",
+   "gold": [
+    "g-p16"
+   ],
+   "answerable": true
+  },
+  {
+   "id": "q-g-p17",
+   "category": "paraphrase",
+   "split": "dev",
+   "text": "客厅想添点装饰，有什么建议？",
+   "gold": [
+    "g-p17"
+   ],
+   "answerable": true
+  },
+  {
+   "id": "q-g-p18",
+   "category": "paraphrase",
+   "split": "dev",
+   "text": "想看长篇小说，用什么设备好？",
+   "gold": [
+    "g-p18"
+   ],
+   "answerable": true
+  },
+  {
+   "id": "q-g-p20",
+   "category": "paraphrase",
+   "split": "dev",
+   "text": "周三晚上约个会议行吗？",
+   "gold": [
+    "g-p20"
+   ],
+   "answerable": true
+  },
+  {
+   "id": "q-g-p21",
+   "category": "paraphrase",
+   "split": "dev",
+   "text": "要不要同时开很多浏览器标签和虚拟机？",
+   "gold": [
+    "g-p21"
+   ],
+   "answerable": true
+  },
+  {
+   "id": "q-g-p22",
+   "category": "paraphrase",
+   "split": "dev",
+   "text": "下周天气预报有雨，要不要调整安排？",
+   "gold": [
+    "g-p22"
+   ],
+   "answerable": true
+  },
+  {
+   "id": "q-g-p24",
+   "category": "paraphrase",
+   "split": "dev",
+   "text": "地铁上用什么打发时间？",
+   "gold": [
+    "g-p24"
+   ],
+   "answerable": true
+  },
+  {
+   "id": "q-g-p25",
+   "category": "paraphrase",
+   "split": "dev",
+   "text": "帮我整理一下学习资料的保存方式。",
+   "gold": [
+    "g-p25"
+   ],
+   "answerable": true
+  },
+  {
+   "id": "q-g-p26",
+   "category": "paraphrase",
+   "split": "dev",
+   "text": "早上出门前需要做哪些家务？",
+   "gold": [
+    "g-p26"
+   ],
+   "answerable": true
+  },
+  {
+   "id": "q-g-p28",
+   "category": "paraphrase",
+   "split": "dev",
+   "text": "周六下午能约个电话吗？",
+   "gold": [
+    "g-p28"
+   ],
+   "answerable": true
+  },
+  {
+   "id": "q-g-p29",
+   "category": "paraphrase",
+   "split": "dev",
+   "text": "傍晚六点安排个线上分享可以吗？",
+   "gold": [
+    "g-p29"
+   ],
+   "answerable": true
+  },
+  {
+   "id": "q-g-k00",
+   "category": "keyword",
+   "split": "dev",
+   "text": "Hyperion 项目谁负责？",
+   "gold": [
+    "g-k00"
+   ],
+   "answerable": true
+  },
+  {
+   "id": "q-g-k01",
+   "category": "keyword",
+   "split": "dev",
+   "text": "订单 ORD-20931 的快递单号尾号是多少？",
+   "gold": [
+    "g-k01"
+   ],
+   "answerable": true
+  },
+  {
+   "id": "q-g-k02",
+   "category": "keyword",
+   "split": "dev",
+   "text": "Lumen-5G 是哪里的网络？",
+   "gold": [
+    "g-k02"
+   ],
+   "answerable": true
+  },
+  {
+   "id": "q-g-k04",
+   "category": "keyword",
+   "split": "dev",
+   "text": "接口文档放在哪里？",
+   "gold": [
+    "g-k04"
+   ],
+   "answerable": true
+  },
+  {
+   "id": "q-g-k05",
+   "category": "keyword",
+   "split": "dev",
+   "text": "测试环境的域名是什么？",
+   "gold": [
+    "g-k05"
+   ],
+   "answerable": true
+  },
+  {
+   "id": "q-g-k06",
+   "category": "keyword",
+   "split": "dev",
+   "text": "TCK-5521 是什么问题？",
+   "gold": [
+    "g-k06"
+   ],
+   "answerable": true
+  },
+  {
+   "id": "q-g-k08",
+   "category": "keyword",
+   "split": "dev",
+   "text": "release/2.8 什么时候冻结？",
+   "gold": [
+    "g-k08"
+   ],
+   "answerable": true
+  },
+  {
+   "id": "q-g-k09",
+   "category": "keyword",
+   "split": "dev",
+   "text": "房东的电话尾号是多少？",
+   "gold": [
+    "g-k09"
+   ],
+   "answerable": true
+  },
+  {
+   "id": "q-g-k10",
+   "category": "keyword",
+   "split": "dev",
+   "text": "我的储物柜是几号？",
+   "gold": [
+    "g-k10"
+   ],
+   "answerable": true
+  },
+  {
+   "id": "q-g-k12",
+   "category": "keyword",
+   "split": "dev",
+   "text": "发票抬头怎么写？",
+   "gold": [
+    "g-k12"
+   ],
+   "answerable": true
+  },
+  {
+   "id": "q-g-k13",
+   "category": "keyword",
+   "split": "dev",
+   "text": "概率论入门什么时候上课？",
+   "gold": [
+    "g-k13"
+   ],
+   "answerable": true
+  },
+  {
+   "id": "q-g-k14",
+   "category": "keyword",
+   "split": "dev",
+   "text": "取件码是多少？",
+   "gold": [
+    "g-k14"
+   ],
+   "answerable": true
+  },
+  {
+   "id": "q-g-c00",
+   "category": "correction",
+   "split": "dev",
+   "text": "报告什么时候交？",
+   "gold": [
+    "g-c00-new"
+   ],
+   "newer": "g-c00-new",
+   "older": "g-c00-old",
+   "answerable": true
+  },
+  {
+   "id": "q-g-c01",
+   "category": "correction",
+   "split": "dev",
+   "text": "海报谁来做？",
+   "gold": [
+    "g-c01-new"
+   ],
+   "newer": "g-c01-new",
+   "older": "g-c01-old",
+   "answerable": true
+  },
+  {
+   "id": "q-g-c02",
+   "category": "correction",
+   "split": "dev",
+   "text": "会员套餐现在多少钱？",
+   "gold": [
+    "g-c02-new"
+   ],
+   "newer": "g-c02-new",
+   "older": "g-c02-old",
+   "answerable": true
+  },
+  {
+   "id": "q-g-c04",
+   "category": "correction",
+   "split": "dev",
+   "text": "我周几去健身？",
+   "gold": [
+    "g-c04-new"
+   ],
+   "newer": "g-c04-new",
+   "older": "g-c04-old",
+   "answerable": true
+  },
+  {
+   "id": "q-g-c05",
+   "category": "correction",
+   "split": "dev",
+   "text": "我的手机是什么颜色？",
+   "gold": [
+    "g-c05-new"
+   ],
+   "newer": "g-c05-new",
+   "older": "g-c05-old",
+   "answerable": true
+  },
+  {
+   "id": "q-g-c06",
+   "category": "correction",
+   "split": "dev",
+   "text": "我几点上班？",
+   "gold": [
+    "g-c06-new"
+   ],
+   "newer": "g-c06-new",
+   "older": "g-c06-old",
+   "answerable": true
+  },
+  {
+   "id": "q-g-c08",
+   "category": "correction",
+   "split": "dev",
+   "text": "接口限流是多少？",
+   "gold": [
+    "g-c08-new"
+   ],
+   "newer": "g-c08-new",
+   "older": "g-c08-old",
+   "answerable": true
+  },
+  {
+   "id": "q-g-n00",
+   "category": "needle",
+   "split": "dev",
+   "text": "会员卡什么时候到期？",
+   "gold": [
+    "g-n00"
+   ],
+   "answerable": true
+  },
+  {
+   "id": "q-g-n01",
+   "category": "needle",
+   "split": "dev",
+   "text": "水电费哪天扣款？",
+   "gold": [
+    "g-n01"
+   ],
+   "answerable": true
+  },
+  {
+   "id": "q-g-n02",
+   "category": "needle",
+   "split": "dev",
+   "text": "车险什么时候续保？",
+   "gold": [
+    "g-n02"
+   ],
+   "answerable": true
+  },
+  {
+   "id": "q-g-n04",
+   "category": "needle",
+   "split": "dev",
+   "text": "报销单交给谁？",
+   "gold": [
+    "g-n04"
+   ],
+   "answerable": true
+  },
+  {
+   "id": "q-g-n05",
+   "category": "needle",
+   "split": "dev",
+   "text": "电脑保修到什么时候？",
+   "gold": [
+    "g-n05"
+   ],
+   "answerable": true
+  },
+  {
+   "id": "q-g-n06",
+   "category": "needle",
+   "split": "dev",
+   "text": "跟老周怎么沟通？",
+   "gold": [
+    "g-n06"
+   ],
+   "answerable": true
+  },
+  {
+   "id": "q-g-n08",
+   "category": "needle",
+   "split": "dev",
+   "text": "什么时候去复诊？",
+   "gold": [
+    "g-n08"
+   ],
+   "answerable": true
+  },
+  {
+   "id": "q-g-n09",
+   "category": "needle",
+   "split": "dev",
+   "text": "家长会是什么时候？",
+   "gold": [
+    "g-n09"
+   ],
+   "answerable": true
+  },
+  {
+   "id": "q-g-n10",
+   "category": "needle",
+   "split": "dev",
+   "text": "健身教练是谁？",
+   "gold": [
+    "g-n10"
+   ],
+   "answerable": true
+  },
+  {
+   "id": "q-none-g0",
+   "category": "no-answer",
+   "split": "dev",
+   "text": "我平时用什么牌子的手表？",
+   "gold": [],
+   "answerable": false
+  },
+  {
+   "id": "q-none-g1",
+   "category": "no-answer",
+   "split": "dev",
+   "text": "我的毕业院校是哪所？",
+   "gold": [],
+   "answerable": false
+  },
+  {
+   "id": "q-none-g2",
+   "category": "no-answer",
+   "split": "dev",
+   "text": "我的邮箱地址是什么？",
+   "gold": [],
+   "answerable": false
+  },
+  {
+   "id": "q-none-g4",
+   "category": "no-answer",
+   "split": "dev",
+   "text": "我上次体检结果怎么样？",
+   "gold": [],
+   "answerable": false
+  },
+  {
+   "id": "q-none-g5",
+   "category": "no-answer",
+   "split": "dev",
+   "text": "我常去的那家餐厅叫什么？",
+   "gold": [],
+   "answerable": false
+  }
+ ]
+}

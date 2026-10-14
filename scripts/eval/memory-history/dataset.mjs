@@ -324,15 +324,16 @@ const CHATTER = [
   ["user", "我想学点新东西。"], ["assistant", "可以从你感兴趣、每天能抽出二十分钟的方向开始。"],
 ];
 
-function longSession(rand, needle, id, at) {
+// baseTurns 默认 160（约 3000 字，低于 6000 字的摘录预算）；想覆盖预算问题时传更大的值。
+function longSession(rand, needle, id, at, baseTurns = 160) {
   const turns = [];
-  const count = 160 + Math.floor(rand() * 30);
+  const count = baseTurns + Math.floor(rand() * 30);
   const pos = Math.floor(count * (0.3 + rand() * 0.4));
   for (let i = 0; i < count; i++) {
     if (i === pos) turns.push(["user", needle], ["assistant", "好的，我记下了。"]);
     else turns.push(CHATTER[Math.floor(rand() * CHATTER.length)]);
   }
-  return session(id, at, turns);
+  return { ...session(id, at, turns), needleIndex: pos };
 }
 
 // ── 干扰会话模板 ────────────────────────────────────────────────────────────
@@ -373,12 +374,13 @@ function distractor(rand, id, at) {
 /** 干扰会话和长会话的填充词里不得出现这些查询关键词。 */
 export const FORBIDDEN_IN_FILLER = [...generatedKeys(), "咖啡", "拿铁", "薄荷", "闹钟", "香菜", "自行车", "橘猫", "团子", "猫砂", "日语", "N2", "Aurora", "林舟", "pnpm", "npm", "MU53", "青禾", "琥珀", "银色", "杭州", "成都", "云迁移", "护照", "备份", "机械键盘", "改日期", "读书计划", "红叶", "徒步"];
 
-export function buildDataset({ size = 120, seed = 20261013 } = {}) {
+/** longTurns：长会话的基础轮数；0 或省略保持原来的 160，数据与之前逐字节相同。 */
+export function buildDataset({ size = 120, seed = 20261013, longTurns = 0 } = {}) {
   const rand = mulberry32(seed);
   const hand = coreCases();
   const generated = generatedCases();
   const queries = [...hand.queries, ...generated.queries];
-  const sessions = [...hand.sessions, ...generated.sessions].map((s) => (s.needle ? longSession(rand, s.needle, s.id, s.at) : s));
+  const sessions = [...hand.sessions, ...generated.sessions].map((s) => (s.needle ? longSession(rand, s.needle, s.id, s.at, longTurns > 0 ? longTurns : 160) : s));
   let i = 0;
   while (sessions.length < size) {
     const n = String(++i).padStart(4, "0");

@@ -60,6 +60,21 @@ it('windowed lexical units find a short passage buried in a long document, and r
  expect(new Set(windowed.items.map(x=>x.id)).size).toBe(windowed.items.length);
  expect(windowed.units).toBeGreaterThan(2);
 });
+it('reports which window scored best, and only for documents that were ranked over windows',()=>{
+ const turns=[...Array.from({length:6},(_,i)=>'闲聊填充内容第'+i+'段'),'我的护照快要过期',...Array.from({length:5},(_,i)=>'继续闲聊第'+i+'段')].map(text=>({text}));
+ const windows=toWindows(turns,2)!,expected=Math.floor(6/2);
+ const r=rankHistory([{id:'long',text:turns.map(t=>t.text).join('\n'),units:windows},doc('short','护照办理流程说明')],'护照过期');
+ expect(r.items.find(x=>x.id==='long')!.unit).toBe(expected);
+ expect(windows[expected].text).toContain('护照快要过期');
+ expect(r.items.find(x=>x.id==='short')).not.toHaveProperty('unit');
+ expect(r.routeRanks.lexical.find(x=>x.id==='long')!.unit).toBe(expected);
+});
+it('keeps the best window attached after recency and vector fusion',()=>{
+ const v=[1,0],turns=Array.from({length:8},(_,i)=>({text:i===5?'唯一的护照信息':'闲聊第'+i+'段'}));
+ const d={id:'a',text:turns.map(t=>t.text).join('\n'),units:toWindows(turns,2)!,vector:v,timeSpan:at(1)};
+ const r=rankHistory([d,{...doc('b','无关内容',v),timeSpan:at(2)}],'护照',{queryVector:v,recency:{alpha:.1,halfLifeDays:30,now:NOW}});
+ expect(r.items.find(x=>x.id==='a')!.unit).toBe(2);
+});
 it('without units a document is one ranking unit exactly as before',()=>{
  const r=rankHistory([doc('a','cat dog'),doc('b','cat')],'cat');expect(r.units).toBe(2);
 });
