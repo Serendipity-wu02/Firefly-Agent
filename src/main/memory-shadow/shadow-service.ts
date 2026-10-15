@@ -47,7 +47,8 @@ export function createShadowService(options:ShadowServiceOptions) {
 
  async function run(item:Item):Promise<void> {
   const {task}=item,signal=item.controller.signal;
-  const cancelled=()=>tally({[`cancel:${item.reason??'disabled'}`]:1});
+  // 应用退出（restart）时不写库，连计数也不记。
+  const cancelled=async()=>{if(item.reason==='restart')return;await tally({[`cancel:${item.reason??'disabled'}`]:1})};
   if(signal.aborted)return void await cancelled();
   // 关闭时什么都不做：不发送、不写库，连计数也不记。
   const status=await command<ShadowStatus>('status',{});

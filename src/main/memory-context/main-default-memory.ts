@@ -868,7 +868,8 @@ export function createMainDefaultMemory(options: MainDefaultMemoryOptions) {
           const binding = core.models.bind(item.profile.id);
           model = createShadowModel({ profile: item.profile, config: binding.config, adapter: binding.adapter,
             assertCurrent: () => { binding.assertCurrent(); if (binding.revision !== item.profile.revision) throw new Error("MEMORY_RUN_PROFILE_CHANGED"); },
-            onUsage: (name, usage) => { recordRequest(name); recordUsage(usage.input, usage.output, 1, usage.cachedInput, name, usage.cacheCreation); } });
+            onDispatch: name => recordRequest(name),
+            onUsage: (name, usage) => recordUsage(usage.input, usage.output, 1, usage.cachedInput, name, usage.cacheCreation) });
         } catch {
           model = { profile: item.profile, assertCurrent: () => { throw new Error("MEMORY_RUN_PROFILE_CHANGED"); }, prepare: () => ({ ok: false, reason: "no-output-limit" }) };
         }
