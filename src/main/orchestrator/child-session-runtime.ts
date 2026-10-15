@@ -15,6 +15,7 @@ import type { HarnessConfig, HarnessResult } from "./harness/types";
 import type { ChatMessage } from "./vendors/types";
 import { runFireflyHarness } from "./harness/firefly-harness";
 import { projectTaskTraceEvent } from "./task-events";
+import { createTaskTraceBuffer } from "./task-trace-buffer";
 import { settleChildExecution } from "./child-run-lifecycle";
 import type { TaskWriteEvidence, ModelExecutionEvent } from "../../shared/agent-execution-evidence";
 import type { PromptLayers } from "./prompt-layers";
@@ -82,6 +83,9 @@ export async function runChildSession(input: {
     const current = store.get(session.id);
     if (current?.childRunId === session.childRunId) store.checkpoint(session.id, { executionEvents: [...current.executionEvents ?? [], event] });
   };
+  const traceBuffer = createTaskTraceBuffer(store, session.id);
+  // Trace is observation data: a failure while saving it at the end must not replace the run result.
+  const flushTrace = (): void => { try { traceBuffer.flush(); } catch { /* keep the run outcome */ } };
   const unsubscribeWrites = coordinator?.onChildWrites(session.childRunId, appendWrites);
   const unsubscribeConflict = coordinator?.onChildTerminated(session.childRunId, error => controller.abort(error));
   const unsubscribeModel = parent.modelExecutionRecorder?.subscribe(appendExecutionEvent);
@@ -148,10 +152,7 @@ export async function runChildSession(input: {
       allowedBuiltinToolIds: new Set(["update_todo", "read_tool_result"]),
       onEvent: event => {
         const trace = projectTaskTraceEvent(event);
-        if (trace) {
-          const current = store.get(session.id);
-          if (current) store.checkpoint(session.id, { trace: [...current.trace, trace] });
-        }
+        if (trace) traceBuffer.add(trace);
       },
       onCheckpoint: checkpoint => {
         runStore?.checkpoint(session.childRunId, { messages: checkpoint.messages, state: checkpoint.state, toolOutputs: checkpoint.toolOutputs, rounds: checkpoint.rounds, cache: checkpoint.cache });
@@ -171,6 +172,7 @@ export async function runChildSession(input: {
     const mapped = failure ? { status: "failed" as const, error: { code: failure.code, message: failure.message } } : taskStatus(result);
     const evidence = executionEvidence();
     runStore?.markTerminal(session.childRunId, mapped.status);
+    flushTrace();
     store.checkpoint(session.id, {
       status: mapped.status, resultText: result.finalAnswer, todoItems: result.finalState.todoItems,
       uncertainEffects: result.finalState.uncertainEffects, ...(mapped.error ? { error: mapped.error } : {}), completedAt: Date.now(),
@@ -187,6 +189,7 @@ export async function runChildSession(input: {
     };
     const evidence = executionEvidence();
     if (runStore?.get(session.childRunId)) runStore.markTerminal(session.childRunId, status);
+    flushTrace();
     store.checkpoint(session.id, { status, error: taskError, completedAt: Date.now() });
     if (presentation) input.onLifecycle?.({ ...presentation, status });
     return { taskId: session.id, status, text: taskError.message, error: taskError, ...evidence };
