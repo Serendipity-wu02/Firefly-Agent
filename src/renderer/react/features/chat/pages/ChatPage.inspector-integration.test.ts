@@ -189,12 +189,15 @@ it("does not expand a user-collapsed panel merely because the numeric layout cha
   await act(async () => separator.dispatchEvent(new KeyboardEvent("keydown", { key: "End", bubbles: true })));
   await measuredUpdate();
   expect(panelWidth()).toBe(0);
+  // A collapsed pane no longer pins the chat column to its fixed width; it is back to the responsive one.
+  expect(host.querySelector(".ff-page-dock")?.classList.contains("has-inspector")).toBe(false);
   await measuredUpdate(); expect(panelWidth()).toBe(0);
   // Visibility toggles still restore it, including consecutive commits before measurement.
   await act(async () => button("展开/收起右侧面板").click());
   await act(async () => button("展开/收起右侧面板").click());
   await measuredUpdate();
   expect(panelWidth()).toBeGreaterThan(0);
+  expect(host.querySelector(".ff-page-dock")?.classList.contains("has-inspector")).toBe(true);
 });
 
 
