@@ -19,9 +19,13 @@ function temporaryDirectory() {
   return directory;
 }
 
+// Same relaxation as testTimeout in vitest.config.ts: on hosted Windows runners the first Python launch has stalled for over 10 s.
+// It only changes how long a stuck launch is waited for; locally a hang still fails after 10 s and no assertion is loosened.
+const SPAWN_TIMEOUT_MS = process.env.CI ? 30_000 : 10_000;
+
 function runPython(args: string[], cwd: string) {
   const result = spawnSync("python", ["-B", ...args], {
-    cwd, encoding: "utf8", timeout: 10_000, windowsHide: true,
+    cwd, encoding: "utf8", timeout: SPAWN_TIMEOUT_MS, windowsHide: true,
     env: { ...process.env, PYTHONDONTWRITEBYTECODE: "1", PYTHONIOENCODING: "utf-8" },
   });
   expect(result.error).toBeUndefined();
@@ -284,7 +288,7 @@ describe("Office theme consumer compatibility", () => {
     const pptx = spawnSync(process.execPath, ["-e",
       "const {loadTheme}=require(process.argv[1]); console.log(JSON.stringify(loadTheme(process.argv[2])))",
       path.join(skillsDir, "pptx-generator/scripts/theme-loader.js"), id,
-    ], { cwd: directory, encoding: "utf8", timeout: 10_000, windowsHide: true });
+    ], { cwd: directory, encoding: "utf8", timeout: SPAWN_TIMEOUT_MS, windowsHide: true });
     expect(pptx.error).toBeUndefined();
     expect(pptx.status).toBe(0);
     expect(pptx.stderr).toBe("");
