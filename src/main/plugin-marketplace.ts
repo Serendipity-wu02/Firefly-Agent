@@ -13,9 +13,15 @@ import type {
 import type { PluginImportResult } from "../plugins/manager";
 import type { PackageSource } from "../plugins/version-store";
 
-// Enable only after the exact catalog and release assets have been approved, published and verified.
-export const MARKET_REGISTRY_URLS: readonly string[] = [];
-export const MARKET_ZIP_URL_PREFIXES: readonly string[] = [];
+// The catalog is a single file on the dedicated `plugin-catalog` branch; packages are GitHub Release assets of this repository.
+// Every entry pins its package SHA-256, and downloads are refused on a mismatch. Changing either list is a boundary change:
+// the pinned values and this file's reviewed hash in skills/external-boundary.test.ts must be updated together.
+export const MARKET_REGISTRY_URLS: readonly string[] = [
+  "https://raw.githubusercontent.com/Serendipity-wu02/Firefly_Agent/plugin-catalog/marketplace/registry.json",
+];
+export const MARKET_ZIP_URL_PREFIXES: readonly string[] = [
+  "https://github.com/Serendipity-wu02/Firefly_Agent/releases/download/",
+];
 export const BUNDLED_MARKET_SOURCE = "bundled:registry";
 export const MARKET_REGISTRY_TIMEOUT_MS = 10_000;
 export const MARKET_REGISTRY_MAX_BYTES = 1024 * 1024;
