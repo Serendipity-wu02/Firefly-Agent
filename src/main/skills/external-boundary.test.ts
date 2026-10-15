@@ -29,7 +29,7 @@ const hash = (file: string) => createHash("sha256").update(fs.readFileSync(path.
 const unchangedBoundaries = {
   // Reviewed plugin lifecycle update: host-owned provenance and install/activation
   // outcomes only. Remote allowlists remain empty and are independently asserted.
-  "src/main/plugin-marketplace.ts": "8cbc14987291b8256a39e12e5182125598dcae1e41139fd3edaea18e2e80480e",
+  "src/main/plugin-marketplace.ts": "302a4594cef95e26511e53b11978d116df6834184e93e210e9f560dbd403624e",
   "src/main/browser/browser-request-policy.ts": "9ce32fdba4722e49b7c96d27ad7a2058fae3d62a4186d44aac98e49d7e62bdf1",
   "src/main/browser/browser-startup-config.ts": "dc2f2a25a0f9f6f8d4656ef0fa953d6d7ae206676503da3f5f155d2109f8969e",
   "src/main/browser/electron-browser-guest.ts": "e6f519dec91df18236914156c0ee4c27d250ef57a79481aacd0f308a9ee61027",
@@ -38,8 +38,9 @@ const unchangedBoundaries = {
   "src/main/permission/bootstrap.ts": "4419a194aa95f813f9f6aa90d250c1b71036ef49b508b6c0c716a0dc8ffc70a0",
 } as const;
 it.each(Object.entries(unchangedBoundaries))("no_execution_or_permission_expansion: %s exactly matches approved boundary preimage", (file, expected) => { expect(hash(file)).toBe(expected); });
-it("no_execution_or_permission_expansion native executable marketplace remains unconfigured and fixed source data does not broaden it", () => {
-  expect(MARKET_REGISTRY_URLS).toEqual([]); expect(MARKET_ZIP_URL_PREFIXES).toEqual([]);
+it("no_execution_or_permission_expansion native executable marketplace uses exactly the one approved catalog and release prefix, and fixed source data does not broaden it", () => {
+  expect(MARKET_REGISTRY_URLS).toEqual(["https://raw.githubusercontent.com/Serendipity-wu02/Firefly_Agent/plugin-catalog/marketplace/registry.json"]);
+  expect(MARKET_ZIP_URL_PREFIXES).toEqual(["https://github.com/Serendipity-wu02/Firefly_Agent/releases/download/"]);
   expect(EXTERNAL_SOURCES).toEqual({ openai: { repository: "openai/plugins", owner: "openai", repo: "plugins", catalogPath: ".agents/plugins/marketplace.json" }, anthropic: { repository: "anthropics/skills", owner: "anthropics", repo: "skills", catalogPath: ".claude-plugin/marketplace.json" } });
   expect(Object.isFrozen(EXTERNAL_SOURCES)).toBe(true); expect(Object.values(EXTERNAL_SOURCES).every(Object.isFrozen)).toBe(true);
 });
