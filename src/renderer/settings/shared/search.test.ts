@@ -180,11 +180,22 @@ describe("search box", () => {
     document.dispatchEvent(new KeyboardEvent("keydown", { key: "f", ctrlKey: true, bubbles: true, cancelable: true }));
     expect(document.activeElement).toBe(f.input);
     f.input.blur();
-    const dialog = document.createElement("div");
-    dialog.className = "ff-modal";
-    document.body.append(dialog);
+    const overlay = document.createElement("div");
+    overlay.className = "ff-modal-overlay";
+    overlay.innerHTML = '<div class="ff-modal"></div>';
+    document.body.append(overlay);
     document.dispatchEvent(new KeyboardEvent("keydown", { key: "f", ctrlKey: true, bubbles: true, cancelable: true }));
     expect(document.activeElement).not.toBe(f.input);
+  });
+
+  it("still focuses the search box after a dialog was shown and closed again", () => {
+    const f = mount();
+    const overlay = document.createElement("div");
+    overlay.className = "ff-modal-overlay is-hidden"; // how the shared dialogs rest in the DOM once closed
+    overlay.innerHTML = '<div class="ff-modal"></div>';
+    document.body.append(overlay);
+    document.dispatchEvent(new KeyboardEvent("keydown", { key: "k", ctrlKey: true, bubbles: true, cancelable: true }));
+    expect(document.activeElement).toBe(f.input);
   });
 
   it("stops reacting after dispose", () => {

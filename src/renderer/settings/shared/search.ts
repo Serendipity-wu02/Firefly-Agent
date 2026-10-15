@@ -183,7 +183,8 @@ export function mountSettingsSearch(options: SettingsSearchOptions): { refresh: 
   // 在设置窗口里按 Ctrl+F / Ctrl+K 直接跳到搜索框；有弹窗时不抢焦点。
   const onGlobalKey = (event: KeyboardEvent) => {
     if (!(event.ctrlKey || event.metaKey) || event.altKey || event.shiftKey || !["f", "k"].includes(event.key.toLowerCase())) return;
-    if (document.querySelector(".ff-modal")) return;
+    // The shared dialogs stay in the DOM under an `is-hidden` overlay after they close; only an overlay that is showing blocks the shortcut.
+    if (document.querySelector(".ff-modal-overlay:not(.is-hidden)")) return;
     event.preventDefault();
     input.focus();
     input.select();
