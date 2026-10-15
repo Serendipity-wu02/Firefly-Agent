@@ -14,6 +14,13 @@ describe("chat reading width", () => {
     expect(stylesheet).toMatch(/\.ff-message--activity \{[\s\S]*width: var\(--ff-message-reading-width\)/);
   });
 
+  it("keeps the chat column a fixed width while the right pane is open, so dragging the separator does not resize it", () => {
+    const root = readFileSync(resolve(__dirname, "../../../styles/react-root.css"), "utf8");
+    expect(root).toMatch(/\.ff-page-dock\.has-inspector \{[^}]*--ff-reading-width: clamp\(\d+px, 100%, \d+px\);/);
+    const page = readFileSync(resolve(__dirname, "../pages/ChatPage.tsx"), "utf8");
+    expect(page).toContain('" has-inspector"');
+  });
+
   it("renders assistant answers as borderless text using the full chat width", () => {
     expect(stylesheet).toMatch(
       /\.ff-message--assistant \.ant-bubble-content \{[\s\S]*padding: 0[\s\S]*background: transparent[\s\S]*box-shadow: none/,
