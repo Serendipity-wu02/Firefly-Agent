@@ -260,7 +260,7 @@ it("uses readable section typography and grouped rows without decorative backgro
     expect(getComputedStyle(document.querySelector(".panel-heading h1")!).fontSize).toBe("26px");
     expect(getComputedStyle(document.querySelector(".setting-row")!).minHeight).toBe("72px");
     expect(getComputedStyle(document.querySelector(".settings-content")!).lineHeight).toBe("1.6");
-    expect(document.querySelectorAll(".settings-nav__group")).toHaveLength(3);
+    expect(document.querySelectorAll(".settings-nav__group")).toHaveLength(5);
   } finally { style.remove(); }
 });
 
