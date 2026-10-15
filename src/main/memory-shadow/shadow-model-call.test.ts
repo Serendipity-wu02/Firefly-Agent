@@ -90,6 +90,40 @@ describe('sending',()=>{
  });
 });
 
+describe('request accounting and redirects',()=>{
+ it('never follows redirects',async()=>{
+  const fetchImpl=vi.fn(async()=>reply(200,okBody));
+  const call=make(openai,fetchImpl as unknown as typeof fetch).prepare('s','u');if(!call.ok)throw new Error('expected ok');
+  await call.send(new AbortController().signal);
+  expect((fetchImpl.mock.calls[0] as unknown as [string,RequestInit])[1].redirect).toBe('error');
+ });
+
+ it('counts the dispatch even when the response has no usage or the request fails',async()=>{
+  const dispatched:string[]=[],usages:unknown[]=[];
+  const run=async(response:()=>Promise<Response>)=>{
+   const model=createShadowModel({profile:{id:'p',revision:1},config:openai,adapter:getAdapterForConfig(openai),assertCurrent:()=>undefined,
+    fetchImpl:(async()=>response()) as unknown as typeof fetch,onDispatch:name=>dispatched.push(name),onUsage:(_n,usage)=>usages.push(usage)});
+   const call=model.prepare('s','u');if(!call.ok)throw new Error('expected ok');return call.send(new AbortController().signal);
+  };
+  await run(async()=>reply(200,{id:'x',choices:[{index:0,message:{role:'assistant',content:'{"facts":[]}'},finish_reason:'stop'}]}));
+  await run(async()=>reply(500,'oops'));
+  await run(async()=>{throw new TypeError('fetch failed')});
+  expect(dispatched).toEqual(['test-model','test-model','test-model']);
+  expect(usages).toEqual([]);
+  await run(async()=>reply(200,okBody));
+  expect(dispatched).toHaveLength(4);expect(usages).toHaveLength(1);
+ });
+
+ it('does not count a request that was cancelled before it was sent',async()=>{
+  const dispatched:string[]=[];
+  const model=createShadowModel({profile:{id:'p',revision:1},config:openai,adapter:getAdapterForConfig(openai),assertCurrent:()=>undefined,fetchImpl:(async()=>reply(200,okBody)) as unknown as typeof fetch,onDispatch:name=>dispatched.push(name)});
+  const call=model.prepare('s','u');if(!call.ok)throw new Error('expected ok');
+  const controller=new AbortController();controller.abort();
+  expect(await call.send(controller.signal)).toEqual({ok:false,kind:'cancelled'});
+  expect(dispatched).toEqual([]);
+ });
+});
+
 describe('classifyShadowHttpFailure',()=>{
  it('does not treat an ordinary 400 as quota',()=>expect(classifyShadowHttpFailure(400,'invalid request')).toBe('http'));
 });
