@@ -439,6 +439,11 @@ const settingsApi = {
 contextBridge.exposeInMainWorld("settings", settingsApi);
 
 const pluginsApi = {
+  onChanged: (callback: (overview: import("../shared/plugin-management").PluginOverview) => void) => {
+    const listener = (_event: Electron.IpcRendererEvent, overview: import("../shared/plugin-management").PluginOverview) => callback(overview);
+    ipcRenderer.on(IPC.PLUGINS_CHANGED, listener);
+    return () => ipcRenderer.off(IPC.PLUGINS_CHANGED, listener);
+  },
   list: () => ipcRenderer.invoke(IPC.PLUGINS_LIST),
   setEnabled: (id: string, enabled: boolean) =>
     ipcRenderer.invoke(IPC.PLUGINS_SET_ENABLED, id, enabled),

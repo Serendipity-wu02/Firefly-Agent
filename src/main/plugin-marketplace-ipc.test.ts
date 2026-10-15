@@ -2,10 +2,12 @@ import type { IpcMainInvokeEvent, WebContents } from "electron";
 import { describe, expect, it, vi } from "vitest";
 import { IPC } from "../shared/ipc-channels";
 import { registerPluginMarketplaceIpc } from "./plugin-marketplace-ipc";
+vi.mock("./env", () => ({ isDev: true }));
+vi.mock("electron", () => ({ app: { getAppPath: () => process.cwd() } }));
 
 function fixture() {
   const handlers = new Map<string, (...args: any[]) => unknown>();
-  const mainFrame = {};
+  const mainFrame = { url: "http://localhost:5173/react/" };
   const owner = { isDestroyed: () => false, mainFrame } as unknown as WebContents;
   let current: WebContents | null = owner;
   const market = {
@@ -18,6 +20,12 @@ function fixture() {
   return { handlers, market, owner, event, setOwner: (value: WebContents | null) => { current = value; } };
 }
 describe("marketplace IPC ownership", () => {
+  it("refuses a host navigated away from the chat document", async () => {
+    const f = fixture();
+    Object.assign(f.owner.mainFrame, { url: "https://example.com/" });
+    expect(await f.handlers.get(IPC.PLUGINS_MARKET_INSTALL)!(f.event, "text-stats")).toMatchObject({ ok: false });
+    expect(f.market.installFromMarket).not.toHaveBeenCalled();
+  });
   it("allows the live chat-window main frame and passes only validated selector values", async () => {
     const f = fixture();
     expect(await f.handlers.get(IPC.PLUGINS_MARKET_LIST)!(f.event, "bundled:registry")).toMatchObject({ ok: true });

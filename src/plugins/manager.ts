@@ -1,6 +1,8 @@
 import path from "node:path";
 import { lstat, realpath, rm } from "node:fs/promises";
-import { readFileSync } from "node:fs";
+import { readFileSync, existsSync } from "node:fs";
+import { createHash } from "node:crypto";
+import { PluginVersionStore, type PluginVersionState, type StoredPackage, type PackageSource } from "./version-store";
 import { IPC } from "../shared/ipc-channels";
 import type {
   PluginListEntry,
@@ -13,6 +15,7 @@ import {
   clearPluginModuleCache,
   loadPlugin,
   scanPluginDir,
+  inspectPluginDir,
   type PluginScanIssue,
 } from "./loader";
 import {
@@ -37,6 +40,8 @@ export interface PluginScanRoot {
 }
 
 export interface PluginManagerOptions {
+  /** Production host supplies persistent version storage; legacy embedders may omit it. */
+  versionStore?: PluginVersionStore;
   scanRoots: PluginScanRoot[];
   /** Plugin-private data root (userData/plugin-data). */
   storageRoot: string;
@@ -56,6 +61,8 @@ export interface PluginManagerOptions {
 
 export interface PluginImportResult {
   ok: boolean;
+  installation?: "committed" | "rejected";
+  activation?: "not-requested" | "restart-required" | "running" | "failed";
   canceled?: boolean;
   error?: string;
   plugin?: { id: string; name: string; version: string };
@@ -78,6 +85,9 @@ const ICON_MIME: Record<string, string> = {
   ".svg": "image/svg+xml",
 };
 
+// Deliberately survives manager recreation in one Node process, including uninstall.
+const processPackages = new Map<string, string>();
+
 /** 读取插件图标为 data URL；manifest 未声明或读取失败返回 undefined。 */
 function readIconDataUrl(record: PluginRecord): string | undefined {
   const icon = record.manifest.icon;
@@ -97,7 +107,19 @@ function errorMessage(error: unknown): string {
   return error instanceof Error ? error.message : String(error);
 }
 
+/** Inspect package metadata without importing or executing its entry point. */
+function inspectStoredRecord(store: PluginVersionStore, id: string, stored: StoredPackage): PluginRecord {
+  const dir = store.packageDir(id, stored.key);
+  const manifest = inspectPluginDir(dir).manifest;
+  if (!manifest || manifest.id !== id || manifest.version !== stored.version) throw new Error("Invalid selected plugin package");
+  return { manifest, dir, source: "user", fingerprint: stored.key };
+}
+
 export class PluginManager {
+  private versionStates = new Map<string, PluginVersionState>();
+  private activationCandidates = new Map<string, StoredPackage>();
+  private blockedVersions = new Set<string>();
+  private versionIssues: PluginScanIssue[] = [];
   private readonly eventBus = createPluginEventBus();
   private records = new Map<string, PluginRecord>();
   private instances = new Map<string, FireflyPlugin>();
@@ -124,6 +146,8 @@ export class PluginManager {
         const id = record.manifest.id;
         const plugin = this.instances.get(id);
         const status = this.statuses.get(id) ?? "disabled";
+        const state = this.versionStates.get(id);
+        const installed = state?.pending ?? state?.selected;
         // 来源以宿主侧安装记录为准：有市场记录即为 market，否则视为本地（含内置）
         const origin = userRoot && record.source === "user" && readHostMetadataSync(userRoot, id)
           ? "market" as const
@@ -131,25 +155,34 @@ export class PluginManager {
         return {
           id,
           name: record.manifest.name,
-          version: record.manifest.version,
+          version: installed?.version ?? record.manifest.version,
+          ...(state ? {
+            installedVersion: installed?.version ?? record.manifest.version,
+            selectedVersion: state.selected?.version ?? null,
+            activeVersion: status === "running" ? record.manifest.version : null,
+            pendingVersion: state.pending?.version ?? null,
+            restartRequired: (!!state.pending && !this.activationCandidates.has(id)) || this.blockedVersions.has(id),
+            sourceId: installed?.source.sourceId,
+            sourceKind: installed?.source.kind,
+          } : {}),
           description: record.manifest.description,
           author: record.manifest.author,
           entry: record.manifest.entry,
           apiVersion: record.manifest.apiVersion,
           source: record.source,
-          origin,
+          origin: state ? (["bundled", "curated-market"].includes(installed?.source.kind ?? "") ? "market" as const : "local" as const) : origin,
           path: record.dir,
           defaultEnabled: record.manifest.defaultEnabled,
           configuredEnabled: this.isConfiguredEnabled(record),
           enabled: status === "running",
           status,
-          error: this.errors.get(id),
+          error: this.errors.get(id) ?? state?.error,
           hasUnregister: typeof plugin?.unregister === "function",
           canOpen: typeof plugin?.open === "function",
           icon: readIconDataUrl(record),
           // 面板字段仅对已启用插件透出（渲染端不挂载禁用插件的面板）
-          settingsPanel: this.isConfiguredEnabled(record) ? record.manifest.settingsPanel : undefined,
-          settingsSection: this.isConfiguredEnabled(record) ? record.manifest.settingsSection : undefined,
+          settingsPanel: status === "running" ? record.manifest.settingsPanel : undefined,
+          settingsSection: status === "running" ? record.manifest.settingsSection : undefined,
         };
       })
       .sort((a, b) => {
@@ -169,7 +202,7 @@ export class PluginManager {
   getSettingsPanelDir(pluginId: string): string | undefined {
     const record = this.records.get(pluginId);
     if (!record?.manifest.settingsPanel) return undefined;
-    if (!this.isConfiguredEnabled(record)) return undefined;
+    if (this.statuses.get(pluginId) !== "running" || !this.instances.has(pluginId)) return undefined;
     return record.dir;
   }
 
@@ -249,6 +282,7 @@ export class PluginManager {
         }
         return this.uninstall(id);
       });
+      await this.prepareVersionStore();
       await this.doRescan(false);
       await this.publishHostLifecycleBarrier("plugins:ready", {
         pluginIds: this.list().filter((plugin) => plugin.enabled).map((plugin) => plugin.id),
@@ -259,7 +293,7 @@ export class PluginManager {
 
   rescan(): Promise<PluginOverview> {
     return this.enqueueOperation(async () => {
-      await this.doRescan(true);
+      await this.doRescan(!this.opts.versionStore);
       this.opts.onListChanged?.();
       return this.overview();
     });
@@ -277,6 +311,10 @@ export class PluginManager {
     return this.enqueueOperation(async () => {
       const record = this.records.get(id);
       if (!record) return { ok: false, error: `插件不存在: ${id}` };
+      if (enabled && this.opts.versionStore && record.source === "user"
+        && ((!this.versionStates.get(id)?.selected && !this.activationCandidates.has(id)) || this.blockedVersions.has(id))) {
+        return { ok: false, error: "插件需要完整重启应用后才能启用" };
+      }
 
       const nextEnabledMap = { ...this.enabledMap, [id]: enabled };
       try {
@@ -334,6 +372,7 @@ export class PluginManager {
       expectedIdentity?: { id: string; version: string };
       origin?: "market";
       registryId?: string;
+      packageSource?: PackageSource;
     } = {},
   ): Promise<PluginImportResult> {
     return this.enqueueOperation(async () => {
@@ -358,6 +397,45 @@ export class PluginManager {
       if (existingRecord?.source === "builtin") {
         await discardPreparedPlugin(prepared);
         return { ok: false, error: `不能用用户插件覆盖内置插件: ${plugin.id}` };
+      }
+
+      if (this.opts.versionStore) {
+        let committed = false;
+        try {
+          if (existingRecord && !(await this.opts.confirmPluginReplace?.(plugin))) {
+            return { ok: false, canceled: true, plugin };
+          }
+          if (!existingRecord) {
+            const next = { ...this.enabledMap }; delete next[plugin.id];
+            this.opts.saveEnabledMap(next); this.enabledMap = next;
+          }
+          const source = opts.packageSource ?? (opts.origin === "market"
+            ? { kind: "legacy-unknown" as const, sourceId: opts.registryId || "unknown-market" }
+            : { kind: "local-zip" as const, sourceId: "local-zip" });
+          source.archiveSha256 = createHash("sha256").update(readFileSync(zipPath)).digest("hex");
+          let state = await this.opts.versionStore.stage(plugin.id, prepared.pluginDir, source);
+          committed = true;
+          const mustRestart = !!existingRecord || processPackages.has(this.processKey(plugin.id));
+          if (!mustRestart) {
+            await this.opts.versionStore.beginActivation(plugin.id);
+            state = await this.opts.versionStore.finishActivation(plugin.id);
+          }
+          this.versionStates.set(plugin.id, state);
+          await this.doRescan(false);
+          this.opts.onListChanged?.();
+          return { ok: true, installation: "committed", activation: mustRestart ? "restart-required" : "not-requested", plugin, overview: this.overview() };
+        } catch (error) {
+          if (committed) {
+            this.blockedVersions.add(plugin.id);
+            const state = this.opts.versionStore.read(plugin.id);
+            if (state) this.versionStates.set(plugin.id, state);
+            this.errors.set(plugin.id, errorMessage(error));
+            await this.doRescan(false);
+            this.opts.onListChanged?.();
+          }
+          return { ok: false, installation: committed ? "committed" : "rejected", activation: committed ? "failed" : undefined,
+            error: `${committed ? "插件包已保存，但状态提交失败，需要重启恢复: " : ""}${errorMessage(error)}`, plugin, overview: this.overview() };
+        } finally { await discardPreparedPlugin(prepared); }
       }
 
       const destination = path.join(userRoot, plugin.id);
@@ -424,6 +502,23 @@ export class PluginManager {
       }
       const userRoot = this.opts.scanRoots.find((root) => root.source === "user")?.path;
       if (!userRoot) return { ok: false, error: "未配置用户插件目录" };
+
+      if (this.opts.versionStore) {
+        await this.deactivate(id);
+        try {
+          const next = { ...this.enabledMap }; delete next[id];
+          this.opts.saveEnabledMap(next); this.enabledMap = next;
+          await this.opts.cleanupPersistentResources?.(id);
+          await this.opts.versionStore.uninstall(id);
+          this.versionStates.set(id, this.opts.versionStore.read(id)!);
+          await this.doRescan(false);
+          this.opts.onListChanged?.();
+          return { ok: true, overview: this.overview() };
+        } catch (error) {
+          this.errors.set(id, errorMessage(error)); this.opts.onListChanged?.();
+          return { ok: false, error: errorMessage(error) };
+        }
+      }
 
       try {
         await this.assertSafeUserPluginDirectory(record);
@@ -556,13 +651,56 @@ export class PluginManager {
     }
   }
 
+  private processKey(id: string): string {
+    return `${path.resolve(this.opts.storageRoot)}:${id}`;
+  }
+
+  private async prepareVersionStore(): Promise<void> {
+    const store = this.opts.versionStore;
+    if (!store) return;
+    const report = (id: string, error: unknown): void => {
+      this.blockedVersions.add(id);
+      this.versionIssues.push({ root: store.userRoot, source: "user", message: `${id}: ${errorMessage(error)}` });
+    };
+    for (const root of this.opts.scanRoots.filter(root => root.source === "user")) {
+      for (const record of scanPluginDir(root.path, "user")) {
+        try { await store.migrate(record.manifest.id, record.dir); }
+        catch (error) { report(record.manifest.id, error); }
+      }
+    }
+    let ids: string[];
+    try { ids = store.ids(); } catch (error) { report("version-storage", error); return; }
+    for (const id of ids) {
+      try {
+        const alreadyLoaded = processPackages.has(this.processKey(id));
+        if (!alreadyLoaded) await store.recoverInterrupted(id);
+        if (!alreadyLoaded) await store.collect(id);
+        let state = store.read(id);
+        if (!state) continue; // A failed first copy/commit may leave only a GC marker.
+        if (state.phase === "uninstalled") { this.versionStates.set(id, state); continue; }
+        if (state.selected) await store.validate(id, state.selected);
+        if (state.pending && !alreadyLoaded) {
+          try {
+            await store.validate(id, state.pending);
+            // A disabled update remains unverified until its first register succeeds.
+            // Keep the prior selection across any number of disabled restarts.
+            this.activationCandidates.set(id, state.pending);
+          } catch (error) {
+            state = await store.failActivation(id, errorMessage(error));
+          }
+        }
+        this.versionStates.set(id, state);
+      } catch (error) { report(id, error); }
+    }
+  }
+
   private scanAll(): {
     records: Map<string, PluginRecord>;
     issues: PluginScanIssue[];
     failedRoots: Set<string>;
   } {
     const records = new Map<string, PluginRecord>();
-    const issues: PluginScanIssue[] = [];
+    const issues: PluginScanIssue[] = [...this.versionIssues];
     const failedRoots = new Set<string>();
     for (const root of this.opts.scanRoots) {
       const onIssue = (issue: PluginScanIssue): void => {
@@ -570,6 +708,8 @@ export class PluginManager {
         if (!issue.path) failedRoots.add(root.path);
       };
       for (const record of scanPluginDir(root.path, root.source, onIssue)) {
+        if (root.source === "user" && this.opts.versionStore
+          && (this.blockedVersions.has(record.manifest.id) || existsSync(this.opts.versionStore.recordPath(record.manifest.id)))) continue;
         const existing = records.get(record.manifest.id);
         if (existing) {
           const issue: PluginScanIssue = {
@@ -583,6 +723,16 @@ export class PluginManager {
           continue;
         }
         records.set(record.manifest.id, record);
+      }
+    }
+    if (this.opts.versionStore) {
+      for (const [id, state] of this.versionStates) {
+        if (state.phase === "uninstalled" || records.has(id)) continue;
+        const stored = this.activationCandidates.get(id) ?? state.selected ?? state.pending;
+        if (!stored) continue;
+        try {
+          records.set(id, inspectStoredRecord(this.opts.versionStore, id, stored));
+        } catch (error) { issues.push({ root: this.opts.versionStore.userRoot, source: "user", message: `${id}: ${errorMessage(error)}` }); }
       }
     }
     return { records, issues, failedRoots };
@@ -632,6 +782,8 @@ export class PluginManager {
         this.errors.delete(id);
         continue;
       }
+      if (this.opts.versionStore && record.source === "user" && (this.blockedVersions.has(id)
+        || (!this.versionStates.get(id)?.selected && !this.activationCandidates.has(id)))) continue;
       try {
         await this.activate(id);
       } catch (error) {
@@ -646,6 +798,23 @@ export class PluginManager {
   private async activate(id: string): Promise<void> {
     const record = this.records.get(id);
     if (!record || this.instances.has(id)) return;
+    const store = record.source === "user" ? this.opts.versionStore : undefined;
+    const priorSelection = this.versionStates.get(id)?.selected ?? null;
+    const priorRecord = store && priorSelection && this.activationCandidates.has(id)
+      ? inspectStoredRecord(store, id, priorSelection) : undefined;
+    const stored = this.activationCandidates.get(id) ?? this.versionStates.get(id)?.selected;
+    if (store) {
+      if (!stored || this.blockedVersions.has(id)) throw new Error("Plugin requires application restart");
+      const loaded = processPackages.get(this.processKey(id));
+      if (loaded && loaded !== stored.key) throw new Error("Plugin version change requires application restart");
+      await store.validate(id, stored);
+      // Persist before exposing the cancellable import/register operation.
+      // No plugin code has run if this write fails.
+      if (this.activationCandidates.has(id)) {
+        this.versionStates.set(id, await store.beginActivation(id));
+      }
+      processPackages.set(this.processKey(id), stored.key);
+    }
     this.statuses.set(id, "starting");
     this.errors.delete(id);
     let plugin: FireflyPlugin | undefined;
@@ -684,12 +853,32 @@ export class PluginManager {
         cancellation,
       ]);
       if (interrupted) throw interrupted;
+      clearTimeout(timeout); // Registration timeout does not race the durable commit.
+      if (store && this.activationCandidates.has(id)) {
+        this.versionStates.set(id, await store.finishActivation(id));
+        if (interrupted) throw interrupted;
+        this.activationCandidates.delete(id);
+      }
       this.instances.set(id, activated.plugin);
       this.contexts.set(id, activated.ctx);
       this.statuses.set(id, "running");
       this.notifyRunningState(id, true);
       console.log(`[plugins] 已启用 ${id}@${record.manifest.version}`);
     } catch (error) {
+      if (store) {
+        ctx?.beginStop();
+        this.blockedVersions.add(id);
+        if (this.activationCandidates.has(id)) {
+          try {
+            this.versionStates.set(id, await store.failActivation(id, errorMessage(error), priorSelection));
+            // Match all displayed metadata to the durable restored selection.
+            // This only replaces bookkeeping; blockedVersions still prevents hot rollback.
+            if (priorRecord) this.records.set(id, priorRecord);
+          }
+          catch (restoreError) { this.versionIssues.push({ root: store.userRoot, source: "user", message: `Recovery required for ${id}: ${errorMessage(restoreError)}` }); }
+          this.activationCandidates.delete(id);
+        }
+      }
       ctx?.beginStop();
       if (ctx) {
         if (plugin?.unregister) {
@@ -717,6 +906,7 @@ export class PluginManager {
     if (!plugin && !context) return;
     this.statuses.set(id, "stopping");
     context?.beginStop();
+    this.opts.onListChanged?.();
     try {
       if (plugin?.unregister) {
         try {

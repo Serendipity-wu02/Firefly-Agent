@@ -38,6 +38,7 @@ type HeaderAction = "refresh" | "import" | null;
 type PanelView = "installed" | "market";
 
 interface MarketState {
+  readAt?: string;
   phase: "idle" | "loading" | "ready" | "error";
   plugins: MarketPluginEntry[];
   error?: string;
@@ -77,6 +78,7 @@ export function resolveMarketAction(
   installed: PluginListEntry | undefined,
 ): MarketCardAction {
   if (!installed) return { kind: "install" };
+  if (installed.pendingVersion) return { kind: "installed", version: installed.installedVersion ?? installed.pendingVersion };
   // 市场来源的已装插件才提供"更新"，本地来源（含内置）一律走替换确认
   if (installed.origin === "market") {
     if (isNewerVersion(entry.version, installed.version)) return { kind: "update" };
@@ -95,6 +97,7 @@ export function PluginModePanel({ api: providedApi }: PluginModePanelProps) {
   const api = providedApi ?? window.plugins;
   const [overview, setOverview] = useState<PluginOverview>({ plugins: [], issues: [] });
   const [filter, setFilter] = useState("");
+  const [marketFilter, setMarketFilter] = useState("");
   const [loading, setLoading] = useState(true);
   const [headerAction, setHeaderAction] = useState<HeaderAction>(null);
   const [busyAction, setBusyAction] = useState<string | null>(null);
@@ -110,6 +113,7 @@ export function PluginModePanel({ api: providedApi }: PluginModePanelProps) {
   const overviewRequest = useRef(0);
   // State alone cannot block two clicks in the same React batch.
   const installationPending = useRef(false);
+  const anyBusy = headerAction !== null || busyAction !== null || installingId !== null;
 
   useEffect(() => {
     mounted.current = true;
@@ -141,6 +145,11 @@ export function PluginModePanel({ api: providedApi }: PluginModePanelProps) {
     return () => { cancelled = true; };
   }, [reload]);
 
+  useEffect(() => api?.onChanged?.((next) => {
+    overviewRequest.current++;
+    setOverview(next);
+  }), [api]);
+
   // 每次切入市场视图都重新拉取列表；preferred 指定偏好源时把它提到探测首位；不监听不轮询
   const loadMarket = useCallback(async (preferred?: string) => {
     const request = ++marketRequest.current;
@@ -157,7 +166,7 @@ export function PluginModePanel({ api: providedApi }: PluginModePanelProps) {
       if (!result.ok) {
         setMarket({ phase: "error", plugins: [], error: result.error ?? t("pluginPanel.unknownError"), sources: result.sources, mode: result.mode });
       } else {
-        setMarket({ phase: "ready", plugins: result.plugins, sources: result.sources, mode: result.mode });
+        setMarket({ phase: "ready", plugins: result.plugins, sources: result.sources, mode: result.mode, readAt: new Date().toLocaleString() });
       }
     } catch (cause) {
       if (!mounted.current || request !== marketRequest.current) return;
@@ -190,7 +199,8 @@ export function PluginModePanel({ api: providedApi }: PluginModePanelProps) {
   }, [filter, overview.plugins]);
 
   const refreshPlugins = useCallback(async () => {
-    if (!api) return;
+    if (!api || installationPending.current) return;
+    installationPending.current = true;
     setHeaderAction("refresh");
     setError(null);
     try {
@@ -198,12 +208,14 @@ export function PluginModePanel({ api: providedApi }: PluginModePanelProps) {
     } catch (cause) {
       setError(t("pluginPanel.refreshFailed", { error: cause instanceof Error ? cause.message : String(cause) }));
     } finally {
+      installationPending.current = false;
       setHeaderAction(null);
     }
   }, [api, t]);
 
   const importPlugin = useCallback(async () => {
-    if (!api) return;
+    if (!api || installationPending.current) return;
+    installationPending.current = true;
     setHeaderAction("import");
     setError(null);
     try {
@@ -211,12 +223,14 @@ export function PluginModePanel({ api: providedApi }: PluginModePanelProps) {
       if (!result.ok && !result.canceled) {
         setError(t("pluginPanel.importFailed", { error: result.error ?? t("pluginPanel.unknownError") }));
       } else if (result.ok) {
+        if (result.activation === "restart-required") feedback.notice({ tone: "info", message: t("pluginPanel.restartRequired") });
         if (result.overview) setOverview(normalizePluginOverview(result.overview));
         else await reload();
       }
     } catch (cause) {
       setError(t("pluginPanel.importFailed", { error: cause instanceof Error ? cause.message : String(cause) }));
     } finally {
+      installationPending.current = false;
       setHeaderAction(null);
     }
   }, [api, reload, t]);
@@ -256,7 +270,8 @@ export function PluginModePanel({ api: providedApi }: PluginModePanelProps) {
         if (isCurrent()) setMarketError(t("pluginPanel.market.installFailed", { error: result.error ?? t("pluginPanel.unknownError") }));
       } else {
         if (isCurrent()) {
-          const successKey = !installed ? "installSuccess" : installed.configuredEnabled ? "replacementSuccessEnabled" : "replacementSuccessDisabled";
+          const successKey = result.activation === "restart-required" ? "restartSuccess"
+            : !installed ? "installSuccess" : installed.configuredEnabled ? "replacementSuccessEnabled" : "replacementSuccessDisabled";
           setMarketNotice(t(`pluginPanel.market.${successKey}`, { action: actionLabel, name: result.plugin.name }));
         }
         // Refresh installed state even when the user returned to the installed list.
@@ -274,7 +289,8 @@ export function PluginModePanel({ api: providedApi }: PluginModePanelProps) {
   }, [api, feedback, overview.plugins, reload, t]);
 
   const openPlugin = useCallback(async (plugin: PluginListEntry) => {
-    if (!api) return;
+    if (!api || installationPending.current) return;
+    installationPending.current = true;
     const action = `${plugin.id}:open`;
     setBusyAction(action);
     setError(null);
@@ -284,12 +300,14 @@ export function PluginModePanel({ api: providedApi }: PluginModePanelProps) {
     } catch (cause) {
       setError(t("pluginPanel.openFailed", { error: cause instanceof Error ? cause.message : String(cause) }));
     } finally {
+      installationPending.current = false;
       setBusyAction(null);
     }
   }, [api, t]);
 
   const togglePlugin = useCallback(async (plugin: PluginListEntry) => {
-    if (!api) return;
+    if (!api || installationPending.current) return;
+    installationPending.current = true;
     const action = `${plugin.id}:toggle`;
     setBusyAction(action);
     setError(null);
@@ -302,12 +320,17 @@ export function PluginModePanel({ api: providedApi }: PluginModePanelProps) {
     } catch (cause) {
       setError(t("pluginPanel.toggleFailed", { error: cause instanceof Error ? cause.message : String(cause) }));
     } finally {
+      installationPending.current = false;
       setBusyAction(null);
     }
   }, [api, reload, t]);
 
   const deletePlugin = useCallback(async (plugin: PluginListEntry) => {
-    if (!api || plugin.source !== "user") return;
+    if (!api || plugin.source !== "user" || installationPending.current) return;
+    installationPending.current = true;
+    setBusyAction(`${plugin.id}:delete`);
+    setError(null);
+    try {
     // 删除插件程序目录：危险确认，默认聚焦取消
     const confirmed = await feedback.confirm({
       title: t("pluginPanel.delete"),
@@ -317,10 +340,6 @@ export function PluginModePanel({ api: providedApi }: PluginModePanelProps) {
       dangerous: true,
     });
     if (!confirmed) return;
-    const action = `${plugin.id}:delete`;
-    setBusyAction(action);
-    setError(null);
-    try {
       const result = await api.uninstall(plugin.id);
       if (!result.ok) {
         setError(t("pluginPanel.deleteFailed", { error: result.error ?? t("pluginPanel.unknownError") }));
@@ -332,11 +351,16 @@ export function PluginModePanel({ api: providedApi }: PluginModePanelProps) {
     } catch (cause) {
       setError(t("pluginPanel.deleteFailed", { error: cause instanceof Error ? cause.message : String(cause) }));
     } finally {
+      installationPending.current = false;
       setBusyAction(null);
     }
   }, [api, feedback, reload, t]);
 
   const inMarket = view === "market";
+  const visibleMarket = market.plugins.filter(entry => {
+    const keyword = marketFilter.trim().toLowerCase();
+    return [entry.id, entry.name, entry.description, entry.author].some(value => value.toLowerCase().includes(keyword));
+  });
   const marketToggleLabel = inMarket ? t("pluginPanel.market.back") : t("pluginPanel.market.toggle");
   const catalogNotice = market.mode === "bundled"
     ? t("pluginPanel.market.bundledNotice")
@@ -375,7 +399,7 @@ export function PluginModePanel({ api: providedApi }: PluginModePanelProps) {
             type="button"
             className="plugin-panel__icon-button"
             onClick={() => void (inMarket ? loadMarket() : refreshPlugins())}
-            disabled={!api || headerAction !== null}
+            disabled={!api || anyBusy}
             aria-label={t("pluginPanel.refresh")}
             title={t("pluginPanel.refresh")}
           >
@@ -385,7 +409,7 @@ export function PluginModePanel({ api: providedApi }: PluginModePanelProps) {
             type="button"
             className="plugin-panel__icon-button is-accent"
             onClick={() => void importPlugin()}
-            disabled={!api || headerAction !== null}
+            disabled={!api || anyBusy}
             aria-label={t("pluginPanel.add")}
             title={t("pluginPanel.add")}
           >
@@ -394,19 +418,20 @@ export function PluginModePanel({ api: providedApi }: PluginModePanelProps) {
         </div>
       </header>
 
-      {!inMarket && (
+      {(
         <div className="plugin-panel__search-row">
           <input
             className="plugin-panel__search"
             placeholder={t("pluginPanel.searchPlaceholder")}
-            value={filter}
-            onChange={(event) => setFilter(event.target.value)}
+            value={inMarket ? marketFilter : filter}
+            onChange={(event) => (inMarket ? setMarketFilter : setFilter)(event.target.value)}
           />
         </div>
       )}
 
       {inMarket ? (
         <>
+          {market.readAt && <p className="plugin-panel__notice">{t("pluginPanel.catalogReadAt", { time: market.readAt })}</p>}
           {market.sources && market.sources.length > 0 && (
             <div className="plugin-panel__source-switch" role="group" aria-label={t("pluginPanel.market.sourceSection")}>
               <span className="plugin-panel__source-switch-label">{t("pluginPanel.market.sourceSection")}</span>
@@ -422,7 +447,7 @@ export function PluginModePanel({ api: providedApi }: PluginModePanelProps) {
                     key={source.url}
                     className={`plugin-panel__source-chip${source.used ? " is-used" : source.ok ? " is-standby" : " is-dead"}`}
                     onClick={() => void loadMarket(source.url)}
-                    disabled={!api || market.phase === "loading" || source.url === "bundled:registry"}
+                    disabled={!api || anyBusy || market.phase === "loading" || source.url === "bundled:registry"}
                     title={`${marketSourceLabel(source.url, t)} · ${stateLabel}`}
                   >
                     {marketSourceLabel(source.url, t)}
@@ -447,15 +472,15 @@ export function PluginModePanel({ api: providedApi }: PluginModePanelProps) {
                 {t("common.retry")}
               </button>
             </div>
-          ) : market.plugins.length === 0 ? (
-            <div className="plugin-panel__empty">{t("pluginPanel.market.emptyHint")}</div>
+          ) : visibleMarket.length === 0 ? (
+            <div className="plugin-panel__empty">{t(market.plugins.length ? "pluginPanel.noMatch" : "pluginPanel.market.emptyHint")}</div>
           ) : (
             <div className="plugin-panel__grid">
-              {market.plugins.map((entry) => {
+              {visibleMarket.map((entry) => {
                 const installed = overview.plugins.find((plugin) => plugin.id === entry.id);
                 const action = resolveMarketAction(entry, installed);
                 const installingThis = installingId === entry.id;
-                const installBlocked = installingId !== null || entry.compatible === false;
+                const installBlocked = anyBusy || entry.compatible === false;
                 const bundled = entry.source === "bundled" || market.mode === "bundled" || (market.mode === "offline-fallback" && entry.source !== "remote");
                 const compatibility = t(`pluginPanel.market.${entry.compatible === false ? "incompatible" : entry.compatible === true ? "compatible" : "compatibilityUnknown"}`);
                 let label: string;
@@ -551,7 +576,7 @@ export function PluginModePanel({ api: providedApi }: PluginModePanelProps) {
                 <div className="plugin-panel__empty">{t("pluginPanel.emptyHint")}</div>
               ) : visiblePlugins.map((plugin) => {
                 const transitioning = plugin.status === "starting" || plugin.status === "stopping";
-                const cardBusy = busyAction?.startsWith(`${plugin.id}:`) === true;
+                const cardBusy = anyBusy;
                 const canOpen = plugin.status === "running" && plugin.canOpen;
                 const canDelete = plugin.source === "user" && !transitioning;
                 const toggleText = plugin.status === "failed"
@@ -580,6 +605,9 @@ export function PluginModePanel({ api: providedApi }: PluginModePanelProps) {
                           {t("pluginPanel.developer", { author: plugin.author.trim() || t("pluginPanel.unknownDeveloper") })}
                         </p>
                         {plugin.error && <p className="plugin-card-ui__error" title={plugin.error}>{plugin.error}</p>}
+                        {plugin.installedVersion && <p>{t("pluginPanel.versions", { installed: plugin.installedVersion, active: plugin.activeVersion ?? "—", pending: plugin.pendingVersion ?? "—" })}</p>}
+                        <p title={plugin.sourceId}>{t(`pluginPanel.sources.${plugin.source === "builtin" ? "builtin" : plugin.sourceKind ?? "legacy-unknown"}`)}</p>
+                        {plugin.restartRequired && <p role="status">{t(plugin.status === "failed" ? "pluginPanel.restartAfterFailure" : "pluginPanel.restartRequired")}</p>}
                       </div>
                     </div>
                     <div className="plugin-card-ui__actions">

@@ -334,6 +334,11 @@
     "delete": "删除"
   },
   "pluginPanel": {
+    "versions": "已安装 {{installed}} · 运行中 {{active}} · 待生效 {{pending}}",
+    "restartRequired": "需要完整重启应用后生效；当前运行版本不会被替换。",
+    "restartAfterFailure": "当前进程未运行此插件。请完整重启应用后，按已保存的版本选择重新尝试。",
+    "catalogReadAt": "目录读取时间：{{time}}",
+    "sources": { "builtin": "内置插件", "bundled": "随应用分发", "curated-market": "精选市场", "local-zip": "本地 ZIP", "legacy-unknown": "历史安装，来源未核实" },
     "title": "功能插件",
     "subtitle": "管理已安装的功能插件；新导入的插件默认停用，请确认来源可信后再启用。",
     "registryPrefix": "Firefly 收录仓库:",
@@ -406,14 +411,15 @@
       "capabilitiesUnknown": "未声明（不表示访问权限受到限制）",
       "executionWarning": "插件启用后会以应用权限执行 Node.js 代码。能力声明只描述预期行为，不代表沙箱隔离或安全保证。请仅安装并启用你信任的插件。",
       "installConfirm": "确定{{action}} {{name}} v{{version}} 吗？",
-      "replaceWarning": "将替换同 ID 的本地插件，当前版本会停止运行。",
-      "updateWarning": "将替换已安装版本，正在运行的插件会被停止。",
+      "replaceWarning": "替换包将独立保存，当前运行版本继续使用；完整重启应用后再切换。",
+      "updateWarning": "更新包将独立保存，当前运行版本继续使用；完整重启应用后再切换。",
       "confirming": "等待确认…",
       "freshInstallState": "首次安装后默认停用，请确认来源可信后再启用。",
-      "preserveEnabledState": "当前插件配置为启用。将保留启用设置，新代码可能立即运行。",
+      "preserveEnabledState": "当前插件配置为启用。将保留启用设置，完整重启应用后才会尝试运行新版本。",
       "preserveDisabledState": "当前插件配置为停用。将保留停用设置，需从已安装列表手动启用。",
-      "replacementSuccessEnabled": "“{{name}}”{{action}}成功，已保留启用设置；新代码可能已开始运行，请返回已安装列表确认运行状态。",
-      "replacementSuccessDisabled": "“{{name}}”{{action}}成功，已保留停用设置；确认来源可信后可从已安装列表手动启用。"
+      "replacementSuccessEnabled": "“{{name}}”包已保存，已保留启用设置；请在已安装列表确认待重启和运行状态。",
+      "replacementSuccessDisabled": "“{{name}}”包已保存，已保留停用设置；完整重启应用后可手动启用。",
+      "restartSuccess": "“{{name}}”包已保存，需要完整重启应用后生效；当前运行版本保持不变。"
     }
   },
   "toolPanel": {

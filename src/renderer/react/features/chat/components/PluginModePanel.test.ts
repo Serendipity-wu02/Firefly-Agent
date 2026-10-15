@@ -179,6 +179,44 @@ describe("PluginModePanel", () => {
     expect(cardButtons.map((button) => button.textContent)).toEqual(["打开", "停用", "删除"]);
   });
 
+  it("shows installed, running and pending versions with provenance", async () => {
+    await renderPanel(apiFor([plugin({ installedVersion: "2.0.0", selectedVersion: "1.0.0", activeVersion: "1.0.0", pendingVersion: "2.0.0", restartRequired: true, sourceKind: "local-zip", sourceId: "local-zip" })]));
+    for (const text of ["已安装 2.0.0", "运行中 1.0.0", "待生效 2.0.0", "完整重启", "本地 ZIP"]) expect(container.textContent).toContain(text);
+  });
+
+  it("describes restart recovery without claiming that a failed plugin is still running", async () => {
+    await renderPanel(apiFor([plugin({ status: "failed", installedVersion: "1.0.0", selectedVersion: "1.0.0", activeVersion: null, restartRequired: true, error: "candidate failed" })]));
+    expect(container.textContent).toContain("当前进程未运行此插件");
+    expect(container.textContent).not.toContain("当前运行版本不会被替换");
+  });
+
+  it("filters the loaded market locally by author without refetching", async () => {
+    const api = apiFor([]);
+    vi.mocked(api.marketList).mockResolvedValue({ ok: true, plugins: [marketEntry({ id: "one", name: "One", author: "Alice" }), marketEntry({ id: "two", name: "Two", author: "Bob" })] });
+    await renderPanel(api); await clickMarketToggle();
+    const input = container.querySelector<HTMLInputElement>(".plugin-panel__search")!;
+    expect(input).not.toBeNull();
+    await act(async () => {
+      Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, "value")!.set!.call(input, "alice");
+      input.dispatchEvent(new Event("input", { bubbles: true }));
+    });
+    expect(container.querySelectorAll(".plugin-card-ui")).toHaveLength(1);
+    expect(container.textContent).toContain("One");
+    expect(api.marketList).toHaveBeenCalledTimes(1);
+  });
+
+  it("blocks ZIP import and refresh while a market confirmation is pending", async () => {
+    const gate = deferred<boolean>(); feedbackSpies.confirm.mockReturnValue(gate.promise);
+    const api = apiFor([]); vi.mocked(api.marketList).mockResolvedValue({ ok: true, plugins: [marketEntry()] });
+    await renderPanel(api); await clickMarketToggle();
+    await act(async () => container.querySelector<HTMLButtonElement>(".plugin-card-ui__actions button")!.click());
+    const buttons = container.querySelectorAll<HTMLButtonElement>(".plugin-panel__header-actions button");
+    expect(buttons[1].disabled).toBe(true); expect(buttons[2].disabled).toBe(true);
+    await act(async () => { buttons[1].click(); buttons[2].click(); });
+    expect(api.importZip).not.toHaveBeenCalled(); expect(api.marketList).toHaveBeenCalledTimes(1);
+    await act(async () => gate.resolve(false));
+  });
+
   it("hides the open action when the plugin has no interface", async () => {
     const api = apiFor([plugin({ canOpen: false })]);
     await renderPanel(api);
@@ -257,8 +295,8 @@ describe("PluginModePanel", () => {
     expect(container.textContent).toContain("插件市场");
     expect(container.textContent).toContain("市场演示");
     expect(container.textContent).toContain("12 次下载");
-    // 市场视图隐藏搜索框
-    expect(container.querySelector(".plugin-panel__search")).toBeNull();
+    // 市场搜索仅过滤已读取目录。
+    expect(container.querySelector(".plugin-panel__search")).not.toBeNull();
     // 未安装的市场插件展示粉色主按钮「安装」
     const installButton = container.querySelector<HTMLButtonElement>(".plugin-card-ui__actions button");
     expect(installButton?.textContent).toBe("安装");
@@ -370,13 +408,14 @@ describe("PluginModePanel", () => {
     const confirmation = feedbackSpies.confirm.mock.calls[0]?.[0] as { message: string };
     expect(confirmation.message).toContain("network, filesystem");
     expect(confirmation.message).toContain("Node.js");
+    if (action === "替换安装") expect(confirmation.message).not.toContain("当前版本会停止运行");
     expect(confirmation.message).toContain("应用权限");
     expect(confirmation.message).toContain("不代表沙箱隔离");
     expect(api.marketInstall).toHaveBeenCalledWith("market-demo");
   });
 
   it.each([
-    { origin: "market" as const, enabled: true, action: "更新", confirmation: "保留启用设置，新代码可能立即运行", success: "保留启用设置" },
+    { origin: "market" as const, enabled: true, action: "更新", confirmation: "保留启用设置，完整重启应用后", success: "保留启用设置" },
     { origin: "local" as const, enabled: false, action: "替换安装", confirmation: "保留停用设置", success: "保留停用设置" },
   ])("describes preserved state for $action (enabled=$enabled)", async ({ origin, enabled, action, confirmation, success }) => {
     const installed = plugin({ id: "market-demo", version: "1.0.0", origin, configuredEnabled: enabled, enabled, status: enabled ? "running" : "disabled" });

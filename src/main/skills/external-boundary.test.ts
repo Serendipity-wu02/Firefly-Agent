@@ -27,7 +27,9 @@ const hash = (file: string) => createHash("sha256").update(fs.readFileSync(path.
 // separately approved manual window lane; market_browser_* below assert their
 // actual authorization, network, IPC and lifecycle invariants instead of bytes.
 const unchangedBoundaries = {
-  "src/main/plugin-marketplace.ts": "433186249b57c0354fae9346bcb793224454ebb2bf26b589519886a01dc654f5",
+  // Reviewed plugin lifecycle update: host-owned provenance and install/activation
+  // outcomes only. Remote allowlists remain empty and are independently asserted.
+  "src/main/plugin-marketplace.ts": "8cbc14987291b8256a39e12e5182125598dcae1e41139fd3edaea18e2e80480e",
   "src/main/browser/browser-request-policy.ts": "9ce32fdba4722e49b7c96d27ad7a2058fae3d62a4186d44aac98e49d7e62bdf1",
   "src/main/browser/browser-startup-config.ts": "dc2f2a25a0f9f6f8d4656ef0fa953d6d7ae206676503da3f5f155d2109f8969e",
   "src/main/browser/electron-browser-guest.ts": "e6f519dec91df18236914156c0ee4c27d250ef57a79481aacd0f308a9ee61027",

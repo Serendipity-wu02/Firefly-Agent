@@ -334,6 +334,11 @@
     "delete": "Delete"
   },
   "pluginPanel": {
+    "versions": "Installed {{installed}} · Running {{active}} · Pending {{pending}}",
+    "restartRequired": "A full application restart is required. The running version remains unchanged.",
+    "restartAfterFailure": "This plugin is not running in the current process. Restart the application to retry the saved version selection.",
+    "catalogReadAt": "Catalog read at: {{time}}",
+    "sources": { "builtin": "Built-in", "bundled": "Bundled with app", "curated-market": "Curated market", "local-zip": "Local ZIP", "legacy-unknown": "Legacy installation, unverified source" },
     "title": "Plugins",
     "subtitle": "Manage your installed plugins. Newly imported plugins are disabled by default — only enable ones you trust.",
     "registryPrefix": "Official registry: ",
@@ -406,14 +411,15 @@
       "capabilitiesUnknown": "None declared (this does not limit access)",
       "executionWarning": "Plugins execute Node.js code with the app's permissions when enabled. Capability declarations describe intended behavior; they do not provide sandbox isolation or security guarantees. Only install and enable plugins you trust.",
       "installConfirm": "{{action}} {{name}} v{{version}}?",
-      "replaceWarning": "This replaces the local plugin with the same ID; the current version will stop running.",
-      "updateWarning": "This replaces the installed version; a running plugin will be stopped.",
+      "replaceWarning": "The replacement package is saved separately. The running version continues until a full application restart.",
+      "updateWarning": "The new package is stored separately. The current version keeps running until a full application restart.",
       "confirming": "Awaiting confirmation…",
       "freshInstallState": "A fresh installation starts disabled. Enable the plugin only after you trust its source.",
-      "preserveEnabledState": "The plugin is currently configured as enabled. This setting is preserved, so the new code may execute immediately during installation.",
+      "preserveEnabledState": "The enabled setting is preserved. New code is attempted only after a full application restart.",
       "preserveDisabledState": "The plugin is currently configured as disabled. This setting is preserved; it will need to be enabled from the installed list.",
-      "replacementSuccessEnabled": "{{action}} of \"{{name}}\" succeeded. The enabled setting was preserved; new code may already be running. Check its status in the installed list.",
-      "replacementSuccessDisabled": "{{action}} of \"{{name}}\" succeeded. The disabled setting was preserved; enable it from the installed list when ready."
+      "replacementSuccessEnabled": "The package for \"{{name}}\" was saved with the enabled setting preserved. Check pending and running states in the installed list.",
+      "replacementSuccessDisabled": "The package for \"{{name}}\" was saved with the disabled setting preserved. Enable it after a full application restart.",
+      "restartSuccess": "The package for \"{{name}}\" was saved. A full application restart is required; the running version remains unchanged."
     }
   },
   "toolPanel": {

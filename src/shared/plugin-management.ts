@@ -9,6 +9,13 @@ export interface PluginListEntry {
   id: string;
   name: string;
   version: string;
+  installedVersion?: string;
+  selectedVersion?: string | null;
+  activeVersion?: string | null;
+  pendingVersion?: string | null;
+  restartRequired?: boolean;
+  sourceId?: string;
+  sourceKind?: "bundled" | "curated-market" | "local-zip" | "legacy-unknown";
   description: string;
   author: string;
   entry: string;
@@ -80,16 +87,19 @@ export interface MarketListResult {
 }
 
 export type MarketInstallResult =
-  | { ok: true; plugin: { id: string; name: string; version: string }; overview?: PluginOverview }
-  | { ok: false; error: string };
+  | { ok: true; plugin: { id: string; name: string; version: string }; overview?: PluginOverview; installation?: "committed"; activation?: "not-requested" | "restart-required" | "running" | "failed" }
+  | { ok: false; error: string; installation?: "committed" | "rejected"; activation?: "not-requested" | "restart-required" | "running" | "failed"; overview?: PluginOverview };
 
 export interface PluginManagementApi {
+  onChanged?(callback: (overview: PluginOverview) => void): () => void;
   list(): Promise<PluginOverview | PluginListEntry[]>;
   setEnabled(id: string, enabled: boolean): Promise<{ ok: boolean; error?: string }>;
   open(id: string): Promise<{ ok: boolean; error?: string }>;
   rescan(): Promise<PluginOverview>;
   importZip(): Promise<{
     ok: boolean;
+    installation?: "committed" | "rejected";
+    activation?: "not-requested" | "restart-required" | "running" | "failed";
     canceled?: boolean;
     error?: string;
     plugin?: { id: string; name: string; version: string };
