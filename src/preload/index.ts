@@ -559,6 +559,10 @@ const memoryPanelApi = {
   auditSource: (factId: string): Promise<MemoryPanelSourceAudit> => ipcRenderer.invoke(IPC.MEMORY_PANEL_AUDIT_SOURCE, factId),
   getData: () => ipcRenderer.invoke(IPC.MEMORY_PANEL_GET_DATA),
   deleteImportedDoc: (importId: string, fileName?: string) => ipcRenderer.invoke(IPC.MEMORY_PANEL_DELETE_IMPORTED_DOC, { importId, fileName }),
+  shadowState: () => ipcRenderer.invoke(IPC.MEMORY_SHADOW_STATE),
+  shadowConfigure: (input: { enabled: boolean; dailyCap: number; expectedRevision: number }) => ipcRenderer.invoke(IPC.MEMORY_SHADOW_CONFIGURE, input),
+  shadowExport: () => ipcRenderer.invoke(IPC.MEMORY_SHADOW_EXPORT),
+  shadowClear: () => ipcRenderer.invoke(IPC.MEMORY_SHADOW_CLEAR),
 };
 
 contextBridge.exposeInMainWorld("user", userApi);
