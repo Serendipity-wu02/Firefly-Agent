@@ -276,6 +276,7 @@ if (!window.fireflyScheduler) {
 // 当前激活的厂商：每次 applyPreset 后更新；用于"切到下一家厂商前先把当前那家的输入框值缓存住"
 
 const NAV_LABELS: Record<string, { emoji: string; title: string; hint: string }> = {
+  subagents: { emoji: "", title: t("settings.subagents.title"), hint: t("settings.subagents.hint") },
   asr: { emoji: "🎙", title: t("settings.desktopAsr.title"), hint: t("settings.desktopAsr.hint") },
   memory: { emoji: `<img src="../avatars/firefly-avatar.png" width="24" height="24" alt="" aria-hidden="true" style="vertical-align:-3px" />`, title: t("settings.nav.memory"), hint: t("settings.nav.memoryHint") },
   chat: { emoji: `<svg style="vertical-align:-3px" width="24" height="24" viewBox="0 0 48 48" fill="none" aria-hidden="true"><path d="M33 38H22V30H36V22H44V38H39L36 41L33 38Z" stroke="currentColor" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/><path d="M4 6H36V30H17L13 34L9 30H4V6Z" fill="none" stroke="currentColor" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/><path d="M19 18H20" stroke="currentColor" stroke-width="4" stroke-linecap="round"/><path d="M26 18H27" stroke="currentColor" stroke-width="4" stroke-linecap="round"/><path d="M12 18H13" stroke="currentColor" stroke-width="4" stroke-linecap="round"/></svg>`, title: t("settings.nav.chat"), hint: t("settings.nav.chatHint") },
@@ -653,12 +654,6 @@ async function reloadProfiles(): Promise<void> {
     apiState.defaultProfileId = catalog.defaultModelProfileId;
     apiState.profilesLoadState = "ready";
     renderProfileList();
-    const routingPanel = document.getElementById("agent-routing-panel");
-    if (routingPanel && window.settings) {
-      const { loadAgentRoutingPanel } = await import("./api/agent-routing");
-      if (!isCurrentProfilePanel()) return;
-      await loadAgentRoutingPanel(routingPanel, window.settings);
-    }
   } catch (error) {
     if (!isCurrentProfilePanel()) return;
     apiState.profilesLoadState = "error";
@@ -1501,6 +1496,14 @@ apiForm.addEventListener("submit", async (e) => {
 const navigationButtons = Array.from(document.querySelectorAll<HTMLButtonElement>(".nav-item"));
 const panelSections = Array.from(document.querySelectorAll<HTMLElement>("[data-panel]"), panel => panel.dataset.panel!);
 
+/** Reads the 12 sub-agents and their model choice each time the page is opened, so it never shows a stale selection. */
+async function loadSubagents(): Promise<void> {
+  const host = document.getElementById("agent-routing-panel");
+  if (!host || !window.settings) return;
+  const { loadAgentRoutingPanel } = await import("./api/agent-routing");
+  await loadAgentRoutingPanel(host, window.settings);
+}
+
 function switchSection(requestedSection: string): void {
   const section = resolveSettingsSection(requestedSection, navigationButtons, panelSections);
   const label = NAV_LABELS[section] ?? NAV_LABELS.api;
@@ -1524,6 +1527,7 @@ function switchSection(requestedSection: string): void {
   const isMcp = section === "mcp";
 
   const isMusic = section === "music";
+  const isSubagents = section === "subagents";
   apiForm.classList.toggle("is-hidden", !isApi);
   apiRuntimeForm.classList.toggle("is-hidden", !isApiAdvanced);
   appearanceForm.classList.toggle("is-hidden", !isAppearance);
@@ -1549,9 +1553,12 @@ function switchSection(requestedSection: string): void {
   if (musicPanel) musicPanel.classList.toggle("is-hidden", !isMusic);
   if (isMusic) void loadMusicPanel();
   else disposeMusicPanel();
+  const subagentsPanel = document.getElementById("subagents-panel");
+  if (subagentsPanel) subagentsPanel.classList.toggle("is-hidden", !isSubagents);
+  if (isSubagents) void loadSubagents();
   placeholderPanel.classList.toggle(
     "is-hidden",
-    isAsr || isApi || isApiAdvanced || isAppearance || isGeneral || isPreferences || isFirefly || isDisclaimer || isMemory || isUser || isTasks || isPlugins || isMcp || isChannels || isMusic,
+    isAsr || isApi || isApiAdvanced || isAppearance || isGeneral || isPreferences || isFirefly || isDisclaimer || isMemory || isUser || isTasks || isPlugins || isMcp || isChannels || isMusic || isSubagents,
   );
 
   if (
@@ -1569,7 +1576,8 @@ function switchSection(requestedSection: string): void {
     !isPlugins &&
     !isMcp &&
     !isChannels &&
-    !isMusic
+    !isMusic &&
+    !isSubagents
   ) {
 	    placeholderIcon.innerHTML = label.emoji;
     placeholderTitle.textContent = label.title;

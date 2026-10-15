@@ -61,7 +61,7 @@ describe("settings category navigation", () => {
 });
 
 
-it("retains the thirteen first-level settings destinations, with MCP servers as their own entry", () => {
+it("retains every first-level settings destination, with MCP servers and the sub-agents as their own entries", () => {
   document.body.innerHTML = html;
-  expect([...document.querySelectorAll<HTMLButtonElement>('.nav-item')].map(button => button.dataset.section)).toEqual(["general", "appearance", "preferences", "user", "firefly", "memory", "api", "api-advanced", "asr", "plugins", "mcp", "channels", "disclaimer"]);
+  expect([...document.querySelectorAll<HTMLButtonElement>('.nav-item')].map(button => button.dataset.section)).toEqual(["general", "appearance", "preferences", "api", "api-advanced", "user", "plugins", "subagents", "mcp", "memory", "firefly", "channels", "asr", "disclaimer"]);
 });

@@ -14,10 +14,10 @@ export interface SearchEntry {
   page: boolean;
 }
 
-const ROW_SELECTOR = ".setting-row, .settings-group-title, .plugin-card, .agent-setting-card, .scheduler-card, .channels-card, .settings-list > .field";
+const ROW_SELECTOR = ".setting-row, .agent-routing-row, .settings-group-title, .plugin-card, .agent-setting-card, .scheduler-card, .channels-card, .settings-list > .field";
 const MAX_DESCRIPTION = 160;
 const MAX_TEXT = 600;
-const DESCRIPTION_SELECTOR = ":scope > div:first-child > span, :scope > p, :scope > div > p, .field-hint, .form-hint, .panel-hint";
+const DESCRIPTION_SELECTOR = ":scope > div:first-child > span, :scope > p, :scope > div > p, .agent-routing-intro, .field-hint, .form-hint, .panel-hint";
 export const MAX_RESULTS = 40;
 
 const clean = (text: string | null | undefined): string => (text ?? "").replace(/\s+/g, " ").trim();
