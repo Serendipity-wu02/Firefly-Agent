@@ -920,3 +920,60 @@ body { font-size: var(--ff-ui-font-size, 16px); }
   .settings-shell #disclaimer-panel:not(.is-hidden) { animation: none; }
   .settings-shell .nav-item { transition: none; }
 }
+
+/* ── 导航搜索 ─────────────────────────────────────────── */
+.settings-shell .settings-nav__search { position: relative; flex-shrink: 0; margin: 0 4px 14px; }
+.settings-shell .settings-nav__search-icon { position: absolute; left: 12px; top: 50%; transform: translateY(-50%); color: var(--rb-text-faint); pointer-events: none; }
+.settings-shell .settings-nav__search-input {
+  box-sizing: border-box; width: 100%; height: 36px; padding: 0 12px 0 34px;
+  border: 1px solid transparent; border-radius: 10px;
+  background: var(--st-inset-fill); color: var(--rb-text-strong);
+  font: 400 14px/20px var(--rb-font-sans);
+}
+.settings-shell .settings-nav__search-input::placeholder { color: var(--rb-text-faint); }
+.settings-shell .settings-nav__search-input:focus { border-color: color-mix(in srgb, var(--st-primary) 40%, transparent); background: var(--st-card-fill); }
+.settings-shell .settings-nav.is-searching .settings-nav__list { display: none; }
+.settings-shell .settings-search-results { display: flex; flex: 1 1 auto; flex-direction: column; gap: 2px; min-height: 0; padding: 0 2px; overflow-y: auto; scrollbar-width: thin; }
+.settings-shell .settings-search-results[hidden] { display: none; }
+.settings-shell .settings-search-result { display: grid; gap: 2px; padding: 8px 10px; border: 0; border-radius: 10px; background: transparent; color: var(--rb-text-strong); text-align: left; cursor: pointer; }
+.settings-shell .settings-search-result:hover,
+.settings-shell .settings-search-result:focus-visible { background: var(--st-nav-hover); }
+.settings-shell .settings-search-result__title { font-size: 13.5px; font-weight: 500; overflow-wrap: anywhere; }
+.settings-shell .settings-search-result__meta { color: var(--rb-text-faint); font-size: 11.5px; }
+.settings-shell .settings-search-result__desc { display: -webkit-box; overflow: hidden; color: var(--rb-text-muted); font-size: 12px; line-height: 1.5; -webkit-line-clamp: 2; -webkit-box-orient: vertical; }
+.settings-shell .settings-search-empty { margin: 12px 10px; color: var(--rb-text-muted); font-size: 13px; }
+.settings-shell .settings-nav__sr { position: absolute; width: 1px; height: 1px; margin: 0; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+.settings-shell .is-search-hit { border-radius: 10px; animation: st-search-hit 2s ease-out; }
+@keyframes st-search-hit {
+  0%, 55% { background: color-mix(in srgb, var(--st-primary) 14%, transparent); }
+  100% { background: transparent; }
+}
+@media (prefers-reduced-motion: reduce) { .settings-shell .is-search-hit { animation: none; background: color-mix(in srgb, var(--st-primary) 14%, transparent); } }
+
+/* ── 内容页统一排版：大标题、清晰的分节标题、更松的行距 ────────── */
+.settings-shell .settings-content { padding: 12px 40px 48px; }
+.settings-shell .panel-heading { margin-bottom: 28px; }
+.settings-shell .panel-heading h1,
+.settings-shell .plugin-panel-heading h1,
+.settings-shell .plugin-panel-heading__title,
+.settings-shell #channels-panel > h1 { font: 650 26px/34px var(--rb-font-sans); letter-spacing: -.015em; }
+.settings-shell .panel-heading p,
+.settings-shell .plugin-panel-heading p,
+.settings-shell #channels-panel > .panel-hint { margin-top: 4px; font-size: 13.5px; line-height: 21px; }
+.settings-shell .settings-group-title { margin: 34px 0 12px; color: var(--rb-text-strong); font-size: 16px; font-weight: 650; letter-spacing: 0; }
+.settings-shell .settings-group-title:first-child { margin-top: 0; }
+.settings-shell { --sys-row-pad: 18px; }
+.settings-shell .setting-row strong { font-size: 14.5px; font-weight: 550; line-height: 22px; }
+.settings-shell .setting-row > div > span { font-size: 13px; line-height: 20px; }
+@media (max-width: 560px) {
+  .settings-shell .settings-content { padding: 8px 14px 28px; }
+  .settings-shell .panel-heading h1,
+  .settings-shell .plugin-panel-heading h1,
+  .settings-shell #channels-panel > h1 { font-size: 21px; line-height: 28px; }
+}
+
+/* 五个分组各有标题，不再需要分隔线；条目略收紧，默认高度的窗口里整列导航放得下 */
+.settings-shell .settings-nav .nav-divider { display: none; }
+.settings-shell .settings-nav__list { gap: 2px; }
+.settings-shell .settings-nav__group { padding: 14px 12px 4px; }
+.settings-shell .nav-item { min-height: 36px; padding-block: 6px; }

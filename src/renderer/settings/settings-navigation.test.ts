@@ -63,5 +63,5 @@ describe("settings category navigation", () => {
 
 it("retains the thirteen first-level settings destinations, with MCP servers as their own entry", () => {
   document.body.innerHTML = html;
-  expect([...document.querySelectorAll<HTMLButtonElement>('.nav-item')].map(button => button.dataset.section)).toEqual(["general", "appearance", "preferences", "api", "api-advanced", "asr", "firefly", "memory", "user", "plugins", "mcp", "channels", "disclaimer"]);
+  expect([...document.querySelectorAll<HTMLButtonElement>('.nav-item')].map(button => button.dataset.section)).toEqual(["general", "appearance", "preferences", "user", "firefly", "memory", "api", "api-advanced", "asr", "plugins", "mcp", "channels", "disclaimer"]);
 });

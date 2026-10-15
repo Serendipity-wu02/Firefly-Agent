@@ -80,9 +80,19 @@
       "loadFailed": "读取失败，请重新打开设置后重试。"
     },
     "layout": {
-      "common": "常用设置",
-      "assistant": "助手与工具",
+      "personal": "个人",
+      "assistant": "助手",
+      "models": "模型与语音",
+      "integrations": "集成",
       "about": "关于"
+    },
+    "search": {
+      "placeholder": "搜索设置",
+      "label": "搜索设置",
+      "results": "搜索结果",
+      "empty": "没有找到匹配的设置",
+      "page": "页面",
+      "count": "找到 {{count}} 项"
     },
     "agentRouting": {
       "loading": "正在读取角色配置…",

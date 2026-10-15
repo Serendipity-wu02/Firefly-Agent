@@ -80,9 +80,19 @@
       "loadFailed": "Loading failed. Reopen settings and retry."
     },
     "layout": {
-      "common": "General",
-      "assistant": "Assistant & tools",
+      "personal": "Personal",
+      "assistant": "Assistant",
+      "models": "Models & voice",
+      "integrations": "Integrations",
       "about": "About"
+    },
+    "search": {
+      "placeholder": "Search settings",
+      "label": "Search settings",
+      "results": "Search results",
+      "empty": "No matching settings",
+      "page": "Page",
+      "count": "{{count}} found"
     },
     "agentRouting": {
       "loading": "Loading role configuration…",

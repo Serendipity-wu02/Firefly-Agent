@@ -6,6 +6,7 @@ import { parseContextWindowTokens } from "../../shared/context-window";
 import { renderProviderRows } from "./api/provider-rows";
 import { applyProviderEditorLayout, mountProfileEditor, placeSaveStatus, renderKeepingProfileEditor } from "./api/provider-editor";
 import { bindSettingsNavigation, resolveSettingsSection, updateSettingsNavigation } from "./shared/navigation";
+import { mountSettingsSearch } from "./shared/search";
 /* 标记！AI写的超大技术债，延期重构*/
 import "../ui/base.css";
 import "../ui/theme";
@@ -1580,6 +1581,18 @@ function switchSection(requestedSection: string): void {
 }
 
 bindSettingsNavigation(navigationButtons, switchSection);
+
+{
+  const nav = document.querySelector<HTMLElement>(".settings-nav");
+  const input = document.getElementById("settings-search") as HTMLInputElement | null;
+  const results = document.getElementById("settings-search-results");
+  const status = document.getElementById("settings-search-status");
+  if (nav && input && results && status) {
+    const search = mountSettingsSearch({ root: document, nav, input, results, status, buttons: navigationButtons, select: switchSection });
+    // Results are built from translated text, so rebuild them when the language changes.
+    subscribeLocaleChanged(() => { if (input.value) search.refresh(); });
+  }
+}
 
 schedulerNewBtn?.addEventListener("click", () => void openSchedulerEditor());
 schedulerEditorClose?.addEventListener("click", closeSchedulerEditor);
