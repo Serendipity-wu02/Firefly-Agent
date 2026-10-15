@@ -24,6 +24,8 @@ export const MARKET_ZIP_URL_PREFIXES: readonly string[] = [
 ];
 export const BUNDLED_MARKET_SOURCE = "bundled:registry";
 export const MARKET_REGISTRY_TIMEOUT_MS = 10_000;
+/** With a bundled catalog available, the list does not wait longer than this for the online catalog. */
+export const MARKET_REGISTRY_GRACE_MS = 3_000;
 export const MARKET_REGISTRY_MAX_BYTES = 1024 * 1024;
 export const MARKET_ZIP_DOWNLOAD_TIMEOUT_MS = 120_000;
 export const MARKET_ZIP_MAX_BYTES = 50 * 1024 * 1024;
@@ -59,6 +61,7 @@ export interface PluginMarketplaceDeps {
   fetchImpl?: MarketplaceFetch;
   /** Test overrides for bounded I/O. */
   registryTimeoutMs?: number;
+  registryGraceMs?: number;
   registryMaxBytes?: number;
   zipTimeoutMs?: number;
   zipMaxBytes?: number;
@@ -167,6 +170,7 @@ export function createPluginMarketplaceService(deps: PluginMarketplaceDeps) {
     return net.fetch(input, init);
   });
   const registryTimeoutMs = deps.registryTimeoutMs ?? MARKET_REGISTRY_TIMEOUT_MS;
+  const registryGraceMs = deps.registryGraceMs ?? MARKET_REGISTRY_GRACE_MS;
   const registryMaxBytes = deps.registryMaxBytes ?? MARKET_REGISTRY_MAX_BYTES;
   const zipTimeoutMs = deps.zipTimeoutMs ?? MARKET_ZIP_DOWNLOAD_TIMEOUT_MS;
   const zipMaxBytes = deps.zipMaxBytes ?? MARKET_ZIP_MAX_BYTES;
@@ -241,14 +245,27 @@ export function createPluginMarketplaceService(deps: PluginMarketplaceDeps) {
     if (!candidates.length) return { ok: false, error: "插件市场未配置；可从本地安装插件", plugins: [], sources: [] };
     const ordered = preferred && candidates.includes(preferred)
       ? [preferred, ...candidates.filter((url) => url !== preferred)] : candidates;
-    const probes = await Promise.all(ordered.map(async (url) => {
+    type Probe = { url: string; data: unknown } | { url: string; failure: string };
+    const results: Array<Probe | undefined> = new Array(ordered.length).fill(undefined);
+    const tasks = ordered.map(async (url, index) => {
       try {
         const data: unknown = url === BUNDLED_MARKET_SOURCE
           ? JSON.parse(await readFile(await bundledFile("registry.json", registryMaxBytes), "utf8"))
           : await fetchRegistryJson(url);
-        return { url, data } as const;
-      } catch (error) { return { url, failure: errorMessage(error) } as const; }
-    }));
+        results[index] = { url, data };
+      } catch (error) { results[index] = { url, failure: errorMessage(error) }; }
+    });
+    const bundledIndex = ordered.indexOf(BUNDLED_MARKET_SOURCE);
+    if (bundledIndex >= 0 && registryGraceMs > 0) {
+      // A hanging connection must not hold back the bundled catalog: after the grace period the online
+      // probes that have not answered are reported as failed and the bundled data is shown.
+      let timer: ReturnType<typeof setTimeout> | undefined;
+      const grace = new Promise<void>((resolve) => { timer = setTimeout(resolve, registryGraceMs); });
+      await Promise.race([Promise.all(tasks), grace]);
+      if (timer) clearTimeout(timer);
+      await tasks[bundledIndex];
+    } else await Promise.all(tasks);
+    const probes: Probe[] = ordered.map((url, index) => results[index] ?? { url, failure: "获取插件目录超时" });
     const sources: MarketSourceStatus[] = [];
     const failures: string[] = [];
     let sawUnsupported = false;

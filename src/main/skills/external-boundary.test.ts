@@ -29,7 +29,7 @@ const hash = (file: string) => createHash("sha256").update(fs.readFileSync(path.
 const unchangedBoundaries = {
   // Reviewed plugin lifecycle update: host-owned provenance and install/activation
   // outcomes only. Remote allowlists remain empty and are independently asserted.
-  "src/main/plugin-marketplace.ts": "db04827e66358ea9ee85503518cf11f24702607b7e325c5e24402e5baf428901",
+  "src/main/plugin-marketplace.ts": "302a4594cef95e26511e53b11978d116df6834184e93e210e9f560dbd403624e",
   "src/main/browser/browser-request-policy.ts": "9ce32fdba4722e49b7c96d27ad7a2058fae3d62a4186d44aac98e49d7e62bdf1",
   "src/main/browser/browser-startup-config.ts": "dc2f2a25a0f9f6f8d4656ef0fa953d6d7ae206676503da3f5f155d2109f8969e",
   "src/main/browser/electron-browser-guest.ts": "e6f519dec91df18236914156c0ee4c27d250ef57a79481aacd0f308a9ee61027",
