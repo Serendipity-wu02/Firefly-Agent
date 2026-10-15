@@ -227,9 +227,10 @@ export interface SettingsApi {
   rescanSkills?: () => Promise<{ ok: boolean; count: number; error?: string }>;
   getSkillModeOverrides?: () => Promise<Record<string, Partial<Record<"work" | "code", boolean>>>>;
   setSkillModeOverride?: (skillId: string, mode: "work" | "code", enabled: boolean) => Promise<{ ok: boolean; error?: string }>;
-  addMcpServer?: (config: unknown) => Promise<{ ok: boolean; toolIds?: string[]; error?: string }>;
+  addMcpServer?: (config: unknown) => Promise<{ ok: boolean; toolIds?: string[]; error?: string; reason?: string }>;
   removeMcpServer?: (serverId: string) => Promise<{ ok: boolean; error?: string }>;
-  listMcpServers?: () => Promise<Array<{ id: string; name: string; connected: boolean; toolCount: number; toolIds: string[] }>>;
+  setMcpServerEnabled?: (serverId: string, enabled: boolean) => Promise<{ ok: boolean; toolIds?: string[]; error?: string; reason?: string }>;
+  listMcpServers?: () => Promise<Array<{ id: string; name: string; connected: boolean; toolCount: number; toolIds: string[]; enabled?: boolean; failure?: string }>>;
   getPermissionLevel?: () => Promise<{ level: "read-only" | "scoped" | "per-action" | "full" }>;
   setPermissionLevel?: (level: string) => Promise<{ ok: boolean; level?: string; error?: string }>;
   // 计划模式开关（renderer → main）：显式设置 on/off

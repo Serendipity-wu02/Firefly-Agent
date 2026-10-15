@@ -31,7 +31,32 @@
       "removeMessage": "删除“{{name}}”会断开连接、移除其工具并删除已保存配置。以后需要重新添加。确定继续？",
       "removed": "已删除“{{name}}”",
       "removeFailed": "删除失败",
-      "removeFailedMessage": "未能完成断开或保存，请刷新状态后重试。已保存配置可能仍然存在，连接也可能已经断开。"
+      "removeFailedMessage": "未能完成断开或保存，请刷新状态后重试。已保存配置可能仍然存在，连接也可能已经断开。",
+      "disabled": "已停用",
+      "disconnectedReason": "未连接 · {{reason}}",
+      "disable": "停用",
+      "disableNamed": "停用 {{name}}",
+      "enable": "启用",
+      "enableNamed": "启用 {{name}}",
+      "reconnect": "重新连接",
+      "reconnectNamed": "重新连接 {{name}}",
+      "enabledNotice": "“{{name}}”已启用，共 {{count}} 个工具",
+      "reconnectedNotice": "“{{name}}”已重新连接，共 {{count}} 个工具",
+      "disabledNotice": "“{{name}}”已停用，工具已撤下",
+      "enableFailed": "无法启用",
+      "enableFailedMessage": "没有完成连接或保存，服务保持原状。",
+      "enableFailedWhy": "无法启用：{{reason}}。服务保持原状。",
+      "disableFailed": "无法停用",
+      "disableFailedMessage": "没有完成断开或保存，请刷新状态后重试。",
+      "addFailedWhy": "未能添加：{{reason}}。请检查命令及本地配置后重试。错误详情可能含凭据，此处不回显。",
+      "failure": {
+        "command-not-found": "找不到启动命令，请确认程序已安装且在 PATH 中",
+        "permission-denied": "没有权限启动该程序",
+        "timeout": "连接超时",
+        "exited": "程序启动后立即退出",
+        "unreachable": "无法连接到服务地址",
+        "failed": "连接失败，原因未知"
+      }
     },
     "desktopAsr": {
       "projectLanguage": "识别语言以阿里云项目配置为准。",

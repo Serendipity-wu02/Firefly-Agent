@@ -3,6 +3,7 @@ import { AtomicJsonStore } from "../atomic-json-store";
 import { getStorageContext } from "../storage-context";
 import { connectMcpServer, disconnectMcpServer, getMcpServerStates, McpServerConfig } from "./mcp-adapter";
 import { logger, LogTag } from "../logger";
+import { classifyMcpFailure, type McpFailureReason } from "./mcp-failure";
 
 const LOG_PREFIX = "[MCP Manager]";
 
@@ -15,6 +16,9 @@ function queueManagerOperation<T>(operation: () => Promise<T>): Promise<T> {
   managerOperation = result.then(() => {}, () => {});
   return result;
 }
+
+// Last connection failure per server, as a fixed reason only. Memory-only: a restart retries and re-records it.
+const lastFailures = new Map<string, McpFailureReason>();
 
 function record(value: unknown): value is Record<string, unknown> { return !!value && typeof value === "object" && !Array.isArray(value); }
 function validConfigs(value: unknown): boolean {
@@ -104,12 +108,14 @@ async function initMcpManagerNow(signal?: AbortSignal): Promise<void> {
   let failed = 0;
 
   for (const config of configs) {
+    if (config.enabled === false) continue;
     if (signal?.aborted) {
       console.log(LOG_PREFIX, "restore aborted, remaining servers skipped:", config.name);
       break;
     }
     try {
       await connectMcpServer(config);
+      lastFailures.delete(config.id);
       connected++;
       // 连接完成后再核对一次信号：退出中则立刻断开这条迟到连接
       if (signal?.aborted) {
@@ -122,6 +128,7 @@ async function initMcpManagerNow(signal?: AbortSignal): Promise<void> {
       }
     } catch (err) {
       failed++;
+      lastFailures.set(config.id, classifyMcpFailure(err));
       console.error(LOG_PREFIX, "自动连接失败 [" + config.name + "]:", (err as Error).message);
     }
   }
@@ -136,6 +143,7 @@ export function addMcpServer(config: McpServerConfig): Promise<{
   ok: boolean;
   toolIds?: string[];
   error?: string;
+  reason?: McpFailureReason;
 }> {
   const snapshot: McpServerConfig = {
     ...config,
@@ -149,6 +157,7 @@ async function addMcpServerNow(config: McpServerConfig): Promise<{
   ok: boolean;
   toolIds?: string[];
   error?: string;
+  reason?: McpFailureReason;
 }> {
   console.log(LOG_PREFIX, "添加 MCP server:", config.name);
 
@@ -171,7 +180,7 @@ async function addMcpServerNow(config: McpServerConfig): Promise<{
       catch { logger.warn(LogTag.MCP, "failed to disconnect unpersisted MCP server", { serverId: config.id }); }
     }
     const msg = err instanceof Error ? err.message : String(err);
-    return { ok: false, error: msg };
+    return { ok: false, error: msg, reason: classifyMcpFailure(err) };
   }
 }
 
@@ -193,7 +202,56 @@ async function removeMcpServerNow(serverId: string): Promise<{ ok: boolean; erro
 
   const configs = loadConfigs().filter(c => c.id !== serverId);
   saveConfigs(configs);
+  lastFailures.delete(serverId);
   return { ok: true };
+}
+
+/**
+ * 启用或停用一个已保存的 MCP server。
+ * 启用：连接成功后才保存 enabled；连接失败则保持原状态并返回固定原因。
+ * 已启用但未连接的 server 再次启用即重新连接。
+ * 停用：先断开并撤下工具，再保存 enabled=false；保存失败时抛出，调用方重新读取状态。
+ */
+export function setMcpServerEnabled(serverId: string, enabled: boolean): Promise<{ ok: boolean; toolIds?: string[]; error?: string; reason?: McpFailureReason }> {
+  return queueManagerOperation(() => setMcpServerEnabledNow(serverId, enabled));
+}
+async function setMcpServerEnabledNow(serverId: string, enabled: boolean): Promise<{ ok: boolean; toolIds?: string[]; error?: string; reason?: McpFailureReason }> {
+  const configs = loadConfigs();
+  const index = configs.findIndex(c => c.id === serverId);
+  if (index < 0) return { ok: false, error: "MCP_SERVER_NOT_FOUND" };
+  const config = configs[index];
+  if (!enabled) {
+    await disconnectMcpServer(serverId);
+    lastFailures.delete(serverId);
+    if (config.enabled !== false) {
+      configs[index] = { ...config, enabled: false };
+      saveConfigs(configs);
+    }
+    return { ok: true };
+  }
+  const alreadyConnected = getMcpServerStates().some(s => s.id === serverId && s.connected);
+  let toolIds: string[] | undefined;
+  if (!alreadyConnected) {
+    try {
+      toolIds = await connectMcpServer(config);
+    } catch (err) {
+      lastFailures.set(serverId, classifyMcpFailure(err));
+      return { ok: false, error: err instanceof Error ? err.message : String(err), reason: classifyMcpFailure(err) };
+    }
+  }
+  lastFailures.delete(serverId);
+  if (config.enabled === false) {
+    try {
+      configs[index] = { ...config, enabled: true };
+      saveConfigs(configs);
+    } catch (err) {
+      // Never leave a connection running that the saved configuration does not allow.
+      try { await disconnectMcpServer(serverId); }
+      catch { logger.warn(LogTag.MCP, "failed to disconnect after a failed save", { serverId }); }
+      throw err;
+    }
+  }
+  return { ok: true, ...(toolIds ? { toolIds } : {}) };
 }
 
 /**
@@ -205,6 +263,8 @@ export function listMcpServers(): Array<{
   connected: boolean;
   toolCount: number;
   toolIds: string[];
+  enabled: boolean;
+  failure?: McpFailureReason;
 }> {
   // Read the persistent source directly: a failed read must not look like an
   // empty list, and disconnected saved servers must remain manageable.
@@ -215,12 +275,16 @@ export function listMcpServers(): Array<{
   return [
     ...configs.map(config => {
       const state = byId.get(config.id);
+      const connected = state?.connected ?? false;
+      const failure = connected ? undefined : lastFailures.get(config.id);
       return {
         id: config.id,
         name: config.name,
-        connected: state?.connected ?? false,
+        connected,
         toolCount: state?.toolCount ?? 0,
         toolIds: [...(state?.toolIds ?? [])],
+        enabled: config.enabled !== false,
+        ...(failure ? { failure } : {}),
       };
     }),
     // Failed cleanup can leave an owned runtime entry without persisted config.
@@ -231,6 +295,7 @@ export function listMcpServers(): Array<{
       connected: server.connected,
       toolCount: server.toolCount,
       toolIds: [...server.toolIds],
+      enabled: true,
     })),
   ];
 }

@@ -287,7 +287,7 @@ describe("MCP connection ownership", () => {
 
   it("rolls back an unpersisted connection after a configuration write failure", async () => {
     fixture.writeFailure = true;
-    expect(await addMcpServer(config)).toEqual({ ok: false, error: "synthetic write failure" });
+    expect(await addMcpServer(config)).toEqual({ ok: false, error: "synthetic write failure", reason: "failed" });
     expect(getMcpServerStates()).toEqual([]);
     expect(toolRegistry.getById("fixture-inspect")).toBeUndefined();
     fixture.writeFailure = false;

@@ -63,6 +63,32 @@ describe("marketplace trusted bundled catalog", () => {
     expect((await f.service.listMarket()).plugins[0]).toMatchObject({ version: "1.0.0-RC.1+Build" });
     expect(await f.service.installFromMarket("demo")).toMatchObject({ ok: true });
   });
+  it("shows the bundled catalog after the grace period when the online catalog hangs", async () => {
+    let aborted = false;
+    const hang: MarketplaceFetch = (_url, init) => new Promise<Response>((_resolve, reject) => {
+      init?.signal?.addEventListener("abort", () => { aborted = true; reject(new Error("aborted")); }, { once: true });
+    });
+    const f = bundled({ fetchImpl: hang, registryGraceMs: 40, registryTimeoutMs: 300 });
+    const started = Date.now();
+    const listed = await f.service.listMarket();
+    expect(Date.now() - started).toBeLessThan(2_000);
+    expect(listed).toMatchObject({ ok: true, mode: "offline-fallback", plugins: [{ id: "demo", source: "bundled" }], sources: [
+      { url: REGISTRY, ok: false, used: false }, { url: "bundled:registry", ok: true, used: true },
+    ] });
+    expect(aborted).toBe(false); // the late probe is simply ignored; it ends at its own deadline
+  });
+
+  it("still uses the online catalog when it answers within the grace period", async () => {
+    const f = bundled({ registryGraceMs: 1_000, fetchImpl: async () => new Response(JSON.stringify(registry([entry({ id: "online-demo" })])), { headers: { "content-type": "application/json" } }) });
+    expect(await f.service.listMarket()).toMatchObject({ ok: true, mode: "online", plugins: [{ id: "online-demo" }] });
+  });
+
+  it("waits for the online catalog as before when there is no bundled one", async () => {
+    const f = bundled({ registryGraceMs: 20, fetchImpl: () => new Promise<Response>((resolve) => setTimeout(() => resolve(new Response(JSON.stringify(registry([entry({ id: "slow-demo" })])))), 120)) });
+    f.deps.bundledDir = undefined;
+    expect(await f.service.listMarket()).toMatchObject({ ok: true, mode: "online", plugins: [{ id: "slow-demo" }] });
+  });
+
   it("falls back to bundled data with offline status and keeps remote failure visible", async () => {
     const f = bundled({ fetchImpl: async () => { throw new Error("offline"); } });
     expect(await f.service.listMarket()).toMatchObject({ ok: true, mode: "offline-fallback", sources: [

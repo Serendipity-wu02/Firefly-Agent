@@ -24,7 +24,7 @@ afterEach(() => {
   for (const root of roots.splice(0)) fs.rmSync(root, { recursive: true, force: true });
 });
 
-function fixture(options: { failPlannedWrite?: boolean; cancelAfterPlannedWrite?: boolean } = {}) {
+function fixture(options: { failPlannedWrite?: boolean; cancelAfterPlannedWrite?: boolean; reasoningDeltas?: number; failAfterReasoning?: boolean } = {}) {
   const root = fs.mkdtempSync(path.join(os.tmpdir(), "firefly-child-planned-"));
   roots.push(root);
   const tasks = new TaskSessionStore(root), runs = new HarnessRunStore(root), transcripts = new ConversationTranscriptStore(root);
@@ -71,6 +71,8 @@ function fixture(options: { failPlannedWrite?: boolean; cancelAfterPlannedWrite?
     let round = 0;
     return { sessionId: ingress.sessionId, signal: ingress.signal, transcriptSink: sink, close: async () => undefined,
       openMemoryRun: async () => ({ bindSink: candidate => candidate, close: async () => { memoryClosed = true; }, call: async request => {
+        for (let n = 0; round === 0 && n < (options.reasoningDeltas ?? 0); n++) request.onDelta?.({ type: "reasoning_delta", delta: `thought-${n}` });
+        if (options.failAfterReasoning) throw new Error("synthetic model failure");
         const toolCalls = round++ === 0 ? calls : [];
         const text = toolCalls.length ? "" : "Synthetic work complete";
         if (text) request.onDelta?.({ type: "text_delta", delta: text });
@@ -142,4 +144,32 @@ it("closes all durably planned child calls without execution when cancelled at t
   expect(results.every(entry => entry.kind === "tool_result" && entry.payload.outcome === "not_executed")).toBe(true);
   expect(f.released()).toBe(true);
   expect(f.closed()).toBe(true);
+});
+
+const traceWrites = (tasks: TaskSessionStore) => {
+  const writes: number[] = [];
+  const original = tasks.checkpoint.bind(tasks);
+  vi.spyOn(tasks, "checkpoint").mockImplementation((id, patch) => { if (patch.trace) writes.push(patch.trace.length); return original(id, patch); });
+  return writes;
+};
+
+it("saves a long child thought in a few task writes and keeps every delta in order", async () => {
+  const f = fixture({ reasoningDeltas: 100 });
+  const writes = traceWrites(f.tasks);
+  expect((await f.execute()).status).toBe("completed");
+  const trace = new TaskSessionStore(f.root).get(f.session.id)!.trace;
+  const deltas = trace.filter(record => record.kind === "reasoning" && record.phase === "delta");
+  expect(deltas.map(record => record.content)).toEqual(Array.from({ length: 100 }, (_, n) => `thought-${n}`));
+  const reasoning = trace.filter(record => record.kind === "reasoning").map(record => record.phase);
+  expect(reasoning[0]).toBe("start"); expect(reasoning[reasoning.length - 1]).toBe("end");
+  // Before: one task rewrite per delta (100+). Now: 64-delta batches plus the structural records.
+  expect(writes.length).toBeLessThan(15);
+});
+
+it("keeps the thought saved so far when the model call fails", async () => {
+  const f = fixture({ reasoningDeltas: 5, failAfterReasoning: true });
+  expect((await f.execute()).status).toBe("failed");
+  const trace = new TaskSessionStore(f.root).get(f.session.id)!.trace;
+  expect(trace.filter(record => record.kind === "reasoning" && record.phase === "delta")).toHaveLength(5);
+  expect(trace.some(record => record.kind === "reasoning" && record.phase === "end")).toBe(true);
 });

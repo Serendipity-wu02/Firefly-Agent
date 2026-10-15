@@ -240,6 +240,7 @@ export const IPC = {
   MCP_ADD_SERVER: "mcp:add-server",
   MCP_REMOVE_SERVER: "mcp:remove-server",
   MCP_LIST_SERVERS: "mcp:list-servers",
+  MCP_SET_ENABLED: "mcp:set-enabled",
 
   // tool (plugin) toggle
   // tool-mode override (三模适配层：用户自定义工具在 chat/work/code 模式下的可见性)

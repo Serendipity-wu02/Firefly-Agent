@@ -31,7 +31,32 @@
       "removeMessage": "Deleting “{{name}}” disconnects it, removes its tools and deletes its saved configuration. You will need to add it again to use it. Continue?",
       "removed": "Deleted “{{name}}”",
       "removeFailed": "Could not delete server",
-      "removeFailedMessage": "Disconnection or saving failed. Refresh the status and retry. The saved configuration may remain even if the connection has closed."
+      "removeFailedMessage": "Disconnection or saving failed. Refresh the status and retry. The saved configuration may remain even if the connection has closed.",
+      "disabled": "Disabled",
+      "disconnectedReason": "Disconnected · {{reason}}",
+      "disable": "Disable",
+      "disableNamed": "Disable {{name}}",
+      "enable": "Enable",
+      "enableNamed": "Enable {{name}}",
+      "reconnect": "Reconnect",
+      "reconnectNamed": "Reconnect {{name}}",
+      "enabledNotice": "“{{name}}” enabled with {{count}} tools",
+      "reconnectedNotice": "“{{name}}” reconnected with {{count}} tools",
+      "disabledNotice": "“{{name}}” disabled and its tools removed",
+      "enableFailed": "Could not enable",
+      "enableFailedMessage": "Connection or saving did not finish; the server is unchanged.",
+      "enableFailedWhy": "Could not enable: {{reason}}. The server is unchanged.",
+      "disableFailed": "Could not disable",
+      "disableFailedMessage": "Disconnection or saving did not finish. Refresh the status and retry.",
+      "addFailedWhy": "Could not add the server: {{reason}}. Check the command and local configuration, then retry. Error details are hidden because they may contain credentials.",
+      "failure": {
+        "command-not-found": "The start command was not found. Make sure the program is installed and on PATH",
+        "permission-denied": "No permission to start the program",
+        "timeout": "The connection timed out",
+        "exited": "The program exited right after starting",
+        "unreachable": "Could not reach the service address",
+        "failed": "Connection failed for an unknown reason"
+      }
     },
     "desktopAsr": {
       "projectLanguage": "Recognition language follows your Aliyun project configuration.",

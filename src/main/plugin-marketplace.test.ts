@@ -4,7 +4,6 @@ import os from "node:os";
 import path from "node:path";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import {
-  MARKET_ZIP_URL_PREFIXES,
   createPluginMarketplaceService,
   type MarketplaceFetch,
   type PluginMarketplaceDeps,
@@ -70,10 +69,9 @@ function makeDeps(overrides: Partial<PluginMarketplaceDeps> = {}): PluginMarketp
 describe("listMarket", () => {
   it("does not contact a market when unconfigured", async () => {
     const fetchImpl = vi.fn();
-    const service = createPluginMarketplaceService(makeDeps({ registryUrls: [], zipUrlPrefixes: MARKET_ZIP_URL_PREFIXES, fetchImpl }));
+    const service = createPluginMarketplaceService(makeDeps({ registryUrls: [], zipUrlPrefixes: [], fetchImpl }));
     expect(await service.listMarket()).toEqual({ ok: false, error: "插件市场未配置；可从本地安装插件", plugins: [], sources: [] });
     expect(fetchImpl).not.toHaveBeenCalled();
-    expect(MARKET_ZIP_URL_PREFIXES).toEqual([]);
   });
   it("成功拉取并按下载量降序排序", async () => {
     const fetchImpl: MarketplaceFetch = async (input) => {
