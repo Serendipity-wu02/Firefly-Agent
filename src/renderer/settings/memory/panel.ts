@@ -98,6 +98,11 @@ function renderImportedDocs(): void {
   }
 }
 
+/** 切到记忆页时只重新读影子卡片的数字：窗口可能开了很久，期间已有抽取发生或已跨天。 */
+export function refreshShadowPanel(): Promise<void> {
+  return shadow?.load() ?? Promise.resolve();
+}
+
 export async function loadMemoryPanel(): Promise<void> {
   const root = document.getElementById("memory-entries-body");
   const page = document.getElementById("memory-panel");

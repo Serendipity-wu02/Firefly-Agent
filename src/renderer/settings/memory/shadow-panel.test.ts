@@ -79,6 +79,11 @@ describe("shadow extraction settings card", () => {
     expect((document.getElementById("memory-shadow-cap") as HTMLInputElement).value).toBe("20");
   });
 
+  it("counts reservation refusals as not sent", async () => {
+    await mount(api(baseState({ counters: { "skip:secret": 1, "refuse:cap-reached": 2, "discard:source-unavailable": 4 } })).impl);
+    expect(text("memory-shadow-detail")).toContain("未发送 3 次");
+  });
+
   it("does not turn on until the user confirms on the page", async () => {
     const f = api(); await mount(f.impl);
     const toggle = document.getElementById("memory-shadow-enabled") as HTMLInputElement;

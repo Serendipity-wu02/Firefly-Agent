@@ -65,7 +65,7 @@ export function createShadowPanel(source: ShadowBridge | (() => ShadowBridge)) {
     if (el.usage) el.usage.textContent = t("settings.panel.memory.shadow.usageValue", { used: next.used, cap: next.dailyCap });
     if (el.records) el.records.textContent = t("settings.panel.memory.shadow.recordsValue", { n: next.records });
     if (el.detail) el.detail.textContent = t("settings.panel.memory.shadow.detailValue", {
-      skipped: sum(next.counters, "skip:"), errors: sum(next.counters, "error:"), cancelled: sum(next.counters, "cancel:"), dropped: sum(next.counters, "drop:"),
+      skipped: sum(next.counters, "skip:") + sum(next.counters, "refuse:"), errors: sum(next.counters, "error:"), cancelled: sum(next.counters, "cancel:"), dropped: sum(next.counters, "drop:"),
     });
     syncRecordButtons();
   }
