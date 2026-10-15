@@ -5,6 +5,7 @@ import { WebContentsView, type Session } from "electron";
 import type { BrowserGuestPort, BrowserHostPort } from "./browser-service";
 import { registerBrowserGuestRouting } from "./browser-guest-routing";
 import { rejectBrowserCertificate } from "./browser-certificate-policy";
+import { createGuestTools, type GuestToolsContents } from "./browser-guest-tools";
 /** Fixed Main preferences; no remote page receives Firefly preload or Node.
  * https://github.com/electron/electron/blob/v43.1.0/docs/api/web-contents-view.md
  */
@@ -93,7 +94,8 @@ export function createElectronBrowserGuest(session: Session): BrowserGuestPort<S
     const result = await runDom(input) as { ok?: unknown } | null;
     return result?.ok === true;
   }
-  return Object.freeze({ contents, observe, act, loadURL: (url: string) => rendererWork(() => contents.loadURL(url)), history,
+  const tools = createGuestTools(contents as unknown as GuestToolsContents);
+  return Object.freeze({ contents, tools, observe, act, loadURL: (url: string) => rendererWork(() => contents.loadURL(url)), history,
     snapshot: () => ({ url: contents.getURL(), canGoBack: contents.navigationHistory.canGoBack(), canGoForward: contents.navigationHistory.canGoForward() }),
     stop, detach, setBounds: (bounds: import("./browser-service").BrowserBounds) => view.setBounds(bounds),
     attach(target: BrowserHostPort) { if (destroying || contents.isDestroyed() || target.isDestroyed()) throw new Error("browser view unavailable"); if (host === target) return; detach(); target.contentView.addChildView(view); host = target; },

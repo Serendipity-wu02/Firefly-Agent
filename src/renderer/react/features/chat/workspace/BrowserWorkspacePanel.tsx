@@ -41,11 +41,19 @@ export interface BrowserWorkspacePanelProps {
   addressAvailable?: boolean;
   /** Shown where a page would be while the tab is empty. Presentation only. */
   emptyContent?: ReactNode;
+  /** Extra toolbar controls (downloads, more menu) between the address field and the close control. */
+  toolbarEnd?: ReactNode;
+  /** Rows under the toolbar: find bar and short notices. */
+  belowToolbar?: ReactNode;
+  /** Menus and pages drawn over the page area. */
+  overlay?: ReactNode;
+  /** Picture of the page standing in for it while the native page is detached behind an overlay. */
+  snapshot?: string | null;
 }
 
 /** Controlled view: no bridge, navigation API, authority, or asynchronous work. */
 export function BrowserWorkspacePanel({
-  page, address, labels, onAddressChange, onAddressReset, onNavigate, onCommand, onClose, viewportRef, children, navigationAvailable = true, addressAvailable = navigationAvailable && !page.closed, commandPending = false, closeAvailable = !page.closed, emptyContent,
+  page, address, labels, onAddressChange, onAddressReset, onNavigate, onCommand, onClose, viewportRef, children, navigationAvailable = true, addressAvailable = navigationAvailable && !page.closed, commandPending = false, closeAvailable = !page.closed, emptyContent, toolbarEnd, belowToolbar, overlay, snapshot,
 }: BrowserWorkspacePanelProps) {
   const busy = page.loading || commandPending;
   const canSubmit = addressAvailable && address.trim().length > 0;
@@ -79,6 +87,7 @@ export function BrowserWorkspacePanel({
             onKeyDown={event => { if (event.key === "Escape" && onAddressReset) { event.preventDefault(); event.stopPropagation(); onAddressReset(); } }} />
           <button type="submit" aria-label={labels.go} title={labels.go} disabled={!canSubmit}><CornerDownLeft size={14} aria-hidden="true" /></button>
         </form>
+        {toolbarEnd}
         <button type="button" aria-label={labels.close} title={labels.close}
           disabled={!closeAvailable} onClick={onClose}>
           <X size={16} aria-hidden="true" />
@@ -88,6 +97,7 @@ export function BrowserWorkspacePanel({
         <span className="ff-browser-workspace__location-dot" aria-hidden="true" />
         <span data-browser-committed-url title={page.url}>{page.url}</span>
       </div>}
+      {belowToolbar}
       {page.closed
         ? <p className="ff-browser-workspace__notice" role="status">{labels.closed}</p>
         : <>
@@ -100,6 +110,8 @@ export function BrowserWorkspacePanel({
             {children ?? (!page.url && !page.loading
               ? emptyContent ?? <p className="ff-browser-workspace__empty">{labels.empty}</p>
               : null)}
+            {snapshot && <img className="ff-browser-workspace__snapshot" src={snapshot} alt="" draggable={false} />}
+            {overlay}
           </div>
         </>}
     </section>

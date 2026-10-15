@@ -47,9 +47,9 @@ export type BrowserOwnedPageDto = BrowserPageDto | BrowserWorkspacePageDto;
 export type BrowserOwnedPermissionDto = BrowserPermissionDto | BrowserWorkspacePermissionDto;
 export const MANUAL_BROWSER_WORKSPACE_IPC = Object.freeze({
   availability: "browser:workspace:availability", permission: "browser:workspace:permission",
-  command: "browser:workspace:command", changed: "browser:workspace:changed",
+  command: "browser:workspace:command", changed: "browser:workspace:changed", toolsChanged: "browser:workspace:tools-changed",
 });
-export interface ManualBrowserWorkspaceApi {
+export interface ManualBrowserWorkspaceApi extends Partial<import("./browser-tools").BrowserToolsApi> {
   getPermission(tabId?: string): Promise<BrowserReply<BrowserWorkspacePermissionDto>>;
   requestPermission(scope: BrowserPermissionScope, tabId?: string): Promise<BrowserReply<BrowserWorkspacePermissionDto>>;
   revokePermission(workspaceId: string, tabId?: string): Promise<BrowserReply<BrowserWorkspacePermissionDto>>;

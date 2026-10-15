@@ -5,9 +5,12 @@ import { BrowserProxyCleanupError, startBrowserDomainProxy, type BrowserDomainPr
 import type { BrowserRequestDetails } from "./browser-request-policy";
 import type { ConnectProxy } from "./authenticated-connect-proxy";
 import { parseLocalAuthority } from "../../shared/local-network-target";
+import type { DownloadItemLike } from "./browser-downloads";
 export interface BrowserSessionPort<S extends object> {
   session: S; persistent: boolean;
   installRequestHandler(handler: (request: BrowserRequestDetails) => boolean): void;
+  /** Downloads are refused unless a handler is installed and returns true for that item. */
+  installDownloadHandler?(handler: (item: DownloadItemLike) => boolean): void;
   denyPermissions(): void;
   setProxy(endpoint: ConnectProxy["endpoint"]): Promise<void>;
   /** Private-network grants only. Absent means such a grant cannot be prepared. */
@@ -35,6 +38,8 @@ export interface BrowserNetworkDependencies<S extends object> {
   proxyFactory?: BrowserProxyFactory;
   /** Presentation-only report from the current denied request. Cannot grant a request. */
   onRequestBlocked?(context: BrowserDomainContext, request: BrowserRequestDetails): void;
+  /** Decides one download for the page of this context. Absent or false: the download is refused. */
+  onDownload?(context: BrowserDomainContext, item: DownloadItemLike): boolean;
   beginConnection?(context: BrowserDomainContext, host: string): ReturnType<import("./authenticated-connect-proxy").BrowserConnectionObserver>;
   cleanupTimeoutMs?: number;
   workerStopTimeoutMs?: number;
@@ -45,11 +50,13 @@ const failure = (code: BrowserNetworkFailure): BrowserNetworkReply<never> => ({ 
 type ElectronSessionOperations = Pick<Session, "storagePath" | "setPermissionCheckHandler" | "setPermissionRequestHandler" | "setDevicePermissionHandler" | "setProxy" | "closeAllConnections" | "clearStorageData" | "clearCache" | "clearAuthCache" | "clearHostResolverCache"> & {
   webRequest: { onBeforeRequest(handler: (details: BrowserRequestDetails, callback: (response: { cancel: boolean }) => void) => void): void };
   serviceWorkers: Pick<Session["serviceWorkers"], "getAllRunning">;
-  on(event: "will-download", listener: (event: { preventDefault(): void }) => void): unknown;
+  on(event: "will-download", listener: (event: { preventDefault(): void }, item: DownloadItemLike) => void): unknown;
 };
 export function createElectronBrowserSessionPort<S extends ElectronSessionOperations>(session: S): BrowserSessionPort<S> {
+  let downloadHandler: ((item: DownloadItemLike) => boolean) | undefined;
   return {
     session, persistent: session.storagePath !== null,
+    installDownloadHandler(handler) { downloadHandler = handler; },
     installRequestHandler(handler) {
       session.webRequest.onBeforeRequest((details, callback) => {
         let allowed = false;
@@ -61,7 +68,11 @@ export function createElectronBrowserSessionPort<S extends ElectronSessionOperat
       session.setPermissionCheckHandler(() => false);
       session.setPermissionRequestHandler((_contents, _permission, callback) => callback(false));
       session.setDevicePermissionHandler(() => false);
-      session.on("will-download", (event) => event.preventDefault());
+      session.on("will-download", (event, item) => {
+        let accepted = false;
+        try { accepted = downloadHandler?.(item) === true; } catch { /* refuse */ }
+        if (!accepted) event.preventDefault();
+      });
     },
     setProxy: (endpoint) => session.setProxy({ mode: "fixed_servers", proxyRules: `http://${endpoint.host}:${endpoint.port}`, proxyBypassRules: "<-loopback>" }),
     setDirect: () => session.setProxy({ mode: "direct" }),
@@ -200,6 +211,7 @@ export function createBrowserNetworkController<S extends object>(registry: Brows
       });
       ensureCurrent(cell);
       if (!cell.domain) throw "owner_mismatch";
+      port.installDownloadHandler?.(item => !cell.revoked && cell.domain?.isActive() === true && dependencies.onDownload?.(cell.context, item) === true);
       port.denyPermissions(); ensureCurrent(cell);
       cell.view = dependencies.createView(port.session); ensureCurrent(cell);
       if (!cell.domain.registerContents(cell.view.contents)) throw "owner_mismatch";

@@ -4,6 +4,7 @@ import { manualBrowserTarget, parseLocalAuthority, resolveAddressInput } from ".
 import { useTranslation } from "../../../i18n";
 import { BrowserWorkspacePanel, type BrowserWorkspaceLabels } from "./BrowserWorkspacePanel";
 import { BrowserNewTab, rememberVisitedSite } from "./BrowserNewTab";
+import { useBrowserChrome } from "./useBrowserChrome";
 import { createBrowserPageState, type BrowserPageState } from "./browser-page-state";
 
 type ViewApi = Omit<ManualBrowserApi, "getPermission" | "requestPermission" | "revokePermission" | "execute" | "onChanged"> & {
@@ -47,6 +48,12 @@ export function ManualBrowserTab({ sessionId, workspaceId, tabId, active = true,
   const [scopeReloaded, setScopeReloaded] = useState(false);
   const [failure, setFailure] = useState<string | null>(null);
   const viewport = useRef<HTMLDivElement>(null), scopeRef = useRef<Scope | null>(null);
+  // Window tabs on ordinary browsing get the tools (menu, find, downloads, settings). The native page stays detached while one covers it.
+  const chrome = useBrowserChrome({ tabId: workspaceId && tabId ? tabId : undefined,
+    enabled: active && permission?.status === "granted" && permission.scope.mode === "manual" && permission.scope.web === true,
+    pageLoaded: !!page.url && !page.closed, navigate: url => { setAddress(url); navigate(url); },
+    reload: () => { const id = scopeRef.current?.page?.browserId; if (id) void command({ kind: "history", browserId: id, action: "reload" }); } });
+  const overlayOpen = chrome.overlayOpen;
   useEffect(() => {
     const workspace = window.manualBrowserWorkspace;
     const api: ViewApi | undefined = workspaceId && tabId ? workspace && {
@@ -281,7 +288,7 @@ export function ManualBrowserTab({ sessionId, workspaceId, tabId, active = true,
     const layout = () => {
       if (scope.disposed) return;
       const rect = node?.getBoundingClientRect();
-      const bounds = active && !scope.closed && !scope.permissionBusy && scope.permission?.status === "granted" && !stateFailure && document.visibilityState !== "hidden" && rect && rect.width > 0 && rect.height > 0
+      const bounds = active && !overlayOpen && !scope.closed && !scope.permissionBusy && scope.permission?.status === "granted" && !stateFailure && document.visibilityState !== "hidden" && rect && rect.width > 0 && rect.height > 0
         ? { x: rect.left, y: rect.top, width: rect.width, height: rect.height } : null;
       void scope.api!.execute({ kind: "layout", browserId: id, bounds }).catch(() => {});
     };
@@ -293,7 +300,7 @@ export function ManualBrowserTab({ sessionId, workspaceId, tabId, active = true,
       observer?.disconnect(); window.removeEventListener("resize", layout); window.removeEventListener("focus", layout); document.removeEventListener("visibilitychange", layout);
       if (!scope.disposed && !scope.closed) void scope.api!.execute({ kind: "layout", browserId: id, bounds: null }).catch(() => {});
     };
-  }, [page.browserId, page.closed, page.loading, page.error, active, permission?.status, permissionBusy, stateFailure]);
+  }, [page.browserId, page.closed, page.loading, page.error, active, overlayOpen, permission?.status, permissionBusy, stateFailure]);
   async function close(): Promise<boolean> {
     const scope = scopeRef.current;
     if (!scope || scope.cleaned) { onClose(); return true; }
@@ -416,6 +423,7 @@ export function ManualBrowserTab({ sessionId, workspaceId, tabId, active = true,
       addressAvailable={manual ? available && !!ownerKey && !scopeRef.current?.closed && !stateFailure && failure !== "cleanup_failed" : undefined}
       emptyContent={<BrowserNewTab available={available && !!ownerKey && !stateFailure} onOpen={url => { setAddress(url); navigate(url); }} />}
       viewportRef={viewport} onAddressChange={editAddress} onAddressReset={resetAddress} onNavigate={navigate}
+      toolbarEnd={chrome.toolbarEnd} belowToolbar={chrome.belowToolbar} overlay={chrome.overlay} snapshot={chrome.snapshot}
       commandPending={commandPending} closeAvailable={!closing && !scopeRef.current?.cleanupFailed && !page.closed}
       onCommand={action => { const id = scopeRef.current?.page?.browserId; if (id) void command(action === "stop" ? { kind: "stop", browserId: id } : { kind: "history", browserId: id, action }); }} onClose={() => { void close(); }} />
   </div>;

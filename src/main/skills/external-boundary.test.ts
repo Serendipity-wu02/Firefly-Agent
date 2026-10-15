@@ -31,11 +31,14 @@ const unchangedBoundaries = {
   // outcomes only. Remote allowlists remain empty and are independently asserted.
   "src/main/plugin-marketplace.ts": "302a4594cef95e26511e53b11978d116df6834184e93e210e9f560dbd403624e",
   "src/main/browser/browser-request-policy.ts": "9ce32fdba4722e49b7c96d27ad7a2058fae3d62a4186d44aac98e49d7e62bdf1",
-  "src/main/browser/browser-startup-config.ts": "dc2f2a25a0f9f6f8d4656ef0fa953d6d7ae206676503da3f5f155d2109f8969e",
-  // Reviewed renderer-crash cancellation and safe native failure/redirect forwarding; native preferences, routing,
+  // Reviewed window-browser tools change: browser-startup-config only forwards the optional acceptDownload callback, and
+  // electron-browser-guest only attaches the per-page tools object. No navigation, network or sandbox setting changed here;
+  // downloads stay refused unless Main's service sees a current ordinary-browsing page (see docs/browser-tools.md).
+  "src/main/browser/browser-startup-config.ts": "08b61ff4e0f654f1bb236bcf19d6f09d3ddcc8d9b2c21d6052fdb55e800f2701",
+  // Also reviewed: renderer-crash cancellation and safe native failure/redirect forwarding; native preferences, routing,
   // certificate denial and fixed isolated-world scripts retain their boundaries.
   // See docs/browser-reference-audit-2026-10-15.md (boundary preimage review).
-  "src/main/browser/electron-browser-guest.ts": "e41ced6457c588a582dbf881e1d07ca6b6e5d79cce937ef5dfcb9d0f89baa0de",
+  "src/main/browser/electron-browser-guest.ts": "a71fade70a93bb0c1ab40e7cbee856c2b423e87092bbaf4f3174a3d896de8d21",
   "src/main/permission-policy.ts": "b83f34a3ab293c4ea87ddf6f2bb13cd8cf4e6fc31ff266be06f7f5b5f89b1903",
   "src/main/permission.ts": "268ffc75b7f18be3e0438a7c81e1a5ab3e2e3d6c16b29abb5db5491e3e9911a3",
   "src/main/permission/bootstrap.ts": "4419a194aa95f813f9f6aa90d250c1b71036ef49b508b6c0c716a0dc8ffc70a0",

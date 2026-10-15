@@ -106,7 +106,9 @@
   color: var(--ff-danger, #9e3838);
   background: color-mix(in srgb, var(--ff-danger, #c0392b) 12%, var(--ff-bg-workspace, var(--ff-surface)));
 }
-.ff-browser-workspace__viewport { flex: 1; min-height: 0; overflow: hidden; }
+.ff-browser-workspace__viewport { position: relative; flex: 1; min-height: 0; overflow: hidden; }
+/* The page, frozen, while a menu hides the native page behind it. */
+.ff-browser-workspace__snapshot { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; object-position: top left; pointer-events: none; user-select: none; }
 .ff-browser-workspace__empty { padding: 20px; text-align: center; color: var(--ff-text-muted, #828396); }
 .ff-browser-tab { display: flex; flex-direction: column; min-width: 0; min-height: 0; height: 100%; }
 .ff-browser-tab > .ff-browser-workspace { flex: 1; }

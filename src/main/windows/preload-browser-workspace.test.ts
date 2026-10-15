@@ -29,3 +29,18 @@ it("passes only workspace DTOs to the renderer and removes the exact listener", 
   for (const listener of fixture.listeners.get(channels.changed) ?? []) listener({}, dto);
   expect(seen).toHaveLength(1);
 });
+it("sends tool requests through the workspace command channel and delivers tool changes until unsubscribed", async () => {
+  const api = fixture.exposed.get("manualBrowserWorkspace");
+  fixture.invoke.mockResolvedValue({ ok: true, value: { downloads: [] } });
+  await api.tool({ tool: "download", op: "list" }); await api.tool({ tool: "zoom", op: "in" }, "tab-a");
+  expect(fixture.invoke.mock.calls).toEqual([
+    [channels.command, { kind: "tool", request: { tool: "download", op: "list" } }],
+    [channels.command, { kind: "tool", request: { tool: "zoom", op: "in" }, tabId: "tab-a" }],
+  ]);
+  const seen: unknown[] = [], off = api.onToolsChanged((change: unknown) => seen.push(change));
+  const change = { kind: "downloads", downloads: [] };
+  for (const listener of fixture.listeners.get(channels.toolsChanged) ?? []) listener({ sender: "native-event" }, change);
+  expect(seen).toEqual([change]); off();
+  for (const listener of fixture.listeners.get(channels.toolsChanged) ?? []) listener({}, change);
+  expect(seen).toHaveLength(1);
+});

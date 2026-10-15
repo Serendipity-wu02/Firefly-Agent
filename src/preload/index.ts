@@ -534,6 +534,12 @@ const manualBrowserWorkspace: ManualBrowserWorkspaceApi = {
     ipcRenderer.on(MANUAL_BROWSER_WORKSPACE_IPC.changed, listener);
     return () => ipcRenderer.removeListener(MANUAL_BROWSER_WORKSPACE_IPC.changed, listener);
   },
+  tool: (request, tabId) => ipcRenderer.invoke(MANUAL_BROWSER_WORKSPACE_IPC.command, { kind: "tool", request, ...(tabId === undefined ? {} : { tabId }) }),
+  onToolsChanged: callback => {
+    const listener = (_event: Electron.IpcRendererEvent, change: import("../shared/browser-tools").BrowserToolsChange) => callback(change);
+    ipcRenderer.on(MANUAL_BROWSER_WORKSPACE_IPC.toolsChanged, listener);
+    return () => ipcRenderer.removeListener(MANUAL_BROWSER_WORKSPACE_IPC.toolsChanged, listener);
+  },
 };
 contextBridge.exposeInMainWorld("manualBrowserWorkspace", manualBrowserWorkspace);
 
