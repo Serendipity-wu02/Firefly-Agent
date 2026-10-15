@@ -5,7 +5,7 @@ import type { SettingsApi } from "../shared/types";
 const modal = vi.hoisted(() => ({ showNotice: vi.fn(), showAlert: vi.fn(), showConfirm: vi.fn(), showInputModal: vi.fn(), showHtmlModal: vi.fn() }));
 vi.mock("../shared/modal", () => modal);
 const row = (id = "weather", name = "Weather", connected = true) => ({ id, name, connected, toolCount: connected ? 2 : 0, toolIds: connected ? ["one", "two"] : [] });
-const api = { addMcpServer: vi.fn(), removeMcpServer: vi.fn(), listMcpServers: vi.fn() };
+const api = { addMcpServer: vi.fn(), removeMcpServer: vi.fn(), listMcpServers: vi.fn(), setMcpServerEnabled: vi.fn() };
 function deferred<T>() { let resolve!: (value: T) => void; let reject!: (reason: Error) => void; const promise = new Promise<T>((yes, no) => { resolve = yes; reject = no; }); return { promise, resolve, reject }; }
 async function flush() { for (let i = 0; i < 12; i++) await Promise.resolve(); }
 const click = (selector: string) => { const button = document.querySelector<HTMLButtonElement>(selector); expect(button, selector).not.toBeNull(); button!.click(); };
@@ -22,6 +22,7 @@ beforeEach(() => {
   api.listMcpServers.mockResolvedValue([row()]);
   api.addMcpServer.mockResolvedValue({ ok: true, toolIds: ["tool"] });
   api.removeMcpServer.mockResolvedValue({ ok: true });
+  api.setMcpServerEnabled.mockResolvedValue({ ok: true, toolIds: ["tool"] });
   modal.showConfirm.mockResolvedValue(true);
   modal.showAlert.mockResolvedValue(undefined);
 });
@@ -151,5 +152,85 @@ describe("MCP management UI", () => {
   it("does not paint a list into a detached settings panel after a late response", async () => {
     const pending = deferred<ReturnType<typeof row>[]>(); api.listMcpServers.mockReturnValueOnce(pending.promise); await mount();
     document.getElementById("mcp-panel")!.remove(); pending.resolve([row()]); await flush(); expect(document.body.innerHTML).toBe("");
+  });
+});
+
+describe("MCP enable, disable and failure reasons", () => {
+  const action = (kind: string, id = "weather") => `[data-mcp-action="${kind}:${id}"]`;
+
+  it("shows a disabled server as disabled with an Enable action, and a running one with Disable", async () => {
+    api.listMcpServers.mockResolvedValue([{ ...row("off", "Off", false), enabled: false }, row("on", "On", true)]); await mount();
+    expect(list()?.textContent).toContain("已停用");
+    expect(document.querySelector(action("enable", "off"))).not.toBeNull();
+    expect(document.querySelector(action("disable", "off"))).toBeNull();
+    expect(document.querySelector(action("disable", "on"))).not.toBeNull();
+    expect(document.querySelector(action("enable", "on"))).toBeNull();
+  });
+
+  it("explains why an enabled server is not connected, and offers Reconnect next to Disable", async () => {
+    api.listMcpServers.mockResolvedValue([{ ...row("weather", "Weather", false), enabled: true, failure: "command-not-found" }]); await mount();
+    expect(list()?.textContent).toContain("找不到启动命令");
+    expect(document.querySelector(action("enable"))?.textContent).toBe("重新连接");
+    expect(document.querySelector(action("disable"))).not.toBeNull();
+  });
+
+  it("shows an unrecognised reason as an unknown failure and never as text from Main", async () => {
+    api.listMcpServers.mockResolvedValue([{ ...row("weather", "Weather", false), enabled: true, failure: "TOKEN=synthetic-secret" }]); await mount();
+    expect(list()?.textContent).toContain("原因未知");
+    expect(document.body.textContent).not.toContain("synthetic-secret");
+  });
+
+  it("disables a server and reports it", async () => {
+    await mount();
+    click(action("disable")); await flush();
+    expect(api.setMcpServerEnabled).toHaveBeenCalledWith("weather", false);
+    expect(modal.showNotice).toHaveBeenCalledWith(expect.objectContaining({ tone: "success", message: expect.stringContaining("已停用") }));
+  });
+
+  it("enables a server and reports the tool count", async () => {
+    api.listMcpServers.mockResolvedValue([{ ...row("weather", "Weather", false), enabled: false }]); await mount();
+    click(action("enable")); await flush();
+    expect(api.setMcpServerEnabled).toHaveBeenCalledWith("weather", true);
+    expect(modal.showNotice).toHaveBeenCalledWith(expect.objectContaining({ tone: "success", message: expect.stringContaining("已启用") }));
+  });
+
+  it("stays quiet when the native confirmation is canceled", async () => {
+    api.listMcpServers.mockResolvedValue([{ ...row("weather", "Weather", false), enabled: false }]); await mount();
+    api.setMcpServerEnabled.mockResolvedValue({ ok: false, code: "MCP_CANCELLED" });
+    click(action("enable")); await flush();
+    expect(modal.showAlert).not.toHaveBeenCalled(); expect(modal.showNotice).not.toHaveBeenCalled();
+  });
+
+  it("explains a failed enable with the fixed reason only", async () => {
+    api.listMcpServers.mockResolvedValue([{ ...row("weather", "Weather", false), enabled: false }]); await mount();
+    api.setMcpServerEnabled.mockResolvedValue({ ok: false, code: "MCP_OPERATION_FAILED", error: "TOKEN=synthetic-secret", reason: "timeout" });
+    click(action("enable")); await flush();
+    const alert = modal.showAlert.mock.calls[0][0];
+    expect(alert.message).toContain("连接超时");
+    expect(JSON.stringify(alert)).not.toContain("synthetic-secret");
+  });
+
+  it("explains a failed add with the fixed reason", async () => {
+    await mount(); inputs(); api.addMcpServer.mockResolvedValue({ ok: false, reason: "command-not-found" });
+    click(".mcp-add-btn"); await flush();
+    expect(modal.showAlert.mock.calls[0][0].message).toContain("找不到启动命令");
+  });
+
+  it("falls back to the general message for an add failure without a reason", async () => {
+    await mount(); inputs(); api.addMcpServer.mockResolvedValue({ ok: false });
+    click(".mcp-add-btn"); await flush();
+    expect(modal.showAlert.mock.calls[0][0].message).toContain("未能完成连接或保存");
+  });
+
+  it("refreshes the list after a thrown error and shows the general message", async () => {
+    await mount(); api.setMcpServerEnabled.mockRejectedValue(new Error("TOKEN=synthetic-secret")); api.listMcpServers.mockClear();
+    click(action("disable")); await flush();
+    expect(api.listMcpServers).toHaveBeenCalled();
+    expect(JSON.stringify(modal.showAlert.mock.calls)).not.toContain("synthetic-secret");
+  });
+
+  it("gives the built-in server no enable or disable action", async () => {
+    api.listMcpServers.mockResolvedValue([row("playwright-mcp", "Playwright", true)]); await mount();
+    expect(document.querySelector('[data-mcp-action]')).toBeNull();
   });
 });

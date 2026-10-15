@@ -25,16 +25,16 @@ describe("MCP management list", () => {
   it("shows persisted disconnected servers without config secrets or writes", async () => {
     const { manager, storage } = await fixture();
     const original = fs.readFileSync(storage.files.mcp, "utf8");
-    expect(manager.listMcpServers()).toEqual([{ id: "stored", name: "Stored server", connected: false, toolCount: 0, toolIds: [] }]);
+    expect(manager.listMcpServers()).toEqual([{ id: "stored", name: "Stored server", connected: false, toolCount: 0, toolIds: [], enabled: true }]);
     expect(fs.readFileSync(storage.files.mcp, "utf8")).toBe(original);
     expect(fs.existsSync(`${storage.files.mcp}.bak`)).toBe(false);
   });
   it("merges runtime status by ID and retains runtime-only cleanup entries", async () => {
     const { manager } = await fixture();
     const live = { id: "stored", name: "Stored server", connected: true, toolCount: 1, toolIds: ["stored-tool"], env: { TOKEN: "synthetic-secret" } };
-    adapter.states.mockReturnValue([live, { id: "cleanup", name: "Cleanup", connected: false, toolCount: 0, toolIds: [] }]);
+    adapter.states.mockReturnValue([live, { id: "cleanup", name: "Cleanup", connected: false, toolCount: 0, toolIds: [], enabled: true }]);
     const listed = manager.listMcpServers();
-    expect(listed).toEqual([{ id: "stored", name: "Stored server", connected: true, toolCount: 1, toolIds: ["stored-tool"] }, { id: "cleanup", name: "Cleanup", connected: false, toolCount: 0, toolIds: [] }]);
+    expect(listed).toEqual([{ id: "stored", name: "Stored server", connected: true, toolCount: 1, toolIds: ["stored-tool"], enabled: true }, { id: "cleanup", name: "Cleanup", connected: false, toolCount: 0, toolIds: [], enabled: true }]);
     listed[0].toolIds.push("mutated");
     expect(live.toolIds).toEqual(["stored-tool"]);
   });
@@ -59,7 +59,7 @@ describe("MCP management list", () => {
       rename(from, to);
     });
     await expect(manager.removeMcpServer("stored")).rejects.toThrow("ATOMIC_JSON_WRITE_FAILED");
-    expect(manager.listMcpServers()).toEqual([{ id: "stored", name: "Stored server", connected: false, toolCount: 0, toolIds: [] }]);
+    expect(manager.listMcpServers()).toEqual([{ id: "stored", name: "Stored server", connected: false, toolCount: 0, toolIds: [], enabled: true }]);
     expect(JSON.parse(fs.readFileSync(storage.files.mcp, "utf8"))).toEqual([config]);
   });
 });

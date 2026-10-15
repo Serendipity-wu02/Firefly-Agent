@@ -238,6 +238,7 @@ if (!window.settings) {
     setSkillModeOverride: async () => ({ ok: false, error: "settings api unavailable" }),
     addMcpServer: async () => ({ ok: false, error: "settings api unavailable" }),
     removeMcpServer: async () => ({ ok: false, error: "settings api unavailable" }),
+    setMcpServerEnabled: async () => ({ ok: false, error: "settings api unavailable" }),
     listMcpServers: async () => [],
     getTimeoutSettings: async () => DEFAULT_TIMEOUT_SETTINGS,
     saveTimeoutSettings: async c => (c as TimeoutSettings),

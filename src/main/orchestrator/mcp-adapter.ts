@@ -29,6 +29,8 @@ export interface McpServerConfig {
   env?: Record<string, string>;
   cwd?: string;
   url?: string;            // sse 必填,stdio 不用
+  /** 缺省视为启用；false 时启动不连接，也不暴露工具。 */
+  enabled?: boolean;
   /** 按 toolName 显式覆盖 effectKind（serverId + toolName 作为 key） */
   effectKindOverrides?: Record<string, ToolEffectKind>;
 }
