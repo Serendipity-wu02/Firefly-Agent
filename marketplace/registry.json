@@ -1,0 +1,20 @@
+{
+  "apiVersion": 1,
+  "plugins": [
+    {
+      "id": "text-stats",
+      "name": "文本统计",
+      "version": "1.0.0",
+      "description": "离线统计文本的 Unicode 字符数、空白分隔词数和非空行数，不联网、不读写文件。",
+      "author": "Serendipity-wu02",
+      "downloads": 0,
+      "pluginApiVersion": 1,
+      "capabilities": [
+        "Unicode 字符、空白分隔词和非空行统计",
+        "离线计算，不联网、不读写文件、不执行命令"
+      ],
+      "zip": "https://github.com/Serendipity-wu02/Firefly_Agent/releases/download/text-stats-1.0.0/text-stats-1.0.0.zip",
+      "sha256": "86a0baccb7ead506d1c2f2ab6925e2a4b5cba6ab6fa488f26a34fb0df388f43d"
+    }
+  ]
+}
