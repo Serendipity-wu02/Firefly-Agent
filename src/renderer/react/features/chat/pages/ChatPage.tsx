@@ -1526,7 +1526,7 @@ export function ChatPage() {
         elementRef={dockRef}
         groupRef={dockGroupRef}
         orientation={compactDock ? "vertical" : "horizontal"}
-        className={`ff-page-dock ${compactDock ? "is-compact" : ""}`}
+        className={`ff-page-dock ${compactDock ? "is-compact" : ""}${inspectorTabIds.length > 0 && inspectorVisible && !compactDock ? " has-inspector" : ""}`}
         defaultLayout={compactDock ? undefined : defaultLayout}
         onLayoutChange={onInspectorLayoutChange}
         onLayoutChanged={compactDock ? undefined : onLayoutChanged}

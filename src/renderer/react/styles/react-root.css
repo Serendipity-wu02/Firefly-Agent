@@ -357,6 +357,12 @@ body {
   min-height: 0;
 }
 
+/* 右侧面板打开时，对话栏（消息列表、输入框）用固定宽度并居中：拖动分隔条只改变两侧留白，
+   对话栏本身不随之伸缩（和 Codex 一致）；面板收起时仍按上面的响应式阅读宽度。 */
+.ff-page-dock.has-inspector {
+  --ff-reading-width: clamp(480px, 100%, 720px);
+}
+
 /* Panel 内层容器：撑满面板，承载工作区 / 右侧面板 */
 .ff-dock-body {
   display: flex;

@@ -62,3 +62,56 @@ it("excludes payment, identity and sign-up controls from observation and from ty
   expect(names).toContain("Count");
   f.dom.window.close();
 });
+
+it("submits an explicitly marked GET search with multilingual text and re-observes dynamic results", async () => {
+  const f = page();
+  f.dom.window.document.body.innerHTML = '<form role="search" action="/search" method="get"><input type="search" name="q" aria-label="Query"><button type="submit">Search</button></form><output></output>';
+  let submitted = 0;
+  f.dom.window.document.querySelector('form')!.addEventListener('submit', event => {
+    event.preventDefault(); submitted++;
+    f.dom.window.setTimeout(() => { f.dom.window.document.querySelector('output')!.textContent = 'Results: ' + (f.dom.window.document.querySelector('input') as HTMLInputElement).value; }, 0);
+  });
+  const observe = (snapshotId: string) => f.run({ kind: 'observe', snapshotId, url: 'https://example.com/', hosts: ['example.com'] });
+  const first = observe('first');
+  const input = first.elements.find((e: any) => e.name === 'Query');
+  expect(f.run({kind:'type', snapshotId:'first', ref:input.ref, url:first.url, text:'Firefly 流萤', hosts:['example.com']})).toEqual({ok:true});
+  const second = observe('second');
+  const submit = second.elements.find((e: any) => e.name === 'Search');
+  expect(submit).toBeDefined();
+  expect(f.run({kind:'click', snapshotId:'second', ref:submit.ref, url:second.url, hosts:['example.com']})).toEqual({ok:true});
+  await new Promise(resolve => f.dom.window.setTimeout(resolve, 5));
+  expect(submitted).toBe(1); expect(observe('third').text).toContain('Results: Firefly 流萤');
+  f.dom.window.close();
+});
+
+it.each([
+  'method="post"', 'action="/delete"', 'action="https://other.example/search"', 'target="_blank"',
+])("denies search submissions with unsafe form settings: %s", attributes => {
+  const f = page();
+  f.dom.window.document.body.innerHTML = `<form role="search" ${attributes}><input type="search" name="q"><button>Search</button></form>`;
+  const snapshot = f.run({kind:'observe', snapshotId:'one', url:'https://example.com/', hosts:['example.com']});
+  expect(snapshot.elements.some((e: any) => e.name === 'Search')).toBe(false); f.dom.window.close();
+});
+
+it.each(['<input type="hidden" name="delete" value="1">','<input type="password">','<input name="email">'])('denies search forms with additional or sensitive fields: %s', extra => {
+  const f = page();
+  f.dom.window.document.body.innerHTML = `<form role="search" action="/search"><input type="search" name="q">${extra}<button>Search</button></form>`;
+  const snapshot = f.run({kind:'observe', snapshotId:'one', url:'https://example.com/', hosts:['example.com']});
+  expect(snapshot.elements.some((e: any) => e.name === 'Search')).toBe(false); f.dom.window.close();
+});
+
+it.each(['post','action','hidden','override','sensitive'])("revalidates observed search forms before click: %s", mutation => {
+  const f = page();
+  f.dom.window.document.body.innerHTML = '<form role="search" action="/search"><input type="search" name="q"><button>Search</button></form>';
+  const snapshot = f.run({kind:'observe',snapshotId:'one',url:'https://example.com/',hosts:['example.com']});
+  const submit = snapshot.elements.find((e:any) => e.name === 'Search'); expect(submit).toBeDefined();
+  const form = f.dom.window.document.querySelector('form')!, button = f.dom.window.document.querySelector('button')!;
+  if(mutation === 'post') form.method = 'post';
+  if(mutation === 'action') form.action = 'https://outside.example/search';
+  if(mutation === 'hidden') form.insertAdjacentHTML('beforeend','<input type="hidden" name="delete" value="1">');
+  if(mutation === 'override') button.setAttribute('formaction','/delete');
+  if(mutation === 'sensitive') f.dom.window.document.querySelector('input')!.type = 'password';
+  let submitted = false; form.addEventListener('submit', event => { event.preventDefault(); submitted = true; });
+  expect(f.run({kind:'click',snapshotId:'one',url:snapshot.url,ref:submit.ref,hosts:['example.com']})).toEqual({ok:false});
+  expect(submitted).toBe(false); f.dom.window.close();
+});

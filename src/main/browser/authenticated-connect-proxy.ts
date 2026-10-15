@@ -3,6 +3,9 @@ import { createServer, type IncomingMessage } from "node:http";
 import { lookup } from "node:dns/promises";
 import { createHash, randomBytes, timingSafeEqual } from "node:crypto";
 import { isPublicNetworkAddress, parseConnectAuthority } from "./public-network-target";
+import type { BrowserConnectionError } from "../../shared/manual-browser";
+/** Main-only snapshot at CONNECT admission; no URL, credentials or raw error crosses it. */
+export type BrowserConnectionObserver = (host: string) => ((code: BrowserConnectionError) => void) | undefined;
 export interface PinnedTarget { address: string; family: 4 | 6; port: 443 }
 export interface ProxyChallenge { isProxy: boolean; host: string; port: number; realm: string; scheme: string; webContentsId?: number }
 export interface ConnectProxy {
@@ -59,9 +62,9 @@ function matchesRemote(target: PinnedTarget, remote: string | undefined): boolea
  * https://nodejs.org/docs/latest-v24.x/api/http.html#event-connect
  * Caller must combine a dedicated session, request policy and complete N1-N10.
  */
-export async function startAuthenticatedConnectProxy(ownerInput: { webContentsId: number; signal: AbortSignal; readonly allowedHosts?: readonly string[] }, dependencies: ProxyDependencies = defaults): Promise<ConnectProxy> {
+export async function startAuthenticatedConnectProxy(ownerInput: { webContentsId: number; signal: AbortSignal; readonly allowedHosts?: readonly string[]; beginConnection?: BrowserConnectionObserver }, dependencies: ProxyDependencies = defaults): Promise<ConnectProxy> {
   const owner = { webContentsId: ownerInput.webContentsId, signal: ownerInput.signal,
-    allowedHosts: ownerInput.allowedHosts === undefined ? undefined : Object.freeze([...ownerInput.allowedHosts]) };
+    allowedHosts: ownerInput.allowedHosts === undefined ? undefined : Object.freeze([...ownerInput.allowedHosts]), beginConnection: ownerInput.beginConnection };
   if (!Number.isSafeInteger(owner.webContentsId) || owner.webContentsId <= 0 || owner.signal.aborted) throw new Error("browser binding unavailable");
   const username = randomBytes(16).toString("hex"); const password = randomBytes(32).toString("hex");
   const realm = `browser-${randomBytes(16).toString("hex")}`;
@@ -100,8 +103,15 @@ export async function startAuthenticatedConnectProxy(ownerInput: { webContentsId
       if (owner.allowedHosts !== undefined && !owner.allowedHosts.includes(target.host)) { reject(client, 403); return; }
       if (requests.size >= 32) { reject(client, 503); return; }
       const scope = new AbortController(); requests.add(scope);
+      let sink: ReturnType<BrowserConnectionObserver>;
+      try { sink = owner.beginConnection?.(target.host); } catch { /* diagnostics never change authority */ }
+      let reported = false, phase: "dns" | "connect" | "tunnel" = "dns", timedOut = false;
+      const report = (code: BrowserConnectionError) => {
+        if (reported || !active || owner.signal.aborted || client.destroyed || (scope.signal.aborted && !timedOut)) return;
+        reported = true; try { sink?.(code); } catch { /* presentation observer only */ }
+      };
       const cancelled = () => scope.abort(); client.once("close", cancelled);
-      const deadline = setTimeout(cancelled, 10000); deadline.unref();
+      const deadline = setTimeout(() => { timedOut = true; cancelled(); }, 10000); deadline.unref();
       let upstream: Socket | undefined;
       try {
         const literalFamily = isIP(target.host);
@@ -113,22 +123,29 @@ export async function startAuthenticatedConnectProxy(ownerInput: { webContentsId
           answers = await abortable(resolving, scope.signal);
         }
         if (!active || owner.signal.aborted || scope.signal.aborted || client.destroyed) return;
-        if (!answers.length || answers.length > 64 || answers.some((answer) => !isPublicNetworkAddress(answer.address) || isIP(answer.address) !== answer.family)) { reject(client, 403); return; }
+        if (!answers.length || answers.length > 64 || answers.some(answer => isIP(answer.address) !== answer.family)) { report("dns_failed"); reject(client, 403); return; }
+        if (answers.some(answer => !isPublicNetworkAddress(answer.address))) { report("restricted_address"); reject(client, 403); return; }
+        phase = "connect";
         const pin: PinnedTarget = { address: answers[0].address, family: answers[0].family as 4 | 6, port: 443 };
         upstream = dependencies.connect(pin, scope.signal); sockets.add(upstream);
         upstream.once("close", () => { sockets.delete(upstream!); client.destroy(); });
-        upstream.on("error", () => { reject(client, 403); upstream?.destroy(); });
+        upstream.on("error", () => { if (phase === "connect") report("connection_failed"); reject(client, 403); upstream?.destroy(); });
         client.once("close", () => upstream?.destroy());
         await abortable(new Promise<void>((resolve, fail) => {
           upstream!.once("connect", resolve); upstream!.once("error", fail); upstream!.once("close", () => fail(new Error("connection closed")));
         }), scope.signal);
         if (!active || owner.signal.aborted || scope.signal.aborted || client.destroyed || upstream.destroyed || !matchesRemote(pin, upstream.remoteAddress)) {
-          upstream.destroy(); reject(client, 403); return;
+          report("connection_failed"); upstream.destroy(); reject(client, 403); return;
         }
+        phase = "tunnel";
         client.write("HTTP/1.1 200 Connection Established\r\n\r\n");
         if (head.length) upstream.write(head);
         client.pipe(upstream); upstream.pipe(client);
-      } catch { upstream?.destroy(); reject(client, 403); }
+      } catch (error) {
+        const code = error && typeof error === "object" && "code" in error ? error.code : undefined;
+        report(phase === "dns" ? timedOut || code === "ETIMEOUT" || code === "ETIMEDOUT" ? "dns_timeout" : "dns_failed" : "connection_failed");
+        upstream?.destroy(); reject(client, 403);
+      }
       finally { clearTimeout(deadline); requests.delete(scope); client.removeListener("close", cancelled); }
     })();
   });

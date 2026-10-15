@@ -21,11 +21,24 @@ const operation = String.raw`(input => {
   const textInput = el => (el.tagName === 'TEXTAREA' || (el.tagName === 'INPUT' && ['text','search','url'].includes(el.type)))
     && !el.disabled && !el.readOnly && !sensitive.test([el.name,el.id,el.autocomplete,el.getAttribute('aria-label'),el.getAttribute('placeholder')].join(' '))
     && !el.closest('form')?.querySelector('input[type=password],input[autocomplete=one-time-code],input[autocomplete^=cc-],input[type=file]');
+  // Deliberately narrow: an explicit search form, one query field, and a
+  // conventional search endpoint. GET alone does not make arbitrary forms safe.
+  const searchSubmit = el => {
+    const form = el.form;
+    if (!form || !(form.getAttribute('role') === 'search' || form.closest('search'))
+      || form.method.toLowerCase() !== 'get' || (form.target && form.target !== '_self')
+      || ['formaction','formmethod','formtarget','formenctype'].some(name => el.hasAttribute(name))
+      || el.name || !safeUrl(form.action) || !/^\/search\/?$/.test(new URL(form.action).pathname)) return false;
+    const fields = Array.from(form.elements).filter(field => !field.disabled && field !== el
+      && !(field.tagName === 'BUTTON' && !field.name));
+    return fields.length === 1 && fields[0].tagName === 'INPUT' && fields[0].type === 'search'
+      && ['q','query','search'].includes(fields[0].name) && textInput(fields[0]);
+  };
   const clickable = el => {
     if (el.disabled || el.getAttribute('aria-disabled') === 'true' || el.closest('[download]') || accountAction.test(el.getAttribute('aria-label') || el.innerText || el.textContent || '')) return false;
     const a = el.closest('a[href]');
     if (a) return safeUrl(a.href) && !a.download && (!a.target || a.target === '_self');
-    if (el.tagName === 'BUTTON' && el.type === 'submit' && el.form) return false;
+    if (el.tagName === 'BUTTON' && el.type === 'submit' && el.form) return searchSubmit(el);
     if (el.tagName === 'INPUT') return false;
     return ['BUTTON','SUMMARY'].includes(el.tagName) || el.getAttribute('role') === 'button';
   };

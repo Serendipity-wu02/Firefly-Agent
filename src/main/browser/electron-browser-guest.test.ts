@@ -16,7 +16,7 @@ import { installBrowserServiceLifecycle } from "./browser-service-ipc";
 function nativeFixture() {
   const events = new EventEmitter(), session = {}, trace: string[] = [];
   let dead = false, url = "", popup: (() => unknown) | undefined;
-  const contents = Object.assign(events, { id: 22, session, isDestroyed: () => dead, getURL: () => url,
+  const contents = Object.assign(events, { id: 22, session, isDestroyed: () => dead, isCrashed: () => false, getURL: () => url,
     loadURL: async (next: string) => { url = next; trace.push("load"); },
     setWindowOpenHandler: (handler: () => unknown) => { popup = handler; }, setWebRTCIPHandlingPolicy: (policy: string) => trace.push(policy),
     close: (options: unknown) => { trace.push("close:" + JSON.stringify(options)); dead = true; events.emit("destroyed"); }, stop: () => trace.push("stop"), reload: () => events.emit("did-finish-load"),
@@ -25,6 +25,22 @@ function nativeFixture() {
   return { session, contents, trace, popup: () => popup?.() };
 }
 describe("real Electron WebContentsView adapter boundary", () => {
+  it("retains only the numeric history failure and removes waiters", async () => {
+    const f = nativeFixture(), guest = createElectronBrowserGuest(f.session as any);
+    f.contents.reload = () => { f.contents.emit("did-fail-load", {}, -111, "private description", "https://example.com/?secret", true); };
+    try {
+      await expect(guest.history("reload")).rejects.toMatchObject({ errno: -111, message: "browser navigation failed" });
+      expect(f.contents.listenerCount("did-fail-load")).toBe(1);
+    } finally { guest.destroy(); }
+  });
+  it("forwards only main-frame redirect targets", () => {
+    const f = nativeFixture(), guest = createElectronBrowserGuest(f.session as any), started = vi.fn();
+    guest.installCallbacks({ allowsNavigation: () => true, started, changed() {}, failed() {}, destroyed() {} });
+    f.contents.emit("did-redirect-navigation", {}, "https://github.com/", false, false);
+    expect(started).not.toHaveBeenCalled();
+    f.contents.emit("did-redirect-navigation", {}, "https://github.com/", false, true);
+    expect(started).toHaveBeenCalledWith("https://github.com/", true); guest.destroy();
+  });
   it("routes only exact managed guests and keeps destroyed guests denied instead of external fallback", () => {
     const f = nativeFixture(), guest = createElectronBrowserGuest(f.session as any), preventDefault = vi.fn();
     expect(routeBrowserGuestNavigation({}, { preventDefault }, "https://example.com/")).toBe(false); expect(preventDefault).not.toHaveBeenCalled();
@@ -85,6 +101,32 @@ describe("real Electron WebContentsView adapter boundary", () => {
     for (let n = 0; n < 8; n++) await Promise.resolve();
     try { expect(settled).toBe(true); expect(f.contents.listenerCount("did-navigate-in-page")).toBe(1); }
     finally { guest.stop(); await pending; guest.destroy(); }
+  });
+  it("reports renderer crashes and promptly rejects pending history instead of waiting for its timeout", async () => {
+    const f = nativeFixture(), guest = createElectronBrowserGuest(f.session as any), failed = vi.fn();
+    guest.installCallbacks({ allowsNavigation: () => true, started() {}, changed() {}, failed, destroyed() {} });
+    f.contents.navigationHistory.goBack = () => {};
+    const pending = guest.history("back");
+    f.contents.emit("render-process-gone", {}, { reason: "crashed", exitCode: 1 });
+    try {
+      expect(failed).toHaveBeenCalledTimes(1);
+      await expect(pending).rejects.toThrow("cancelled");
+      expect(f.contents.listenerCount("did-fail-load")).toBe(1);
+      expect(f.contents.listenerCount("did-navigate-in-page")).toBe(1);
+      await expect(guest.history("reload")).resolves.toBeUndefined();
+    } finally { guest.destroy(); }
+  });
+  it("a renderer crash rejects an outstanding load and allows a subsequent load", async () => {
+    const f = nativeFixture(), guest = createElectronBrowserGuest(f.session as any);
+    let finish!: () => void;
+    f.contents.loadURL = () => new Promise<void>(resolve => { finish = resolve; });
+    const pending = guest.loadURL("https://example.com/");
+    f.contents.emit("render-process-gone", {}, { reason: "crashed", exitCode: 1 });
+    try {
+      await expect(pending).rejects.toThrow("renderer"); finish();
+      f.contents.loadURL = async () => {};
+      await expect(guest.loadURL("https://example.com/next")).resolves.toBeUndefined();
+    } finally { finish(); guest.destroy(); }
   });
 });
 
