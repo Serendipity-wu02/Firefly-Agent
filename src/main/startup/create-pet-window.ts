@@ -91,6 +91,9 @@ export function createPetWindow(
     transparent,
     frame: false,
     skipTaskbar: true,
+    // 桌宠只响应鼠标，不接收键盘；不可聚焦则点击桌宠不会让主窗口失焦，
+    // 否则主窗口的内置浏览器会因失焦而摘下原生视图，页面瞬间变空白。
+    focusable: false,
     resizable: false,
     hasShadow: false,
     show: false,

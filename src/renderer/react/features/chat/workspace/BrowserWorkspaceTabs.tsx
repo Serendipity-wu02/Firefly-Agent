@@ -50,14 +50,17 @@ export function BrowserWorkspaceTabs({ sessionId, active = true, onClose, paneCl
     }).catch(() => {});
     return () => { disposed = true; off?.(); };
   }, [api, sessionId]);
-  async function mutate(action: () => Promise<BrowserReply<BrowserWorkspaceStateDto>>) {
-    if (busy.current || !scopeRef.current) return;
+  /** Resolves with the adopted state, or null when nothing changed (refused, superseded or failed). */
+  async function mutate(action: () => Promise<BrowserReply<BrowserWorkspaceStateDto>>): Promise<BrowserWorkspaceStateDto | null> {
+    if (busy.current || !scopeRef.current) return null;
     const scope = scopeRef.current; busy.current = true; setPending(true);
     try {
-      const reply = await action(); if (scopeRef.current !== scope) return;
-      if (reply.ok) { adopt(reply.value); setAgent(false); setError(null); } else setError(reply.code);
+      const reply = await action(); if (scopeRef.current !== scope) return null;
+      if (reply.ok) { adopt(reply.value); setAgent(false); setError(null); return reply.value; }
+      setError(reply.code);
     } catch { if (scopeRef.current === scope) setError("network_unavailable"); }
     finally { busy.current = false; if (scopeRef.current === scope) setPending(false); }
+    return null;
   }
   async function close(): Promise<boolean> {
     if (!api) return await agentRef.current?.close() ?? false;
@@ -76,13 +79,16 @@ export function BrowserWorkspaceTabs({ sessionId, active = true, onClose, paneCl
     } catch { if (scopeRef.current === scope) setError("cleanup_failed"); return false; }
     finally { busy.current = false; if (scopeRef.current) setPending(false); }
   }
-  /** Closing plays the tab's exit first and only then asks Main. A refused close brings the tab back. */
+  /** Closing plays the tab's exit first and only then asks Main. A refused close brings the tab back.
+   * Closing the last tab closes the browser pane too, so no empty pane is left holding the width. */
   function closeTab(tabId: string) {
     const target = api;
     if (!target || exiting) return;
     setExiting(tabId);
     window.setTimeout(() => {
-      void mutate(() => target.closeTab(tabId)).finally(() => setExiting(now => now === tabId ? null : now));
+      void mutate(() => target.closeTab(tabId))
+        .then(next => { if (next && next.tabs.length === 0) return close(); })
+        .finally(() => setExiting(now => now === tabId ? null : now));
     }, TAB_EXIT_MS);
   }
   useImperativeHandle(ref, () => ({ close }));
