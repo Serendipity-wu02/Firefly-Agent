@@ -1,7 +1,8 @@
 /** Presentation and manual commands only. Main keeps all owner, profile and gate authority. */
 export interface BrowserBounds { x: number; y: number; width: number; height: number }
 export type BrowserNetworkFailure = "permission_denied" | "owner_mismatch" | "cancelled" | "closed" | "network_unavailable" | "cleanup_failed";
-export type BrowserErrorCode = BrowserNetworkFailure | "blocked_url" | "load_failed" | "tab_limit";
+export type BrowserConnectionError = "restricted_address" | "dns_failed" | "dns_timeout" | "connection_failed";
+export type BrowserErrorCode = BrowserNetworkFailure | BrowserConnectionError | "blocked_url" | "load_failed" | "tab_limit";
 export interface BrowserPageDto { browserId: string; conversationId: string; requestId: number; closed: boolean; loading: boolean; url: string; pendingUrl: string | null; canGoBack: boolean; canGoForward: boolean; error: BrowserErrorCode | null;
   /** Main-only discovery, bounded and non-authorizing. Navigation contains origin only. */
   blockedResourceHosts?: readonly string[]; blockedNavigationUrl?: string; blockedRequest?: boolean;
@@ -22,6 +23,8 @@ export interface BrowserPermissionScope { readonly hosts: readonly string[]; rea
   readonly mode?: "manual" | "agent"; readonly resourceHosts?: readonly string[];
   /** Manual only: ordinary web browsing of any public HTTPS site. Carries no host lists and never an Agent action. */
   readonly web?: boolean;
+  /** Explicit user-selected exact-site Agent grant; never an ordinary web grant. */
+  readonly site?: true;
   /** Request-only identity for adding resources discovered by this exact live page. Never part of a grant. */
   readonly sourceBrowserId?: string;
   readonly sourceRequestId?: number;
@@ -32,6 +35,8 @@ export interface BrowserPermissionDto {
   readonly scope: BrowserPermissionScope;
   /** Main's bounded Agent proposal, not an active grant. Requires separate native consent. */
   readonly agentScope?: BrowserPermissionScope;
+  /** Main advertises support for native-confirmed exact-site Agent proposals. */
+  readonly agentSiteSelection?: boolean;
   readonly requestId: string | null;
 }
 /** Separate window contract preserves the existing conversation bridge during staged integration. */

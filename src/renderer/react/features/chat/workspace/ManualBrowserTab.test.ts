@@ -30,6 +30,13 @@ async function navigate(url = "https://example.com/") {
   await act(async () => host.querySelector("form")!.dispatchEvent(new Event("submit", { bubbles: true, cancelable: true })));
 }
 describe("manual browser Main bridge and viewport lifecycle", () => {
+  it.each([["restricted_address", "restrictedAddress"], ["dns_failed", "dnsFailed"], ["dns_timeout", "dnsTimeout"], ["connection_failed", "connectionFailed"]] as const)("renders a safe message for %s and clears it on recovery", async (code, label) => {
+    await render(); await navigate();
+    await act(async () => changed({ ...page("b", 2), error: code }));
+    expect(host.textContent).toContain(`browserWorkspace.${label}`); expect(host.textContent).not.toContain(code);
+    await act(async () => changed(page("b", 3))); expect(host.textContent).not.toContain(`browserWorkspace.${label}`);
+    expect(en.browserWorkspace[label]).toBeTruthy(); expect(zhCN.browserWorkspace[label]).toBeTruthy();
+  });
   it.each(["cancelled reply", "rejected promise"])("does not mark the newest page failed when an older navigation ends with %s", async outcome => {
     await render(); await navigate();
     let finish!: (reply: unknown) => void, fail!: (reason: Error) => void;
@@ -719,3 +726,17 @@ it("cancels a pending native permission on close and ignores its late approval",
     await navigate();
     expect(execute.mock.calls.some(([c]) => c.kind === "open")).toBe(false);
   });
+
+it("offers explicit exact Agent sites and resource-only hosts without granting them automatically", async () => {
+  window.manualBrowser!.getPermission = async () => ({ ok:true, value:{...permission('required'), scope:{mode:'manual',hosts:[],actions:['navigate']}, agentScope:permission('required').scope, agentSiteSelection:true} });
+  await render();
+  const sites = host.querySelector<HTMLTextAreaElement>('[data-browser-agent-sites]');
+  const resources = host.querySelector<HTMLTextAreaElement>('[data-browser-agent-resources]');
+  expect(sites).not.toBeNull(); expect(resources).not.toBeNull(); expect(requestPermission).not.toHaveBeenCalled();
+  act(() => { for (const [element, value] of [[sites!, 'developer.mozilla.org'],[resources!, 'static.example.org']] as const) {
+    Object.getOwnPropertyDescriptor(HTMLTextAreaElement.prototype,'value')!.set!.call(element,value);
+    element.dispatchEvent(new Event('input',{bubbles:true}));
+  } });
+  await act(async () => (host.querySelector('[data-browser-authorize-agent-sites]') as HTMLButtonElement).click());
+  expect(requestPermission).toHaveBeenCalledWith({mode:'agent',site:true,hosts:['developer.mozilla.org'],resourceHosts:['static.example.org'],actions:['navigate','observe','click','type']});
+});

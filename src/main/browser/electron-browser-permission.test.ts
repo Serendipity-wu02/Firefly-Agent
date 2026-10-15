@@ -63,3 +63,14 @@ describe("native exact-site manual browser consent", () => {
     }
   });
 });
+
+it("shows separately selected Agent navigation and resource domains in the native consent", async () => {
+  const service = createElectronBrowserService({profile:{} as any}) as any;
+  expect(service.agentSiteSelection).toBe(true);
+  state.dialog.mockResolvedValueOnce({response:0});
+  const scope = {mode:'agent',site:true,hosts:['developer.mozilla.org'],resourceHosts:['static.example.org'],actions:['navigate','observe']};
+  expect(await service.confirmPermission({host:{},conversationId:'site-consent',signal:new AbortController().signal},scope,new AbortController().signal)).toBe(false);
+  const prompt = state.dialog.mock.calls.at(-1)![1];
+  expect(prompt.detail).toContain('developer.mozilla.org'); expect(prompt.detail).toContain('static.example.org');
+  expect(prompt.detail).toContain('不能导航'); expect(prompt.detail).toContain('GET 请求也可能有服务端副作用');
+});

@@ -8,7 +8,7 @@ import { createActiveChatTargetRegistry } from "../plugin-host/active-chat-targe
 import type { WebContents } from "electron";
 
 function deferred<T>() { let resolve!: (value: T) => void; const promise = new Promise<T>(done => { resolve = done; }); return { promise, resolve }; }
-function fixture(gateOpen = true, confirmPermission?: () => Promise<boolean>, manualBrowsing = false, windowOwned = false) {
+function fixture(gateOpen = true, confirmPermission?: () => Promise<boolean>, manualBrowsing = false, windowOwned = false, agentSiteSelection = false) {
   const profile = {}, abort = new AbortController(), effects: string[] = [], frames = new EventEmitter();
   const topFrame = {}, hostEvents = new EventEmitter();
   const host: BrowserHostPort = Object.assign(hostEvents, { webContents: Object.assign(frames, { id: 10, mainFrame: topFrame, isDestroyed: () => false }),
@@ -22,7 +22,8 @@ function fixture(gateOpen = true, confirmPermission?: () => Promise<boolean>, ma
   let nextProxy = async () => {};
   let nextObservation = async () => {};
   let nextAction = async () => {};
-  const service = createBrowserService({ profile, gateOpen, manualBrowsing, ...(confirmPermission ? { permissionPolicy: { hosts: ["example.com", "github.com"], actions: ["navigate", "observe", "click", "type"] }, confirmPermission } : {}), onChanged: (_owner, state) => changed.push(state),
+  let proxyOwner: Parameters<import("./browser-domain-proxy").BrowserProxyFactory>[0];
+  const service = createBrowserService({ profile, gateOpen, manualBrowsing, agentSiteSelection, ...(confirmPermission ? { permissionPolicy: { hosts: ["example.com", "github.com"], actions: ["navigate", "observe", "click", "type"] }, confirmPermission } : {}), onChanged: (_owner, state) => changed.push(state),
     createSession: () => {
       const session = {}; sessions.push(session); effects.push("session");
       const port: BrowserSessionPort<object> = { session, persistent: false,
@@ -45,19 +46,86 @@ function fixture(gateOpen = true, confirmPermission?: () => Promise<boolean>, ma
         destroy: () => { effects.push("destroy"); destroyed = true; }, installCallbacks: next => { callbacks.push(next); } };
       guests.push(guest); return guest;
     },
-    proxyFactory: async () => ({ endpoint: { host: "127.0.0.1", port: 1234, realm: "fixture" }, credentialsFor: () => ({ username: "opaque", password: "opaque" }), revoke: async () => { effects.push("proxyRevoke"); } } satisfies ConnectProxy),
+    proxyFactory: async input => { proxyOwner = input; return { endpoint: { host: "127.0.0.1", port: 1234, realm: "fixture" }, credentialsFor: () => ({ username: "opaque", password: "opaque" }), revoke: async () => { effects.push("proxyRevoke"); } } satisfies ConnectProxy; },
     cleanupTimeoutMs: 100, workerStopTimeoutMs: 30,
   });
   const manualHost = windowOwned ? registerManualBrowserHostOwner({ host, profile, service }) : undefined;
   if (!manualHost) service.registerHost(host, () => owner);
   return { service, host, sender, profile, abort, effects, guests, sessions, changed, callbacks, requests, owner: () => manualHost?.getCurrentOwner() ?? owner,
+    beginConnection: (host: string) => proxyOwner?.beginConnection?.(host),
     swap: () => { owner = Object.freeze({ ...owner, conversationId: "b", ownerSessionId: "manual-b", generation: 2 }); },
     delayAction: (operation: () => Promise<void>) => { nextAction = operation; },
     delayObservation: (operation: () => Promise<void>) => { nextObservation = operation; },
     delayLoad: (operation: () => Promise<void>) => { nextLoad = operation; }, delayProxy: (operation: () => Promise<void>) => { nextProxy = operation; } };
 }
 
+async function showPage(f: ReturnType<typeof fixture>): Promise<void> {
+  const page = await f.service.dispatch(f.sender, { kind: "get" });
+  if (!page.ok || !page.value) throw new Error("missing page");
+  expect(await f.service.dispatch(f.sender, { kind: "layout", browserId: page.value.browserId,
+    bounds: { x: 0, y: 0, width: 300, height: 200 } })).toMatchObject({ ok: true });
+}
+
 describe("manual window workspace with the real network/domain controller", () => {
+  it("does not pick a precise cause when same-host connection failures disagree", async () => {
+    const f = fixture(); f.delayLoad(async () => {
+      f.beginConnection("example.com")?.("restricted_address"); f.beginConnection("example.com")?.("dns_failed");
+      throw Object.assign(Error("failed"), { errno: -111 });
+    });
+    try { expect(await f.service.dispatch(f.sender, { kind: "open", url: "https://example.com/" })).toEqual({ ok: false, code: "load_failed" }); }
+    finally { await f.service.dispose(); }
+  });
+  it("propagates the diagnostic through executeAgent and ignores non-tunnel native failures", async () => {
+    const f = fixture(false, async () => true);
+    await f.service.dispatchPermission(f.sender, { kind: "request", scope: { hosts: ["example.com"], actions: ["navigate"] } });
+    f.delayLoad(async () => { f.beginConnection("example.com")?.("connection_failed"); throw Object.assign(Error("secret"), { errno: -111 }); });
+    const run = { conversationId: "a", runId: "run", signal: new AbortController().signal, isCurrent: () => true };
+    try {
+      expect(await f.service.executeAgent(f.owner(), { operation: "open", url: "https://example.com/" }, run)).toEqual({ ok: false, code: "connection_failed" });
+      f.callbacks[0].started("https://example.com/link"); f.beginConnection("example.com")?.("restricted_address");
+      f.callbacks[0].failed(-202, "https://example.com/link");
+      expect(f.changed.at(-1)).toMatchObject({ error: "load_failed" });
+      f.callbacks[0].started("https://example.com/retry"); f.beginConnection("example.com")?.("dns_timeout");
+      f.callbacks[0].failed(-111, "https://example.com/obsolete");
+      expect(f.changed.at(-1)).toMatchObject({ loading: true, error: null });
+      f.callbacks[0].failed(-111, "https://example.com/retry");
+      expect(f.changed.at(-1)).toMatchObject({ loading: false, error: "dns_timeout" });
+    } finally { await f.service.dispose(); }
+  });
+  it.each(["navigate", "history"])("tracks approved cross-host targets during %s", async kind => {
+    const f = fixture();
+    const opened = await f.service.dispatch(f.sender, { kind: "open", url: "https://example.com/" });
+    if (!opened.ok || !opened.value) throw Error("missing page");
+    const failed = async () => {
+      f.callbacks[0].started("https://github.com/");
+      f.beginConnection("github.com")?.("dns_failed");
+      throw Object.assign(Error("private"), { errno: -111 });
+    };
+    f.delayLoad(failed); f.guests[0].history = failed;
+    try {
+      expect(await f.service.dispatch(f.sender, { kind, browserId: opened.value.browserId, url: "https://example.com/next", action: "back" })).toEqual({ ok: false, code: "dns_failed" });
+    } finally { await f.service.dispose(); }
+  });
+  it.each([true, false])("keeps precise tunnel errors and clears them on recovery (manual=%s)", async manual => {
+    const f = fixture(false, async () => true, manual, manual);
+    await f.service.dispatchPermission(f.sender, { kind: "request", scope: manual ? { mode: "manual", web: true, hosts: [], actions: ["navigate"] } : { hosts: ["example.com"], actions: ["navigate"] } });
+    f.delayLoad(async () => { f.beginConnection("example.com")?.("restricted_address"); throw Object.assign(new Error("secret"), { code: "ERR_TUNNEL_CONNECTION_FAILED" }); });
+    expect(await f.service.dispatch(f.sender, { kind: "open", url: "https://example.com/?private=query" })).toEqual({ ok: false, code: "restricted_address" });
+    const page = await f.service.dispatch(f.sender, { kind: "get" }); if (!page.ok || !page.value) throw Error("missing page");
+    expect(page.value.error).toBe("restricted_address"); f.delayLoad(async () => {});
+    expect(await f.service.dispatch(f.sender, { kind: "navigate", browserId: page.value.browserId, url: "https://example.com/" })).toMatchObject({ ok: true, value: { error: null } }); await f.service.dispose();
+  });
+  it("ignores previous-request diagnostics after a new same-host navigation starts", async () => {
+    const f = fixture(); await f.service.dispatch(f.sender, { kind: "open", url: "https://example.com/" });
+    let stale: ((code: import("../../shared/manual-browser").BrowserConnectionError) => void) | undefined;
+    const hold = deferred<void>(); f.delayLoad(async () => { stale = f.beginConnection("example.com"); await hold.promise; });
+    const page = await f.service.dispatch(f.sender, { kind: "get" }); if (!page.ok || !page.value) throw Error("missing page");
+    const older = f.service.dispatch(f.sender, { kind: "navigate", browserId: page.value.browserId, url: "https://example.com/old" });
+    await vi.waitFor(() => expect(stale).toBeTypeOf("function"));
+    f.delayLoad(async () => { stale?.("restricted_address"); throw Object.assign(Error("failed"), { code: "ERR_TUNNEL_CONNECTION_FAILED" }); });
+    expect(await f.service.dispatch(f.sender, { kind: "navigate", browserId: page.value.browserId, url: "https://example.com/new" })).toEqual({ ok: false, code: "load_failed" });
+    hold.resolve(); await older; await f.service.dispose();
+  });
   it("can obtain native site consent and browse without an active conversation", async () => {
     const f = fixture(false, async () => true, true, true);
     const owner = f.owner();
@@ -368,6 +436,61 @@ describe("Main-owned bounded session permission", () => {
   });
 });
 
+describe("Agent operations require the presented page", () => {
+  it("cannot read an opened page before its first native layout", async () => {
+    const f = fixture(false, async () => true);
+    const run = { conversationId: "a", runId: "run", signal: new AbortController().signal, isCurrent: () => true };
+    try {
+      await f.service.dispatchPermission(f.sender, { kind: "request", scope });
+      await f.service.executeAgent(f.owner(), { operation: "open", url: "https://example.com/" }, run);
+      expect(await f.service.executeAgent(f.owner(), { operation: "observe" }, run)).toEqual({ ok: false, code: "permission_denied" });
+      expect(f.effects).not.toContain("observe");
+    } finally { await f.service.dispose(); }
+  });
+  it.each(["null-layout", "offscreen", "blur", "hide", "overlay"])("blocks background work after %s and still permits cleanup", async reason => {
+    const f = fixture(false, async () => true);
+    const run = { conversationId: "a", runId: "run", signal: new AbortController().signal, isCurrent: () => true };
+    try {
+      await f.service.dispatchPermission(f.sender, { kind: "request", scope });
+      const page = await f.service.executeAgent(f.owner(), { operation: "open", url: "https://example.com/" }, run);
+      if (!page.ok || !page.value || !("browserId" in page.value)) throw new Error("missing page");
+      await showPage(f); await f.service.executeAgent(f.owner(), { operation: "observe" }, run);
+      if (reason === "null-layout") await f.service.dispatch(f.sender, { kind: "layout", browserId: page.value.browserId, bounds: null });
+      else if (reason === "offscreen") await f.service.dispatch(f.sender, { kind: "layout", browserId: page.value.browserId, bounds: { x: 900, y: 0, width: 100, height: 100 } });
+      else if (reason === "overlay") f.service.setTrustedOverlay(f.host, true);
+      else (f.host as unknown as EventEmitter).emit(reason);
+      const before = [...f.effects];
+      for (const operation of ["observe", "click", "type", "navigate", "back", "forward", "reload"]) {
+        expect(await f.service.executeAgent(f.owner(), { operation, snapshotId: "observed", ref: "1", text: "query", url: "https://example.com/next" }, run)).toEqual({ ok: false, code: "permission_denied" });
+      }
+      expect(f.effects).toEqual(before);
+      expect(await f.service.executeAgent(f.owner(), { operation: "close" }, run)).toMatchObject({ ok: true });
+    } finally { await f.service.dispose(); }
+  });
+  it("a hide/show cycle invalidates both stored snapshots and pending observations", async () => {
+    const f = fixture(false, async () => true), wait = deferred<void>();
+    const run = { conversationId: "a", runId: "run", signal: new AbortController().signal, isCurrent: () => true };
+    try {
+      await f.service.dispatchPermission(f.sender, { kind: "request", scope });
+      const page = await f.service.executeAgent(f.owner(), { operation: "open", url: "https://example.com/" }, run);
+      if (!page.ok || !page.value || !("browserId" in page.value)) throw new Error("missing page");
+      const browserId = page.value.browserId;
+      const hide = () => f.service.dispatch(f.sender, { kind: "layout", browserId, bounds: null });
+      await showPage(f); await f.service.executeAgent(f.owner(), { operation: "observe" }, run);
+      await hide(); await showPage(f);
+      expect(await f.service.executeAgent(f.owner(), { operation: "click", snapshotId: "observed", ref: "1" }, run)).toEqual({ ok: false, code: "permission_denied" });
+      f.delayObservation(() => wait.promise);
+      const pending = f.service.executeAgent(f.owner(), { operation: "observe" }, run);
+      await Promise.resolve(); await hide(); await showPage(f); wait.resolve();
+      expect(await pending).toEqual({ ok: false, code: "cancelled" });
+      expect(await f.service.executeAgent(f.owner(), { operation: "click", snapshotId: "observed", ref: "1" }, run)).toEqual({ ok: false, code: "permission_denied" });
+      f.delayObservation(async () => {});
+      expect(await f.service.executeAgent(f.owner(), { operation: "observe" }, run)).toMatchObject({ ok: true });
+      expect(await f.service.executeAgent(f.owner(), { operation: "click", snapshotId: "observed", ref: "1" }, run)).toMatchObject({ ok: true });
+    } finally { wait.resolve(); await f.service.dispose(); }
+  });
+});
+
 describe("trusted current run controls the same browser page", () => {
   it("requires user permission, blocks self-authorization and returns actual guest observation", async () => {
     const f = fixture(false, async () => true), service = f.service as any, abort = new AbortController();
@@ -379,6 +502,7 @@ describe("trusted current run controls the same browser page", () => {
     await service.dispatchPermission(f.sender, { kind: "request", scope });
     const page = await service.executeAgent(f.owner(), { operation: "open", url: "https://example.com/" }, run);
     expect(page).toMatchObject({ ok: true, value: { url: "https://example.com/" } });
+    await showPage(f);
     const observation = await service.executeAgent(f.owner(), { operation: "observe" }, run);
     expect(observation).toMatchObject({ ok: true, value: { text: "Public text", snapshotId: "observed" } });
     expect(await service.executeAgent(f.owner(), { operation: "click", ref: "1", snapshotId: "observed" }, run)).toMatchObject({ ok: true });
@@ -390,6 +514,7 @@ describe("trusted current run controls the same browser page", () => {
     await service.dispatchPermission(f.sender, { kind: "request", scope });
     const run = { conversationId: "a", runId: "one", signal: new AbortController().signal, isCurrent: () => true };
     await service.executeAgent(f.owner(), { operation: "open", url: "https://example.com/" }, run);
+    await showPage(f);
     for (const badRun of [{ ...run, conversationId: "b" }, { ...run, isCurrent: () => false }])
       expect(await service.executeAgent(f.owner(), { operation: "observe" }, badRun)).toEqual({ ok: false, code: "owner_mismatch" });
     expect(await service.executeAgent(f.owner(), { operation: "observe", owner: f.owner(), allow: true }, run)).toEqual({ ok: false, code: "permission_denied" });
@@ -405,6 +530,7 @@ describe("trusted current run controls the same browser page", () => {
     await service.dispatchPermission(f.sender, { kind: "request", scope });
     const run = { conversationId: "a", runId: "one", signal: abort.signal, isCurrent: () => !abort.signal.aborted };
     await service.executeAgent(f.owner(), { operation: "open", url: "https://example.com/" }, run);
+    await showPage(f);
     f.delayObservation(() => wait.promise);
     const pending = service.executeAgent(f.owner(), { operation: "observe" }, run);
     await Promise.resolve(); abort.abort();
@@ -427,6 +553,7 @@ it("revoking permission promptly settles a never-resolving observation", async (
   await service.dispatchPermission(f.sender, { kind: "request", scope });
   const run = { conversationId: "a", runId: "one", signal: new AbortController().signal, isCurrent: () => true };
   await service.executeAgent(f.owner(), { operation: "open", url: "https://example.com/" }, run);
+  await showPage(f);
   f.delayObservation(() => wait.promise);
   const pending = service.executeAgent(f.owner(), { operation: "observe" }, run);
   await Promise.resolve(); await service.dispatchPermission(f.sender, { kind: "revoke" });
@@ -440,6 +567,7 @@ it("late action completion after a session change does not return success or reg
   await service.dispatchPermission(f.sender, { kind: "request", scope });
   const run = { conversationId: "a", runId: "one", signal: new AbortController().signal, isCurrent: () => true };
   await service.executeAgent(f.owner(), { operation: "open", url: "https://example.com/" }, run);
+  await showPage(f);
   await service.executeAgent(f.owner(), { operation: "observe" }, run); f.delayAction(() => wait.promise);
   const pending = service.executeAgent(f.owner(), { operation: "click", ref: "1", snapshotId: "observed" }, run);
   await Promise.resolve(); f.swap();
@@ -453,6 +581,7 @@ it("a late action after run abort settles cancelled and cannot continue", async 
   await service.dispatchPermission(f.sender, { kind: "request", scope });
   const run = { conversationId: "a", runId: "one", signal: abort.signal, isCurrent: () => !abort.signal.aborted };
   await service.executeAgent(f.owner(), { operation: "open", url: "https://example.com/" }, run);
+  await showPage(f);
   await service.executeAgent(f.owner(), { operation: "observe" }, run); f.delayAction(() => wait.promise);
   const pending = service.executeAgent(f.owner(), { operation: "click", ref: "1", snapshotId: "observed" }, run);
   await Promise.resolve(); abort.abort(); expect(await pending).toEqual({ ok: false, code: "cancelled" });
@@ -629,3 +758,70 @@ it("revokes a grant without a page and cancels a late native approval", async ()
     expect(await f.service.dispatch(f.sender, { kind: "open", url: "https://example.com/" })).toEqual({ ok: false, code: "permission_denied" });
     await f.service.dispose();
   });
+
+
+describe("explicit exact-site Agent grants", () => {
+  const scope = { mode: "agent", site: true, hosts: ["developer.mozilla.org"], resourceHosts: ["static.example.org"], actions: ["navigate", "observe", "click", "type"] };
+  it("advertises capability, requires native approval and separates resource hosts from navigation", async () => {
+    const confirm = vi.fn(async () => true), f = fixture(false, confirm, true, false, true);
+    expect(await f.service.dispatchPermission(f.sender, {kind:"get"})).toMatchObject({ok:true,value:{agentSiteSelection:true}});
+    expect(await f.service.dispatchPermission(f.sender, {kind:"request",scope})).toMatchObject({ok:true,value:{status:"granted",scope}});
+    expect(confirm).toHaveBeenCalledOnce();
+    expect(await f.service.execute(f.owner(), {kind:"open",url:"https://developer.mozilla.org/"})).toMatchObject({ok:true});
+    const request = { method:"GET",resourceType:"script",url:"https://static.example.org/app.js",webContentsId:20 };
+    expect(f.requests[0](request)).toBe(true);
+    expect(f.requests[0]({...request,resourceType:"mainFrame"})).toBe(false);
+    expect(f.requests[0]({...request,resourceType:"subFrame"})).toBe(false);
+    expect(f.requests[0]({...request,method:"POST"})).toBe(false);
+    expect(f.requests[0]({...request,url:"https://unknown.example/app.js"})).toBe(false);
+    expect(await f.service.execute(f.owner(), {kind:"open",url:"https://static.example.org/"})).toMatchObject({ok:false,code:"blocked_url"});
+  });
+  it("does not change legacy service policy or permit self authorization", async () => {
+    const confirm = vi.fn(async () => true), f = fixture(false, confirm, true);
+    expect(await f.service.dispatchPermission(f.sender, {kind:"request",scope})).toMatchObject({ok:false});
+    expect(confirm).not.toHaveBeenCalled();
+  });
+  it.each([ ["127.0.0.1"], ["*.example.org"], ["example.org:443"], ["user@example.org"], ["example.org/path"], ["EXAMPLE.ORG"], ["192.168.1.1"], ["example.org."], ["example.org#x"], ["example.org?x"], [], Array.from({length:9}, (_,i) => `site${i}.example`) ])("rejects invalid exact navigation hosts %j", async hosts => {
+    const confirm = vi.fn(async () => true), f = fixture(false, confirm, true, false, true);
+    expect(await f.service.dispatchPermission(f.sender, {kind:"request",scope:{...scope,hosts}})).toMatchObject({ok:false});
+    expect(confirm).not.toHaveBeenCalled();
+  });
+  it("keeps denied grants inactive and retires old pages on scope switch and revoke", async () => {
+    const confirm = vi.fn(async () => false), f = fixture(false, confirm, true, false, true);
+    expect(await f.service.dispatchPermission(f.sender,{kind:"request",scope})).toMatchObject({ok:true,value:{status:"denied"}});
+    expect(await f.service.execute(f.owner(),{kind:"open",url:"https://developer.mozilla.org/"})).toMatchObject({ok:false});
+    confirm.mockResolvedValue(true);
+    await f.service.dispatchPermission(f.sender,{kind:"request",scope});
+    const opened = await f.service.execute(f.owner(),{kind:"open",url:"https://developer.mozilla.org/"});
+    expect(opened).toMatchObject({ok:true});
+    await f.service.dispatchPermission(f.sender,{kind:"request",scope:{...scope,hosts:["www.wikipedia.org"]}});
+    expect(f.effects).toContain("destroy"); expect(f.effects).toContain("storage");
+    expect(await f.service.execute(f.owner(),{kind:"open",url:"https://developer.mozilla.org/"})).toMatchObject({ok:false});
+    await f.service.revoke(f.owner());
+    expect(await f.service.execute(f.owner(),{kind:"open",url:"https://www.wikipedia.org/"})).toMatchObject({ok:false});
+  });
+});
+
+
+it.each([
+  {resourceHosts:["127.0.0.1"]}, {resourceHosts:Array.from({length:17},(_,i)=>`cdn${i}.example`)},
+  {actions:["execute"]}, {web:true}, {sourceBrowserId:"spoof"}, {site:false},
+])("rejects malformed exact Agent proposals %j", extra => {
+  const confirm = vi.fn(async()=>true), f = fixture(false,confirm,true,false,true);
+  return f.service.dispatchPermission(f.sender,{kind:"request",scope:{mode:"agent",site:true,hosts:["developer.mozilla.org"],actions:["navigate"],...extra}}).then(reply => {
+    expect(reply).toMatchObject({ok:false}); expect(confirm).not.toHaveBeenCalled();
+  });
+});
+it("never grants exact Agent sites to a manual workspace owner", async () => {
+  const confirm=vi.fn(async()=>true), f=fixture(false,confirm,true,true,true);
+  expect(await f.service.dispatchPermission(f.sender,{kind:"request",scope:{mode:"agent",site:true,hosts:["developer.mozilla.org"],actions:["navigate"]}})).toMatchObject({ok:false});
+  expect(confirm).not.toHaveBeenCalled();
+});
+it("discards late exact-site confirmation after revocation", async () => {
+  const pending=deferred<boolean>(), f=fixture(false,()=>pending.promise,true,false,true);
+  const grant=f.service.dispatchPermission(f.sender,{kind:"request",scope:{mode:"agent",site:true,hosts:["developer.mozilla.org"],actions:["navigate"]}});
+  await new Promise(resolve=>setTimeout(resolve,0));
+  await f.service.revoke(f.owner()); pending.resolve(true);
+  expect(await grant).toMatchObject({ok:false});
+  expect(await f.service.execute(f.owner(),{kind:"open",url:"https://developer.mozilla.org/"})).toMatchObject({ok:false});
+});

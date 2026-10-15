@@ -37,7 +37,7 @@ async function cancelledLookups(proxy: ConnectProxy, lookups: ReturnType<typeof 
   return rejected;
 }
 
-async function fixture(resolve: ProxyDependencies["resolve"] = vi.fn(async (_host: string) => publicAnswer), transport: { connect?: ProxyDependencies["connect"]; remoteAddress?: string } = {}, allowedHosts?: string[]) {
+async function fixture(resolve: ProxyDependencies["resolve"] = vi.fn(async (_host: string) => publicAnswer), transport: { connect?: ProxyDependencies["connect"]; remoteAddress?: string } = {}, allowedHosts?: string[], beginConnection?: import("./authenticated-connect-proxy").BrowserConnectionObserver) {
   let hits = 0; const peers = new Set<Socket>(); const bytes: Buffer[] = [];
   const origin: Server = createServer((socket) => {
     hits++; peers.add(socket); socket.on("error", () => {}); socket.on("close", () => peers.delete(socket));
@@ -56,7 +56,7 @@ async function fixture(resolve: ProxyDependencies["resolve"] = vi.fn(async (_hos
     return socket;
   });
   const owner = new AbortController();
-  const binding = { webContentsId: 19, signal: owner.signal, ...(allowedHosts === undefined ? {} : { allowedHosts }) };
+  const binding = { webContentsId: 19, signal: owner.signal, beginConnection, ...(allowedHosts === undefined ? {} : { allowedHosts }) };
   const proxy = await startAuthenticatedConnectProxy(binding, { resolve, connect: transport.connect ?? dial });
   cleanups.push(() => proxy.revoke());
   return { proxy, owner, binding, resolve, dial, targets, bytes, hits: () => hits };
@@ -86,6 +86,30 @@ async function request(proxy: ConnectProxy, options: { auth?: string; authority?
 }
 
 describe("authenticated CONNECT proxy: actual local TCP + injected public pin", () => {
+  it("reports a failed numeric dial without exposing the underlying exception", async () => {
+    const report = vi.fn(), f = await fixture(undefined, { connect: () => { throw Error("private transport detail"); } }, ["example.com"], () => report);
+    const r = await request(f.proxy, { auth: authorization(f.proxy) }); expect(await r.response).toContain("403");
+    expect(report).toHaveBeenCalledExactlyOnceWith("connection_failed");
+  });
+  it("observer exceptions cannot change the public-address rejection", async () => {
+    const f = await fixture(async () => [{ address: "198.18.0.9", family: 4 }], {}, ["example.com"], () => () => { throw Error("observer"); });
+    const r = await request(f.proxy, { auth: authorization(f.proxy) }); expect(await r.response).toContain("403"); expect(f.dial).not.toHaveBeenCalled();
+  });
+  it.each([["restricted_address", async () => [{ address: "198.18.0.9", family: 4 }]],
+    ["dns_failed", async () => { throw Object.assign(new Error("secret query/token"), { code: "ENOTFOUND" }); }],
+    ["dns_timeout", async () => { throw Object.assign(new Error("secret"), { code: "ETIMEOUT" }); }]] as const)("reports only %s after authenticated DNS failure", async (expected, resolve) => {
+    const report = vi.fn(), begin = vi.fn(() => report), f = await fixture(resolve, {}, ["example.com"], begin);
+    const denied = await request(f.proxy); expect(await denied.response).toContain("407"); expect(begin).not.toHaveBeenCalled();
+    const r = await request(f.proxy, { auth: authorization(f.proxy) }); expect(await r.response).toContain("403");
+    expect(begin).toHaveBeenCalledExactlyOnceWith("example.com"); expect(report).toHaveBeenCalledExactlyOnceWith(expected); expect(f.dial).not.toHaveBeenCalled();
+  });
+  it("does not publish late DNS failure after revocation", async () => {
+    const pending = deferred<typeof publicAnswer>(), report = vi.fn(), begin = vi.fn(() => report);
+    const f = await fixture(() => pending.promise, {}, ["example.com"], begin);
+    const r = await request(f.proxy, { auth: authorization(f.proxy) }); const response = r.response.catch(() => "closed");
+    await vi.waitFor(() => expect(begin).toHaveBeenCalledOnce()); await f.proxy.revoke(); pending.resolve([{ address: "198.18.0.9", family: 4 }]); await response;
+    expect(report).not.toHaveBeenCalled();
+  });
   it.each(["foreign.example:443", "sub.example.com:443", "example.com.evil.example:443", "93.184.216.34:443"])("rejects out-of-scope authority %s before DNS or dial", async (authority) => {
     const f = await fixture(undefined, {}, ["example.com", "assets.example.com"]);
     const r = await request(f.proxy, { auth: authorization(f.proxy), authority });

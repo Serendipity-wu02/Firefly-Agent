@@ -36,6 +36,7 @@ export function ManualBrowserTab({ sessionId, workspaceId, tabId, active = true,
   const ownerKey = workspaceId && tabId ? workspaceId : ownerSessionId;
   const { t } = useTranslation();
   const [address, setAddress] = useState("");
+  const [agentSites, setAgentSites] = useState(""), [agentResources, setAgentResources] = useState("");
   const [commandPending, setCommandPending] = useState(false), [closing, setClosing] = useState(false);
   const [stateFailure, setStateFailure] = useState(false), [stateBusy, setStateBusy] = useState(false);
   const [available, setAvailable] = useState(false), [checked, setChecked] = useState(false);
@@ -79,7 +80,7 @@ export function ManualBrowserTab({ sessionId, workspaceId, tabId, active = true,
         if (!dto.closed && !dto.loading && dto.url && !scope.permissionBusy && !scope.preserveAddress && !scope.addressDirty && !scope.commandPending) setAddress(dto.url);
       },
     };
-    scopeRef.current = scope; setAvailable(false); setChecked(false); setAddress(""); setFailure(null); setPermission(null); setPermissionBusy(false); setSelectedResources({ browserId: "", requestId: 0, hosts: [] }); setScopeReloaded(false);
+    scopeRef.current = scope; setAvailable(false); setChecked(false); setAddress(""); setAgentSites(""); setAgentResources(""); setFailure(null); setPermission(null); setPermissionBusy(false); setSelectedResources({ browserId: "", requestId: 0, hosts: [] }); setScopeReloaded(false);
     setPage(emptyPage(ownerSessionId, workspaceId, tabId));
     setCommandPending(false); setClosing(false); setStateFailure(false); setStateBusy(false);
     const readPermission = (includePage = false) => {
@@ -176,6 +177,12 @@ export function ManualBrowserTab({ sessionId, workspaceId, tabId, active = true,
       } else await recoverPermission(scope, isCurrent, reply.code);
     } catch { if (isCurrent()) await recoverPermission(scope, isCurrent, "permission_denied"); }
     finally { if (isCurrent()) { scope.permissionBusy = false; setPermissionBusy(false); } }
+  }
+  function authorizeAgentSites() {
+    const current = scopeRef.current?.permission;
+    if (!current?.agentSiteSelection || !current.agentScope || workspaceId) return;
+    const split = (value: string) => [...new Set(value.split(/[\s,]+/).filter(Boolean))];
+    void changePermission(false, { mode: "agent", site: true, hosts: split(agentSites), resourceHosts: split(agentResources), actions: current.agentScope.actions });
   }
   function rejectAddress(scope: Scope) {
     scope.commandRevision++; scope.commandPending = false; setCommandPending(false);
@@ -334,7 +341,7 @@ export function ManualBrowserTab({ sessionId, workspaceId, tabId, active = true,
     panel: t("browserWorkspace.title"), address: t("browserWorkspace.address"), go: t("browserWorkspace.go"),
     back: t("browserWorkspace.back"), forward: t("browserWorkspace.forward"), reload: t("browserWorkspace.reload"), stop: t("browserWorkspace.stop"), close: t("browserWorkspace.close"),
     loading: t("browserWorkspace.loading"), blocked: t(available ? "browserWorkspace.blocked" : checked ? "browserWorkspace.unavailable" : "browserWorkspace.checking"),
-    loadFailed: t("browserWorkspace.loadFailed"), closed: t(closing ? "browserWorkspace.closing" : failure === "cleanup_failed" ? "browserWorkspace.cleanupFailed" : "browserWorkspace.closed"),
+    loadFailed: t(failure === "restricted_address" ? "browserWorkspace.restrictedAddress" : failure === "dns_failed" ? "browserWorkspace.dnsFailed" : failure === "dns_timeout" ? "browserWorkspace.dnsTimeout" : failure === "connection_failed" ? "browserWorkspace.connectionFailed" : "browserWorkspace.loadFailed"), closed: t(closing ? "browserWorkspace.closing" : failure === "cleanup_failed" ? "browserWorkspace.cleanupFailed" : "browserWorkspace.closed"),
     committedUrl: t("browserWorkspace.currentPage"), addressHint: t("browserWorkspace.addressHint"), addressPlaceholder: t("browserWorkspace.addressPlaceholder"),
     viewport: t("browserWorkspace.viewport"), empty: t(ownerKey ? "browserWorkspace.ready" : "browserWorkspace.sessionRequired"),
   };
@@ -364,6 +371,15 @@ export function ManualBrowserTab({ sessionId, workspaceId, tabId, active = true,
         disabled={!manual && (permissionBusy || permission?.status === "pending")} onClick={() => void changePermission(granted || permissionBusy || permission?.status === "pending")}>
         {t(manual && (permissionBusy || permission?.status === "pending") ? "browserWorkspace.cancelPermission" : permissionBusy || permission?.status === "pending" ? "browserWorkspace.permissionPending" : granted ? !manual && permission?.agentScope ? "browserWorkspace.switchToManual" : "browserWorkspace.revoke" : "browserWorkspace.enable")}
       </button>}
+      {!workspaceId && permission?.agentSiteSelection && <details className="ff-browser-agent-consent">
+        <summary>{t("browserWorkspace.agentChooseSites")}</summary>
+        <p>{t("browserWorkspace.agentExactSitesHelp")}</p>
+        <label>{t("browserWorkspace.agentSites")}<textarea data-browser-agent-sites value={agentSites} onChange={event => setAgentSites(event.currentTarget.value)} /></label>
+        <label>{t("browserWorkspace.agentResources")}<textarea data-browser-agent-resources value={agentResources} onChange={event => setAgentResources(event.currentTarget.value)} /></label>
+        {!!scopeRef.current?.page?.blockedResourceHosts?.length && <p>{t("browserWorkspace.blockedResources")}: {scopeRef.current.page.blockedResourceHosts.join(", ")}</p>}
+        <button type="button" data-browser-authorize-agent-sites disabled={permissionBusy || !agentSites.trim() || failure === "cleanup_failed"}
+          onClick={authorizeAgentSites}>{t("browserWorkspace.authorizeAgent")}</button>
+      </details>}
       {manual && permission?.agentScope && <details className="ff-browser-agent-consent">
         <summary>{t("browserWorkspace.separateAgent")}</summary>
         <p>{t("browserWorkspace.agentScope")}</p>

@@ -6,6 +6,7 @@ import { localAuthorityFromUrl, localAuthorityKey, parseLocalAuthority, parseLoc
 import { createBrowserAuthorizationDomainRegistry } from "./browser-authorization-domain";
 import { createBrowserNetworkController, type BrowserNetworkBinding, type BrowserNetworkReply } from "./browser-network-binding";
 import { isAccountPath } from "../../shared/browser-account-policy";
+import type { BrowserConnectionError } from "../../shared/manual-browser";
 import type { ProxyChallenge } from "./authenticated-connect-proxy";
 import type { BrowserDomainContext } from "./browser-authorization-domain";
 import type { BrowserNetworkDependencies, BrowserViewPort } from "./browser-network-binding";
@@ -24,12 +25,14 @@ export interface BrowserGuestPort<S extends object> extends BrowserViewPort<S> {
   observe?(hosts?: readonly string[]): Promise<BrowserObservation>; act?(input: BrowserDomInput): Promise<boolean>;
   snapshot(): { url: string; canGoBack: boolean; canGoForward: boolean };
   stop(): void; attach(host: BrowserHostPort): void; detach(): void; setBounds(bounds: BrowserBounds): void;
-  installCallbacks(callbacks: { allowsNavigation(url: string): boolean; started(url: string): void; changed(): void; failed(): void; destroyed(): void }): void;
+  installCallbacks(callbacks: { allowsNavigation(url: string): boolean; started(url: string, redirect?: boolean): void; changed(): void; failed(code?: number, url?: string): void; destroyed(): void }): void;
 }
 export interface BrowserServiceOptions<S extends object> extends Omit<BrowserNetworkDependencies<S>, "createView"> {
   profile: object; gateOpen?: boolean;
   /** Main composition only. Manual site grants never authorize agent operations. */
   manualBrowsing?: boolean;
+  /** Explicit composition capability; legacy grants remain bounded by permissionPolicy. */
+  agentSiteSelection?: boolean;
   permissionPolicy?: BrowserPermissionScope;
   /** Main-owned native confirmation; never provided by renderer or a tool. */
   confirmPermission?(owner: TrustedBrowserOwner, scope: BrowserPermissionScope, signal: AbortSignal): Promise<boolean>;
@@ -70,7 +73,7 @@ export function createBrowserService<S extends object>(options: BrowserServiceOp
   type Host = { host: BrowserHostPort; resolveOwner(event: BrowserInvokeEvent): TrustedBrowserOwner | null; current?: Owner; transitioning: boolean; lastGeneration: number; detach(): void; overlay: boolean; visible: boolean; focused: boolean };
   type PendingPermission = { id: string; scope: BrowserPermissionScope; cancel: AbortController; promise: Promise<BrowserReply<BrowserPermissionDto>> };
   type Owner = { agentBusy?: boolean; grant?: BrowserPermissionScope; pending?: PendingPermission; denied?: boolean; value: TrustedBrowserOwner; host: Host; event: BrowserInvokeEvent; retired: boolean; cells: Set<Cell> };
-  type Cell = { observation?: { value: BrowserObservation; requestId: number; runId: string }; owner: Owner; context: BrowserDomainContext; abort: AbortController; page: BrowserPageDto; preparing?: Promise<BrowserNetworkReply<BrowserNetworkBinding<S>>>; binding?: BrowserNetworkBinding<S>; guest?: BrowserGuestPort<S>; navigation?: AbortController; manualRequestId?: number; closing: boolean; failed: boolean; cleanup?: Promise<BrowserReply<null>>; onAbort(): void };
+  type Cell = { connectionFailure?: BrowserConnectionError | "load_failed"; attached: boolean; presentationRevision: number; observation?: { value: BrowserObservation; requestId: number; runId: string }; owner: Owner; context: BrowserDomainContext; abort: AbortController; page: BrowserPageDto; preparing?: Promise<BrowserNetworkReply<BrowserNetworkBinding<S>>>; binding?: BrowserNetworkBinding<S>; guest?: BrowserGuestPort<S>; navigation?: AbortController; manualRequestId?: number; closing: boolean; failed: boolean; cleanup?: Promise<BrowserReply<null>>; onAbort(): void };
   const hosts = new Map<BrowserHostPort, Host>(), owners = new WeakMap<TrustedBrowserOwner, Owner>(), retired = new WeakSet<TrustedBrowserOwner>();
   const cells = new Map<string, Cell>(), guests = new WeakMap<S, BrowserGuestPort<S>>(), byContents = new WeakMap<object, Cell>();
   const registered = new WeakSet<object>();
@@ -106,11 +109,12 @@ export function createBrowserService<S extends object>(options: BrowserServiceOp
       ...(owner.value.workspaceId === undefined ? {} : { workspaceId: owner.value.workspaceId }),
       status: owner.pending ? "pending" : owner.grant ? "granted" : owner.denied ? "denied" : "required",
       scope: owner.pending?.scope ?? owner.grant ?? policy ?? Object.freeze({ hosts: [], actions: [] }),
-      ...(manualBrowsing && agentPolicy && owner.value.workspaceId === undefined ? { agentScope: agentPolicy } : {}), requestId: owner.pending?.id ?? null }) as BrowserPermissionDto;
+      ...(manualBrowsing && agentPolicy && owner.value.workspaceId === undefined ? { agentScope: agentPolicy, ...(options.agentSiteSelection ? { agentSiteSelection: true } : {}) } : {}), requestId: owner.pending?.id ?? null }) as BrowserPermissionDto;
   }
   function parseScope(input: unknown, owner: Owner): BrowserPermissionScope | null {
     if (!policy || !input || typeof input !== "object") return null;
     const value = input as Record<string, unknown>;
+    if (value.mode === "manual" && value.site !== undefined) return null;
     if (value.mode === "manual" && value.web === true) {
       // Ordinary browsing belongs to the window workspace only. No lists, no provenance, no Agent action.
       if (!manualBrowsing || owner.value.workspaceId === undefined || value.sourceBrowserId !== undefined || value.sourceRequestId !== undefined
@@ -144,10 +148,25 @@ export function createBrowserService<S extends object>(options: BrowserServiceOp
       }
       return Object.freeze({ mode: "manual", hosts: Object.freeze([primary]), resourceHosts: Object.freeze(resourceHosts), actions: Object.freeze(["navigate"] as BrowserAction[]) });
     }
+    if (value.site !== undefined) {
+      if (value.site !== true || value.mode !== "agent" || !options.agentSiteSelection || !agentPolicy
+        || owner.value.workspaceId !== undefined || value.web !== undefined
+        || Object.keys(value).some(key => !["mode", "site", "hosts", "resourceHosts", "actions"].includes(key))) return null;
+      const validHosts = (input: unknown, maximum: number): input is string[] => Array.isArray(input) && input.length <= maximum
+        && input.every(host => typeof host === "string" && host.length <= 253 && !isIP(host)
+          && validatePublicBrowserUrl(`https://${host}/`) === `https://${host}/` && new URL(`https://${host}/`).hostname === host
+          && host.includes(".") && !host.endsWith("."));
+      if (!validHosts(value.hosts, 8) || !value.hosts.length || !validHosts(value.resourceHosts ?? [], 16)
+        || !Array.isArray(value.actions) || !value.actions.length || value.actions.length > agentPolicy.actions.length
+        || !value.actions.every(action => agentPolicy.actions.includes(action))) return null;
+      const hosts = [...new Set(value.hosts)].sort(), resources = [...new Set((value.resourceHosts ?? []) as string[])].filter(host => !hosts.includes(host)).sort();
+      return Object.freeze({ mode: "agent", site: true, hosts: Object.freeze(hosts), resourceHosts: Object.freeze(resources),
+        actions: Object.freeze(agentPolicy.actions.filter(action => (value.actions as unknown[]).includes(action))) });
+    }
     // Legacy untagged proposals still require the explicit native Agent dialog.
     // Never erase a manual tag or reinterpret manual resource provenance as Agent authority.
     if (owner.value.workspaceId !== undefined || !agentPolicy || (value.mode !== undefined && value.mode !== "agent")
-      || value.resourceHosts !== undefined || value.sourceBrowserId !== undefined || value.sourceRequestId !== undefined) return null;
+      || value.web !== undefined || value.resourceHosts !== undefined || value.sourceBrowserId !== undefined || value.sourceRequestId !== undefined) return null;
     if (!Array.isArray(value.hosts) || !value.hosts.length || value.hosts.length > agentPolicy.hosts.length || !Array.isArray(value.actions) || !value.actions.length || value.actions.length > agentPolicy.actions.length) return null;
     if (!value.hosts.every(host => typeof host === "string" && agentPolicy.hosts.includes(host)) || !value.actions.every(action => agentPolicy.actions.includes(action))) return null;
     const hosts = value.hosts as string[], actions = value.actions as BrowserAction[];
@@ -181,9 +200,18 @@ export function createBrowserService<S extends object>(options: BrowserServiceOp
         && context.workspaceId === owner.value.workspaceId
         && context.generation === owner.value.generation && cells.get(context.browserId)?.owner === owner;
     } });
-  const network = createBrowserNetworkController(registry, { ...options, onRequestBlocked: (context, request) => {
+  const network = createBrowserNetworkController(registry, { ...options, beginConnection: (context, host) => {
     const cell = cells.get(context.browserId);
-    if (!cell || cell.context.signal !== context.signal || !usable(cell) || cell.owner.grant?.mode !== "manual") return;
+    if (!cell || cell.context.signal !== context.signal || !usable(cell) || !cell.page.loading || !cell.page.pendingUrl) return;
+    const { requestId, pendingUrl } = cell.page;
+    if (new URL(pendingUrl).hostname !== host) return;
+    return code => {
+      if (!usable(cell) || !cell.page.loading || cell.page.requestId !== requestId || cell.page.pendingUrl !== pendingUrl) return;
+      cell.connectionFailure = cell.connectionFailure === undefined || cell.connectionFailure === code ? code : "load_failed";
+    };
+  }, onRequestBlocked: (context, request) => {
+    const cell = cells.get(context.browserId);
+    if (!cell || cell.context.signal !== context.signal || !usable(cell) || !cell.owner.grant) return;
     if (request.webContentsId !== undefined && request.webContentsId !== cell.guest?.contents.id) return;
     if (cell.owner.grant.web === true) {
       // Every public HTTPS host is already allowed; a block here means an unsupported scheme, port or private target.
@@ -219,8 +247,18 @@ export function createBrowserService<S extends object>(options: BrowserServiceOp
     }
   }
   function usable(cell: Cell): boolean { return !cell.closing && !cell.abort.signal.aborted && current(cell.owner) && cell.binding?.isCurrent() === true; }
+  function hostVisible(owner: Owner): boolean {
+    const entry = owner.host;
+    return !owner.pending && !entry.overlay && entry.visible && entry.focused && entry.host.isVisible() && entry.host.isFocused();
+  }
+  function presented(cell: Cell): boolean { return cell.attached && hostVisible(cell.owner); }
+  function detach(cell: Cell): void {
+    // A later attach must never revive an observation made before the user hid the page.
+    cell.attached = false; cell.presentationRevision++; cell.observation = undefined;
+    cell.guest?.detach();
+  }
   function blockedNavigation(cell: Cell, input: string): void {
-    if (!usable(cell) || cell.owner.grant?.mode !== "manual") return;
+    if (!usable(cell) || !cell.owner.grant) return;
     // Switching between public and private networks is possible only from the address bar,
     // never by a link, redirect or script inside a page. Cross-class attempts only set blockedRequest.
     const url = localGrant(cell.owner) || parseLocalBrowserUrl(input) ? null : validatePublicBrowserUrl(input);
@@ -230,8 +268,8 @@ export function createBrowserService<S extends object>(options: BrowserServiceOp
   }
   function terminate(cell: Cell): void {
     if (cell.closing) return;
-    cell.closing = true; cell.navigation?.abort(); cell.abort.abort();
-    try { cell.guest?.detach(); } catch { cell.failed = true; }
+    cell.closing = true; cell.connectionFailure = undefined; cell.navigation?.abort(); cell.abort.abort();
+    try { detach(cell); } catch { cell.failed = true; }
     cell.binding?.revoke();
     cell.page = { ...cell.page, requestId: cell.page.requestId + 1, closed: true, loading: false, pendingUrl: null, canGoBack: false, canGoForward: false, error: null };
     publish(cell);
@@ -268,7 +306,7 @@ export function createBrowserService<S extends object>(options: BrowserServiceOp
   }
   async function navigate(cell: Cell, url: string, action?: "back" | "forward" | "reload"): Promise<BrowserReply<BrowserPageDto>> {
     if (!usable(cell) || !cell.guest) return fail(cell.owner.value.signal.aborted ? "cancelled" : "owner_mismatch");
-    cell.observation = undefined; cell.navigation?.abort();
+    cell.observation = undefined; cell.connectionFailure = undefined; cell.navigation?.abort();
     const navigation = new AbortController(); cell.navigation = navigation;
     const requestId = cell.page.requestId + 1;
     cell.manualRequestId = requestId;
@@ -288,11 +326,15 @@ export function createBrowserService<S extends object>(options: BrowserServiceOp
       if (!usable(cell)) { terminate(cell); return fail(cell.owner.value.signal.aborted ? "cancelled" : "owner_mismatch"); }
       const native = cell.guest.snapshot(), committed = allowedUrl(cell.owner, native.url);
       if (!committed) throw new Error("invalid committed destination");
+      cell.connectionFailure = undefined;
       cell.page = { ...cell.page, loading: false, pendingUrl: null, url: committed, canGoBack: native.canGoBack, canGoForward: native.canGoForward };
       publish(cell); return { ok: true, value: Object.freeze({ ...cell.page }) };
-    } catch {
+    } catch (error) {
       if (navigation.signal.aborted || cell.page.requestId !== requestId || !usable(cell)) return fail(cell.owner.value.signal.aborted || navigation.signal.aborted ? "cancelled" : "owner_mismatch");
-      cell.page = { ...cell.page, loading: false, pendingUrl: null, error: "load_failed" }; publish(cell); return fail("load_failed");
+      const tunnel = error !== null && typeof error === "object" && (("code" in error && error.code === "ERR_TUNNEL_CONNECTION_FAILED") || ("errno" in error && error.errno === -111));
+      const code = tunnel ? cell.connectionFailure ?? "load_failed" : "load_failed";
+      cell.connectionFailure = undefined;
+      cell.page = { ...cell.page, loading: false, pendingUrl: null, error: code }; publish(cell); return fail(code);
     } finally { navigation.signal.removeEventListener("abort", stop); if (abort) navigation.signal.removeEventListener("abort", abort); if (cell.manualRequestId === requestId) cell.manualRequestId = undefined; if (cell.navigation === navigation) cell.navigation = undefined; }
   }
   async function execute(ownerValue: TrustedBrowserOwner, input: unknown): Promise<BrowserReply<BrowserPageDto | null>> {
@@ -311,7 +353,7 @@ export function createBrowserService<S extends object>(options: BrowserServiceOp
       const identity = { conversationId: ownerValue.conversationId,
         ...(ownerValue.workspaceId === undefined ? {} : { workspaceId: ownerValue.workspaceId }) };
       const context = Object.freeze({ owner: ownerValue, profile: options.profile, ...identity, browserId, generation: ownerValue.generation, signal: abort.signal });
-      const cell: Cell = { owner, context, abort, closing: false, failed: false,
+      const cell: Cell = { owner, context, abort, attached: false, presentationRevision: 0, closing: false, failed: false,
         page: { browserId, ...identity, requestId: 0, closed: false, loading: true, url: "", pendingUrl: url, canGoBack: false, canGoForward: false, error: null } as BrowserPageDto,
         onAbort: () => { terminate(cell); void cleanup(cell); } };
       cells.set(browserId, cell); owner.cells.add(cell); ownerValue.signal.addEventListener("abort", cell.onAbort, { once: true });
@@ -331,9 +373,21 @@ export function createBrowserService<S extends object>(options: BrowserServiceOp
       if (!usable(cell) || !cell.guest) { await cleanup(cell); return fail(ownerValue.signal.aborted ? "cancelled" : "owner_mismatch"); }
       registered.add(cell.guest.contents); byContents.set(cell.guest.contents, cell);
       cell.guest.installCallbacks({ allowsNavigation: target => { const allowed = usable(cell) && allowedUrl(owner, target) !== null; if (!allowed) blockedNavigation(cell, target); return allowed; },
-        started: target => { if (usable(cell) && cell.manualRequestId === undefined && allowedUrl(owner, target)) { cell.page = { ...cell.page, requestId: cell.page.requestId + 1, loading: true, pendingUrl: target, error: null,
+        started: (target, redirect) => {
+          if (!usable(cell) || !allowedUrl(owner, target)) return;
+          if (cell.manualRequestId !== undefined || redirect) {
+            if (cell.page.loading && cell.page.pendingUrl !== target) {
+              cell.connectionFailure = undefined; cell.page = { ...cell.page, pendingUrl: target }; publish(cell);
+            }
+            return;
+          }
+          { cell.connectionFailure = undefined; cell.page = { ...cell.page, requestId: cell.page.requestId + 1, loading: true, pendingUrl: target, error: null,
           ...(owner.grant?.mode === "manual" ? { blockedResourceHosts: [], blockedNavigationUrl: undefined, blockedRequest: false } : {}) }; publish(cell); } },
-        changed: () => snapshot(cell), failed: () => { if (usable(cell) && cell.manualRequestId === undefined) { cell.page = { ...cell.page, loading: false, pendingUrl: null, error: "load_failed" }; publish(cell); } },
+        changed: () => snapshot(cell), failed: (code, url) => { cell.observation = undefined; if (usable(cell) && cell.manualRequestId === undefined) {
+          if (url !== undefined && url !== cell.page.pendingUrl) return;
+          const error = code === -111 ? cell.connectionFailure ?? "load_failed" : "load_failed";
+          cell.connectionFailure = undefined; cell.page = { ...cell.page, loading: false, pendingUrl: null, error }; publish(cell);
+        } },
         destroyed: () => { if (!cell.closing) void cleanup(cell); } });
       return navigate(cell, url);
     }
@@ -349,7 +403,7 @@ export function createBrowserService<S extends object>(options: BrowserServiceOp
       if (!cell.page.loading) return { ok: true, value: Object.freeze({ ...cell.page }) };
       const requestId = cell.page.requestId + 1;
       cell.manualRequestId = requestId;
-      cell.observation = undefined;
+      cell.observation = undefined; cell.connectionFailure = undefined;
       try {
         if (cell.navigation) cell.navigation.abort(); else cell.guest.stop();
         if (cell.failed) throw new Error("browser stop failed");
@@ -372,14 +426,13 @@ export function createBrowserService<S extends object>(options: BrowserServiceOp
       if ((command.action === "back" && !native.canGoBack) || (command.action === "forward" && !native.canGoForward) || !cell.page.url) return fail("closed");
       return navigate(cell, cell.page.url, command.action);
     }
-    if (command.bounds === null || owner.pending || owner.host.overlay || !owner.host.visible || !owner.host.focused
-      || !ownerValue.host.isVisible() || !ownerValue.host.isFocused()) cell.guest.detach();
+    if (command.bounds === null || !hostVisible(owner)) detach(cell);
     else {
       const [width, height] = ownerValue.host.getContentSize(), left = Math.trunc(command.bounds.x), top = Math.trunc(command.bounds.y);
       const x = Math.max(0, Math.min(width, left)), y = Math.max(0, Math.min(height, top));
       const bounds = { x, y, width: Math.max(0, Math.min(width, left + Math.trunc(command.bounds.width)) - x), height: Math.max(0, Math.min(height, top + Math.trunc(command.bounds.height)) - y) };
-      if (!bounds.width || !bounds.height) cell.guest.detach();
-      else { if (!usable(cell)) return fail("owner_mismatch"); cell.guest.setBounds(bounds); cell.guest.attach(ownerValue.host); }
+      if (!bounds.width || !bounds.height) detach(cell);
+      else { if (!usable(cell)) return fail("owner_mismatch"); cell.guest.setBounds(bounds); cell.guest.attach(ownerValue.host); cell.attached = true; }
     }
     return { ok: true, value: Object.freeze({ ...cell.page }) };
   }
@@ -471,6 +524,7 @@ export function createBrowserService<S extends object>(options: BrowserServiceOp
     if (command.operation !== "open" && (!cell || cell.closing)) return fail("closed");
     if (cell && cell.owner !== owner) return fail("owner_mismatch");
     if (command.operation !== "open" && (!cell || !usable(cell) || !cell.guest)) return fail("owner_mismatch");
+    if (command.operation !== "close" && (!hostVisible(owner!) || (command.operation !== "open" && !presented(cell!)))) return fail("permission_denied");
     const grant = owner!.grant;
     const stillCurrent = () => runCurrent() && owner!.grant === grant;
     const cancel = () => { clearPermission(owner!); for (const owned of owner!.cells) { terminate(owned); void cleanup(owned); } };
@@ -486,12 +540,13 @@ export function createBrowserService<S extends object>(options: BrowserServiceOp
         if (command.operation === "navigate") return execute(ownerValue, { kind: "navigate", browserId: cell.page.browserId, url: command.url });
         if (["back", "forward", "reload"].includes(command.operation)) return execute(ownerValue, { kind: "history", browserId: cell.page.browserId, action: command.operation });
         if (command.operation === "close") return execute(ownerValue, { kind: "close", browserId: cell.page.browserId });
-        if (cell.page.loading || !allowedUrl(owner!, cell.page.url)) return fail("permission_denied");
-        const requestId = cell.page.requestId;
+        if (!presented(cell) || cell.page.loading || !allowedUrl(owner!, cell.page.url)) return fail("permission_denied");
+        const requestId = cell.page.requestId, presentationRevision = cell.presentationRevision;
+        const samePresentation = () => presented(cell!) && cell!.presentationRevision === presentationRevision;
         if (command.operation === "observe") {
           if (!cell.guest.observe) return fail("network_unavailable");
           const value = await cell.guest.observe(grant!.hosts);
-          if (!stillCurrent() || !usable(cell) || cell.page.requestId !== requestId || value.url !== cell.page.url) return fail("cancelled");
+          if (!stillCurrent() || !usable(cell) || !samePresentation() || cell.page.requestId !== requestId || value.url !== cell.page.url) return fail("cancelled");
           cell.observation = { value, requestId, runId: run.runId };
           return { ok: true, value };
         }
@@ -502,7 +557,7 @@ export function createBrowserService<S extends object>(options: BrowserServiceOp
         cell.observation = undefined;
         if (!stillCurrent()) return fail("cancelled");
         const acted = await cell.guest.act({ kind: command.operation as "click" | "type", snapshotId: observed.value.snapshotId, ref: command.ref!, text: command.text, url: observed.value.url, hosts: grant!.hosts });
-        if (!stillCurrent() || !usable(cell)) return fail("cancelled");
+        if (!stillCurrent() || !usable(cell) || !samePresentation()) return fail("cancelled");
         return acted ? { ok: true, value: Object.freeze({ ...cell.page }) } : fail("permission_denied");
       })();
       const result = await Promise.race([operation, new Promise<BrowserReply<never>>(resolve => {
@@ -518,7 +573,7 @@ export function createBrowserService<S extends object>(options: BrowserServiceOp
   }
   function registerHost(host: BrowserHostPort, resolveOwner: Host["resolveOwner"]): () => void {
     if (stopping || hosts.has(host) || host.isDestroyed()) throw new Error("browser host unavailable");
-    const detachGuests = () => { for (const cell of entry.current?.cells ?? []) cell.guest?.detach(); };
+    const detachGuests = () => { for (const cell of entry.current?.cells ?? []) detach(cell); };
     const hidden = () => { entry.visible = false; detachGuests(); };
     const blurred = () => { entry.focused = false; detachGuests(); };
     const shown = () => { entry.visible = true; };
@@ -545,6 +600,6 @@ export function createBrowserService<S extends object>(options: BrowserServiceOp
     isEnabled: () => (gateOpen || !!policy) && !stopping,
     isRegisteredBrowser: (contents: object) => registered.has(contents),
     credentialsFor: (contents: object, challenge: ProxyChallenge) => { const cell = byContents.get(contents); return cell && usable(cell) && cell.guest?.contents === contents ? cell.binding?.credentialsFor(cell.guest.contents, challenge) ?? null : null; },
-    setTrustedOverlay(host: BrowserHostPort, visible: boolean) { const entry = hosts.get(host); if (!entry) return; entry.overlay = visible; if (visible) for (const cell of entry.current?.cells ?? []) cell.guest?.detach(); },
+    setTrustedOverlay(host: BrowserHostPort, visible: boolean) { const entry = hosts.get(host); if (!entry) return; entry.overlay = visible; if (visible) for (const cell of entry.current?.cells ?? []) detach(cell); },
   });
 }

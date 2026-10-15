@@ -840,6 +840,10 @@
     "loading": "正在加载页面…",
     "blocked": "浏览器安全策略已阻止此地址。",
     "loadFailed": "页面加载失败。",
+    "restrictedAddress": "解析结果属于受限网络地址，未连接该页面。",
+    "dnsFailed": "无法解析网站地址。",
+    "dnsTimeout": "解析网站地址超时。",
+    "connectionFailed": "无法连接到网站。",
     "cleanupFailed": "浏览器清理失败，浏览已禁用。请手动重启 Firefly_Agent 后再试。",
     "ready": "输入网址或搜索内容开始浏览。",
     "newTabTitle": "新标签页",
@@ -873,7 +877,7 @@
     "stop": "停止加载",
     "manualScope": "输入公开 HTTPS 地址并点击“前往”，在系统确认框中授权该精确网站。访问其他网站或增加资源域名需重新授权，并清空当前页面、会话及历史记录。关闭页面、撤销授权或切换会话后，授权失效。",
     "manualLimits": "手动浏览授权不允许助手读取页面、点击或输入。不支持登录；POST、常见登录路径、HTTP 身份验证、上传请求、下载及设备权限均被拒绝。请勿输入凭据或敏感信息。部分网站将无法正常使用。",
-    "agentScope": "代理浏览须另行通过原生确认，仅限这里列出的固定域名和动作，不沿用手动站点或资源授权。切换授权会关闭当前页面并清空会话和浏览历史。",
+    "agentScope": "代理浏览需单独通过原生确认授权列出的精确域名和动作，不沿用手动授权。切换授权将关闭当前页面，清空会话和历史。",
     "authorizeAgent": "单独授权代理浏览",
     "switchToManual": "撤销代理授权并改用手动浏览",
     "cancelPermission": "取消授权",
@@ -895,7 +899,11 @@
     "retryState": "重新检查浏览器状态",
     "manualMode": "手动浏览",
     "agentMode": "代理浏览",
-    "separateAgent": "单独的代理浏览授权"
+    "separateAgent": "单独的代理浏览授权",
+    "agentChooseSites": "选择 Agent 站点",
+    "agentSites": "可导航域名（最多 8 个）",
+    "agentResources": "仅资源域名（可选，最多 16 个）",
+    "agentExactSitesHelp": "填写精确小写域名，以逗号或空格分隔，不填网址或通配符。每次更改都需原生确认并关闭旧页面。资源域可提供脚本和数据，但不能导航为页面。被阻止的资源仅供参考，请仅填写信任的域名。"
   },
   "workspace": {
     "resizeSidebar": "调整会话侧栏宽度",
