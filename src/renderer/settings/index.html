@@ -807,6 +807,52 @@
               <div id="memory-entries-body" class="memory-entries"></div>
             </section>
 
+            <!-- 影子抽取（实验） -->
+            <section class="settings-list memory-section" id="memory-shadow" aria-labelledby="memory-shadow-title">
+              <header class="memory-section__head">
+                <h2 id="memory-shadow-title"><span data-i18n="settings.panel.memory.shadow.title">影子抽取（实验）</span></h2>
+                <p><span data-i18n="settings.panel.memory.shadow.desc">让模型从聊天里挑出可能值得记住的偏好，只放进一份单独的本地记录，用来评估准确度。它们不会进入你的记忆，也不会用于回答。</span></p>
+                <p><span data-i18n="settings.panel.memory.shadow.privacySaved">不会保存健康、财务、证件、住址、联系方式或别人的事。</span> <strong><span data-i18n="settings.panel.memory.shadow.privacySent">但你每条消息的原文（以及它前面的一条回复）会再发送一次给当前使用的模型服务商，可能产生额外费用；只有明显的密钥和密码不会发送。</span></strong></p>
+              </header>
+              <p class="memory-section__hint" id="memory-shadow-note" role="status" hidden></p>
+              <div id="memory-shadow-body" hidden>
+                <div class="setting-row">
+                  <div><strong><span data-i18n="settings.panel.memory.shadow.enable">启用影子抽取</span></strong><span data-i18n="settings.panel.memory.shadow.enableHint">默认关闭。开启后，每次聊天回复成功结束，会用本次对话所用的模型额外请求一次。</span></div>
+                  <span class="switch"><input id="memory-shadow-enabled" type="checkbox" aria-label="启用影子抽取" data-i18n-aria-label="settings.panel.memory.shadow.enable" /><span class="switch__track"><span class="switch__thumb"></span></span></span>
+                </div>
+                <div class="setting-row is-hidden" id="memory-shadow-consent" role="group" aria-labelledby="memory-shadow-consent-title">
+                  <div><strong id="memory-shadow-consent-title"><span data-i18n="settings.panel.memory.shadow.confirmTitle">确认开启？</span></strong><span data-i18n="settings.panel.memory.shadow.confirmBody">开启后，你的聊天消息会额外发送给当前模型服务商，并产生额外调用费用。随时可以关闭。</span></div>
+                  <div class="memory-section__actions">
+                    <button type="button" class="ghost-btn" id="memory-shadow-consent-cancel"><span data-i18n="settings.panel.memory.shadow.cancel">取消</span></button>
+                    <button type="button" class="save-btn" id="memory-shadow-consent-ok"><span data-i18n="settings.panel.memory.shadow.confirm">确认开启</span></button>
+                  </div>
+                </div>
+                <div class="setting-row">
+                  <div><strong><label for="memory-shadow-cap" data-i18n="settings.panel.memory.shadow.cap">每日调用上限</label></strong><span data-i18n="settings.panel.memory.shadow.capHint">每天最多额外请求的次数（1 到 1000）。到达上限当天不再请求；额度不足或被限流时当天也会自动停止。</span></div>
+                  <div class="memory-section__actions">
+                    <input id="memory-shadow-cap" type="number" min="1" max="1000" step="1" inputmode="numeric" />
+                    <button type="button" class="save-btn" id="memory-shadow-cap-save"><span data-i18n="settings.panel.memory.shadow.capSave">保存上限</span></button>
+                  </div>
+                </div>
+                <div class="setting-row"><div><strong><span data-i18n="settings.panel.memory.shadow.status">状态</span></strong><span id="memory-shadow-status">—</span></div></div>
+                <div class="setting-row"><div><strong><span data-i18n="settings.panel.memory.shadow.usage">今日调用</span></strong><span id="memory-shadow-usage">—</span></div></div>
+                <div class="setting-row"><div><strong><span data-i18n="settings.panel.memory.shadow.records">有效记录</span></strong><span id="memory-shadow-records">—</span></div></div>
+                <div class="setting-row"><div><strong><span data-i18n="settings.panel.memory.shadow.detail">今日统计</span></strong><span id="memory-shadow-detail">—</span></div></div>
+                <div class="setting-row is-hidden" id="memory-shadow-clear-confirm" role="group" aria-labelledby="memory-shadow-clear-title">
+                  <div><strong id="memory-shadow-clear-title"><span data-i18n="settings.panel.memory.shadow.clearConfirmTitle">确认清空？</span></strong><span data-i18n="settings.panel.memory.shadow.clearBody">会立即永久删除全部影子记录；今天的调用次数不会清零。</span></div>
+                  <div class="memory-section__actions">
+                    <button type="button" class="ghost-btn" id="memory-shadow-clear-cancel"><span data-i18n="settings.panel.memory.shadow.cancel">取消</span></button>
+                    <button type="button" class="save-btn" id="memory-shadow-clear-ok"><span data-i18n="settings.panel.memory.shadow.clearOk">确认清空</span></button>
+                  </div>
+                </div>
+                <div class="memory-section__actions" id="memory-shadow-actions">
+                  <button type="button" class="ghost-btn" id="memory-shadow-export"><span data-i18n="settings.panel.memory.shadow.export">导出 JSON</span></button>
+                  <button type="button" class="ghost-btn" id="memory-shadow-clear"><span data-i18n="settings.panel.memory.shadow.clear">清空影子记录</span></button>
+                </div>
+                <p class="memory-section__hint" id="memory-shadow-message" role="status" aria-live="polite"></p>
+              </div>
+            </section>
+
             <!-- 导入知识 -->
             <section class="settings-list memory-section" id="memory-imported" aria-labelledby="memory-imported-title">
               <header class="memory-section__head">

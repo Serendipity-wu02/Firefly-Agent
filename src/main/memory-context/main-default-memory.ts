@@ -339,6 +339,20 @@ export function createMainDefaultMemory(options: MainDefaultMemoryOptions) {
     }
     return state;
   }
+  async function getShadowService(): Promise<ShadowService | undefined> {
+    if (shadow) return shadow;
+    if (closing) return undefined;
+    const core = await resources();
+    const transport = core.backend.transport;
+    if (typeof transport.shadowCommand !== "function") return undefined;
+    if (!shadow) {
+      shadow = createShadowService({ transport: { shadowCommand: command => transport.shadowCommand!(command) }, scopeKey: SCOPE, actorKey: ACTOR,
+        onError: error => console.warn("[memory-shadow] background task failed", error instanceof Error && /^MEMORY_[A-Z0-9_]{1,100}$/.test(error.message) ? error.message : "unexpected") });
+      // Drop records whose source message is gone and statistics past their retention.
+      void shadow.prune().catch(() => undefined);
+    }
+    return shadow;
+  }
   function serialized<T>(operation: () => Promise<T>): Promise<T> { const pending = mutations.then(operation); mutations = pending.catch(() => undefined); return pending; }
   async function reconcile(id: string, messageId: string) {
     const core = await resources();
@@ -836,6 +850,8 @@ export function createMainDefaultMemory(options: MainDefaultMemoryOptions) {
         for (const messageId of new Set(changedUsers)) await reconcile(id, messageId); return result;
       });
     },
+    /** The one shadow extraction service (settings page and background tasks share it); undefined if this backend has no shadow storage. */
+    getShadowService,
     /** Desktop turn finished successfully: queue its user message for shadow extraction. Never throws into the chat. */
     async onTurnSucceeded(input: { sessionId: string; runId: string }): Promise<void> {
       const key = shadowKey(input.sessionId, input.runId), item = shadowPending.get(key); shadowPending.delete(key);
@@ -844,17 +860,16 @@ export function createMainDefaultMemory(options: MainDefaultMemoryOptions) {
         const session = options.getSession(input.sessionId);
         if (!session || session.mode !== "chat" || !owned(input.sessionId)) return;
         const core = await resources();
-        const transport = core.backend.transport;
-        if (typeof transport.shadowCommand !== "function") return;
-        if (!shadow) shadow = createShadowService({ transport: { shadowCommand: command => transport.shadowCommand!(command) }, scopeKey: SCOPE, actorKey: ACTOR,
-          onError: error => console.warn("[memory-shadow] background task failed", error instanceof Error && /^MEMORY_[A-Z0-9_]{1,100}$/.test(error.message) ? error.message : "unexpected") });
+        const service = await getShadowService();
+        if (!service) return;
         // Fixed to the model this run was admitted with; a later profile change cancels the task.
         let model: ShadowModel;
         try {
           const binding = core.models.bind(item.profile.id);
           model = createShadowModel({ profile: item.profile, config: binding.config, adapter: binding.adapter,
             assertCurrent: () => { binding.assertCurrent(); if (binding.revision !== item.profile.revision) throw new Error("MEMORY_RUN_PROFILE_CHANGED"); },
-            onUsage: (name, usage) => { recordRequest(name); recordUsage(usage.input, usage.output, 1, usage.cachedInput, name, usage.cacheCreation); } });
+            onDispatch: name => recordRequest(name),
+            onUsage: (name, usage) => recordUsage(usage.input, usage.output, 1, usage.cachedInput, name, usage.cacheCreation) });
         } catch {
           model = { profile: item.profile, assertCurrent: () => { throw new Error("MEMORY_RUN_PROFILE_CHANGED"); }, prepare: () => ({ ok: false, reason: "no-output-limit" }) };
         }
@@ -863,7 +878,7 @@ export function createMainDefaultMemory(options: MainDefaultMemoryOptions) {
         const previous = index > 0 ? session.messages[index - 1] : undefined;
         const usable = previous?.role === "model" && typeof previous.content === "string" && previous.content.trim() && !previous.modelContext
           && !previous.content.startsWith("[此前对话已压缩");
-        shadow.submit({ sessionId: input.sessionId, sourceRef: item.sourceRef, model,
+        service.submit({ sessionId: input.sessionId, sourceRef: item.sourceRef, model,
           turn: { user: { id: item.userTurnId, text: item.userText }, ...(usable ? { previousAssistant: { id: previous.id, text: previous.content } } : {}) } });
       } catch { /* Shadow extraction is optional and must not affect the chat. */ }
     },
