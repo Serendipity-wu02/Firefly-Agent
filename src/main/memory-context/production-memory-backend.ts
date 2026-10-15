@@ -12,7 +12,9 @@ import {
 } from "../memory-sources/native-history-transport";
 
 type MemoryTransport = Pick<MemoryClient,
-  "sourceCommand" | "policyCommand" | "recallCommand" | "historyCommand" | "contextCommand">;
+  "sourceCommand" | "policyCommand" | "recallCommand" | "historyCommand" | "contextCommand">
+  // Optional so existing fakes keep working; without it shadow extraction stays unavailable.
+  & Partial<Pick<MemoryClient, "shadowCommand">>;
 export type ProductionMemoryWorker = MemoryTransport & Pick<MemoryClient, "close">;
 interface SafeStorage {
   isEncryptionAvailable(): boolean;
@@ -128,6 +130,7 @@ export async function openProductionMemoryBackend(
       recallCommand: (command: unknown) => admit(() => worker.recallCommand(command)),
       historyCommand: (command: unknown) => admit(() => worker.historyCommand(command)),
       contextCommand: (command: unknown) => admit(() => worker.contextCommand(command)),
+      ...(worker.shadowCommand ? { shadowCommand: (command: unknown) => admit(() => worker.shadowCommand!(command)) } : {}),
     });
     return Object.freeze({
       transport,

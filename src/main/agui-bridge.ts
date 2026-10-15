@@ -374,6 +374,8 @@ export function registerAgUiIpc(
   memory?:Pick<MainDesktopMemory,"authorizeRun"|"afterTranscript"> & {
     readonly usesCanonicalUserContent?:boolean;
     readonly retiresLegacyHistoryIndex?:boolean;
+    /** Optional: called after a desktop run ends successfully (shadow extraction). Failures never reach the chat. */
+    onTurnSucceeded?:(input:{sessionId:string;runId:string})=>Promise<void>;
     prepareAttachmentGrant?:(event:Electron.IpcMainInvokeEvent,sessionId:string,input:{userTurnId:string})=>Promise<MainAttachmentGrant|undefined>;
   },
 ): void {
@@ -968,6 +970,7 @@ export function registerAgUiIpc(
               runId,
               modelProfileId: input.modelProfileId,
             }));
+            void memory?.onTurnSucceeded?.({ sessionId, runId }).catch(() => undefined);
             if (mode !== "code" && effects?.sticker !== undefined) {
               send({
                 type: "CUSTOM",
