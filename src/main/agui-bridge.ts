@@ -407,7 +407,7 @@ export function registerAgUiIpc(
   });
 
   const onFinished = onRunFinished;
-  ipc.handle(IPC.AGUI_RUN, async (event: IpcMainInvokeEvent, rawInput: unknown) => {
+  ipc.handle(IPC.AGUI_RUN, async (event: IpcMainInvokeEvent, rawInput: unknown) => perf.withTurn(async (trace) => {
     if (!buildOptionsFn || !onFinished) {
       throw new Error("AG-UI 桥未初始化");
     }
@@ -415,12 +415,12 @@ export function registerAgUiIpc(
     if (requestedMode !== undefined && requestedMode !== "chat" && requestedMode !== "work" && requestedMode !== "code") throw new Error("INVALID_CONVERSATION_MODE");
     lifecycle?.onUserMessage();
     lifecycle?.onConversationStarted();
-    perf.beginTurn("desktop");
     const input = rawInput as AguiRunInput;
 
     // 事件转发目标：优先用 invoke 的 sender（发起 run 的窗口），兜底用聊天窗口
     const sender = event.sender;
     const runId = `run-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+    trace.beginTurn(`desktop:${runId}`);
     const turnStartedAt = Date.now();
 
     let controlledRun=false;
@@ -553,7 +553,7 @@ export function registerAgUiIpc(
         await memory?.afterTranscript(sessionId,input);
       } catch (error) {
         // 轨迹写入失败即阻断模型启动（fail-closed），复位守卫与插话标记后上抛
-        perf.dump();
+        trace.dump();
         try { chatsStore.resetPendingAdjustByRun(sessionId, runId); } catch { /* 复位尽力而为 */ }
         releaseSessionGuard?.();
         releaseSessionGuard = null;
@@ -584,7 +584,7 @@ export function registerAgUiIpc(
       }
     }
     const buildWithContext=(value:AguiRunInput)=>mainContext?buildOptionsFn!(value,mainContext):buildOptionsFn!(value);
-    built = await perf.track("build_options", () => buildWithContext({
+    built = await trace.track("build_options", () => buildWithContext({
       ...input,
       workDocuments: workDocuments.map((attachment) => ({
         name: attachment.name,
@@ -600,7 +600,7 @@ export function registerAgUiIpc(
       executionMode: agentExecutionMode,
     }));
     } catch (error) {
-      perf.dump();
+      trace.dump();
       // run 未开跑即失败：清掉这期间可能落下的插话标记，条目回普通队列
       try { chatsStore.resetPendingAdjustByRun(sessionId, runId); } catch { /* 复位尽力而为 */ }
       releaseSessionGuard?.();
@@ -782,7 +782,7 @@ export function registerAgUiIpc(
     // 订阅 agent 事件流：每个事件透传渲染端；
     // TEXT_MESSAGE_CONTENT 经 <think> 过滤后再转发；
     // complete/error 时做副作用，并补发一个终态事件让渲染端知道这轮结束。
-    perf.mark("agent_run_start");
+    trace.mark("agent_run_start");
     const sub = agent.runWithEvents(options).subscribe({
       next: (baseEvent) => {
         const eventType = (baseEvent as { type?: string })?.type;
@@ -884,7 +884,7 @@ export function registerAgUiIpc(
           message = "操作已中断，请重试。";
         }
         console.error("[AgUiBridge] run 失败:", message);
-        perf.dump();
+        trace.dump();
         const code = err instanceof AgentRuntimeError ? err.code : undefined;
         // runtime error 必须经过同一个 settlement gate。
         // 如果 upstream 已经发过 RUN_FINISHED（gate 已结算为 success / cancelled / timeout），
@@ -926,7 +926,7 @@ export function registerAgUiIpc(
         endLifecycle();
       },
       complete: async () => {
-        perf.mark("agent_run_complete");
+        trace.mark("agent_run_complete");
         cleanupRunState();
         // complete 路径下 settlement 应已由 next(RUN_FINISHED) 写入。
         // 若 upstream 走裸 complete（没有 RUN_FINISHED），必须补发一个合成的 RUN_FINISHED，
@@ -961,7 +961,7 @@ export function registerAgUiIpc(
           // 这些副作用假定 run 已经成功产出回复；其他终态不能保证有可用 finalAnswer。
           if (agent.lastResult && isSuccessfulCompletion) {
             const lastResult = agent.lastResult;
-            const effects = await perf.track("on_run_finished", async () => onFinished(lastResult, latestUserText, {
+            const effects = await trace.track("on_run_finished", async () => onFinished(lastResult, latestUserText, {
               source: "desktop",
               mode,
               conversationId: sessionId,
@@ -1045,7 +1045,7 @@ export function registerAgUiIpc(
           startPlanReviewFlow({ sessionId, threadId, runId, send });
         }
         endLifecycle();
-        perf.dump();
+        trace.dump();
       },
     });
     // 同步 Observable 在 subscribe() 返回前可能已 complete 并 delete(runId)。
@@ -1059,7 +1059,7 @@ export function registerAgUiIpc(
     // 终态（RUN_FINISHED/RUN_ERROR）由事件流承载，渲染端据此 offEvent + 收尾。
     // 这样避免 invoke reply 与 send 事件的投递顺序竞争导致 offEvent 提前取消监听。
     return { success: true, runId };
-  });
+  }));
 
   ipc.handle(IPC.AGUI_CANCEL, (_event, runId?: string) => {
     // 通过 abort signal 触发 harness 的 cancelled 流程，
