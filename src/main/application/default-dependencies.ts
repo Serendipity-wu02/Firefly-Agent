@@ -20,7 +20,7 @@ import { getStorageContext } from "../storage-context";
  * 本文件内的闭包只做构造与委托；任何长期任务都必须由对应启动阶段显式启动。
  */
 
-import { app, BrowserWindow, dialog, screen } from "electron";
+import { app, BrowserWindow, dialog, screen, shell } from "electron";
 import * as path from "path";
 import * as fs from "node:fs";
 import { randomBytes, randomUUID } from "node:crypto";
@@ -99,6 +99,9 @@ import { registerChatsIpc } from "../chats/chats-ipc";
 import { registerWorkspaceFilesIpc } from "../chats/workspace-files-ipc";
 import { createElectronBrowserService } from "../browser/electron-browser-service";
 import { createManualBrowserWorkspace } from "../browser/manual-browser-workspace";
+import { createBrowserDownloads } from "../browser/browser-downloads";
+import { createBrowserToolsHub } from "../browser/browser-tools-hub";
+import { createBrowserToolSettingsStore } from "../browser/browser-tools-settings";
 import { MANUAL_BROWSER_WORKSPACE_IPC } from "../../shared/manual-browser";
 import { createStartupBrowserService } from "../browser/browser-startup-config";
 import { registerBrowserHostOwner, registerManualBrowserHostOwner } from "../browser/browser-host-owner";
@@ -271,8 +274,39 @@ export function createDefaultApplicationDependencies(): ApplicationDependencies 
   }
   function getManualBrowserWorkspace() {
     if (manualBrowserService) return manualBrowserService;
+    // Window-browser tools: downloads and their settings are window-wide; tab tools run on the tab's own page.
+    const toolSettings = createBrowserToolSettingsStore(path.join(getStorageContext().dataRoot, "browser", "tools-settings.json"));
+    const sendToBrowserWindow = (channel: string, payload: unknown, only?: unknown) => {
+      const host = browserHost;
+      if (host && (only === undefined || host.window === only) && !host.window.isDestroyed() && !host.window.webContents.isDestroyed()) host.window.webContents.send(channel, payload);
+    };
+    const browserDownloads = createBrowserDownloads({
+      getSettings: () => toolSettings.get(), defaultDirectory: () => app.getPath("downloads"),
+      exists: candidate => fs.existsSync(candidate), ensureDirectory: directory => { fs.mkdirSync(directory, { recursive: true }); },
+      openPath: target => shell.openPath(target), showInFolder: target => shell.showItemInFolder(target),
+      now: () => Date.now(), newId: () => randomUUID(),
+      onChange: downloads => sendToBrowserWindow(MANUAL_BROWSER_WORKSPACE_IPC.toolsChanged, { kind: "downloads", downloads }),
+    });
+    shutdown.register({ id: "browser-downloads", phase: "quiesce", dispose: () => browserDownloads.dispose() });
+    const toolsHub = createBrowserToolsHub({
+      downloads: browserDownloads, settings: toolSettings, now: () => new Date(),
+      emit: (host, change) => sendToBrowserWindow(MANUAL_BROWSER_WORKSPACE_IPC.toolsChanged, change, host),
+      dialogs: {
+        saveScreenshot: async (host, png, suggestedName) => {
+          const result = await dialog.showSaveDialog(host as BrowserWindow, { defaultPath: path.join(app.getPath("pictures"), suggestedName), filters: [{ name: "PNG", extensions: ["png"] }] });
+          if (result.canceled || !result.filePath) return false;
+          await fs.promises.writeFile(result.filePath, png);
+          return true;
+        },
+        chooseFolder: async host => {
+          const result = await dialog.showOpenDialog(host as BrowserWindow, { properties: ["openDirectory", "createDirectory"] });
+          return result.canceled ? null : result.filePaths[0] ?? null;
+        },
+      },
+    });
     const service = createManualBrowserWorkspace({
-      createService: onChanged => createStartupBrowserService({ profile: getStorageContext().profile, onChanged }),
+      tools: toolsHub,
+      createService: onChanged => createStartupBrowserService({ profile: getStorageContext().profile, onChanged, acceptDownload: (_owner, item) => browserDownloads.handle(item) }),
       onChanged: (owner, page) => {
         const host = browserHost;
         if (host && host.window === owner.host && !host.window.isDestroyed() && !host.window.webContents.isDestroyed()) {

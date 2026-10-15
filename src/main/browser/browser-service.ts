@@ -8,6 +8,9 @@ import { createBrowserNetworkController, type BrowserNetworkBinding, type Browse
 import { isAccountPath } from "../../shared/browser-account-policy";
 import type { ProxyChallenge } from "./authenticated-connect-proxy";
 import type { BrowserDomainContext } from "./browser-authorization-domain";
+import type { BrowserGuestTools } from "./browser-guest-tools";
+import type { DownloadItemLike } from "./browser-downloads";
+import type { BrowserToolErrorCode, BrowserToolReply } from "../../shared/browser-tools";
 import type { BrowserNetworkDependencies, BrowserViewPort } from "./browser-network-binding";
 export interface BrowserHostPort {
   webContents: { id: number; mainFrame: object; isDestroyed(): boolean; on(event: string, listener: () => void): unknown; removeListener(event: string, listener: () => void): unknown };
@@ -22,11 +25,13 @@ export interface BrowserInvokeEvent { sender: BrowserHostPort["webContents"]; se
 export interface BrowserGuestPort<S extends object> extends BrowserViewPort<S> {
   loadURL(url: string): Promise<void>; history(action: "back" | "forward" | "reload"): Promise<void>;
   observe?(hosts?: readonly string[]): Promise<BrowserObservation>; act?(input: BrowserDomInput): Promise<boolean>;
+  /** Window-browser tools (find, zoom, print...). Offered only for an ordinary-browsing tab; see `useTab`. */
+  tools?: BrowserGuestTools;
   snapshot(): { url: string; canGoBack: boolean; canGoForward: boolean };
   stop(): void; attach(host: BrowserHostPort): void; detach(): void; setBounds(bounds: BrowserBounds): void;
   installCallbacks(callbacks: { allowsNavigation(url: string): boolean; started(url: string): void; changed(): void; failed(): void; destroyed(): void }): void;
 }
-export interface BrowserServiceOptions<S extends object> extends Omit<BrowserNetworkDependencies<S>, "createView"> {
+export interface BrowserServiceOptions<S extends object> extends Omit<BrowserNetworkDependencies<S>, "createView" | "onDownload"> {
   profile: object; gateOpen?: boolean;
   /** Main composition only. Manual site grants never authorize agent operations. */
   manualBrowsing?: boolean;
@@ -34,7 +39,11 @@ export interface BrowserServiceOptions<S extends object> extends Omit<BrowserNet
   /** Main-owned native confirmation; never provided by renderer or a tool. */
   confirmPermission?(owner: TrustedBrowserOwner, scope: BrowserPermissionScope, signal: AbortSignal): Promise<boolean>;
   createView(session: S): BrowserGuestPort<S>; onChanged?(owner: TrustedBrowserOwner, page: BrowserPageDto): void;
+  /** Main composition only. Asked once per download, and only for an ordinary-browsing (`web`) manual page that is still current. */
+  acceptDownload?(owner: TrustedBrowserOwner, item: DownloadItemLike): boolean;
 }
+/** What a window-browser tool may touch: the tab's guest tools and its window, nothing else. */
+export interface BrowserToolTarget { readonly key: object; readonly tools: BrowserGuestTools; readonly host: BrowserHostPort; readonly url: string }
 export function validatePublicBrowserUrl(input: unknown): string | null {
   if (typeof input !== "string" || input.length === 0 || input.length > 8192) return null;
   try {
@@ -181,7 +190,11 @@ export function createBrowserService<S extends object>(options: BrowserServiceOp
         && context.workspaceId === owner.value.workspaceId
         && context.generation === owner.value.generation && cells.get(context.browserId)?.owner === owner;
     } });
-  const network = createBrowserNetworkController(registry, { ...options, onRequestBlocked: (context, request) => {
+  const network = createBrowserNetworkController(registry, { ...options, onDownload: (context, item) => {
+    const cell = cells.get(context.browserId);
+    if (!cell || cell.context.signal !== context.signal || !usable(cell) || cell.owner.grant?.mode !== "manual" || cell.owner.grant.web !== true) return false;
+    try { return options.acceptDownload?.(cell.owner.value, item) === true; } catch { return false; }
+  }, onRequestBlocked: (context, request) => {
     const cell = cells.get(context.browserId);
     if (!cell || cell.context.signal !== context.signal || !usable(cell) || cell.owner.grant?.mode !== "manual") return;
     if (request.webContentsId !== undefined && request.webContentsId !== cell.guest?.contents.id) return;
@@ -402,6 +415,21 @@ export function createBrowserService<S extends object>(options: BrowserServiceOp
   async function dispatch(event: BrowserInvokeEvent, input: unknown): Promise<BrowserReply<BrowserPageDto | null>> {
     const resolved = await resolveOwner(event); return resolved.ok ? execute(resolved.value.value, input) : resolved;
   }
+  /** Runs a window-browser tool against this service's page. Only an ordinary-browsing manual page qualifies: a
+   * host-limited, private-network or Agent grant gets `permission_denied`. */
+  async function useTab<T>(event: BrowserInvokeEvent, run: (target: BrowserToolTarget) => Promise<T>): Promise<BrowserToolReply<T>> {
+    const fault = (code: BrowserToolErrorCode): BrowserToolReply<never> => ({ ok: false, code });
+    const resolved = await resolveOwner(event);
+    if (!resolved.ok) return fault(resolved.code === "cancelled" || resolved.code === "closed" || resolved.code === "permission_denied" ? resolved.code : "owner_mismatch");
+    const owner = resolved.value, cell = [...owner.cells].find(candidate => !candidate.closing);
+    if (!cell) return fault("closed");
+    if (!usable(cell) || !cell.guest) return fault("owner_mismatch");
+    if (owner.grant?.mode !== "manual" || owner.grant.web !== true) return fault("permission_denied");
+    const tools = cell.guest.tools; if (!tools) return fault("unsupported");
+    let value: T;
+    try { value = await run({ key: cell.guest, tools, host: owner.value.host, url: cell.page.url }); } catch { return fault("failed"); }
+    return usable(cell) ? { ok: true, value } : fault("cancelled");
+  }
   async function dispatchPermission(event: BrowserInvokeEvent, input: unknown): Promise<BrowserReply<BrowserPermissionDto>> {
     const resolved = await resolveOwner(event); if (!resolved.ok) return resolved;
     const owner = resolved.value;
@@ -541,7 +569,7 @@ export function createBrowserService<S extends object>(options: BrowserServiceOp
     const results = await Promise.all([...cells.values()].map(cell => cleanup(cell, signal))), result = await network.disposeAll(signal);
     return result.ok && results.every(r => r.ok) ? { ok: true, value: null } : fail("cleanup_failed");
   }
-  return Object.freeze({ registerHost, dispatch, dispatchPermission, execute, executeAgent, revoke, revokeAll, closeHost, dispose,
+  return Object.freeze({ registerHost, dispatch, dispatchPermission, useTab, execute, executeAgent, revoke, revokeAll, closeHost, dispose,
     isEnabled: () => (gateOpen || !!policy) && !stopping,
     isRegisteredBrowser: (contents: object) => registered.has(contents),
     credentialsFor: (contents: object, challenge: ProxyChallenge) => { const cell = byContents.get(contents); return cell && usable(cell) && cell.guest?.contents === contents ? cell.binding?.credentialsFor(cell.guest.contents, challenge) ?? null : null; },

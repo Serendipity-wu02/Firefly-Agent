@@ -75,6 +75,24 @@ describe("offline browser prepare/dispose", () => {
     for (const operation of [native.closeAllConnections, native.clearStorageData, native.clearCache, native.clearAuthCache, native.clearHostResolverCache]) expect(operation).toHaveBeenCalledTimes(1);
     expect(createElectronBrowserSessionPort({ ...native, storagePath: "real-user-data" }).persistent).toBe(true);
   });
+  it("lets an installed handler accept a download, and refuses everything else", () => {
+    let listener: ((event: { preventDefault(): void }, item: unknown) => void) | undefined;
+    const native = {
+      storagePath: null, webRequest: { onBeforeRequest: vi.fn() }, setPermissionCheckHandler: vi.fn(), setPermissionRequestHandler: vi.fn(), setDevicePermissionHandler: vi.fn(),
+      on: vi.fn((_event: "will-download", next: NonNullable<typeof listener>) => { listener = next; }),
+      setProxy: vi.fn(), closeAllConnections: vi.fn(), clearStorageData: vi.fn(), clearCache: vi.fn(), clearAuthCache: vi.fn(), clearHostResolverCache: vi.fn(),
+      serviceWorkers: { getAllRunning: () => ({}) },
+    };
+    const port = createElectronBrowserSessionPort(native as never);
+    port.denyPermissions();
+    const item = { name: "item" }, refused = vi.fn();
+    listener?.({ preventDefault: refused }, item); expect(refused).toHaveBeenCalledTimes(1); // no handler yet
+    const handler = vi.fn(() => true); port.installDownloadHandler?.(handler);
+    const accepted = vi.fn(); listener?.({ preventDefault: accepted }, item);
+    expect(handler).toHaveBeenCalledWith(item); expect(accepted).not.toHaveBeenCalled();
+    handler.mockReturnValueOnce(false); const declined = vi.fn(); listener?.({ preventDefault: declined }, item); expect(declined).toHaveBeenCalledTimes(1);
+    handler.mockImplementationOnce(() => { throw new Error("boom"); }); const thrown = vi.fn(); listener?.({ preventDefault: thrown }, item); expect(thrown).toHaveBeenCalledTimes(1);
+  });
   it("keeps closed gate and unregistered owners at zero factory calls", async () => {
     const test = fixture(false);
     expect(await test.controller.prepare(test.context)).toEqual({ ok: false, code: "permission_denied" });

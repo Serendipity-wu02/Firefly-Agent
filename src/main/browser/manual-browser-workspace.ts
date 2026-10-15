@@ -1,17 +1,25 @@
 import { randomUUID } from "node:crypto";
-import type { createBrowserService, BrowserHostPort, BrowserInvokeEvent, TrustedBrowserOwner } from "./browser-service";
+import type { createBrowserService, BrowserHostPort, BrowserInvokeEvent, BrowserToolTarget, TrustedBrowserOwner } from "./browser-service";
+import { parseBrowserToolRequest, type BrowserToolErrorCode, type BrowserToolReply, type BrowserToolRequest } from "../../shared/browser-tools";
 import type { BrowserOwnedPageDto, BrowserReply, BrowserWorkspacePageDto, BrowserWorkspacePermissionDto, BrowserWorkspaceStateDto } from "../../shared/manual-browser";
 
 type Service = ReturnType<typeof createBrowserService<object>>;
 interface Tab { id: string; owner: TrustedBrowserOwner; cancel: AbortController; service: Service; off(): void }
 interface Host { host: BrowserHostPort; resolve(event: BrowserInvokeEvent): TrustedBrowserOwner | null; owner?: TrustedBrowserOwner; tabs: Map<string, Tab>; active: string | null; transition: boolean }
 const fail = (code: "owner_mismatch" | "closed" | "tab_limit" | "cleanup_failed" | "permission_denied" | "cancelled"): BrowserReply<never> => ({ ok: false, code });
+const toolFail = (code: BrowserToolErrorCode): BrowserToolReply<never> => ({ ok: false, code });
+/** Main composition of the window-browser tools (see browser-tools-hub). The workspace only routes and authorises. */
+export interface BrowserToolsPort {
+  tab(target: BrowserToolTarget, request: BrowserToolRequest, tabId: string): Promise<unknown>;
+  global(host: BrowserHostPort, request: BrowserToolRequest): Promise<unknown>;
+}
 
 /** Each tab reuses the existing single-page security service with a distinct
  * native owner/session. Window routing never merges grants or network contexts. */
 export function createManualBrowserWorkspace(options: {
   createService(onChanged: (owner: TrustedBrowserOwner, page: BrowserOwnedPageDto) => void): Service;
   onChanged(owner: TrustedBrowserOwner, page: BrowserWorkspacePageDto): void;
+  tools?: BrowserToolsPort;
 }) {
   const hosts = new Map<BrowserHostPort, Host>(), services = new Set<Service>();
   const tabsByOwner = new Map<TrustedBrowserOwner, { host: Host; tab: Tab }>();
@@ -105,9 +113,28 @@ export function createManualBrowserWorkspace(options: {
     if (reply.value === null) return { ok: true, value: null };
     return workspacePage(resolved.value, tab, reply.value);
   }
-  async function dispatchWorkspace(event: BrowserInvokeEvent, input: unknown): Promise<BrowserReply<BrowserWorkspaceStateDto | BrowserWorkspacePageDto | null>> {
+  /** Window-browser tools. The payload is parsed strictly; tab tools need a live ordinary-browsing tab of this window,
+   * window-wide ones (downloads, settings) only need the window itself. */
+  async function dispatchTool(event: BrowserInvokeEvent, command: Record<string, unknown>): Promise<BrowserToolReply<unknown>> {
+    if (!options.tools) return toolFail("unsupported");
+    if (Object.keys(command).some(key => key !== "kind" && key !== "tabId" && key !== "request")) return toolFail("permission_denied");
+    const request = parseBrowserToolRequest(command.request);
+    if (!request || (command.tabId !== undefined && typeof command.tabId !== "string")) return toolFail("permission_denied");
+    const resolved = await resolve(event);
+    if (!resolved.ok) return toolFail(resolved.code === "cancelled" || resolved.code === "closed" ? resolved.code : "owner_mismatch");
+    const host = resolved.value, tools = options.tools;
+    try {
+      if (request.tool === "download" || request.tool === "settings") return { ok: true, value: await tools.global(host.host, request) };
+      const found = tabFor(host, command.tabId);
+      if (!found.ok) return toolFail(found.code === "closed" ? "closed" : "owner_mismatch");
+      const tab = found.value;
+      return await tab.service.useTab(event, target => tools.tab(target, request, tab.id));
+    } catch { return toolFail("failed"); }
+  }
+  async function dispatchWorkspace(event: BrowserInvokeEvent, input: unknown): Promise<BrowserReply<BrowserWorkspaceStateDto | BrowserWorkspacePageDto | null> | BrowserToolReply<unknown>> {
     if (!input || typeof input !== "object" || Array.isArray(input)) return fail("permission_denied");
     const command = input as Record<string, unknown>;
+    if (command.kind === "tool") return dispatchTool(event, command);
     if (!["tabs", "new-tab", "select-tab", "close-tab"].includes(String(command.kind))) return dispatch(event, input);
     if (Object.keys(command).some(key => key !== "kind" && key !== "tabId")) return fail("permission_denied");
     const resolved = await resolve(event); if (!resolved.ok) return resolved;
@@ -173,6 +200,8 @@ export function createManualBrowserWorkspace(options: {
       return () => { void closeHost(host); };
     },
     execute: async (_owner: TrustedBrowserOwner, _command: unknown): Promise<BrowserReply<BrowserOwnedPageDto | null>> => fail("permission_denied"),
+    /** Tools are routed per tab by dispatchWorkspace; the workspace itself owns no single page. */
+    useTab: async (): Promise<BrowserToolReply<never>> => toolFail("owner_mismatch"),
     executeAgent: async (): Promise<BrowserReply<never>> => fail("owner_mismatch"),
     isEnabled: () => !stopping && available,
     isRegisteredBrowser: (contents: object) => [...services].some(service => service.isRegisteredBrowser(contents)),
