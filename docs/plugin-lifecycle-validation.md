@@ -63,3 +63,9 @@ Windows 驱动在被忽略的 `output/plugin-electron-ui-<timestamp>/` 中创建
 - 未开放或访问在线目录，没有验证远程发布服务；不包含 PR6、自动更新、执行沙箱或任意副作用热回滚。
 - 缺少本地截图原生 helper 和可选 embedding 模型时应用按既有方式降级，未影响插件验收。Renderer 构建仍有既有大 chunk 提示。
 - Windows 文件 symlink 测试存在平台权限跳过；新增目录 junction 拒绝测试执行通过。最终测试总数与 CI 状态见 PR 描述，不能以这次 UI 结果代替整仓门禁。
+
+## 整仓联动检查
+
+首次整仓本地运行：808 文件，9633 passed / 9 failed / 11 skipped。其中 3 项需要显式选择 Git Bash，5 项需要构建原生 history-presence helper；其余 1 项是本次来源和结果透传改动触发外部技能测试的旧市场文件哈希。
+
+仅将该文件的 canonical LF 哈希推进到已审查实现，保留整文件冻结断言及独立的远程白名单为空断言；没有删除、跳过测试或修改预算/权限规则。选择已有 Git Bash，并使用本机已有 Cargo 缓存离线构建仓库 helper 后，全部 4 个失败文件复验通过：46 + 15 = 61 项测试。该联动不改变外部技能执行或权限模型。最终 SHA 的完整测试和 CI 状态见 PR。
