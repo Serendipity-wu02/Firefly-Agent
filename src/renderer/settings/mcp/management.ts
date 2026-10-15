@@ -4,7 +4,10 @@ import { showAlert, showConfirm, showInputModal, showNotice } from "../shared/mo
 import { parseCommandLine } from "../shared/parse";
 import { subscribeLocaleChanged, t } from "../i18n";
 
-type McpServer = Awaited<ReturnType<NonNullable<SettingsApi["listMcpServers"]>>>[number];
+type McpServer = Awaited<ReturnType<NonNullable<SettingsApi["listMcpServers"]>>>[number] & { enabled: boolean };
+// Main only ever sends one of these fixed reasons; anything else is shown as an unknown failure.
+const FAILURE_REASONS = new Set(["command-not-found", "permission-denied", "timeout", "exited", "unreachable", "failed"]);
+const knownReason = (reason: unknown): string | undefined => typeof reason === "string" ? (FAILURE_REASONS.has(reason) ? reason : "failed") : undefined;
 const label = (key: string, values?: Record<string, string | number>) => t(`settings.mcpUi.${key}`, values);
 
 /** Keep presentation state local; Main remains the connection/configuration owner.
@@ -52,7 +55,11 @@ export function mountMcpManagement(addButton: HTMLButtonElement | null): { add: 
       const name = document.createElement("h3");
       name.textContent = server.name;
       const status = document.createElement("p");
-      status.textContent = label(server.connected ? "connected" : "disconnected", { count: server.toolCount });
+      const reason = knownReason(server.failure);
+      status.textContent = !server.enabled ? label("disabled")
+        : server.connected ? label("connected", { count: server.toolCount })
+        : reason ? label("disconnectedReason", { reason: label(`failure.${reason}`) })
+        : label("disconnected", { count: server.toolCount });
       status.className = "mcp-server-status";
       body.append(name, status);
       card.append(body);
@@ -70,6 +77,24 @@ export function mountMcpManagement(addButton: HTMLButtonElement | null): { add: 
         openTools.addEventListener("click", () => { document.querySelector<HTMLButtonElement>('.nav-item[data-section="plugins"]')?.click(); });
         card.append(openTools);
       } else {
+        const actions = document.createElement("div");
+        actions.className = "mcp-server-actions";
+        const control = (text: string, aria: string, run: () => void, key: string) => {
+          const button = document.createElement("button");
+          button.type = "button";
+          button.className = "btn-secondary";
+          button.textContent = text;
+          button.setAttribute("aria-label", aria);
+          button.dataset.mcpAction = `${key}:${server.id}`;
+          button.disabled = pending || !window.settings?.setMcpServerEnabled;
+          button.addEventListener("click", run);
+          return button;
+        };
+        if (!server.enabled) actions.append(control(label("enable"), label("enableNamed", { name: server.name }), () => { void setEnabled(server, true, "enabledNotice"); }, "enable"));
+        else {
+          if (!server.connected) actions.append(control(label("reconnect"), label("reconnectNamed", { name: server.name }), () => { void setEnabled(server, true, "reconnectedNotice"); }, "enable"));
+          actions.append(control(label("disable"), label("disableNamed", { name: server.name }), () => { void setEnabled(server, false, "disabledNotice"); }, "disable"));
+        }
         const removeButton = document.createElement("button");
         removeButton.type = "button";
         removeButton.className = "btn-secondary btn-danger";
@@ -78,7 +103,8 @@ export function mountMcpManagement(addButton: HTMLButtonElement | null): { add: 
         removeButton.dataset.mcpRemove = server.id;
         removeButton.disabled = pending || !window.settings?.removeMcpServer;
         removeButton.addEventListener("click", () => { void remove(server); });
-        card.append(removeButton);
+        actions.append(removeButton);
+        card.append(actions);
       }
       list.append(card);
     }
@@ -101,7 +127,8 @@ export function mountMcpManagement(addButton: HTMLButtonElement | null): { add: 
       if (!alive() || version !== readVersion) return;
       if (!Array.isArray(result)) throw new Error("MCP_LIST_INVALID");
       // Explicit projection: commands, env and arbitrary extra fields never enter UI state.
-      servers = result.map(server => ({ id: server.id, name: server.name, connected: server.connected, toolCount: server.toolCount, toolIds: [] }));
+      servers = result.map(server => ({ id: server.id, name: server.name, connected: server.connected, toolCount: server.toolCount, toolIds: [],
+        enabled: server.enabled !== false, ...(knownReason(server.failure) ? { failure: knownReason(server.failure) } : {}) }));
       loaded = true;
       readError = false;
     } catch {
@@ -130,11 +157,15 @@ export function mountMcpManagement(addButton: HTMLButtonElement | null): { add: 
     pending = false;
     render();
   }
-  async function failure(action: "add" | "remove"): Promise<void> {
+  async function failure(action: "add" | "remove" | "enable" | "disable", rawReason?: unknown): Promise<void> {
     if (!alive()) return;
     // MCP transport errors may echo process arguments, URLs or credentials.
-    // Do not log or show arbitrary error objects in this renderer.
-    await showAlert({ tone: "error", title: label(`${action}Failed`), message: label(`${action}FailedMessage`) });
+    // Do not log or show arbitrary error objects in this renderer; only the fixed reason from Main is shown.
+    const reason = knownReason(rawReason);
+    const message = reason && action === "add" ? label("addFailedWhy", { reason: label(`failure.${reason}`) })
+      : reason && action === "enable" ? label("enableFailedWhy", { reason: label(`failure.${reason}`) })
+      : label(`${action}FailedMessage`);
+    await showAlert({ tone: "error", title: label(`${action}Failed`), message });
   }
 
   async function add(): Promise<void> {
@@ -156,12 +187,39 @@ export function mountMcpManagement(addButton: HTMLButtonElement | null): { add: 
       await refresh();
       if (!alive()) return;
       if (result?.ok) showNotice({ tone: "success", message: label("added", { name, count: result.toolIds?.length ?? 0 }) });
-      else await failure("add");
+      else await failure("add", result?.reason);
     } catch {
       if (!alive()) return;
       await refresh();
       await failure("add");
     } finally { finish(); }
+  }
+
+  async function setEnabled(server: McpServer, enabled: boolean, notice: "enabledNotice" | "reconnectedNotice" | "disabledNotice"): Promise<void> {
+    const action = enabled ? "enable" : "disable";
+    if (server.id === "playwright-mcp" || !begin()) return;
+    try {
+      if (!window.settings?.setMcpServerEnabled) { await failure(action); return; }
+      invalidateRead();
+      // Turning a server on asks for a native confirmation in Main that shows the exact command.
+      const result = await window.settings.setMcpServerEnabled(server.id, enabled);
+      if (!alive()) return;
+      await refresh();
+      if (!alive()) return;
+      if (result?.ok) showNotice({ tone: "success", message: label(notice, { name: server.name, count: result.toolIds?.length ?? server.toolCount }) });
+      else if ((result as { code?: string } | undefined)?.code !== "MCP_CANCELLED") await failure(action, result?.reason);
+    } catch {
+      if (!alive()) return;
+      await refresh();
+      await failure(action);
+    } finally {
+      finish();
+      if (alive()) {
+        // Rendering replaces the buttons: put focus back on this server's action, or on Refresh if it is gone.
+        const target = [...list.querySelectorAll<HTMLButtonElement>("[data-mcp-action]")].find(button => button.dataset.mcpAction?.endsWith(`:${server.id}`));
+        (target ?? refreshButton).focus();
+      }
+    }
   }
 
   async function remove(server: McpServer): Promise<void> {

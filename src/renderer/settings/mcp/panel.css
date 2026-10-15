@@ -29,6 +29,12 @@
 .mcp-server-card h3 {
   overflow-wrap: anywhere;
 }
+.mcp-server-actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 8px;
+}
 .mcp-management button {
   flex-shrink: 0;
 }

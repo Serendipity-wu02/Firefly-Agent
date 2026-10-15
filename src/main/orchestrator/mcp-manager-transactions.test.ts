@@ -157,7 +157,7 @@ describe("MCP manager configuration transactions", () => {
     const failed = f.manager.addMcpServer(config("a"));
     const next = f.manager.addMcpServer(config("b"));
     f.a.reject(new Error("synthetic connect failure")); f.b.resolve();
-    expect(await failed).toEqual({ ok: false, error: "synthetic connect failure" });
+    expect(await failed).toEqual({ ok: false, error: "synthetic connect failure", reason: "failed" });
     expect((await next).ok).toBe(true);
     expect(await coldConfigs(f)).toEqual([config("b")]);
   });
@@ -169,7 +169,7 @@ describe("MCP manager configuration transactions", () => {
       rename(from, to);
     });
     const failed = f.manager.addMcpServer(config("a")); f.a.resolve();
-    expect(await failed).toEqual({ ok: false, error: "ATOMIC_JSON_WRITE_FAILED" });
+    expect(await failed).toEqual({ ok: false, error: "ATOMIC_JSON_WRITE_FAILED", reason: "failed" });
     expect([...adapter.states]).toEqual([]);
     spy.mockRestore();
     const next = f.manager.addMcpServer(config("b")); f.b.resolve();
