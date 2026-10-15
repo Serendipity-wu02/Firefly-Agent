@@ -80,11 +80,15 @@
       "loadFailed": "读取失败，请重新打开设置后重试。"
     },
     "layout": {
-      "personal": "个人",
-      "assistant": "助手",
-      "models": "模型与语音",
-      "integrations": "集成",
-      "about": "关于"
+      "basic": "基础设置",
+      "agent": "Agent 能力",
+      "channels": "外部渠道",
+      "voice": "语音能力",
+      "notice": "使用须知"
+    },
+    "subagents": {
+      "title": "子代理",
+      "hint": "12 位专业子代理并列列出。每位可以继承主模型，也可以单独指定一个模型档案。"
     },
     "search": {
       "placeholder": "搜索设置",
@@ -160,6 +164,7 @@
       }
     },
     "nav": {
+      "subagents": "子代理",
       "ariaLabel": "设置导航",
       "brand": "流萤",
       "memory": "记忆",
@@ -168,10 +173,10 @@
       "plugins": "工具配置",
       "mcp": "MCP 服务器",
       "preferences": "偏好设置",
-      "appearance": "外观设置",
-      "general": "通用设置",
-      "api": "API 设置",
-      "apiAdvanced": "高级设置",
+      "appearance": "外观",
+      "general": "常规",
+      "api": "模型设置",
+      "apiAdvanced": "运行设置",
       "firefly": "流萤设置",
       "channels": "连接手机",
       "tts": "TTS 设置",

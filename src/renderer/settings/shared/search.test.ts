@@ -14,17 +14,17 @@ beforeEach(() => { document.body.innerHTML = html; });
 afterEach(() => { vi.restoreAllMocks(); });
 
 describe("settings navigation groups", () => {
-  it("keeps all 13 pages, starting with General, in five labelled groups", () => {
+  it("keeps all 14 pages, starting with General, in five labelled groups", () => {
     const layout = Array.from(document.querySelectorAll(".settings-nav__list > .settings-nav__group, .settings-nav__list > .nav-item"), node =>
       node.classList.contains("nav-item") ? (node as HTMLElement).dataset.section : `# ${node.getAttribute("data-i18n")}`);
     expect(layout).toEqual([
-      "# settings.layout.personal", "general", "appearance", "preferences", "user",
-      "# settings.layout.assistant", "firefly", "memory",
-      "# settings.layout.models", "api", "api-advanced", "asr",
-      "# settings.layout.integrations", "plugins", "mcp", "channels",
-      "# settings.layout.about", "disclaimer",
+      "# settings.layout.basic", "general", "appearance", "preferences", "api", "api-advanced", "user",
+      "# settings.layout.agent", "plugins", "subagents", "mcp", "memory", "firefly",
+      "# settings.layout.channels", "channels",
+      "# settings.layout.voice", "asr",
+      "# settings.layout.notice", "disclaimer",
     ]);
-    expect(buttons()).toHaveLength(13);
+    expect(buttons()).toHaveLength(14);
     expect(buttons()[0].classList.contains("is-active")).toBe(true);
     expect(buttons().filter(button => button.classList.contains("is-active"))).toHaveLength(1);
   });
@@ -34,12 +34,28 @@ describe("settings navigation groups", () => {
   });
 });
 
+describe("navigation without avatars", () => {
+  it("has no avatar images in the navigation, and the Firefly and Memory entries use line icons", () => {
+    expect(document.querySelector(".settings-nav img")).toBeNull();
+    for (const section of ["firefly", "memory"]) {
+      expect(document.querySelector(`.nav-item[data-section="${section}"] svg.nav-item__icon`), section).not.toBeNull();
+    }
+  });
+
+  it("puts the 12 sub-agent cards on their own page, listed side by side", () => {
+    const panel = document.getElementById("subagents-panel")!;
+    expect(panel.dataset.panel).toBe("subagents");
+    expect(panel.querySelector("#agent-routing-panel")).not.toBeNull();
+    expect(document.querySelector('.nav-item[data-section="subagents"]')?.getAttribute("aria-controls")).toBe("subagents-panel");
+  });
+});
+
 describe("collecting searchable settings", () => {
   it("lists every page, and the rows and group titles inside them with their page", () => {
     const entries = collectSettingsEntries(document, buttons());
-    expect(entries.filter(item => item.page)).toHaveLength(13);
+    expect(entries.filter(item => item.page)).toHaveLength(14);
     const language = entries.find(item => item.title === "语言" && !item.page);
-    expect(language).toMatchObject({ section: "general", pageTitle: "通用设置" });
+    expect(language).toMatchObject({ section: "general", pageTitle: "常规" });
     expect(entries.some(item => item.title === "本地文件" && item.section === "general")).toBe(true);
   });
 

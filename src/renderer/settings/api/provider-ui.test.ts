@@ -26,14 +26,13 @@ it("shows compact edit/delete rows and configuration state without claiming conn
   expect(root.textContent).not.toMatch(/private-key|private\.example|secret=value/);
 });
 
-it("starts with a closed add/edit form and one closed role override group", () => {
+it("starts with a closed add/edit form, and the role overrides live on the sub-agents page instead of the API page", () => {
   document.body.innerHTML = html;
   expect(document.getElementById("profile-editor")?.hidden).toBe(true);
   expect(document.querySelectorAll('[data-provider-tab]')).toHaveLength(2);
-  const group = document.getElementById("agent-routing-group") as HTMLDetailsElement;
-  expect(group).not.toBeNull();
-  expect(group.open).toBe(false);
-  expect(group.contains(document.getElementById("agent-routing-panel"))).toBe(true);
+  expect(document.getElementById("agent-routing-group")).toBeNull();
+  expect(document.getElementById("api-form")?.contains(document.getElementById("agent-routing-panel"))).toBe(false);
+  expect(document.getElementById("subagents-panel")?.contains(document.getElementById("agent-routing-panel"))).toBe(true);
 });
 
 it("relocates original field nodes without changing their values", () => {
@@ -101,7 +100,7 @@ it("lists profiles as one column of cards with an add button below, and keeps ro
   expect(board.contains(document.getElementById("profile-editor"))).toBe(true);
   expect(document.querySelector(".model-settings-workspace, .model-settings-sidebar, .model-settings-detail")).toBeNull();
   expect(document.getElementById("profile-editor-empty")).toBeNull();
-  expect(document.getElementById("profile-editor")?.contains(document.getElementById("agent-routing-group"))).toBe(false);
+  expect(document.getElementById("profile-editor")?.contains(document.getElementById("agent-routing-panel"))).toBe(false);
 });
 
 it("groups the editor into connection, model and a collapsed advanced section, with footer actions in order", () => {

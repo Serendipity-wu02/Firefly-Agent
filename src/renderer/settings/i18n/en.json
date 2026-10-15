@@ -80,11 +80,15 @@
       "loadFailed": "Loading failed. Reopen settings and retry."
     },
     "layout": {
-      "personal": "Personal",
-      "assistant": "Assistant",
-      "models": "Models & voice",
-      "integrations": "Integrations",
-      "about": "About"
+      "basic": "Basics",
+      "agent": "Agent capabilities",
+      "channels": "External channels",
+      "voice": "Voice",
+      "notice": "Notices"
+    },
+    "subagents": {
+      "title": "Sub-agents",
+      "hint": "All 12 specialist sub-agents, side by side. Each one can inherit the main model or use its own model profile."
     },
     "search": {
       "placeholder": "Search settings",
@@ -381,6 +385,11 @@
       }
     },
     "nav": {
+      "subagents": "Sub-agents",
+      "apiAdvanced": "Runtime",
+      "api": "Models",
+      "appearance": "Appearance",
+      "general": "General",
       "generalHint": "Choose Firefly's interface language. Changes are saved immediately."
     },
     "modal": {
