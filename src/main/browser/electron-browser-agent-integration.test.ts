@@ -51,7 +51,12 @@ function fixture() {
   const tool = createBrowserWorkspaceTool(createBrowserWorkspaceExecutor({ currentOwner: () => owner, service: () => service, isRunCurrent: () => active }));
   const context = { userQuery: "Browse", conversationId: "conversation", runId: "run", signal: runAbort.signal, mode: "work" as const };
   const permission = (scope: unknown) => service.dispatchPermission(sender, { kind: "request", scope });
-  return { service, sender, owner, tool, context, permission, ownerAbort, runAbort, stopRun: () => { active = false; } };
+  const show = async () => {
+    const page = await service.dispatch(sender, { kind: "get" });
+    if (!page.ok || !page.value) throw new Error("missing page");
+    await service.dispatch(sender, { kind: "layout", browserId: page.value.browserId, bounds: { x: 0, y: 0, width: 300, height: 200 } });
+  };
+  return { service, sender, owner, tool, context, permission, show, ownerAbort, runAbort, stopRun: () => { active = false; } };
 }
 beforeEach(() => { native.confirm.mockReset(); native.confirm.mockResolvedValue({ response: 1 }); native.effects.length = 0; native.cleanup = async () => {}; });
 afterEach(async () => { native.cleanup = async () => {}; await Promise.all(services.splice(0).map(service => service.dispose())); });
@@ -66,6 +71,7 @@ describe("production browser composition preserves separate Agent approval", () 
     expect(prompt.message).toContain("代理"); expect(prompt.detail).toContain("读取页面文字");
     for (const host of agentScope.hosts) expect(prompt.detail).toContain(host);
     expect(JSON.parse(await f.tool.execute({ operation: "open", url: "https://example.com/" }, f.context))).toMatchObject({ success: true, result: { url: "https://example.com/" } });
+    await f.show();
     expect(JSON.parse(await f.tool.execute({ operation: "observe" }, f.context))).toMatchObject({ contentTrust: "untrusted_web_page", result: { text: "Actual guest text" } });
     await f.tool.execute({ operation: "click", snapshotId: "snapshot", ref: "1" }, f.context);
     await f.tool.execute({ operation: "observe" }, f.context);
@@ -105,6 +111,7 @@ describe("production browser composition preserves separate Agent approval", () 
   it("switches from Agent to manual with a new page and never reuses Agent snapshots", async () => {
     const f = fixture(); await f.permission(agentScope);
     await f.tool.execute({ operation: "open", url: "https://example.com/" }, f.context);
+    await f.show();
     await f.tool.execute({ operation: "observe" }, f.context);
     expect(await f.permission(manualScope)).toMatchObject({ ok: true, value: { status: "granted", scope: manualScope } });
     expect(native.effects).toContain("destroyed");

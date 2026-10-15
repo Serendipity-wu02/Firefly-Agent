@@ -35,6 +35,7 @@ export interface BrowserNetworkDependencies<S extends object> {
   proxyFactory?: BrowserProxyFactory;
   /** Presentation-only report from the current denied request. Cannot grant a request. */
   onRequestBlocked?(context: BrowserDomainContext, request: BrowserRequestDetails): void;
+  beginConnection?(context: BrowserDomainContext, host: string): ReturnType<import("./authenticated-connect-proxy").BrowserConnectionObserver>;
   cleanupTimeoutMs?: number;
   workerStopTimeoutMs?: number;
 }
@@ -210,7 +211,8 @@ export function createBrowserNetworkController<S extends object>(registry: Brows
         if (!port.setDirect) throw new Error("direct mode unavailable");
         await port.setDirect(); ensureCurrent(cell);
       } else {
-        cell.proxy = await startBrowserDomainProxy(cell.domain, cell.view.contents, dependencies.proxyFactory);
+        cell.proxy = await startBrowserDomainProxy(cell.domain, cell.view.contents, dependencies.proxyFactory,
+          dependencies.beginConnection ? host => dependencies.beginConnection!(cell.context, host) : undefined);
         ensureCurrent(cell);
         await port.setProxy(cell.proxy.endpoint); ensureCurrent(cell);
       }

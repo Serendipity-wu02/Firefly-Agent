@@ -840,6 +840,10 @@
     "loading": "Loading page…",
     "blocked": "This address is blocked by the browser safety policy.",
     "loadFailed": "Page could not be loaded.",
+    "restrictedAddress": "The resolved address belongs to a restricted network range. The page was not connected.",
+    "dnsFailed": "The website address could not be resolved.",
+    "dnsTimeout": "Resolving the website address timed out.",
+    "connectionFailed": "Could not connect to the website.",
     "cleanupFailed": "Browser cleanup failed. Browsing is disabled. Please restart Firefly_Agent manually to recover.",
     "newTabTitle": "New tab",
     "newTabSites": "Recommended",
@@ -873,7 +877,7 @@
     "stop": "Stop loading",
     "manualScope": "Enter a public HTTPS address and choose Go to authorize its exact site in a native dialog. A different site or additional resource hosts require fresh approval and clear the current page, session and history. Permission expires when the page is closed, permission is revoked, or the conversation changes.",
     "manualLimits": "Manual browsing permission does not allow the agent to read pages, click, or type. Login is unsupported: POST, common login paths, HTTP authentication, upload requests, downloads and device permissions are denied. Do not enter credentials or sensitive information. Some sites will not work.",
-    "agentScope": "Agent browsing requires separate native approval for only the fixed hosts and actions shown here. Manual site and resource permissions are not reused. Switching permission closes the current page and clears its session and history.",
+    "agentScope": "Agent browsing requires separate native approval for the exact hosts and actions shown here. Manual permissions are not reused. Switching permission closes the current page and clears its session and history.",
     "authorizeAgent": "Authorize Agent browsing separately",
     "switchToManual": "Revoke Agent permission and use manual browsing",
     "cancelPermission": "Cancel authorization",
@@ -895,7 +899,11 @@
     "retryState": "Check browser state again",
     "manualMode": "Manual",
     "agentMode": "Agent",
-    "separateAgent": "Separate Agent permission"
+    "separateAgent": "Separate Agent permission",
+    "agentChooseSites": "Choose Agent sites",
+    "agentSites": "Navigation hosts (up to 8)",
+    "agentResources": "Resource-only hosts (optional, up to 16)",
+    "agentExactSitesHelp": "Enter exact lowercase hostnames, separated by commas or spaces. No URLs or wildcards. Each change requires native approval and closes the old page. Resource hosts can supply scripts and data but cannot become pages. Blocked resource hosts are suggestions only; copy only those you trust."
   },
   "workspace": {
     "resizeSidebar": "Resize conversation sidebar",
