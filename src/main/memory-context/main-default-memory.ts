@@ -39,7 +39,11 @@ import { copyResponseJson } from "../orchestrator/vendors/response-request-snaps
 import type { TranscriptMutation } from "../orchestrator/conversation-transcript-store";
 import type { TranscriptEntry } from "../orchestrator/conversation-transcript-types";
 import { createMainMemoryRuntime, type MainMemoryRun } from "./main-memory-runtime";
+import type { BoundSourceRef } from "../../shared/memory-contracts";
 import { createDefaultRunCapture } from "./default-run-capture";
+import { createShadowService, type ShadowService } from "../memory-shadow/shadow-service";
+import { createShadowModel, type ShadowModel } from "../memory-shadow/shadow-model-call";
+import { recordRequest, recordUsage } from "../token-usage-store";
 import { queryScopedHistory } from "./scoped-history-query";
 import { createProductionModelRegistry } from "./production-model-registry";
 import { openProductionMemoryBackend, type ProductionMemoryBackend } from "./production-memory-backend";
@@ -148,6 +152,11 @@ export function createMainDefaultMemory(options: MainDefaultMemoryOptions) {
   const captureTargets = new Map<object, { conversationId: string; runId: string; assistantTurnId: string }>();
   const runCaptures = new Map<object, ReturnType<typeof createDefaultRunCapture>>();
   const adjustmentReleases = new Map<object, () => void>();
+  // Shadow extraction (default off). Verified user sources wait here until their run succeeds.
+  interface ShadowPending { sourceRef: BoundSourceRef; userTurnId: string; userText: string; profile: { id: string; revision: number } }
+  const shadowPending = new Map<string, ShadowPending>();
+  const shadowKey = (sessionId: string, runId: string) => canonicalJson([sessionId, runId]);
+  let shadow: ShadowService | undefined;
   let boot: Promise<Awaited<ReturnType<typeof initialize>>> | undefined;
   let liveRunAuthority: ReturnType<typeof createMemoryRunAuthority> | undefined;
   let mutations: Promise<unknown> = Promise.resolve();
@@ -174,7 +183,7 @@ export function createMainDefaultMemory(options: MainDefaultMemoryOptions) {
     const admission = admissions.get(id); admissions.delete(id);
     admission?.controller.abort(Error("MEMORY_RUN_REVOKED"));
   }
-  const releaseDeleted = options.targets.onSessionDeleted(id => { deletedSessions.add(id); revokeAdmission(id); attachments.revokeSession(id); forgetAttachmentProofs(id); sessionModes.remove(id); });
+  const releaseDeleted = options.targets.onSessionDeleted(id => { deletedSessions.add(id); revokeAdmission(id); attachments.revokeSession(id); forgetAttachmentProofs(id); sessionModes.remove(id); shadow?.cancelSession(id, "source-changed"); });
   function bind(event: Event, id: string) {
     if (closing || !owned(id)) return fail();
     const grant = authority.bind(event, id); source.attachSession(grant, id); return grant;
@@ -264,6 +273,14 @@ export function createMainDefaultMemory(options: MainDefaultMemoryOptions) {
             const capture = createDefaultRunCapture({ ...target, context, store: options.store, runReader: options.runReader, actorAuthority, actorToken: state.actor, registry,
               beforeMutation: (kind, entry, ticket) => beforeCanonicalMutation(id, state, kind, entry, ticket),
               attachmentProjection: attachments.token,
+              ...(run.identity.entry === "desktop" && run.identity.sessionMode === "persistent" ? { onUserSource: (item: { sourceRef: BoundSourceRef; userTurnId: string; userText: string }) => {
+                const message = options.getSession(id)?.messages.find(current => current.id === item.userTurnId);
+                if (options.getSession(id)?.mode !== "chat" || !message || message.attachments?.length) return;
+                const key = shadowKey(id, run.identity.runId);
+                shadowPending.delete(key); shadowPending.set(key, { sourceRef: item.sourceRef, userTurnId: item.userTurnId, userText: item.userText, profile: { id: run.identity.modelProfileId, revision: run.profileRevision } });
+                // Runs that never succeed leave their entry behind; keep only the newest few.
+                while (shadowPending.size > 32) shadowPending.delete(shadowPending.keys().next().value!);
+              } } : {}),
               summary: { protectedRecentTurns: models.bind(run.identity.modelProfileId).budget.minRecentCompleteTurns },
               ...(useFacts ? { facts: { currentUserSource: async (current: { userTurnId: string; userRevision: number }) => {
                 runAuthority.require(grantsByContext.get(run)!);
@@ -744,6 +761,7 @@ export function createMainDefaultMemory(options: MainDefaultMemoryOptions) {
       return Object.freeze({ signal: state.signal, release() { if (released) return; released = true; if (--state.users === 0 && admissions.get(id) === state) revokeAdmission(id); } });
     },
     afterTranscript(id: string, input: { userTurnId?: string; transcriptRewind?: { disposition: string } }) {
+      if (input.transcriptRewind?.disposition === "replace_user") shadow?.cancelSession(id, "source-changed");
       return serialized(async () => {
       if (!owned(id)) return;
       const admission = requireAdmission(id);
@@ -796,6 +814,7 @@ export function createMainDefaultMemory(options: MainDefaultMemoryOptions) {
     mutate<T>(event: Event, id: string, changedUsers: string[], commit: () => T): Promise<T> {
       return serialized(async () => {
         if (!owned(id) && !knownSessions.has(id)) return fail();
+        if (changedUsers.length) shadow?.cancelSession(id, "source-changed");
         const active = options.targets.getActive(); if (!active) return fail();
         const grant = bind(event, active.sessionId), core = await resources();
         if (owned(id)) await record(id);
@@ -817,11 +836,42 @@ export function createMainDefaultMemory(options: MainDefaultMemoryOptions) {
         for (const messageId of new Set(changedUsers)) await reconcile(id, messageId); return result;
       });
     },
+    /** Desktop turn finished successfully: queue its user message for shadow extraction. Never throws into the chat. */
+    async onTurnSucceeded(input: { sessionId: string; runId: string }): Promise<void> {
+      const key = shadowKey(input.sessionId, input.runId), item = shadowPending.get(key); shadowPending.delete(key);
+      if (!item || closing) return;
+      try {
+        const session = options.getSession(input.sessionId);
+        if (!session || session.mode !== "chat" || !owned(input.sessionId)) return;
+        const core = await resources();
+        const transport = core.backend.transport;
+        if (typeof transport.shadowCommand !== "function") return;
+        if (!shadow) shadow = createShadowService({ transport: { shadowCommand: command => transport.shadowCommand!(command) }, scopeKey: SCOPE, actorKey: ACTOR,
+          onError: error => console.warn("[memory-shadow] background task failed", error instanceof Error && /^MEMORY_[A-Z0-9_]{1,100}$/.test(error.message) ? error.message : "unexpected") });
+        // Fixed to the model this run was admitted with; a later profile change cancels the task.
+        let model: ShadowModel;
+        try {
+          const binding = core.models.bind(item.profile.id);
+          model = createShadowModel({ profile: item.profile, config: binding.config, adapter: binding.adapter,
+            assertCurrent: () => { binding.assertCurrent(); if (binding.revision !== item.profile.revision) throw new Error("MEMORY_RUN_PROFILE_CHANGED"); },
+            onUsage: (name, usage) => { recordRequest(name); recordUsage(usage.input, usage.output, 1, usage.cachedInput, name, usage.cacheCreation); } });
+        } catch {
+          model = { profile: item.profile, assertCurrent: () => { throw new Error("MEMORY_RUN_PROFILE_CHANGED"); }, prepare: () => ({ ok: false, reason: "no-output-limit" }) };
+        }
+        // The assistant reply right before this user message is context only, never evidence.
+        const index = session.messages.findIndex(message => message.id === item.userTurnId);
+        const previous = index > 0 ? session.messages[index - 1] : undefined;
+        const usable = previous?.role === "model" && typeof previous.content === "string" && previous.content.trim() && !previous.modelContext
+          && !previous.content.startsWith("[此前对话已压缩");
+        shadow.submit({ sessionId: input.sessionId, sourceRef: item.sourceRef, model,
+          turn: { user: { id: item.userTurnId, text: item.userText }, ...(usable ? { previousAssistant: { id: previous.id, text: previous.content } } : {}) } });
+      } catch { /* Shadow extraction is optional and must not affect the chat. */ }
+    },
     openRun(input: FireflyRunOptions): Promise<MainMemoryRun> {
       const pending = open(input); opening.add(pending); void pending.then(() => opening.delete(pending), () => opening.delete(pending)); return pending;
     },
     quiesce() {
-      if (closing) return; closing = true; ownerLifetime.abort(Error("MEMORY_CONTEXT_RUNTIME_CLOSED")); attachments.quiesce(); attachmentProofs.clear(); pendingAttachmentEdits.clear(); authority.dispose(); releaseDeleted();
+      if (closing) return; closing = true; shadow?.close(); shadowPending.clear(); ownerLifetime.abort(Error("MEMORY_CONTEXT_RUNTIME_CLOSED")); attachments.quiesce(); attachmentProofs.clear(); pendingAttachmentEdits.clear(); authority.dispose(); releaseDeleted();
       for (const id of admissions.keys()) revokeAdmission(id);
       for (const prepared of channelPrepared) prepared.quiesce();
       for (const prepared of backgroundPrepared) prepared.quiesce();

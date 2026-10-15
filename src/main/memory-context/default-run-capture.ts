@@ -38,6 +38,8 @@ export interface DefaultRunCaptureOptions {
     selector: ReturnType<typeof createMainFactSelector>;
     limits: { maxFacts: number };
   };
+  /** Called with the verified current user source of a persistent desktop run; carries no authority. */
+  onUserSource?: (input: { sourceRef: BoundSourceRef; userTurnId: string; userRevision: number; userText: string }) => void;
   /** Main injects its bound budget's protected turn count. Threshold/counting stay inside context. */
   summary?: { protectedRecentTurns: number; leaseMs?: number };
   /** Main-owned query must return genuine evidence whose entire partition excludes this session. */
@@ -182,6 +184,7 @@ export function createDefaultRunCapture(options: DefaultRunCaptureOptions): Main
         if (verified.sourceRef.binding.messageId !== current.userTurnId || verified.sourceRef.binding.contentRevision !== current.userRevision
           || await options.registry.readEvidence(actor.access, actor.adapter, verified.sourceRef) !== current.userText) contextFail("MEMORY_CONTEXT_STREAM_TURN_STALE");
         check(signal); currentUserSourceRef = verified.sourceRef;
+        try { options.onUserSource?.({ sourceRef: verified.sourceRef, userTurnId: current.userTurnId, userRevision: current.userRevision, userText: current.userText }); } catch { /* Observers cannot alter the run. */ }
         await options.facts.coordinator.onCommittedUserSource(actorToken, currentUserSourceRef, signal); check(signal);
         factRefs = (await options.facts.selector.selectFactRefs(actorToken, currentUserSourceRef, options.facts.limits, signal)).map(({ factId, revision }) => ({ factId, revision }));
       }

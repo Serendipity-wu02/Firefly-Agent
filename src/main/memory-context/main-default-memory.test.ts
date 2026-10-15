@@ -22,14 +22,15 @@ const storage = initializeStorageContext(resolveRuntimeProfile({ argv: ["--firef
 const cleanups: Array<() => Promise<void>> = [];
 afterEach(async () => { for (const cleanup of cleanups.splice(0)) await cleanup(); vi.unstubAllGlobals(); fs.rmSync(path.join(storage.dataRoot, "transcripts"), { recursive: true, force: true }); });
 
-async function fixture(mode: "chat" | "work" | "code" = "chat", options: { withoutRunReader?: boolean } = {}) {
+async function fixture(mode: "chat" | "work" | "code" = "chat", options: { withoutRunReader?: boolean; withoutShadow?: boolean } = {}) {
   const { createMainDefaultMemory } = await import("./main-default-memory");
   const root = fs.mkdtempSync(path.join(os.tmpdir(), "owner-sqlite-"));
   const repo = openMemoryRepository({ databasePath: path.join(root, "memory.sqlite"), key: randomBytes(32), clock: Date.now });
   const commands: any[] = [];
   const transport = { sourceCommand: async (command: unknown) => { commands.push(command); return repo.sourceCommand(command); },
     contextCommand: async (command: unknown) => { commands.push(command); return repo.contextCommand(command); },
-    policyCommand: async (command: unknown) => { commands.push(command); return repo.policyCommand(command); } };
+    policyCommand: async (command: unknown) => { commands.push(command); return repo.policyCommand(command); },
+    ...(options.withoutShadow ? {} : { shadowCommand: async (command: unknown) => repo.shadowCommand(command) }) };
   const f = { root, repo, commands, transport };
   const sender = Object.assign(new EventEmitter(), { id: 7, mainFrame: {}, isDestroyed: () => false });
   const settingsSender = Object.assign(new EventEmitter(), { id: 99, mainFrame: {}, isDestroyed: () => false });
@@ -759,4 +760,83 @@ it('retries after completed old closure and failed new instruction without appen
  expect(spy.mock.calls.filter(([,draft])=>draft.kind==='interruption'&&draft.runId===old.runId)).toHaveLength(0);
  expect((await f.store.read(old.sessionId)).entries.filter(entry=>entry.kind==='interruption'&&entry.runId===old.runId)).toHaveLength(1);
  spy.mockRestore();await prepared.close();
+});
+
+// ---- Shadow extraction (M2b): default off, one extraction per successful desktop turn ----
+const SHADOW_SCOPE = "desktop-local-profile-v1", SHADOW_ACTOR = "desktop-local-user-v1";
+const shadowCmd = (f: Awaited<ReturnType<typeof fixture>>, kind: string, body: Record<string, unknown> = {}) =>
+  (f.repo as any).shadowCommand({ kind, scopeKey: SHADOW_SCOPE, ...(["status", "export"].includes(kind) ? {} : { commandId: "t-" + Math.random().toString(36).slice(2) }), body: { actorKey: SHADOW_ACTOR, ...body } });
+const enableShadow = (f: Awaited<ReturnType<typeof fixture>>) => shadowCmd(f, "configure", { enabled: true, dailyCap: 50, expectedRevision: shadowCmd(f, "status").revision });
+const shadowAnswer = (quote: string) => Response.json({ choices: [{ message: { role: "assistant", content: JSON.stringify({ facts: [{ subject: "user", attribute: "tool", value: "VS Code", polarity: "positive", status: "asserted", quote, reason: "stated directly" }] }) }, finish_reason: "stop" }] });
+const shadowRequests = (f: Awaited<ReturnType<typeof fixture>>) => f.sent.filter(body => body.includes("userMessage"));
+async function waitUntil(check: () => boolean) { for (let i = 0; i < 300 && !check(); i++) await new Promise(resolve => setTimeout(resolve, 10)); }
+async function finishTurn(f: Awaited<ReturnType<typeof fixture>>, text: string, runId = "run-a", id = "session-a") {
+  const quote = text;
+  f.sessions.get(id).messages.push({ id: "a0", role: "model", content: "你一般用什么编辑器？" });
+  await f.user(id, text);
+  f.memory.authorizeRun(f.event, id);
+  const input = f.input(id, runId), run = await f.memory.openRun(input);
+  await run.call(f.call()); await run.bindSink(input.transcriptSink!).appendAssistant({ message: { role: "assistant", content: "synthetic answer" } });
+  f.respond(async () => shadowAnswer(quote));
+  return run;
+}
+
+it("shadow extraction does nothing while the switch is off", async () => {
+  const f = await fixture(); const run = await finishTurn(f, "我平时用 VS Code");
+  const before = f.sent.length;
+  await f.memory.onTurnSucceeded({ sessionId: "session-a", runId: "run-a" });
+  await new Promise(resolve => setTimeout(resolve, 100));
+  expect(f.sent).toHaveLength(before); expect(shadowCmd(f, "status")).toMatchObject({ enabled: false, used: 0, counters: {} });
+  await run.close();
+});
+
+it("extracts once after a successful desktop chat turn using the run's own profile", async () => {
+  const f = await fixture(); enableShadow(f);
+  const run = await finishTurn(f, "我平时用 VS Code");
+  await f.memory.onTurnSucceeded({ sessionId: "session-a", runId: "run-a" });
+  await f.memory.onTurnSucceeded({ sessionId: "session-a", runId: "run-a" });
+  await waitUntil(() => shadowCmd(f, "export").length === 1);
+  const records = shadowCmd(f, "export");
+  expect(records).toMatchObject([{ candidate: { attribute: "tool", value: "VS Code", evidence: { messageId: "u1", quote: "我平时用 VS Code" } }, profile: { id: "luna", revision: 1 }, promptVersion: "m-shadow-prompt-v1" }]);
+  const requests = shadowRequests(f);
+  expect(requests).toHaveLength(1);
+  expect(requests[0]).toContain("previousAssistantReply"); expect(requests[0]).toContain("你一般用什么编辑器？");
+  expect(requests[0]).toContain("openai/gpt-6-luna"); expect(requests[0]).toContain('\"max_tokens\":800');
+  expect(shadowCmd(f, "status")).toMatchObject({ used: 1, counters: { sent: 1, candidates: 1 } });
+  await run.close();
+});
+
+it("does not extract from Work or Code sessions", async () => {
+  for (const mode of ["work", "code"] as const) {
+    const f = await fixture(mode); enableShadow(f);
+    const run = await finishTurn(f, "我平时用 VS Code", "run-" + mode);
+    await f.memory.onTurnSucceeded({ sessionId: "session-a", runId: "run-" + mode });
+    await new Promise(resolve => setTimeout(resolve, 100));
+    expect(shadowRequests(f)).toHaveLength(0); expect(shadowCmd(f, "status").used).toBe(0);
+    await run.close();
+  }
+});
+
+it("a turn that never reports success leaves nothing behind", async () => {
+  const f = await fixture(); enableShadow(f); const run = await finishTurn(f, "我平时用 VS Code");
+  await f.memory.onTurnSucceeded({ sessionId: "session-a", runId: "other-run" });
+  await new Promise(resolve => setTimeout(resolve, 100));
+  expect(shadowRequests(f)).toHaveLength(0); expect(shadowCmd(f, "status").used).toBe(0);
+  await run.close();
+});
+
+it("cancels the extraction when the model profile changed after the run started", async () => {
+  const f = await fixture(); enableShadow(f); const run = await finishTurn(f, "我平时用 VS Code");
+  (f.settings as any).modelProfiles[0].apiKey = "changed-after-run";
+  await f.memory.onTurnSucceeded({ sessionId: "session-a", runId: "run-a" });
+  await waitUntil(() => shadowCmd(f, "status").counters["cancel:profile-changed"] === 1);
+  expect(shadowRequests(f)).toHaveLength(0); expect(shadowCmd(f, "status")).toMatchObject({ used: 0, counters: { "cancel:profile-changed": 1 } });
+  await run.close();
+});
+
+it("keeps working when the memory backend has no shadow storage", async () => {
+  const f = await fixture("chat", { withoutShadow: true }); const run = await finishTurn(f, "我平时用 VS Code");
+  await expect(f.memory.onTurnSucceeded({ sessionId: "session-a", runId: "run-a" })).resolves.toBeUndefined();
+  expect(shadowRequests(f)).toHaveLength(0);
+  await run.close();
 });
