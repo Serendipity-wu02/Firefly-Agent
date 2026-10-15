@@ -141,6 +141,7 @@ export async function runChildSession(input: {
       quiesceExecution: () => { executionQuiesced = true; controller.abort(); },
       signal: prepared?.signal ?? signal, toolContext: { ...toolContext, signal: prepared?.signal ?? signal }, toolOutputStore: parent.toolOutputStore,
       ...(memoryRun ? { memoryRun, transcriptSink: sink } : {}),
+      onToolsPlanned: events => runStore?.recordTools(session.childRunId, events.map(event => ({ toolCallId: event.toolCallId, toolName: event.toolName, sideEffect: event.toolSideEffect, status: event.status }))),
       onToolLifecycle: event => runStore?.recordTool(session.childRunId, { toolCallId: event.toolCallId, toolName: event.toolName, sideEffect: event.toolSideEffect, status: event.status }),
       onCompactionLifecycle: event => runStore?.recordCompaction(session.childRunId, event),
       checkPermission: parent.checkPermission, includeInteractiveTools: parent.includeInteractiveTools,

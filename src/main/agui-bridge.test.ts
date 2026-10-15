@@ -131,6 +131,56 @@ vi.mock("./permission", () => ({
 }));
 
 describe("agui-bridge sticker event ordering", () => {
+  it("keeps run timing open after ACK and isolates overlapping async completion callbacks", async () => {
+    vi.resetModules();
+    mocks.handlers.clear();
+    mocks.agentEvents = [];
+    mocks.getSession.mockImplementation((id: string) => ({ id, mode: "chat" }));
+    vi.stubEnv("FIREFLY_DEBUG_LOGS", "1");
+    const log = vi.spyOn(console, "log").mockImplementation(() => {});
+    const { perf } = await import("./perf-trace");
+    const { registerAgUiIpc } = await import("./agui-bridge");
+    let releaseA!: () => void;
+    let releaseB!: () => void;
+    const gates = [new Promise<void>(resolve => { releaseA = resolve; }), new Promise<void>(resolve => { releaseB = resolve; })];
+    let built = 0;
+    const onFinished = vi.fn(async (_result, text: string) => {
+      await perf.track(`finish-${text}`, () => gates[text === "A" ? 0 : 1]);
+      return { sticker: null };
+    });
+    registerAgUiIpc(async () => ({ options: {
+      settings: { provider: "test", baseUrl: "", model: "", apiKey: "", contextWindowTokens: 256000 },
+      messages: [], timeoutMs: 1000, toolSystemContent: "TOOL", soulSystemBaseContent: "SOUL",
+    }, latestUserText: built++ === 0 ? "A" : "B" }), onFinished, () => null);
+    const handler = mocks.handlers.get(IPC.AGUI_RUN)!;
+    const sender = { isDestroyed: () => false, send: () => {} };
+    try {
+      const a = await handler({ sender }, { messages: [], sessionId: "timing-A" }) as { runId: string };
+      const b = await handler({ sender }, { messages: [], sessionId: "timing-B" }) as { runId: string };
+      await expect.poll(() => onFinished.mock.calls.length).toBe(2);
+      expect(log.mock.calls.flat().join("\n")).not.toContain("TURN SUMMARY");
+      log.mockClear();
+      releaseB();
+      await expect.poll(() => log.mock.calls.flat().join("\n")).toContain("TURN SUMMARY");
+      const summaryB = log.mock.calls.flat().join("\n");
+      expect(summaryB).toContain(b.runId);
+      expect(summaryB).toContain("finish-B");
+      expect(summaryB).not.toContain("finish-A");
+      log.mockClear();
+      releaseA();
+      await expect.poll(() => log.mock.calls.flat().join("\n")).toContain("TURN SUMMARY");
+      const summaryA = log.mock.calls.flat().join("\n");
+      expect(summaryA).toContain(a.runId);
+      expect(summaryA).toContain("finish-A");
+      expect(summaryA).not.toContain("finish-B");
+    } finally {
+      releaseA(); releaseB();
+      await Promise.resolve();
+      vi.unstubAllEnvs();
+      log.mockRestore();
+    }
+  });
+
   // 每个测试前重置可定制的终态行为字段，
   // 避免上一个测试的副作用泄漏到下一个测试。
   beforeEach(() => {
