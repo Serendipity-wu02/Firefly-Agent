@@ -29,6 +29,22 @@ async function mountPage(): Promise<() => Promise<void>> {
 beforeEach(() => { document.body.replaceChildren(); });
 
 describe("memory settings page", () => {
+  it("re-reads the shadow card when asked, without reloading the rest of the page", async () => {
+    vi.resetModules();
+    document.body.innerHTML = fs.readFileSync("src/renderer/settings/index.html", "utf8");
+    const panel = await import("./panel");
+    let used = 1;
+    const shadowState = vi.fn(async () => ({ ok: true as const, state: { available: true, enabled: true, dailyCap: 50, revision: 1, day: "2026-10-15", used, stopped: null, records: 0, counters: {} } }));
+    installApi({ getState: async () => memoryState(), getData: async () => ({ importedDocs: [] }), shadowState });
+    await panel.refreshShadowPanel();
+    expect(shadowState).not.toHaveBeenCalled();
+    await panel.loadMemoryPanel();
+    expect(text("memory-shadow-usage")).toBe("1 / 50 次");
+    used = 7;
+    await panel.refreshShadowPanel();
+    expect(text("memory-shadow-usage")).toBe("7 / 50 次");
+  });
+
   it("shows overview counts from the real state and hides source coverage unless the backend measured it", async () => {
     const load = await mountPage();
     installApi({

@@ -93,7 +93,7 @@ import {
 } from "./shared/save-status";
 import { renderEmptyState, renderInfoList } from "./shared/render";
 import { shallowEqual, safeGet } from "./shared/utils";
-import { loadMemoryPanel } from "./memory/panel";
+import { loadMemoryPanel, refreshShadowPanel } from "./memory/panel";
 import {
   setSchedulerStatus, renderSchedulerTools, renderSchedulerList,
   loadSchedulerPanel, openSchedulerEditor, closeSchedulerEditor,
@@ -1532,6 +1532,7 @@ function switchSection(requestedSection: string): void {
   disclaimerPanel.classList.toggle("is-hidden", !isDisclaimer);
   const memoryPanel = document.getElementById("memory-panel");
   if (memoryPanel) memoryPanel.classList.toggle("is-hidden", !isMemory);
+  if (isMemory) void refreshShadowPanel();
   const userPanel = document.getElementById("user-panel");
   if (userPanel) userPanel.classList.toggle("is-hidden", !isUser);
   const tasksPanel = document.getElementById("tasks-panel");

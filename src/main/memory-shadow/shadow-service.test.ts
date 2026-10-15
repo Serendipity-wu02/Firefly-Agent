@@ -200,6 +200,7 @@ describe('shadow service',()=>{
    f.service.submit(taskFor(ref,gatedModel(g)));await g.started;
    f.service.close();await new Promise(r=>setTimeout(r,20));g.release();
    expect(f.direct('export')).toEqual([]);
+   expect(f.direct('status').counters).not.toHaveProperty('cancel:restart');
    f.service.submit(taskFor(f.publish(),fakeModel().model));
    expect(f.direct('status').used).toBe(1);
   });

@@ -51,6 +51,8 @@ export interface ShadowModelOptions {
  fetchImpl?:typeof fetch;
  timeoutMs?:number;
  /** 记入 Token 用量统计；失败不影响抽取。 */
+ /** 请求即将发出时调用一次（与厂商是否返回用量无关），用于请求计数。 */
+ onDispatch?(model:string):void;
  onUsage?(model:string,usage:NonNullable<Extract<ShadowSendResult,{ok:true}>['usage']>):void;
 }
 
@@ -68,7 +70,9 @@ export function createShadowModel(options:ShadowModelOptions):ShadowModel {
     if(signal.aborted)return {ok:false,kind:'cancelled'};
     const timeout=AbortSignal.timeout(timeoutMs);
     try{
-     const response=await doFetch(http.url,{method:'POST',headers:http.headers,body:http.body,signal:AbortSignal.any([signal,timeout])});
+     try{options.onDispatch?.(config.model)}catch{/* 计数失败不影响抽取 */}
+     // 不跟随重定向：与正常模型调用一致，避免请求头和消息被带到别处。
+     const response=await doFetch(http.url,{method:'POST',headers:http.headers,body:http.body,redirect:'error',signal:AbortSignal.any([signal,timeout])});
      if(!response.ok){
       const body=await response.text().catch(()=>'');
       return {ok:false,kind:classifyShadowHttpFailure(response.status,body.slice(0,1000))};
