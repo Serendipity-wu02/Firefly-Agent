@@ -107,6 +107,14 @@ function errorMessage(error: unknown): string {
   return error instanceof Error ? error.message : String(error);
 }
 
+/** Inspect package metadata without importing or executing its entry point. */
+function inspectStoredRecord(store: PluginVersionStore, id: string, stored: StoredPackage): PluginRecord {
+  const dir = store.packageDir(id, stored.key);
+  const manifest = inspectPluginDir(dir).manifest;
+  if (!manifest || manifest.id !== id || manifest.version !== stored.version) throw new Error("Invalid selected plugin package");
+  return { manifest, dir, source: "user", fingerprint: stored.key };
+}
+
 export class PluginManager {
   private versionStates = new Map<string, PluginVersionState>();
   private activationCandidates = new Map<string, StoredPackage>();
@@ -723,10 +731,7 @@ export class PluginManager {
         const stored = this.activationCandidates.get(id) ?? state.selected ?? state.pending;
         if (!stored) continue;
         try {
-          const dir = this.opts.versionStore.packageDir(id, stored.key);
-          const manifest = inspectPluginDir(dir).manifest;
-          if (!manifest || manifest.id !== id || manifest.version !== stored.version) throw new Error("Invalid selected plugin package");
-          records.set(id, { manifest, dir, source: "user", fingerprint: stored.key });
+          records.set(id, inspectStoredRecord(this.opts.versionStore, id, stored));
         } catch (error) { issues.push({ root: this.opts.versionStore.userRoot, source: "user", message: `${id}: ${errorMessage(error)}` }); }
       }
     }
@@ -795,6 +800,8 @@ export class PluginManager {
     if (!record || this.instances.has(id)) return;
     const store = record.source === "user" ? this.opts.versionStore : undefined;
     const priorSelection = this.versionStates.get(id)?.selected ?? null;
+    const priorRecord = store && priorSelection && this.activationCandidates.has(id)
+      ? inspectStoredRecord(store, id, priorSelection) : undefined;
     const stored = this.activationCandidates.get(id) ?? this.versionStates.get(id)?.selected;
     if (store) {
       if (!stored || this.blockedVersions.has(id)) throw new Error("Plugin requires application restart");
@@ -862,7 +869,12 @@ export class PluginManager {
         ctx?.beginStop();
         this.blockedVersions.add(id);
         if (this.activationCandidates.has(id)) {
-          try { this.versionStates.set(id, await store.failActivation(id, errorMessage(error), priorSelection)); }
+          try {
+            this.versionStates.set(id, await store.failActivation(id, errorMessage(error), priorSelection));
+            // Match all displayed metadata to the durable restored selection.
+            // This only replaces bookkeeping; blockedVersions still prevents hot rollback.
+            if (priorRecord) this.records.set(id, priorRecord);
+          }
           catch (restoreError) { this.versionIssues.push({ root: store.userRoot, source: "user", message: `Recovery required for ${id}: ${errorMessage(restoreError)}` }); }
           this.activationCandidates.delete(id);
         }

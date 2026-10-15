@@ -82,6 +82,39 @@ it("restores selection after candidate activation failure and loads old code onl
   expect(restored.value).toBe("1.0.0");
 });
 
+it.each([false, true])("keeps all displayed metadata on the selected package after candidate registration (fails=%s)", async fails => {
+  const f = await fixture();
+  const make = async (version: string, label: string, fail: boolean) => {
+    const file = await f.zip(version), zip = await JSZip.loadAsync(readFileSync(file));
+    const metadata = { name: `${label} name`, description: `${label} description`, author: `${label} author`, entry: `${label}.cjs`, defaultEnabled: label === "old", icon: "icon.svg" };
+    const icon = `<svg xmlns="http://www.w3.org/2000/svg"><text>${label}</text></svg>`;
+    const manifest = JSON.parse(await zip.file("manifest.json")!.async("string"));
+    zip.file("manifest.json", JSON.stringify({ ...manifest, ...metadata })); zip.remove("index.cjs");
+    zip.file(metadata.entry, fail ? "module.exports={register(){throw Error('different metadata rejected')}};"
+      : `module.exports={register(ctx){ctx.registerIpc('version',()=>${JSON.stringify(version)})}};`);
+    zip.file(metadata.icon, icon);
+    writeFileSync(file, await zip.generateAsync({ type: "nodebuffer" }));
+    return { file, metadata, icon: `data:image/svg+xml;base64,${Buffer.from(icon).toString("base64")}` };
+  };
+  const old = await make("1.0.0", "old", false);
+  await f.manager.installZip(old.file); await f.manager.setEnabled("fixture", true);
+  const oldPath = f.manager.list()[0].path;
+  const next = await make("2.0.0", "new", fails);
+  await f.manager.installZip(next.file);
+  const pending = f.store.read("fixture")!.pending!;
+  const expected = fails ? { ...old.metadata, version: "1.0.0", path: oldPath, icon: old.icon }
+    : { ...next.metadata, version: "2.0.0", path: f.store.packageDir("fixture", pending.key), icon: next.icon };
+  const restarted = restart(f.root);
+  expect(restarted.overview.plugins[0]).toMatchObject(expected);
+  if (fails) {
+    expect(restarted.value).toBeUndefined();
+    expect(restarted.overview.plugins[0]).toMatchObject({ status: "failed", activeVersion: null, restartRequired: true });
+  } else expect(restarted.value).toBe("2.0.0");
+  const following = restart(f.root);
+  expect(following.overview.plugins[0]).toMatchObject({ ...expected, status: "running" });
+  expect(following.value).toBe(expected.version);
+});
+
 it("installs disabled and stages updates without replacing active code or its directory", async () => {
   const f = await fixture();
   expect(await f.manager.installZip(await f.zip("1.0.0"))).toMatchObject({ ok: true, installation: "committed", activation: "not-requested" });
