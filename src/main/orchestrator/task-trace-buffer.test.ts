@@ -52,6 +52,24 @@ describe("task trace buffer", () => {
     expect(s.trace().map(record => record.id)).toEqual(["old", "d1"]);
   });
 
+  it("keeps the records when a write fails and saves them with the next flush", () => {
+    const s = store(); let failNext = true;
+    const flaky = { get: s.api.get, checkpoint: ((id: string, patch: { trace?: TaskTraceRecord[] }) => { if (failNext) { failNext = false; throw new Error("synthetic write failure"); } return (s.api.checkpoint as (...a: unknown[]) => unknown)(id, patch); }) as never };
+    const buffer = createTaskTraceBuffer(flaky, "task", 3);
+    buffer.add(delta(1)); buffer.add(delta(2));
+    expect(() => buffer.add(delta(3))).toThrow("synthetic write failure");
+    expect(buffer.size).toBe(3); expect(s.writes).toEqual([]);
+    buffer.flush();
+    expect(s.trace().map(record => record.id)).toEqual(["d1", "d2", "d3"]);
+    expect(buffer.size).toBe(0);
+  });
+
+  it("does not grow without bound while writes keep failing", () => {
+    const buffer = createTaskTraceBuffer({ get: () => ({ trace: [] }) as never, checkpoint: (() => { throw new Error("down"); }) as never }, "task", 10_000);
+    for (let n = 0; n < 2500; n++) buffer.add(delta(n));
+    expect(buffer.size).toBe(2000);
+  });
+
   it("does not write when nothing is pending", () => {
     const s = store(), buffer = createTaskTraceBuffer(s.api, "task");
     buffer.flush();
