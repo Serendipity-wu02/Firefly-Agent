@@ -4,10 +4,12 @@ import type { MemoryPanelApi, MemoryPanelPayload } from "../shared/types";
 import { applyTranslations, t } from "../i18n";
 import { formatDateTime } from "../shared/format";
 import { createMemoryEntriesPanel } from "./entries-panel";
+import { createShadowPanel } from "./shadow-panel";
 
 let entries: ReturnType<typeof createMemoryEntriesPanel> | null = null;
 let entriesRoot: HTMLElement | null = null;
 let translated = false;
+let shadow: ReturnType<typeof createShadowPanel> | null = null;
 let importedDocs: MemoryPanelPayload["importedDocs"] = [];
 
 function api(): MemoryPanelApi | undefined {
@@ -109,5 +111,6 @@ export async function loadMemoryPanel(): Promise<void> {
     const bridge = api();
     entries = createMemoryEntriesPanel(root, typeof bridge?.getState === "function" ? bridge : undefined, renderOverview);
   }
-  await Promise.all([entries?.load(), loadImportedDocs()]);
+  if (!shadow && document.getElementById("memory-shadow")) shadow = createShadowPanel(api);
+  await Promise.all([entries?.load(), loadImportedDocs(), shadow?.load()]);
 }

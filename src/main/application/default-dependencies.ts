@@ -4,6 +4,8 @@ import { SIDEBAR_LAYOUT_IPC } from "../../shared/sidebar-layout";
 import { registerDesktopAsrIpc } from "../asr/desktop-asr-ipc";
 import {createMainDefaultMemory} from "../memory-context/main-default-memory";
 import {registerMemorySettingsIpc} from "../memory-policy/memory-settings-ipc";
+import {registerShadowSettingsIpc} from "../memory-shadow/shadow-settings-ipc";
+import {isFromHostDocument} from "../plugin-management-ipc-guard";
 import { createBrowserWorkspaceExecutor } from "../browser/browser-workspace-executor";
 import {createMainDesktopMemory} from "../memory-context/main-desktop-memory";
 import {openDesktopMemoryBackend,desktopMemoryAdmissionMode} from "../memory-context/desktop-memory-backend";
@@ -20,6 +22,7 @@ import { getStorageContext } from "../storage-context";
 
 import { app, BrowserWindow, dialog, screen } from "electron";
 import * as path from "path";
+import * as fs from "node:fs";
 import { randomBytes, randomUUID } from "node:crypto";
 import { autoUpdater } from "electron-updater";
 
@@ -596,6 +599,19 @@ export function createDefaultApplicationDependencies(): ApplicationDependencies 
         shutdown.register({ id: "model-connection-listener", phase: "quiesce", dispose: disposeSettingsConnections });
 
         registerMemorySettingsIpc({ipc,getSettingsWindow:()=>settingsWindow,host:defaultMemory?.settingsHost??null});
+        // Shadow extraction settings (experimental, off by default): settings window main frame only.
+        registerShadowSettingsIpc({
+          ipc,
+          authorize:event=>isFromHostDocument(event,settingsWindow&&!settingsWindow.isDestroyed()?settingsWindow.webContents:null,"settings"),
+          service:async()=>(await defaultMemory?.getShadowService())??null,
+          chooseExportPath:async defaultName=>{
+            const parent=settingsWindow&&!settingsWindow.isDestroyed()?settingsWindow:undefined;
+            const options={title:"导出影子记忆",defaultPath:path.join(app.getPath("documents"),defaultName),filters:[{name:"JSON",extensions:["json"]}],properties:["showOverwriteConfirmation" as const]};
+            const result=parent?await dialog.showSaveDialog(parent,options):await dialog.showSaveDialog(options);
+            return result.canceled?undefined:result.filePath;
+          },
+          writeFile:(filePath,content)=>fs.promises.writeFile(filePath,content,"utf8"),
+        });
         registerMemoryUserToolIpc({
           personalMemoryMode:defaultMemory?"smh":"legacy",
           ipc,

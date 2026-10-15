@@ -231,6 +231,10 @@ export const IPC = {
   MEMORY_PANEL_AUDIT_SOURCE: "memory-panel:audit-source",
   MEMORY_PANEL_GET_DATA: "memory-panel:get-data",
   MEMORY_PANEL_DELETE_IMPORTED_DOC: "memory-panel:delete-imported-doc",
+  MEMORY_SHADOW_STATE: "memory-shadow:state",
+  MEMORY_SHADOW_CONFIGURE: "memory-shadow:configure",
+  MEMORY_SHADOW_EXPORT: "memory-shadow:export",
+  MEMORY_SHADOW_CLEAR: "memory-shadow:clear",
 
   // MCP server management
   MCP_ADD_SERVER: "mcp:add-server",

@@ -63,3 +63,29 @@ export interface MemoryPolicyPanelApi {
   applyAction(action: MemoryPanelAction): Promise<MemoryPanelOutcome>;
   auditSource(factId: string): Promise<MemoryPanelSourceAudit>;
 }
+
+/** Shadow extraction (experimental) settings page DTOs. Counts and switches only; no message content. */
+export interface ShadowPanelState {
+  /** False when this build's memory backend has no shadow storage. */
+  available: boolean;
+  enabled: boolean;
+  dailyCap: number;
+  /** Optimistic-concurrency token for the next configure call. */
+  revision: number;
+  /** Local date the usage below belongs to (YYYY-MM-DD). */
+  day: string;
+  used: number;
+  stopped: "quota" | "rate-limit" | null;
+  /** Stored records whose source message still exists. */
+  records: number;
+  counters: Record<string, number>;
+}
+export type ShadowPanelError = "SHADOW_UNAVAILABLE" | "SHADOW_FORBIDDEN" | "SHADOW_INPUT_INVALID" | "SHADOW_REVISION_CONFLICT" | "SHADOW_FAILED";
+export type ShadowPanelOutcome = { ok: true; state: ShadowPanelState } | { ok: false; error: ShadowPanelError };
+export type ShadowExportOutcome = { ok: true; canceled: false; count: number } | { ok: true; canceled: true } | { ok: false; error: ShadowPanelError };
+export interface ShadowPanelApi {
+  shadowState(): Promise<ShadowPanelOutcome>;
+  shadowConfigure(input: { enabled: boolean; dailyCap: number; expectedRevision: number }): Promise<ShadowPanelOutcome>;
+  shadowExport(): Promise<ShadowExportOutcome>;
+  shadowClear(): Promise<ShadowPanelOutcome>;
+}

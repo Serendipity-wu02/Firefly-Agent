@@ -1,5 +1,5 @@
 import type { ExternalSkillsApi } from "../../../shared/external-skills";
-import type { MemoryPolicyPanelApi } from "../../../shared/memory-panel-contracts";
+import type { MemoryPolicyPanelApi, ShadowPanelApi } from "../../../shared/memory-panel-contracts";
 import type { UiColors } from "../../../shared/ui-colors";
 // Settings 公共类型定义
 // 从 settings.ts 抽离的跨面板共享类型。
@@ -169,7 +169,7 @@ export interface MemoryPanelPayload {
   }>;
 }
 
-export interface MemoryPanelApi extends MemoryPolicyPanelApi {
+export interface MemoryPanelApi extends MemoryPolicyPanelApi, Partial<ShadowPanelApi> {
   getData: () => Promise<MemoryPanelPayload>;
   deleteImportedDoc: (importId: string, fileName?: string) => Promise<{ ok: boolean; deleted: number }>;
 }
