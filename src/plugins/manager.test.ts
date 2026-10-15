@@ -850,6 +850,21 @@ describe("PluginManager", () => {
     expect(mgr.overview().issues[0]?.message).toMatch(/无法扫描插件目录/);
   });
 
+  it("does not expose a panel when registration failed despite configured enablement", async () => {
+    const h = harness();
+    const dir = path.join(tmp, "demo");
+    const manifest = JSON.parse(readFileSync(path.join(dir, "manifest.json"), "utf8"));
+    writeFileSync(path.join(dir, "manifest.json"), JSON.stringify({ ...manifest, settingsPanel: "ui.html" }));
+    writeFileSync(path.join(dir, "ui.html"), "<p>fixture</p>");
+    writeFileSync(path.join(dir, "index.cjs"), "module.exports = { register() { throw new Error('fixture activation failure'); } };");
+    const mgr = new PluginManager(h.options);
+    await mgr.start();
+    expect(mgr.list().find(p => p.id === "demo")).toMatchObject({ configuredEnabled: true, status: "failed" });
+    expect(mgr.getSettingsPanelDir("demo")).toBeUndefined();
+    expect(mgr.list().find(p => p.id === "demo")?.settingsPanel).toBeUndefined();
+    await mgr.stop();
+  });
+
   it("getSettingsPanelDir：仅已启用且声明合法面板的插件返回目录", async () => {
     const h = harness(); // 先初始化 tmp 再建 fixture
     const panelPluginDir = path.join(tmp, "panel-plugin");

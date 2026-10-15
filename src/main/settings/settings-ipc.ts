@@ -29,6 +29,7 @@ import { assertModelSettingsReadable } from "./model-settings";
 import { resolveInputModalities } from "../orchestrator/vendors/multimodal";
 import { normalizeDeclaredInputModalities } from "../../shared/input-modalities";
 import { assertGeneralSettingsReadable } from "./settings-facade";
+import { isFromHostDocument } from "../plugin-management-ipc-guard";
 import { getTimeoutSettings, saveTimeoutSettings } from "../timeout-manager";
 import type { syncVolcanoSearchMcp } from "./general-settings-lifecycle";
 import type { syncPlaywrightMcp } from "../sync-mcp-builtin";
@@ -141,7 +142,14 @@ export function registerSettingsIpc(deps: SettingsIpcDependencies): () => void {
     return { profiles: listProfileViews(saved), defaultModelProfileId: saved.defaultModelProfileId };
   });
 
-  ipc.handle(IPC.SETTINGS_GET_GENERAL, () => {
+  ipc.handle(IPC.SETTINGS_GET_GENERAL, (event: IpcMainInvokeEvent) => {
+    const settingsHost = settingsWindow && !settingsWindow.isDestroyed() ? settingsWindow.webContents : null;
+    const chatHost = reactChatWindow && !reactChatWindow.isDestroyed() ? reactChatWindow.webContents : null;
+    const pet = event?.sender && deps.windowManager?.isPetWindowSender(event.sender.id)
+      && isFromHostDocument(event, event.sender, "pet");
+    if (!isFromHostDocument(event, settingsHost, "settings") && !isFromHostDocument(event, chatHost, "react") && !pet) {
+      throw new Error("GENERAL_SETTINGS_FORBIDDEN");
+    }
     assertGeneralSettingsReadable();
     return getGeneralSettings();
   });
@@ -200,7 +208,18 @@ export function registerSettingsIpc(deps: SettingsIpcDependencies): () => void {
     return saved.uiFont;
   });
 
-  ipc.handle(IPC.SETTINGS_SAVE_GENERAL, async (_event, settings: Partial<GeneralSettings>) => {
+  ipc.handle(IPC.SETTINGS_SAVE_GENERAL, async (event: IpcMainInvokeEvent, settings: Partial<GeneralSettings>) => {
+    if (!settings || typeof settings !== "object" || Array.isArray(settings)) {
+      throw new Error("GENERAL_SETTINGS_INVALID");
+    }
+    // Only the dedicated plugin manager may persist plugin enablement.
+    // Reject the whole patch before any persistence or lifecycle side effect.
+    if ("plugins" in settings) throw new Error("GENERAL_SETTINGS_PLUGINS_FORBIDDEN");
+    const settingsHost = settingsWindow && !settingsWindow.isDestroyed() ? settingsWindow.webContents : null;
+    const chatHost = reactChatWindow && !reactChatWindow.isDestroyed() ? reactChatWindow.webContents : null;
+    if (!isFromHostDocument(event, settingsHost, "settings") && !isFromHostDocument(event, chatHost, "react")) {
+      throw new Error("GENERAL_SETTINGS_FORBIDDEN");
+    }
     const saved = saveGeneralSettings(settings);
     if ("searchMinimaxKey" in settings || "searchEngine" in settings) await syncVolcanoSearchMcp(saved);
     if ("playwrightMcpEnabled" in settings) await syncPlaywrightMcp(saved);

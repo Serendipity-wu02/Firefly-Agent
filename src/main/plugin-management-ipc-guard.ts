@@ -1,4 +1,8 @@
 import type { IpcMainInvokeEvent, WebContents } from "electron";
+import { app } from "electron";
+import path from "node:path";
+import { pathToFileURL } from "node:url";
+import { isDev } from "./env";
 import { IPC } from "../shared/ipc-channels";
 
 /** 只读：React 聊天窗口的插件页和设置窗口（插件面板、定时任务页）都会读取列表。 */
@@ -21,8 +25,22 @@ export interface PluginIpcHosts {
 
 /** 调用必须来自仍存活的宿主窗口的主 frame；子 frame、其他窗口一律拒绝。 */
 export function isFromHostMainFrame(event: IpcMainInvokeEvent, host: WebContents | null): boolean {
-  return Boolean(host && !host.isDestroyed() && event.sender === host
+  return Boolean(event && host && !host.isDestroyed() && event.sender === host
     && event.senderFrame && event.senderFrame === host.mainFrame);
+}
+
+/** Bind an existing host to its shipped document, not merely to a window identity. */
+export function isFromHostDocument(event: IpcMainInvokeEvent, host: WebContents | null, page: "react" | "settings" | "pet"): boolean {
+  if (!isFromHostMainFrame(event, host)) return false;
+  try {
+    const actual = new URL(event.senderFrame!.url);
+    actual.hash = "";
+    // React routing uses query parameters; settings only uses fragment navigation.
+    if (page === "react") actual.search = "";
+    const expected = isDev ? (page === "pet" ? "http://localhost:5173/" : `http://localhost:5173/${page}/`)
+      : pathToFileURL(path.join(app.getAppPath(), "dist", "renderer", page === "pet" ? "" : page, "index.html")).href;
+    return actual.href === expected;
+  } catch { return false; }
 }
 
 export const PLUGIN_MANAGEMENT_FORBIDDEN = "插件管理调用来源窗口不受信任";
@@ -37,9 +55,9 @@ export function checkPluginManagementCaller(
   hosts: PluginIpcHosts,
 ): boolean | null {
   if (READ_CHANNELS.has(channel)) {
-    return isFromHostMainFrame(event, hosts.getManagementHost()) || isFromHostMainFrame(event, hosts.getPanelHost());
+    return isFromHostDocument(event, hosts.getManagementHost(), "react") || isFromHostDocument(event, hosts.getPanelHost(), "settings");
   }
-  if (MANAGE_CHANNELS.has(channel)) return isFromHostMainFrame(event, hosts.getManagementHost());
+  if (MANAGE_CHANNELS.has(channel)) return isFromHostDocument(event, hosts.getManagementHost(), "react");
   return null;
 }
 

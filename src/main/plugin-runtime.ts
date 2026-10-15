@@ -15,6 +15,7 @@ import type { PluginSchedulerStore } from "./plugin-host/scheduler-service";
 import { installPluginPanelProtocol } from "./plugin-panel-protocol";
 import { createPluginIpcRouter } from "../plugins/ipc-router";
 import { PluginManager } from "../plugins/manager";
+import { PluginVersionStore } from "../plugins/version-store";
 import { pluginPromptRegistry } from "../plugins/prompts";
 import {
   MARKET_REGISTRY_URLS,
@@ -23,7 +24,7 @@ import {
 } from "./plugin-marketplace";
 import { IPC } from "../shared/ipc-channels";
 import { registerPluginMarketplaceIpc } from "./plugin-marketplace-ipc";
-import { guardPluginIpcHandler, isFromHostMainFrame, type PluginIpcHosts } from "./plugin-management-ipc-guard";
+import { guardPluginIpcHandler, isFromHostDocument, type PluginIpcHosts } from "./plugin-management-ipc-guard";
 import type { LlmClient } from "./services/llm/llm-client";
 import { enqueueLLMTask } from "./llm-queue";
 import type { IpcScope } from "./application/ipc-scope";
@@ -65,11 +66,21 @@ export async function startPluginRuntime(deps: PluginRuntimeDeps): Promise<Plugi
   // 普通聊天经 IPC 提交桥送入聊天窗口渲染页，活动通话经控制器落到通话管理器
 
   const manager = new PluginManager({
+    versionStore: new PluginVersionStore(userPluginRoot),
     scanRoots: [
       { path: path.join(__dirname, "..", "plugins"), source: "builtin" },
       { path: userPluginRoot, source: "user" },
     ],
     storageRoot: pluginDataRoot,
+    onListChanged: () => {
+      const overview = manager.overview();
+      for (const host of new Set([hosts.getManagementHost(), hosts.getPanelHost()])) {
+        if (host && !host.isDestroyed()) {
+          try { host.send(IPC.PLUGINS_CHANGED, overview); }
+          catch (error) { console.warn("[plugins] state notification failed", error); }
+        }
+      }
+    },
     runtime: {
       // 宿主工具注册表端口：插件侧传 PluginTool（宽松端口类型），
       // 在此信任边界处适配进主进程注册表；缺省字段由运行时默认值兜底
@@ -175,8 +186,11 @@ export async function startPluginRuntime(deps: PluginRuntimeDeps): Promise<Plugi
       if (typeof pluginId !== "string" || typeof channel !== "string" || !Array.isArray(args)) {
         return { ok: false, error: "面板调用参数格式非法" };
       }
-      if (!isFromHostMainFrame(event, hosts.getPanelHost())) {
+      if (!isFromHostDocument(event, hosts.getPanelHost(), "settings")) {
         return { ok: false, error: "面板调用来源窗口不受信任" };
+      }
+      if (!manager.getSettingsPanelDir(pluginId)) {
+        return { ok: false, error: "插件面板未运行" };
       }
       return router.dispatch({ pluginId, channel, args, caller: "panel" });
     },

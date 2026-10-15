@@ -11,6 +11,7 @@ import type {
   MarketSourceStatus,
 } from "../shared/plugin-management";
 import type { PluginImportResult } from "../plugins/manager";
+import type { PackageSource } from "../plugins/version-store";
 
 // Enable only after the exact catalog and release assets have been approved, published and verified.
 export const MARKET_REGISTRY_URLS: readonly string[] = [];
@@ -25,6 +26,7 @@ const GITHUB_RELEASE_ASSET_ORIGIN = "https://release-assets.githubusercontent.co
 
 /** Only Main owns executable package locations and hashes. Renderer can request an id, never a URL. */
 interface MarketSnapshotEntry {
+  sourceId?: string;
   id: string;
   version: string;
   zip: string;
@@ -46,7 +48,7 @@ export interface PluginMarketplaceDeps {
   cacheDir: string;
   installZip: (
     zipPath: string,
-    opts: { expectedIdentity: { id: string; version: string }; origin: "market" },
+    opts: { expectedIdentity: { id: string; version: string }; origin: "market"; packageSource: PackageSource },
   ) => Promise<PluginImportResult>;
   fetchImpl?: MarketplaceFetch;
   /** Test overrides for bounded I/O. */
@@ -264,7 +266,7 @@ export function createPluginMarketplaceService(deps: PluginMarketplaceDeps) {
       }
     }
     if (chosen) {
-      if (seq === listSeq) snapshot = chosen.snapshot;
+      if (seq === listSeq) snapshot = new Map(Array.from(chosen.snapshot, ([id, entry]) => [id, { ...entry, sourceId: chosenSource }]));
       const mode = chosenSource !== BUNDLED_MARKET_SOURCE ? "online"
         : deps.registryUrls.length && preferred !== BUNDLED_MARKET_SOURCE ? "offline-fallback" : "bundled";
       return { ok: true, plugins: chosen.plugins, sources, mode };
@@ -307,9 +309,13 @@ export function createPluginMarketplaceService(deps: PluginMarketplaceDeps) {
           await copyFile(await bundledFile(match[1], zipMaxBytes), tempPath, constants.COPYFILE_EXCL);
         } else { await downloadZip(entry.zip, tempPath); }
         if (await sha256File(tempPath) !== entry.sha256.toLowerCase()) throw new Error("插件包校验失败（SHA-256 不匹配）");
-        const result = await deps.installZip(tempPath, { expectedIdentity: { id: entry.id, version: entry.version }, origin: "market" });
-        if (!result.ok) return { ok: false, error: result.canceled ? "已取消安装插件" : result.error ?? "安装插件失败" };
-        return { ok: true, plugin: result.plugin ?? { id: entry.id, name: entry.id, version: entry.version }, overview: result.overview };
+        if (!entry.sourceId) throw new Error("插件来源快照缺失，请刷新后重试");
+        const result = await deps.installZip(tempPath, { expectedIdentity: { id: entry.id, version: entry.version }, origin: "market",
+          packageSource: { kind: entry.source === "bundled" ? "bundled" : "curated-market", sourceId: entry.sourceId, archiveSha256: entry.sha256.toLowerCase() } });
+        if (!result.ok) return { ok: false, error: result.canceled ? "已取消安装插件" : result.error ?? "安装插件失败",
+          installation: result.installation, activation: result.activation, overview: result.overview };
+        return { ok: true, plugin: result.plugin ?? { id: entry.id, name: entry.id, version: entry.version }, overview: result.overview,
+          installation: result.installation === "committed" ? "committed" : undefined, activation: result.activation };
       } finally { await rm(tempPath, { force: true }); }
     } catch (error) { return { ok: false, error: errorMessage(error) }; }
     finally { installInFlight = false; }

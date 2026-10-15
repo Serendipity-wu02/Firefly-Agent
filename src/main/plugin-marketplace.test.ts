@@ -250,6 +250,7 @@ describe("listMarket", () => {
     expect(deps.installZip).toHaveBeenCalledWith(expect.any(String), {
       expectedIdentity: { id: "fresh", version: "1.0.0" },
       origin: "market",
+      packageSource: { kind: "curated-market", sourceId: REGISTRY_URL_B, archiveSha256: sha },
     });
     const staleInstall = await service.installFromMarket("stale");
     expect(staleInstall).toMatchObject({ ok: false });
@@ -283,10 +284,17 @@ describe("installFromMarket", () => {
     expect(result).toMatchObject({ ok: true, plugin: { id: "demo", version: "1.0.0" } });
     expect(deps.installZip).toHaveBeenCalledWith(
       expect.any(String),
-      { expectedIdentity: { id: "demo", version: "1.0.0" }, origin: "market" },
+      { expectedIdentity: { id: "demo", version: "1.0.0" }, origin: "market", packageSource: { kind: "curated-market", sourceId: REGISTRY_URL_A, archiveSha256: sha256Of(zipBytes) } },
     );
     // 临时文件已清理
     expect(readdirSync(deps.cacheDir)).toEqual([]);
+  });
+
+  it("preserves committed installation and pending activation outcomes", async () => {
+    const { service } = await serviceWithZip(new Uint8Array([1, 2]), {}, {
+      installZip: async () => ({ ok: true, installation: "committed", activation: "restart-required" }),
+    });
+    expect(await service.installFromMarket("demo")).toMatchObject({ ok: true, installation: "committed", activation: "restart-required" });
   });
 
   it("未成功拉取列表时拒绝安装", async () => {
