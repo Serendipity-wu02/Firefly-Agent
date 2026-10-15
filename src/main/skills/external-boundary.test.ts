@@ -31,8 +31,11 @@ const unchangedBoundaries = {
   // outcomes only. Remote allowlists remain empty and are independently asserted.
   "src/main/plugin-marketplace.ts": "302a4594cef95e26511e53b11978d116df6834184e93e210e9f560dbd403624e",
   "src/main/browser/browser-request-policy.ts": "9ce32fdba4722e49b7c96d27ad7a2058fae3d62a4186d44aac98e49d7e62bdf1",
-  "src/main/browser/browser-startup-config.ts": "dc2f2a25a0f9f6f8d4656ef0fa953d6d7ae206676503da3f5f155d2109f8969e",
-  "src/main/browser/electron-browser-guest.ts": "e6f519dec91df18236914156c0ee4c27d250ef57a79481aacd0f308a9ee61027",
+  // Reviewed window-browser tools change: browser-startup-config only forwards the optional acceptDownload callback, and
+  // electron-browser-guest only attaches the per-page tools object. No navigation, network or sandbox setting changed here;
+  // downloads stay refused unless Main's service sees a current ordinary-browsing page (see docs/browser-tools.md).
+  "src/main/browser/browser-startup-config.ts": "08b61ff4e0f654f1bb236bcf19d6f09d3ddcc8d9b2c21d6052fdb55e800f2701",
+  "src/main/browser/electron-browser-guest.ts": "330eaa4d3250da0e1c2efe9154676ded647b36a7d1ab8ff9b139313cfd4367db",
   "src/main/permission-policy.ts": "b83f34a3ab293c4ea87ddf6f2bb13cd8cf4e6fc31ff266be06f7f5b5f89b1903",
   "src/main/permission.ts": "268ffc75b7f18be3e0438a7c81e1a5ab3e2e3d6c16b29abb5db5491e3e9911a3",
   "src/main/permission/bootstrap.ts": "4419a194aa95f813f9f6aa90d250c1b71036ef49b508b6c0c716a0dc8ffc70a0",
