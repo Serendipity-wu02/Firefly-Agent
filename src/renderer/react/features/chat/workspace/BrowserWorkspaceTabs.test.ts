@@ -80,3 +80,29 @@ it("keeps the panel open until Agent cleanup succeeds and exposes its failure", 
   await act(async () => { finish(false); await closing; });
   expect(onClose).not.toHaveBeenCalled(); expect(host.querySelector('[role="alert"]')?.textContent).toContain("browserWorkspace.cleanupFailed");
 });
+
+it("closes the whole pane when the last tab is closed, so no empty pane keeps the width", async () => {
+  const onClose = vi.fn();
+  vi.mocked(window.manualBrowserWorkspace!.revokePermission).mockResolvedValue({ ok: true, value: { conversationId: null, workspaceId: "w", status: "required", scope: { mode: "manual", hosts: [], actions: ["navigate"] }, requestId: null } });
+  await act(async () => root.render(createElement(BrowserWorkspaceTabs, { sessionId: undefined, active: true, paneClose: true, onClose })));
+  await act(async () => host.querySelector<HTMLButtonElement>('[data-browser-new-tab]')!.click());
+  await act(async () => host.querySelector<HTMLButtonElement>('[data-browser-close-tab="b"]')!.click());
+  await afterExit();
+  expect(host.querySelector('[data-tab="a"]')).not.toBeNull();
+  expect(onClose).not.toHaveBeenCalled();
+  await act(async () => host.querySelector<HTMLButtonElement>('[data-browser-close-tab="a"]')!.click());
+  await afterExit();
+  expect(closeTab).toHaveBeenLastCalledWith("a");
+  expect(window.manualBrowserWorkspace!.revokePermission).toHaveBeenCalledWith("w");
+  expect(onClose).toHaveBeenCalledTimes(1);
+});
+
+it("keeps the pane open when Main refuses to close the last tab", async () => {
+  const onClose = vi.fn();
+  closeTab.mockResolvedValueOnce({ ok: false, code: "cleanup_failed" });
+  await act(async () => root.render(createElement(BrowserWorkspaceTabs, { sessionId: undefined, active: true, paneClose: true, onClose })));
+  await act(async () => host.querySelector<HTMLButtonElement>('[data-browser-close-tab="a"]')!.click());
+  await afterExit();
+  expect(onClose).not.toHaveBeenCalled();
+  expect(host.querySelector('[data-tab="a"]')).not.toBeNull();
+});
