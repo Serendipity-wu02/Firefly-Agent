@@ -168,6 +168,8 @@ export function ChatPage() {
   const [browserTabOpen, setBrowserTabOpen] = useState(false);
   const [tasksTabOpen, setTasksTabOpen] = useState(false);
   const [inspectorHidden, setInspectorHidden] = useState(false);
+  // The panel's real state: dragging the separator to zero (or End) collapses it while inspectorHidden stays false.
+  const [inspectorCollapsed, setInspectorCollapsed] = useState(false);
   const dockGroupRef = useRef<GroupImperativeHandle | null>(null);
   const [resultTabIds, setResultTabIds] = useState<string[]>([]);
   const [workspaceRevisionBySession, setWorkspaceRevisionBySession] = useState<Record<string, number>>({});
@@ -1526,9 +1528,9 @@ export function ChatPage() {
         elementRef={dockRef}
         groupRef={dockGroupRef}
         orientation={compactDock ? "vertical" : "horizontal"}
-        className={`ff-page-dock ${compactDock ? "is-compact" : ""}${inspectorTabIds.length > 0 && inspectorVisible && !compactDock ? " has-inspector" : ""}`}
+        className={`ff-page-dock ${compactDock ? "is-compact" : ""}${inspectorTabIds.length > 0 && inspectorVisible && !compactDock && !inspectorCollapsed ? " has-inspector" : ""}`}
         defaultLayout={compactDock ? undefined : defaultLayout}
-        onLayoutChange={onInspectorLayoutChange}
+        onLayoutChange={layout => { onInspectorLayoutChange(layout); setInspectorCollapsed(Object.hasOwn(layout, "inspector") && layout.inspector < 0.5); }}
         onLayoutChanged={compactDock ? undefined : onLayoutChanged}
         // 拖动条命中区外溢到两侧（视觉条只有 12px，命中区鼠标 24px / 触屏 33px）
         resizeTargetMinimumSize={{ coarse: 33, fine: 24 }}
