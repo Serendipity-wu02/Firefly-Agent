@@ -6,6 +6,7 @@ import { uiColorContrast, uiColorTokens } from "../../shared/ui-colors";
 const files = ["ChatMessageList", "ConversationSidebar", "RightInspector", "RunExperience", "ReviewPanel", "ChatComposer", "FileTreePanel"] as const;
 const styles = Object.fromEntries(files.map(name => [name, readFileSync(new URL(`../react/features/chat/components/${name}.css`, import.meta.url), "utf8") ]));
 styles.BrowserWorkspacePanel = readFileSync(new URL("../react/features/chat/workspace/BrowserWorkspacePanel.css", import.meta.url), "utf8");
+styles.SlidingTabs = readFileSync(new URL("../react/components/ui/SlidingTabs.css", import.meta.url), "utf8");
 styles.root = readFileSync(new URL("../react/styles/react-root.css", import.meta.url), "utf8");
 
 function declaration(file: string, selector: string, property: string): string {
@@ -36,8 +37,9 @@ const surfaces: [string, string, string][] = [
   ["ConversationSidebar", ".ff-session-context-menu", "--ff-bg-workspace"],
   ["ConversationSidebar", ".ff-session-context-menu .ant-menu", "--ff-bg-workspace"],
   ["RightInspector", ".ff-right-inspector", "--ff-bg-page"],
-  ["RightInspector", ".ff-right-inspector__tabs > .ant-tabs-nav", "--ff-bg-page"],
-  ["RightInspector", ".ff-right-inspector__tabs .ant-tabs-tab.ant-tabs-tab-active", "--ff-bg-active"],
+  ["RightInspector", ".ff-right-inspector__bar", "--ff-bg-page"],
+  ["SlidingTabs", ".ff-sliding-tabs", "--ff-bg-hover"],
+  ["SlidingTabs", ".ff-sliding-tabs__thumb", "--ff-bg-workspace"],
   ["RunExperience", ".ff-task-plan-card", "--ff-bg-workspace"],
   ["RunExperience", ".ff-run-outcome", "--ff-bg-workspace"],
   ["RunExperience", ".ff-interaction-panel", "--ff-bg-page"],
