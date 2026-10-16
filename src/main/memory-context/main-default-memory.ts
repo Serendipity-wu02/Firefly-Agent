@@ -42,6 +42,7 @@ import type { TranscriptEntry } from "../orchestrator/conversation-transcript-ty
 import { createMainMemoryRuntime, type MainMemoryRun } from "./main-memory-runtime";
 import type { BoundSourceRef } from "../../shared/memory-contracts";
 import { createDefaultRunCapture } from "./default-run-capture";
+import { createTemporaryRunCapture } from "./temporary-run-capture";
 import { createShadowService, type ShadowService } from "../memory-shadow/shadow-service";
 import { createShadowModel, type ShadowModel } from "../memory-shadow/shadow-model-call";
 import { recordRequest, recordUsage } from "../token-usage-store";
@@ -104,10 +105,19 @@ export function createMainDefaultMemory(options: MainDefaultMemoryOptions) {
     for (const [key, proof] of attachmentProofs) if (proof.sessionId === sessionId) attachmentProofs.delete(key);
     for (const [key, proof] of pendingAttachmentEdits) if (proof.sessionId === sessionId) pendingAttachmentEdits.delete(key);
   }
+  // A temporary session is fixed at creation and is Chat only. Its mode binding is immutable, so a
+  // session can never be flipped between persistent and temporary after memory has seen it.
+  const temporaryIds = new Set<string>();
+  const isTemporary = (id: string) => temporaryIds.has(id) || options.getSession(id)?.temporary === true;
   function owned(id: string): boolean {
     const session = options.getSession(id);
-    const valid = id !== SETTINGS_SESSION && !deletedSessions.has(id) && !!session && session.id === id && ["chat", "work", "code"].includes(session.mode);
-    if (valid) { knownSessions.add(id); sessionModes.bind(id, "persistent"); }
+    const valid = id !== SETTINGS_SESSION && !deletedSessions.has(id) && !!session && session.id === id && ["chat", "work", "code"].includes(session.mode)
+      && (session.temporary !== true || session.mode === "chat");
+    if (valid) {
+      knownSessions.add(id);
+      if (session!.temporary === true) temporaryIds.add(id);
+      sessionModes.bind(id, session!.temporary === true ? "temporary" : "persistent");
+    }
     return valid;
   }
   const authority = createMainDesktopSessionAuthority({ ...options, enabled: true, allowedModes: ["chat", "work", "code"],
@@ -148,6 +158,8 @@ export function createMainDefaultMemory(options: MainDefaultMemoryOptions) {
   let revision = 0, closing = false, closePromise: Promise<void> | undefined;
   type SessionRecord = { actor: object; access: object; entry: "desktop" | "channel" | "scheduler" | "proactive" | "child"; native: ReturnType<typeof createNativeHistoryProvider>; releaseObserver?: () => void; active: boolean };
   const records = new Map<string, SessionRecord>();
+  /** Temporary sessions hold only an in-memory actor: no native history provider, no stored state. */
+  const temporaryRecords = new Map<string, { actor: object; active: boolean }>();
   const coverage = new Map<string, DefaultMemoryHistoryCoverage>();
   const opening = new Set<Promise<MainMemoryRun>>();
   const captureTargets = new Map<object, { conversationId: string; runId: string; assistantTurnId: string }>();
@@ -189,7 +201,7 @@ export function createMainDefaultMemory(options: MainDefaultMemoryOptions) {
     const admission = admissions.get(id); admissions.delete(id);
     admission?.controller.abort(Error("MEMORY_RUN_REVOKED"));
   }
-  const releaseDeleted = options.targets.onSessionDeleted(id => { deletedSessions.add(id); revokeAdmission(id); attachments.revokeSession(id); forgetAttachmentProofs(id); sessionModes.remove(id); shadow?.cancelSession(id, "source-changed"); });
+  const releaseDeleted = options.targets.onSessionDeleted(id => { deletedSessions.add(id); revokeAdmission(id); attachments.revokeSession(id); forgetAttachmentProofs(id); sessionModes.remove(id); temporaryRecords.delete(id); shadow?.cancelSession(id, "source-changed"); });
   function bind(event: Event, id: string) {
     if (closing || !owned(id)) return fail();
     const grant = authority.bind(event, id); source.attachSession(grant, id); return grant;
@@ -268,6 +280,12 @@ export function createMainDefaultMemory(options: MainDefaultMemoryOptions) {
       });
       const runtime = createMainMemoryRuntime({ actorAuthority, registry, transport: backend.transport, runAuthority, clock,
         resolveModel: grant => models.bind(runAuthority.require(grant).identity.modelProfileId),
+        createTemporaryCapture: ({ run }) => {
+          const id = run.identity.sessionId, state = temporaryRecords.get(id), target = captureTargets.get(run);
+          if (!state || !target || !state.active) return fail("MEMORY_CONTEXT_CAPTURE_UNSUPPORTED");
+          return createTemporaryRunCapture({ ...target, store: options.store, runReader: options.runReader,
+            onClose: () => { state.active = false; captureTargets.delete(run); grantsByContext.delete(run); } });
+        },
         createCapture: ({ context, run }) => {
           const id = run.identity.sessionId, state = records.get(id), target = captureTargets.get(run);
           const channelEntry = run.identity.entry === "channel" ? channelRunEntries.get(channelKey(id, run.identity.runId)) : undefined;
@@ -366,6 +384,36 @@ export function createMainDefaultMemory(options: MainDefaultMemoryOptions) {
     try { await core.registry.reconcile(core.access, core.router.token, { providerId: PROVIDER, sessionId: id, messageId }); }
     catch (error) { if (!(error instanceof Error) || !["MEMORY_SOURCE_DELETED", "MEMORY_USER_SOURCE_DENIED", "MEMORY_SOURCE_ACCESS_DENIED"].includes(error.message)) throw error; }
   }
+  /**
+   * A temporary chat run: the model sees only this conversation, read from its in-memory transcript.
+   * There is no source capture, fact, history or context record, so nothing is written to memory.
+   */
+  async function openTemporary(input: FireflyRunOptions, id: string, admission: ReturnType<typeof requireAdmission>, profileId: string,
+    core: Awaited<ReturnType<typeof initialize>>, target: { conversationId: string; runId: string; assistantTurnId: string }): Promise<MainMemoryRun> {
+    const identity = { providerId: PROVIDER, sessionId: id, messageId: "main-actor-binding" };
+    let state = temporaryRecords.get(id);
+    if (!state) {
+      core.router.register({ scopeKey: SCOPE, anchorIdentity: identity, sourceToken: source.token });
+      state = { actor: core.actorAuthority.bindActor(core.access, core.router.token, identity, { sessionMode: "temporary" }), active: false };
+      temporaryRecords.set(id, state);
+    }
+    if (state.active) return fail("MEMORY_CONTEXT_RUN_ACTIVE");
+    state.active = true;
+    let grant: ReturnType<typeof core.runAuthority.issue> | undefined, run: ReturnType<typeof core.runAuthority.require> | undefined;
+    try {
+      grant = core.runAuthority.issue({ identity: { entry: "desktop", sessionId: id, runId: input.runId!, modelProfileId: profileId, sessionMode: "temporary" },
+        actorToken: state.actor, sourceProvider: core.router.token, readActorTokens: [], signal: input.signal ? AbortSignal.any([input.signal, admission.signal]) : admission.signal });
+      run = core.runAuthority.require(grant); captureTargets.set(run, target); grantsByContext.set(run, grant);
+      const memoryRun = await core.runtime.openRun(grant);
+      try { memoryRun.bindSink(input.transcriptSink!); } catch (error) { await memoryRun.close(); throw error; }
+      liveRuns.set(memoryRun, { grant });
+      return memoryRun;
+    } catch (error) {
+      if (grant) core.runAuthority.revoke(grant);
+      if (run) { captureTargets.delete(run); grantsByContext.delete(run); }
+      state.active = false; throw error;
+    }
+  }
   async function open(input: FireflyRunOptions): Promise<MainMemoryRun> {
     const id = input.conversationId; if (!id) return fail();
     const admission = requireAdmission(id);
@@ -373,13 +421,14 @@ export function createMainDefaultMemory(options: MainDefaultMemoryOptions) {
     const target = readTranscriptSinkBinding(input.transcriptSink, options.store);
     if (target.conversationId !== id || target.runId !== input.runId) return fail("MEMORY_CONTEXT_STREAM_SINK_DENIED");
     const profileId = selectedProfile(id), core = await resources(); requireAdmission(id);
+    if (sessionModes.require(id) === "temporary") return openTemporary(input, id, admission, profileId, core, target);
     const state = await record(id); if (state.active) return fail("MEMORY_CONTEXT_RUN_ACTIVE");
     state.active = true;
     let grant: ReturnType<typeof core.runAuthority.issue> | undefined, run: ReturnType<typeof core.runAuthority.require> | undefined;
     try {
       // A former H session becoming current S cannot retain a stale history publication.
       await state.native.invalidate("grant-change"); requireAdmission(id);
-      const others = [...new Set(options.listSessionIds())].filter(other => other !== id && owned(other) && options.getSession(other)?.messages.some(message => message.role === "user"));
+      const others = [...new Set(options.listSessionIds())].filter(other => other !== id && owned(other) && !isTemporary(other) && options.getSession(other)?.messages.some(message => message.role === "user"));
       const readActorTokens: object[] = [core.settingsActor];
       for (const other of others) readActorTokens.push((await record(other)).actor);
       grant = core.runAuthority.issue({ identity: { entry: "desktop", sessionId: id, runId: input.runId, modelProfileId: profileId, sessionMode: sessionModes.require(id) },
@@ -718,12 +767,14 @@ export function createMainDefaultMemory(options: MainDefaultMemoryOptions) {
   const owner = {
     settingsHost, channelHost, backgroundHost, prepareBackgroundRun: backgroundHost.prepareBackgroundRun,
     usesCanonicalUserContent: true as const,
+    /** Honours a session's temporary mode: zero memory writes, no M/H, no cross-session reads. */
+    supportsTemporarySessions: true as const,
     /** 默认 S/M/H 接管全部会话，旧历史向量索引不再写入；受控模式只管辖部分会话，没有此标记。 */
     retiresLegacyHistoryIndex: true as const,
     prepareAttachmentGrant(event: Event, id: string, input: { userTurnId: string }): Promise<MainAttachmentGrant | undefined> {
       return serialized(async () => {
         const grant = bind(event, id), admission = requireAdmission(id);
-        if (grant !== admission.grant) return fail("MEMORY_ATTACHMENT_DENIED");
+        if (grant !== admission.grant || isTemporary(id)) return fail("MEMORY_ATTACHMENT_DENIED");
         const userTurnId = parseInternalId(input.userTurnId);
         const matches = options.getSession(id)?.messages.filter(message => message.id === userTurnId);
         if (matches?.length !== 1 || matches[0].role !== "user" || typeof matches[0].content !== "string" || matches[0].modelContext) return fail("MEMORY_ATTACHMENT_DENIED");
@@ -784,7 +835,7 @@ export function createMainDefaultMemory(options: MainDefaultMemoryOptions) {
     afterTranscript(id: string, input: { userTurnId?: string; transcriptRewind?: { disposition: string } }) {
       if (input.transcriptRewind?.disposition === "replace_user") shadow?.cancelSession(id, "source-changed");
       return serialized(async () => {
-      if (!owned(id)) return;
+      if (!owned(id) || isTemporary(id)) return;
       const admission = requireAdmission(id);
       if (input.transcriptRewind?.disposition === "replace_user" && input.userTurnId) {
         await source.commitUserEdit(admission.grant, id, input.userTurnId);
@@ -803,6 +854,13 @@ export function createMainDefaultMemory(options: MainDefaultMemoryOptions) {
     appendUser<T>(event: Event, id: string, message: ChatMessage, commit: () => T): Promise<T> {
       return serialized(async () => {
         const grant = bind(event, id);
+        if (isTemporary(id)) {
+          // No source capture or ledger entry: a temporary message is never a memory source.
+          if (message.attachments?.length) return fail("MEMORY_TEMPORARY_ATTACHMENT_UNSUPPORTED");
+          if (message.role !== "user" || !message.id || typeof message.content !== "string" || message.modelContext) return fail("MEMORY_USER_SOURCE_DENIED");
+          authority.require(grant, id);
+          return commit();
+        }
         if (message.attachments?.length) mainAttachmentReferences(message.attachments);
         if (message.role !== "user" || !message.id || typeof message.content !== "string" || message.modelContext) return fail("MEMORY_USER_SOURCE_DENIED");
         const approvedAttachment = attachmentClaim(id, message);
@@ -837,7 +895,14 @@ export function createMainDefaultMemory(options: MainDefaultMemoryOptions) {
         if (!owned(id) && !knownSessions.has(id)) return fail();
         if (changedUsers.length) shadow?.cancelSession(id, "source-changed");
         const active = options.targets.getActive(); if (!active) return fail();
-        const grant = bind(event, active.sessionId), core = await resources();
+        const grant = bind(event, active.sessionId);
+        if (isTemporary(id)) {
+          // Nothing of a temporary conversation is in the source ledger, so there is nothing to retire there.
+          if (changedUsers.length) revokeAdmission(id);
+          authority.require(grant, active.sessionId);
+          return commit();
+        }
+        const core = await resources();
         if (owned(id)) await record(id);
         for (const messageId of new Set(changedUsers)) {
           attachments.revokeTurn(id, messageId); attachmentProofs.delete(attachmentKey(id, messageId)); pendingAttachmentEdits.delete(attachmentKey(id, messageId));
@@ -865,7 +930,7 @@ export function createMainDefaultMemory(options: MainDefaultMemoryOptions) {
       if (!item || closing) return;
       try {
         const session = options.getSession(input.sessionId);
-        if (!session || session.mode !== "chat" || !owned(input.sessionId)) return;
+        if (!session || session.mode !== "chat" || !owned(input.sessionId) || isTemporary(input.sessionId)) return;
         const core = await resources();
         const service = await getShadowService();
         if (!service) return;

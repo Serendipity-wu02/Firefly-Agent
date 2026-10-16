@@ -311,6 +311,11 @@ export interface ChatSession {
   workspaceBinding?: ConversationWorkspaceBinding;
   /** 会话模式：创建时绑定，整个会话生命周期不变。 */
   mode: ConversationMode;
+  /**
+   * 临时对话：零持久化，仅 Chat 模式。创建时确定、终身不变；只存在于主进程内存，
+   * 不写会话文件、轨迹、运行记录和任何记忆库，不进入历史列表，进程退出即消失。
+   */
+  temporary?: true;
   /** 用户是否置顶该会话；置顶项在列表中优先展示。 */
   pinned?: boolean;
   /** 当前会话选择的已保存模型；缺失时使用默认模型。 */

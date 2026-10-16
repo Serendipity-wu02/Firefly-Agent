@@ -13,6 +13,7 @@
 
 import { app, shell } from "electron";
 import { fireflyDataDirectory } from "../firefly-data-paths";
+import { ephemeralConversations } from "../ephemeral-conversations";
 import { randomUUID } from "crypto";
 import * as fs from "fs";
 import * as path from "path";
@@ -38,6 +39,11 @@ let indexPath = "";
 let indexCache: ChatSessionMeta[] = [];
 let initialized = false;
 let indexReadFailed = false;
+/**
+ * Temporary chats (zero persistence): the full session lives here only. It has no session
+ * file and no index row, is not listed, and disappears when the process exits.
+ */
+const temporarySessions = new Map<string, ChatSession>();
 
 function assertIndexReadable(): void {
   if (indexReadFailed) throw new Error("CHAT_HISTORY_READ_FAILED: 聊天历史读取失败，原文件已保留");
@@ -118,6 +124,8 @@ function sessionPath(id: string): string {
 }
 
 function readSessionFile(id: string): ChatSession | null {
+  const live = temporarySessions.get(id);
+  if (live) return structuredClone(live);
   const filePath = sessionPath(id);
   try {
     try {
@@ -140,6 +148,7 @@ function readSessionFile(id: string): ChatSession | null {
 }
 
 function writeSessionFile(session: ChatSession): void {
+  if (temporarySessions.has(session.id)) { temporarySessions.set(session.id, structuredClone(session)); return; }
   atomicWriteJson(sessionPath(session.id), session);
 }
 
@@ -160,6 +169,7 @@ function metaFromSession(session: ChatSession): ChatSessionMeta {
 }
 
 function upsertMeta(meta: ChatSessionMeta): void {
+  if (temporarySessions.has(meta.id)) return;
   const idx = indexCache.findIndex((m) => m.id === meta.id);
   if (idx === -1) indexCache.push(meta);
   else indexCache[idx] = meta;
@@ -264,11 +274,14 @@ export function createSession(opts?: {
   purpose?: ChatSessionPurpose;
   mode?: ConversationMode;
   modelProfileId?: string;
+  /** A zero-persistence conversation. Chat mode only, and never a system-purpose session. */
+  temporary?: boolean;
 }): ChatSession {
   const now = Date.now();
   const messages = opts?.initialMessages ?? [];
   const mode = opts?.mode ?? (opts?.purpose === "proactive-chat" ? "chat" : "work");
   if (!isConversationMode(mode)) throw new Error("INVALID_CONVERSATION_MODE");
+  if (opts?.temporary && (mode !== "chat" || opts.purpose !== undefined || opts.mode === undefined)) throw new Error("TEMPORARY_CHAT_REQUIRES_CHAT_MODE");
   const session: ChatSession = {
     id: randomUUID(),
     title: opts?.title?.trim() || (messages.length > 0 ? deriveTitle(messages) : "新对话"),
@@ -281,7 +294,14 @@ export function createSession(opts?: {
     titleIsCustom: opts?.purpose ? true : undefined,
     mode,
     modelProfileId: opts?.modelProfileId,
+    ...(opts?.temporary ? { temporary: true as const } : {}),
   };
+  if (opts?.temporary) {
+    // Register before anything can be written for this conversation.
+    ephemeralConversations.mark(session.id);
+    temporarySessions.set(session.id, structuredClone(session));
+    return session;
+  }
   writeSessionFile(session);
   upsertMeta(metaFromSession(session));
   return session;
@@ -928,6 +948,12 @@ export function clearStalePendingAdjustMarks(): void {
 }
 
 export function deleteSession(id: string): boolean {
+  if (temporarySessions.has(id)) {
+    // The registry entry stays for the process lifetime: a late write from a run that was
+    // still unwinding must never reach disk for a conversation that was temporary.
+    temporarySessions.delete(id);
+    return true;
+  }
   assertIndexReadable();
   const filePath = sessionPath(id);
   let fileExisted = false;

@@ -108,6 +108,30 @@ describe("chats IPC mode filtering", () => {
     ]);
   });
 
+  it("creates a temporary Chat only when asked, keeps it out of the list and deletes it with all its stores", async () => {
+    const { registerChatsIpc } = await import("./chats-ipc");
+    registerChatsIpc();
+    const create = mocks.handlers.get(IPC.CHATS_CREATE)!, list = mocks.handlers.get(IPC.CHATS_LIST)!, get = mocks.handlers.get(IPC.CHATS_GET)!, remove = mocks.handlers.get(IPC.CHATS_DELETE)!;
+    const event = { sender: {} };
+    const ordinary = await create(event, { mode: "chat" }) as { id: string; temporary?: true };
+    const temporary = await create(event, { mode: "chat", temporary: true }) as { id: string; temporary?: true };
+    expect(ordinary.temporary).toBeUndefined(); expect(temporary.temporary).toBe(true);
+    expect((await list(event, undefined) as Array<{ id: string }>).map(item => item.id)).toEqual([ordinary.id]);
+    expect(await get(event, temporary.id)).toMatchObject({ id: temporary.id, temporary: true });
+    await expect(Promise.resolve().then(() => create(event, { mode: "work", temporary: true }))).rejects.toThrow("TEMPORARY_CHAT_REQUIRES_CHAT_MODE");
+    expect(await remove(event, temporary.id)).toBe(true);
+    expect(await get(event, temporary.id)).toBeNull();
+  });
+
+  it("refuses a temporary Chat when the memory owner cannot keep it out of long-term memory", async () => {
+    const { registerChatsIpc } = await import("./chats-ipc");
+    const memory = { appendUser: async () => undefined, mutate: async () => undefined, ownsSession: () => true } as never;
+    registerChatsIpc(undefined, { memory });
+    const create = mocks.handlers.get(IPC.CHATS_CREATE)!;
+    expect(() => create({ sender: {} }, { mode: "chat", temporary: true })).toThrow("TEMPORARY_CHAT_UNAVAILABLE");
+    expect(create({ sender: {} }, { mode: "chat" })).toMatchObject({ mode: "chat" });
+  });
+
   it("uses native save/overwrite confirmation and freezes the Work snapshot before the dialog", async () => {
     const { registerChatsIpc } = await import("./chats-ipc");
     registerChatsIpc();

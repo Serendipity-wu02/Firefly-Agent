@@ -2,6 +2,7 @@ import { createHash, randomUUID } from "node:crypto";
 import { mkdir, readFile, rename, rm, writeFile } from "node:fs/promises";
 import path from "node:path";
 import { fireflyDataDirectory } from "../../../firefly-data-paths";
+import { ephemeralConversations } from "../../../ephemeral-conversations";
 import type {
   FindToolOutputInput,
   FindToolOutputMatch,
@@ -128,6 +129,9 @@ function toRef(meta: ToolOutputRecordMeta): ToolOutputRef {
   };
 }
 
+/** Process-wide: call sites create short-lived store instances, so temporary results are shared here. */
+const ephemeralRecords = new Map<string, Map<string, { meta: ToolOutputRecordMeta; output: string }>>();
+
 export interface FileToolOutputStoreOptions {
   now?: () => number;
 }
@@ -148,6 +152,26 @@ export class FileToolOutputStore implements ToolOutputStore {
   async put(input: PutToolOutputInput): Promise<ToolOutputRef> {
     this.validatePutInput(input);
     const recordId = toolOutputRecordId(input.conversationId, input.runId, input.toolCallId);
+    if (ephemeralConversations.has(input.conversationId)) {
+      // A temporary conversation keeps its tool results in this process's memory only.
+      const records = ephemeralRecords.get(input.conversationId) ?? new Map();
+      ephemeralRecords.set(input.conversationId, records);
+      const existing = records.get(recordId);
+      if (existing) {
+        if (existing.meta.runId !== input.runId || existing.meta.toolCallId !== input.toolCallId
+          || existing.meta.ownerSessionId !== input.ownerSessionId) throw new ToolOutputCorruptError("工具结果记录身份不匹配");
+        return toRef(existing.meta);
+      }
+      const meta: ToolOutputRecordMeta = {
+        schemaVersion: SCHEMA_VERSION, recordId, conversationId: input.conversationId,
+        ...(input.ownerSessionId !== undefined ? { ownerSessionId: input.ownerSessionId } : {}),
+        runId: input.runId, toolCallId: input.toolCallId, toolName: input.toolName, outcome: input.outcome, createdAt: this.now(),
+        bytes: Buffer.byteLength(input.output, "utf8"), codePoints: countCodePoints(input.output),
+        truncatedForModel: input.truncatedForModel, sha256: sha256(input.output),
+      };
+      records.set(recordId, { meta, output: input.output });
+      return toRef(meta);
+    }
     const recordDir = this.recordDir(input.conversationId, recordId);
 
     try {
@@ -230,6 +254,7 @@ export class FileToolOutputStore implements ToolOutputStore {
 
   async deleteConversation(conversationId: string): Promise<void> {
     if (!conversationId) throw new ToolOutputInvalidInputError("conversationId 不能为空");
+    ephemeralRecords.delete(conversationId);
     const target = this.conversationDir(conversationId);
     this.assertWithinRoot(target);
     await rm(target, { recursive: true, force: true });
@@ -280,6 +305,12 @@ export class FileToolOutputStore implements ToolOutputStore {
     recordId: string,
     ownerSessionId?: string,
   ): Promise<{ meta: ToolOutputRecordMeta; output: string } | null> {
+    if (ephemeralConversations.has(conversationId)) {
+      const record = ephemeralRecords.get(conversationId)?.get(recordId);
+      if (!record || record.meta.recordId !== recordId || record.meta.conversationId !== conversationId) return null;
+      if (ownerSessionId !== undefined && record.meta.ownerSessionId !== ownerSessionId) return null;
+      return record;
+    }
     const meta = await this.readMetaIfPresent(recordDir);
     if (!meta) return null;
     if (meta.recordId !== recordId || meta.conversationId !== conversationId) return null;
