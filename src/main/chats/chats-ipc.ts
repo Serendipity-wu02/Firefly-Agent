@@ -84,7 +84,9 @@ export function registerChatsIpc(
     titleService?: ConversationTitleService;
     llmClient?: LlmClient;
     isPrimaryModelBusy?: () => boolean;
-    memory?:Pick<MainDesktopMemory,"appendUser"|"mutate"|"ownsSession"> & { readonly usesCanonicalUserContent?: boolean };
+    memory?:Pick<MainDesktopMemory,"appendUser"|"mutate"|"ownsSession"> & { readonly usesCanonicalUserContent?: boolean;
+      /** Only a memory owner that honours the session's temporary mode may host a temporary chat. */
+      readonly supportsTemporarySessions?: boolean };
   } = {},
 ): void {
   const ipc = ipcOption ?? createIpcScope();
@@ -141,13 +143,15 @@ export function registerChatsIpc(
     IPC.CHATS_CREATE,
     (
       event,
-      payload?: { title?: string; identityId?: string | null; mode?: ConversationMode },
+      payload?: { title?: string; identityId?: string | null; mode?: ConversationMode; temporary?: boolean },
     ) => {
+      if (payload?.temporary === true && options.memory && options.memory.supportsTemporarySessions !== true) throw new Error("TEMPORARY_CHAT_UNAVAILABLE");
       const session = chatsStore.createSession({
         title: payload?.title,
         identityId: payload?.identityId ?? null,
         mode: payload?.mode,
         modelProfileId: getDefaultModelProfile()?.id,
+        ...(payload?.temporary === true ? { temporary: true } : {}),
       });
       broadcastChanged(event.sender);
       return session;

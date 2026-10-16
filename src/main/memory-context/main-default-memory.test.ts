@@ -840,3 +840,78 @@ it("keeps working when the memory backend has no shadow storage", async () => {
   expect(shadowRequests(f)).toHaveLength(0);
   await run.close();
 });
+
+// ── Temporary chat: zero persistence, no M/H, no cross-session reads in either direction ──
+const marked: string[] = [];
+afterEach(async () => { const { ephemeralConversations } = await import("../ephemeral-conversations"); for (const id of marked.splice(0)) ephemeralConversations.release(id); });
+async function temporarySession(f: Awaited<ReturnType<typeof fixture>>, id = "tmp-1") {
+  const { ephemeralConversations } = await import("../ephemeral-conversations");
+  ephemeralConversations.mark(id); marked.push(id);
+  f.sessions.set(id, { id, mode: "chat", temporary: true, messages: [], modelProfileId: "luna" }); f.select(id);
+  return id;
+}
+async function temporaryTurn(f: Awaited<ReturnType<typeof fixture>>, id: string, runId: string, userId: string, text: string, answer = "synthetic answer") {
+  await f.user(id, text, userId); const admission = f.memory.authorizeRun(f.event, id);
+  const input = f.input(id, runId), run = await f.memory.openRun(input);
+  await run.call(f.call()); await run.bindSink(input.transcriptSink!).appendAssistant({ message: { role: "assistant", content: answer } });
+  const request = f.sent.at(-1)!; await run.close(); admission.release();
+  return request;
+}
+
+it("a temporary chat keeps the whole conversation as context but writes nothing to memory or disk", async () => {
+  const f = await fixture(); const id = await temporarySession(f);
+  const first = await temporaryTurn(f, id, "run-1", "u1", "my secret plan is to learn Rust", "first answer");
+  expect(first).toContain("my secret plan is to learn Rust"); expect(first).not.toContain("User-stated memory");
+  const second = await temporaryTurn(f, id, "run-2", "u2", "what did I just say?");
+  expect(second).toContain("my secret plan is to learn Rust"); expect(second).toContain("first answer"); expect(second).toContain("what did I just say?");
+  expect(f.commands).toEqual([]); expect(f.historyCommands).toEqual([]);
+  expect(fs.existsSync(path.join(storage.dataRoot, "transcripts", id))).toBe(false);
+  expect(f.memory.getHistoryCoverage(id)).toMatchObject({ status: "not-checked", selected: 0 });
+});
+
+it("a temporary chat never becomes a fact, a candidate, shadow input, or another session's history", async () => {
+  const f = await fixture(); enableShadow(f); const id = await temporarySession(f);
+  await temporaryTurn(f, id, "run-1", "u1", "I prefer PowerShell and harbor notes");
+  await f.memory.onTurnSucceeded({ sessionId: id, runId: "run-1" });
+  await new Promise(resolve => setTimeout(resolve, 100));
+  expect(shadowRequests(f)).toHaveLength(0); expect(shadowCmd(f, "status").used).toBe(0);
+  const state = await f.memory.settingsHost.getState(f.settingsEvent); expect(state.facts).toEqual([]); expect(state.candidates).toEqual([]);
+  f.sessions.set("session-a", { id: "session-a", mode: "chat", messages: [], modelProfileId: "luna" }); f.select("session-a");
+  await f.user("session-a", "give me a harbor terminal command", "u-a"); f.memory.authorizeRun(f.event, "session-a");
+  const run = await f.memory.openRun(f.input("session-a", "run-a")); await run.call(f.call());
+  expect(f.sent.at(-1)).not.toContain("PowerShell"); expect(f.sent.at(-1)).not.toContain("harbor notes");
+  expect(f.memory.getHistoryCoverage("session-a")).toMatchObject({ selected: 0 });
+  await run.close();
+});
+
+it("editing or deleting a temporary chat message touches no memory storage", async () => {
+  const f = await fixture(); const id = await temporarySession(f);
+  await f.user(id, "to be removed", "u1");
+  let committed = false;
+  await f.memory.mutate(f.event, id, ["u1"], () => { committed = true; f.sessions.get(id).messages = []; });
+  expect(committed).toBe(true); expect(f.commands).toEqual([]);
+});
+
+it("the temporary mode is immutable for a session and attachments are refused", async () => {
+  const f = await fixture(); const id = await temporarySession(f);
+  await expect(f.memory.appendUser(f.event, id, { id: "u9", role: "user", content: "see file", attachments: [{ kind: "document", name: "a.txt", filePath: "C:\\a.txt", status: "pending" }] } as any, () => true)).rejects.toThrow("MEMORY_TEMPORARY_ATTACHMENT_UNSUPPORTED");
+  f.memory.authorizeRun(f.event, id);
+  delete f.sessions.get(id).temporary;
+  await expect(f.memory.openRun(f.input(id, "run-x"))).rejects.toThrow("MEMORY_SESSION_MODE_DENIED");
+  expect(f.sent).toHaveLength(0);
+});
+
+it("a temporary session must be a Chat session", async () => {
+  const f = await fixture("work");
+  f.sessions.set("bad", { id: "bad", mode: "work", temporary: true, messages: [], modelProfileId: "luna" }); f.select("bad");
+  await expect(f.memory.appendUser(f.event, "bad", { id: "u1", role: "user", content: "x" }, () => true)).rejects.toThrow("MEMORY_DESKTOP_SESSION_DENIED");
+});
+
+it("ordinary sessions keep their persistent memory behaviour next to a temporary one", async () => {
+  const f = await fixture(); const id = await temporarySession(f);
+  await temporaryTurn(f, id, "run-1", "u1", "temporary words");
+  f.sessions.set("session-a", { id: "session-a", mode: "chat", messages: [], modelProfileId: "luna" }); f.select("session-a");
+  const request = await temporaryTurn(f, "session-a", "run-a", "u-a", "persistent words");
+  expect(request).toContain("persistent words"); expect(f.commands.some((command: any) => command.kind === "claim")).toBe(true);
+  expect(fs.existsSync(path.join(storage.dataRoot, "transcripts", "session-a"))).toBe(true);
+});

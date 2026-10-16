@@ -282,4 +282,68 @@ describe("coverage cache", () => {
     store.initialize();
     expect(store.getCachedSessionIdsForCoverage()).toEqual({ state: "budget-exhausted", ids: null });
   });
+
+  describe("temporary chat sessions", () => {
+    const filesUnder = (dir: string): string[] => !fs.existsSync(dir) ? [] : fs.readdirSync(dir, { recursive: true, withFileTypes: true }).filter(entry => entry.isFile()).map(entry => entry.name);
+
+    it("lives only in memory: no session file, no index row, not listed, gone on delete", async () => {
+      const store = await import("./chats-store");
+      const { ephemeralConversations } = await import("../ephemeral-conversations");
+      store.initialize();
+      const ordinary = store.createSession({ mode: "chat", title: "keep" });
+      const root = path.join(electronMock.userDataDir, "firefly-chats");
+      const before = fs.readFileSync(path.join(root, "index.json"), "utf8");
+      const session = store.createSession({ mode: "chat", temporary: true });
+      expect(session.temporary).toBe(true);
+      expect(ephemeralConversations.has(session.id)).toBe(true);
+      store.appendMessage(session.id, { id: "m1", role: "user", content: "private words", at: 1 });
+      store.enqueuePendingMessage(session.id, { id: "p1", rawContent: "queued secret", visibleContent: "queued secret" });
+      store.setSessionPinned(session.id, true);
+      expect(store.getSession(session.id)?.messages.map(message => message.content)).toEqual(["private words"]);
+      expect(store.getSessionPage(session.id, null, 10)?.messages).toHaveLength(1);
+      expect(store.listSessions().map(item => item.id)).toEqual([ordinary.id]);
+      expect(store.getLatestSessionId()).toBe(ordinary.id);
+      expect(store.getCachedSessionIdsForCoverage()).toMatchObject({ ids: [ordinary.id] });
+      expect(filesUnder(path.join(root, "sessions"))).toEqual([ordinary.id + ".json"]);
+      expect(fs.readFileSync(path.join(root, "index.json"), "utf8")).toBe(before);
+      expect(JSON.stringify(filesUnder(electronMock.userDataDir))).not.toContain(session.id);
+      expect(store.deleteSession(session.id)).toBe(true);
+      expect(store.getSession(session.id)).toBeNull();
+      // Still registered: a late write from an unwinding run must never reach disk.
+      expect(ephemeralConversations.has(session.id)).toBe(true);
+    });
+
+    it("is not restored by a restart", async () => {
+      let store = await import("./chats-store");
+      store.initialize();
+      const session = store.createSession({ mode: "chat", temporary: true });
+      store.appendMessage(session.id, { id: "m1", role: "user", content: "gone", at: 1 });
+      vi.resetModules();
+      store = await import("./chats-store");
+      store.initialize();
+      expect(store.getSession(session.id)).toBeNull();
+      expect(store.listSessions()).toEqual([]);
+    });
+
+    it("is only available in Chat and never for system-purpose sessions", async () => {
+      const store = await import("./chats-store");
+      store.initialize();
+      for (const mode of ["work", "code"] as const) expect(() => store.createSession({ mode, temporary: true })).toThrow("TEMPORARY_CHAT_REQUIRES_CHAT_MODE");
+      expect(() => store.createSession({ purpose: "proactive-chat", temporary: true })).toThrow("TEMPORARY_CHAT_REQUIRES_CHAT_MODE");
+      expect(() => store.createSession({ temporary: true })).toThrow("TEMPORARY_CHAT_REQUIRES_CHAT_MODE");
+      expect(store.listSessions()).toEqual([]);
+    });
+
+    it("keeps working while the persistent history index is unreadable", async () => {
+      const root = path.join(electronMock.userDataDir, "firefly-chats");
+      fs.mkdirSync(root, { recursive: true });
+      fs.writeFileSync(path.join(root, "index.json"), "invalid");
+      const store = await import("./chats-store");
+      store.initialize();
+      const session = store.createSession({ mode: "chat", temporary: true });
+      store.appendMessage(session.id, { id: "m1", role: "user", content: "still fine", at: 1 });
+      expect(store.getSession(session.id)?.messages).toHaveLength(1);
+      expect(fs.readFileSync(path.join(root, "index.json"), "utf8")).toBe("invalid");
+    });
+  });
 });

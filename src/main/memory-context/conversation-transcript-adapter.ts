@@ -6,7 +6,7 @@ import type {TranscriptSnapshot,TranscriptEntry} from "../orchestrator/conversat
 import {readMainAttachmentProjection,observeMainAttachmentProjection} from "./main-attachment-projection";
 import {assertContextSecretFree} from "./source-secret-screen";
 import {canonicalJson} from "../memory-core/repository-types";
-import {contextFail,type ContextMessage} from "./context-contracts";
+import {contextFail,type ContextMessage,type ContextUnit} from "./context-contracts";
 import type {createMainContext} from "./main-context";
 import {createMainTranscriptProvider,type CanonicalTranscript} from "./main-transcript-provider";
 import {validateUnit} from "./token-budget";
@@ -203,6 +203,24 @@ export function createConversationTranscriptAdapter(options:AdapterOptions) {
  };
 }
 
+/**
+ * Pure per-turn view of a canonical transcript for a temporary run. It carries no source,
+ * suppression or ledger state: a temporary conversation has none, and nothing here is persisted.
+ */
+export function canonicalTurnUnits(snapshot:TranscriptSnapshot,sessionId:string,runReader?:TranscriptRunReader):ContextUnit[] {
+ const whole=canonical(snapshot,sessionId,"temporary",1,new Map(),undefined,undefined,runReader),units:ContextUnit[]=[];
+ for(let i=0;i<whole.unit.messages.length;i++){
+  const message=whole.unit.messages[i],source=whole.provenance![i];
+  if(message.role==="user"){
+   if(!source.turnId||!source.revision)contextFail("MEMORY_CONTEXT_RECENT_INCOMPLETE");
+   units.push({id:"turn-"+createHash("sha256").update(source.turnId!).digest("hex"),kind:"recent",messages:[]});
+  }
+  const unit=units.at(-1);if(!unit)contextFail("MEMORY_CONTEXT_RECENT_INCOMPLETE");
+  unit!.messages.push(message);
+ }
+ for(const unit of units)validateUnit(unit);
+ return units;
+}
 function canonicalUserText(entry:TranscriptEntry):string {
  const payload=entry.kind==="user"?entry.payload:entry.kind==="turn_rewind"?entry.payload.replacementUser:undefined;
  if(!payload||typeof payload.text!=="string")contextFail("MEMORY_CONTEXT_TRANSCRIPT_FORMAT_UNSUPPORTED");return payload.text;

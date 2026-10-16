@@ -1,6 +1,7 @@
 import fs from "node:fs";
 import { fireflyDataDirectory } from "../../firefly-data-paths";
 import path from "node:path";
+import { ephemeralConversations } from "../../ephemeral-conversations";
 import type { ChatMessage } from "../vendors/types";
 import { INITIAL_HARNESS_CACHE_STATE, type AgentState, type HarnessCacheState, type SideEffectKind } from "./types";
 import type { ToolOutputRef } from "./tool-output/tool-output-store";
@@ -130,6 +131,8 @@ export class HarnessRunStore {
   private readonly indexPath: string;
   private readonly now: () => number;
   private index = new Map<string, IndexRow>();
+  /** Runs of temporary conversations (see ephemeral-conversations): memory only, excluded from every file. */
+  private readonly ephemeralSessions = new Map<string, HarnessRunSession>();
   /** 问题 5 P0：index 防抖写的 pending 定时器（writeIndexNow 会取消它）。 */
   private indexWriteTimer: ReturnType<typeof setTimeout> | undefined;
   /** 问题 5 P0：写放大量度（实例生命周期累计；markTerminal 时输出一行日志）。 */
@@ -246,14 +249,17 @@ export class HarnessRunStore {
 
   deleteConversation(conversationId: string): void {
     const rows = [...this.index.values()].filter((row) => row.conversationId === conversationId);
+    let persistent = false;
     for (const row of rows) {
+      if (this.ephemeralSessions.delete(row.runId)) { this.index.delete(row.runId); continue; }
+      persistent = true;
       const file = this.sessionPath(row.runId);
       if (fs.existsSync(file)) fs.unlinkSync(file);
       const events = this.eventPath(row.runId);
       if (fs.existsSync(events)) fs.unlinkSync(events);
       this.index.delete(row.runId);
     }
-    this.writeIndexNow();
+    if (persistent || !rows.length) this.writeIndexNow();
   }
 
   private initialize(): void {
@@ -300,6 +306,8 @@ export class HarnessRunStore {
 
   private read(runId: string): HarnessRunSession | null {
     if (!validRunId(runId)) return null;
+    const live = this.ephemeralSessions.get(runId);
+    if (live) return live;
     const file = this.sessionPath(runId);
     if (!fs.existsSync(file)) return null;
     try {
@@ -316,13 +324,17 @@ export class HarnessRunStore {
 
   /** session 文件每次都写（恢复的权威数据源）；index 按调用方语义分类写入。 */
   private write(session: HarnessRunSession, mode: "now" | "lazy" = "lazy"): void {
-    this.atomicWrite(this.sessionPath(session.runId), session);
+    const ephemeral = this.ephemeralSessions.has(session.runId) || ephemeralConversations.has(session.conversationId);
+    // A temporary conversation's run is never written: neither session file, journal nor index row.
+    if (ephemeral) this.ephemeralSessions.set(session.runId, session);
+    else this.atomicWrite(this.sessionPath(session.runId), session);
     this.index.set(session.runId, {
       conversationId: session.conversationId,
       runId: session.runId,
       status: session.status,
       updatedAt: session.updatedAt,
     });
+    if (ephemeral) return;
     if (mode === "now") this.writeIndexNow();
     else this.writeIndexLazy();
   }
@@ -364,10 +376,11 @@ export class HarnessRunStore {
       clearTimeout(this.indexWriteTimer);
       this.indexWriteTimer = undefined;
     }
-    this.atomicWrite(this.indexPath, [...this.index.values()]);
+    this.atomicWrite(this.indexPath, [...this.index.values()].filter((row) => !this.ephemeralSessions.has(row.runId)));
   }
 
   private appendEvent(session: HarnessRunSession, type: string, data?: Record<string, unknown>): void {
+    if (this.ephemeralSessions.has(session.runId)) return;
     fs.appendFileSync(this.eventPath(session.runId), `${JSON.stringify({ at: session.updatedAt, type, ...data })}\n`, "utf8");
   }
 

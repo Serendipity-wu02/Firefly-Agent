@@ -16,6 +16,7 @@ import {AsyncLocalStorage} from "node:async_hooks";
 
 import fs from "node:fs";
 import path from "node:path";
+import { ephemeralConversations } from "../ephemeral-conversations";
 import {
   assertValidTranscriptDraft,
   userRevisionKey,
@@ -161,14 +162,16 @@ export class ConversationTranscriptStore {
       const entry = { ...input, seq: state.maxSeq + 1, at: input.at ?? this.now() } as TranscriptEntry;
       await this.beforeMutation(conversationId, "append", structuredClone(entry),guard?ticket:undefined);
       const dir = this.conversationDir(conversationId);
-      await fs.promises.mkdir(dir, { recursive: true });
+      const memory = this.memoryOf(conversationId);
+      if (!memory) await fs.promises.mkdir(dir, { recursive: true });
       // The final Main gate calls this write directly while holding its coordinator.
       let dispatched = false;
       const write = async () => {
         if(guard&&held.failed)throw held.failure;
         if(guard&&held.pending.size)throw Error("TRANSCRIPT_HELD_READ_PENDING");
         dispatched = true;
-        await fs.promises.appendFile(path.join(dir, JSONL_FILE_NAME), `${JSON.stringify(entry)}\n`, "utf8");
+        if (memory) memory.log += `${JSON.stringify(entry)}\n`;
+        else await fs.promises.appendFile(path.join(dir, JSONL_FILE_NAME), `${JSON.stringify(entry)}\n`, "utf8");
         if (sWrite)
           await this.syncJsonl(conversationId);
         return entry;
@@ -205,7 +208,20 @@ export class ConversationTranscriptStore {
     });
   }
 
+  /**
+   * A temporary conversation (see ephemeral-conversations) is kept in this process's memory
+   * and never touches disk. The same log and snapshot semantics apply to the in-memory text.
+   */
+  private readonly ephemeralState = new Map<string, { log: string; snapshot: string | null }>();
+  private memoryOf(conversationId: string): { log: string; snapshot: string | null } | undefined {
+    if (!ephemeralConversations.has(conversationId)) return undefined;
+    let state = this.ephemeralState.get(conversationId);
+    if (!state) { state = { log: "", snapshot: null }; this.ephemeralState.set(conversationId, state); }
+    return state;
+  }
+
   private async syncJsonl(conversationId: string): Promise<void> {
+    if (this.memoryOf(conversationId)) return;
     const handle = await fs.promises.open(path.join(this.conversationDir(conversationId), JSONL_FILE_NAME), "r+");
     try {
       await handle.sync();
@@ -239,6 +255,8 @@ export class ConversationTranscriptStore {
         seenUserRevisions: [...state.seenUserRevisions],
       };
       const dir = this.conversationDir(conversationId);
+      const memory = this.memoryOf(conversationId);
+      if (memory) { memory.snapshot = JSON.stringify(snapshot); return snapshot; }
       await fs.promises.mkdir(dir, { recursive: true });
       // 原子写：temp + rename，JSONL 保持不动
       const tempFile = path.join(dir, `${SNAPSHOT_FILE_NAME}.${process.pid}.tmp`);
@@ -256,6 +274,7 @@ export class ConversationTranscriptStore {
   deleteConversation(conversationId: string): Promise<void> {
     return this.enqueue(conversationId, async () => {
       await this.beforeMutation(conversationId, "delete");
+      if (this.memoryOf(conversationId)) { this.ephemeralState.delete(conversationId); return; }
       await fs.promises.rm(this.conversationDir(conversationId), { recursive: true, force: true });
     });
   }
@@ -364,22 +383,31 @@ export class ConversationTranscriptStore {
     const dir = this.conversationDir(conversationId);
     const jsonlFile = path.join(dir, JSONL_FILE_NAME);
 
+    const memory = this.memoryOf(conversationId);
     let text = "";
-    try {
-      text = await fs.promises.readFile(jsonlFile, "utf8");
-    } catch (error) {
-      if ((error as NodeJS.ErrnoException).code !== "ENOENT") throw error;
+    if (memory) text = memory.log;
+    else {
+      try {
+        text = await fs.promises.readFile(jsonlFile, "utf8");
+      } catch (error) {
+        if ((error as NodeJS.ErrnoException).code !== "ENOENT") throw error;
+      }
     }
 
     // 尾行容错：只修剪非空的未终止或不可解析的尾行，保留此前所有合法条目
     const { kept, lines } = repairTruncatedTail(text);
     if (kept !== text) {
       await this.beforeMutation(conversationId, "repair");
-      await fs.promises.mkdir(dir, { recursive: true });
-      await fs.promises.truncate(jsonlFile, Buffer.byteLength(kept, "utf8"));
+      if (memory) memory.log = kept;
+      else {
+        await fs.promises.mkdir(dir, { recursive: true });
+        await fs.promises.truncate(jsonlFile, Buffer.byteLength(kept, "utf8"));
+      }
     }
 
-    const snapshot = await this.readSnapshotFile(dir);
+    const snapshot = memory
+      ? (memory.snapshot ? (JSON.parse(memory.snapshot) as TranscriptSnapshot) : null)
+      : await this.readSnapshotFile(dir);
     const throughSeq = snapshot?.throughSeq ?? 0;
     const entries: TranscriptEntry[] = [...(snapshot?.entries ?? [])];
     const seenEntryIds = new Set<string>(snapshot?.seenEntryIds ?? []);
