@@ -12,7 +12,7 @@ import type {HistoryDocument,ReadonlyHistoryRecord,ReadonlyHistorySelectionHead}
 import type {TranscriptDependency} from '../memory-context/context-contracts';
 import type {NativeHistoryEndpoint,NativeHistoryEndpointFactory,NativeHistoryIdentity} from './native-history-transport';
 
-type CoverageReason='snapshot-missing'|'transcript-missing'|'not-acquired'|'partial-source'|'selection-budget-exhausted';
+type CoverageReason='snapshot-missing'|'transcript-missing'|'not-acquired'|'partial-source'|'selection-budget-exhausted'|'disabled-by-forget';
 export interface NativeHistoryCoverageInsufficient {status:'coverage-insufficient';source:'native-h';coverage:'partial';reason:CoverageReason;diagnostics:string[];selection:{selected:1;covered:0;excluded:1}}
 export type NativeHistoryCaptureOutcome=NativeHistoryCoverageInsufficient|{status:'captured';source:'native-h';coverage:'complete';captured:number;diagnostics:string[];selection:{selected:1;covered:1;excluded:0}};
 export type NativeHistoryQueryOutcome=NativeHistoryCoverageInsufficient|{status:'queried';source:'native-h';coverage:'complete';result:Awaited<ReturnType<ReturnType<typeof createMainHistory>['query']>>};
@@ -136,7 +136,12 @@ export function createNativeHistoryProvider(options:Options){
  async function capture(signal?:AbortSignal):Promise<NativeHistoryCaptureOutcome>{
   authorize();if(publishing)fail('MEMORY_HISTORY_STALE');publishing=true;
   try{revoke();await cleanupHeads();
-   await options.history.assertUnboundCaptureAllowed(options.actorToken);
+   try{await options.history.assertUnboundCaptureAllowed(options.actorToken)}
+   catch(error){
+    // A forget disables raw history for this actor on purpose; report a coverage gap and read nothing.
+    if(error instanceof Error&&error.message==='MEMORY_HISTORY_DISABLED_BY_FORGET'){coverage=insufficient('disabled-by-forget',['MEMORY_HISTORY_DISABLED_BY_FORGET']);return structuredClone(coverage)}
+    throw error;
+   }
    return await acquire(async operation=>{
     const captureEpoch=epoch;
     for(const [locator,record] of operation.documents){
