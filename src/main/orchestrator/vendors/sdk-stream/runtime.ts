@@ -48,6 +48,8 @@ export interface SdkStreamRunInput {
   config: VendorConfig;
   timeoutMs: number;
   signal?: AbortSignal;
+  /** Main-only diagnostic policy, separate from request/provider metadata. */
+  persistDiagnostics?: boolean;
   onDelta?: (delta: UnifiedStreamDelta) => void;
   onDiagnostic?: (diagnostic: StreamDiagnostic) => void;
 }
@@ -162,7 +164,7 @@ async function runSdkStream(
   const accumulator = new FireflyStreamAccumulator();
   const taggedThinkFilter = createThinkFilter("leading-only");
   // LLM 调用原文 traceId —— 即使 dump 关闭也会生成，方便上层日志关联。
-  let traceId = "";
+  let traceId: string | null = null;
   // 本次请求的完整地址 —— 失败日志要带上；catch 块读不到 try 内的局部变量，提升到外层。
   let requestEndpoint = "";
   const assertActive = () => { if (controller.signal.aborted) throw cancellationError(controller.signal); };
@@ -213,7 +215,7 @@ async function runSdkStream(
       transport: input.adapter.transport,
       endpoint: prepared.endpoint,
       body: prepared.body,
-    });
+    }, input.persistDiagnostics !== false);
     if (input.adapter.transport === "openai") {
       const chunks = await deps.openAI({
         client: { ...deriveOpenAIClientConfig(prepared.endpoint, input.config.apiKey),

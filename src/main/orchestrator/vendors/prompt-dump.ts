@@ -86,8 +86,9 @@ function dayFolder(): string {
   return path.join(DUMP_ROOT, `${d.getFullYear()}${pad(d.getMonth() + 1)}${pad(d.getDate())}`);
 }
 
-/** 请求发出前调用。返回本次调用的唯一 traceId（即使关闭也返回，方便上层 log）。 */
-export function dumpRequest(meta: DumpRequestMeta): string {
+/** Main's persistence policy is bound to this trace, so every response path honours the same refusal. */
+export function dumpRequest(meta: DumpRequestMeta, persistDiagnostics = true): string | null {
+  if (!persistDiagnostics) return null;
   const traceId = `${buildTimestamp()}_${meta.transport}_${shortId()}`;
   if (!isEnabled()) return traceId;
 
@@ -107,8 +108,8 @@ export function dumpRequest(meta: DumpRequestMeta): string {
 }
 
 /** 响应拿到后调用（成功或失败都调用）。traceId 来自 dumpRequest 返回。 */
-export function dumpResponse(traceId: string, meta: DumpResponseMeta): void {
-  if (!isEnabled()) return;
+export function dumpResponse(traceId: string | null, meta: DumpResponseMeta): void {
+  if (traceId === null || !isEnabled()) return;
 
   const folder = dayFolder();
   if (!safeDir(folder)) return;

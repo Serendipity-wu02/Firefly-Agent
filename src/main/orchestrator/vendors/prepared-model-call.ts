@@ -28,6 +28,8 @@ export interface PreparedModelCallInput {
 export interface PreparedModelCallOptions {
   /** Main supplies the live grant/profile revision check. Never serialized into the counting frame. */
   validateCurrent?: () => void;
+  /** Trusted Main run policy; captured privately and never read from the dispatch DTO or prompt. */
+  persistDiagnostics?: boolean;
 }
 interface PrivateCall {
   adapter: ChatVendorAdapter;
@@ -41,6 +43,7 @@ interface PrivateCall {
   buildStreamRequest: ChatVendorAdapter["buildStreamRequest"];
   parseResponse: ChatVendorAdapter["parseResponse"];
   validateCurrent?: () => void;
+  persistDiagnostics: boolean;
   consumed: boolean;
 }
 const calls = new WeakMap<PreparedModelCall, PrivateCall>();
@@ -137,7 +140,7 @@ export function prepareModelCall(
     adapter, config: freeze(detachedConfig), sourceConfig: config, headers: {}, fingerprint: fingerprint(config),
     runtimeFingerprint: fingerprint(getVendorRuntimeSettings()), adapterFingerprint: adapterFingerprint(adapter),
     buildRequest: adapter.buildRequest, buildStreamRequest: adapter.buildStreamRequest, parseResponse: adapter.parseResponse,
-    validateCurrent: options.validateCurrent, consumed: false,
+    validateCurrent: options.validateCurrent, persistDiagnostics: options.persistDiagnostics !== false, consumed: false,
   };
   const http = detached.stream === false
     ? adapter.buildRequest(detached, detachedConfig)
@@ -217,6 +220,7 @@ export async function dispatchPreparedModelCall(input: PreparedModelCallInput): 
         adapter: call.adapter, config: call.config, model: input.prepared.request.model,
         prepared: { endpoint: input.prepared.endpoint, body: input.prepared.request.body },
         fetch: guardedFetch, timeoutMs: input.timeoutMs, signal: input.signal, onDelta: input.onDelta, onDiagnostic: input.onDiagnostic,
+        persistDiagnostics: call.persistDiagnostics,
       })
       : await nonStreaming(input, call, guardedFetch);
     if (input.signal?.aborted) throw cancelled(input.signal);

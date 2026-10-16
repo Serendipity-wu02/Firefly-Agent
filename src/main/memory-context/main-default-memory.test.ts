@@ -408,6 +408,31 @@ it('settings correction and forget update real policy revisions; stale submissio
  expect((await f.memory.settingsHost.getState(f.settingsEvent)).facts).toEqual([]);
  expect((await f.memory.settingsHost.auditSource(f.settingsEvent,confirmed.factId!)).status).toBe('forgotten');
 });
+it.each(['session-a','session-b'])('keeps authorized S and remaining M usable in %s after forget without reacquiring unbound history',async id=>{
+ const f=await fixture();await f.user('session-a','I prefer PowerShell');
+ const admission=f.memory.authorizeRun(f.event,'session-a'),first=await f.memory.openRun(f.input());
+ await first.call(f.call());await first.close();admission.release();await f.store.checkpoint('session-a');
+ const c=await candidate(f,'I prefer English');
+ await f.memory.settingsHost.applyAction(f.settingsEvent,{kind:'confirm',id:c.outcome.candidateId!,expectedRevision:c.outcome.candidateRevision!});
+ const state=await f.memory.settingsHost.getState(f.settingsEvent),forgotten=state.facts.find(fact=>fact.assertion==='I prefer PowerShell')!;
+ expect(forgotten).toBeDefined();
+ await f.memory.settingsHost.applyAction(f.settingsEvent,{kind:'forget',id:forgotten.factId,expectedRevision:forgotten.revision});
+ if(id==='session-b')f.sessions.set(id,{id,mode:'chat',messages:[],modelProfileId:'luna'});f.select(id);
+ await f.user(id,'Which language do I prefer?','current-user');f.memory.authorizeRun(f.event,id);
+ const reads=f.nativeStarts,puts=f.historyCommands.filter(command=>command.kind==='put').length;
+ const input=f.input(id,'after-forget'),run=await f.memory.openRun(input);
+ await expect(run.call(f.call())).resolves.toMatchObject({text:'synthetic answer'});
+ const request=f.sent.at(-1)!;
+ expect(request).toContain('Which language do I prefer?');expect(request).toContain('I prefer English');
+ expect(request).not.toContain('I prefer PowerShell');if(id==='session-b')expect(request).toContain('MEMORY_HISTORY_DISABLED_AFTER_FORGET');
+ expect(f.nativeStarts).toBe(reads);expect(f.historyCommands.filter(command=>command.kind==='put')).toHaveLength(puts);
+ if(id==='session-b')expect(f.memory.getHistoryCoverage(id)).toMatchObject({status:'insufficient',selected:1,covered:0});
+ expect((await f.memory.settingsHost.getState(f.settingsEvent)).facts.map(fact=>fact.assertion)).toEqual(['I prefer English']);
+ await run.bindSink(input.transcriptSink!).appendAssistant({message:{role:'assistant',content:'new permitted answer'}});await run.close();
+ await f.user(id,'Continue our new conversation','next-user');
+ const next=await f.memory.openRun(f.input(id,'next-after-forget'));await next.call(f.call());
+ expect(f.sent.at(-1)).toContain('new permitted answer');expect(f.sent.at(-1)).not.toContain('I prefer PowerShell');await next.close();
+});
 it('settings reject retains historical source data and cannot accept injected actors or source references',async()=>{
  const f=await fixture(),c=await candidate(f);
  await expect(f.memory.settingsHost.applyAction(f.settingsEvent,{kind:'confirm',id:c.outcome.candidateId!,expectedRevision:1,sourceRef:c.ref} as any)).rejects.toThrow('MEMORY_INPUT_INVALID');

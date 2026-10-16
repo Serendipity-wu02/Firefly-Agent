@@ -12,7 +12,7 @@ import type {HistoryDocument,ReadonlyHistoryRecord,ReadonlyHistorySelectionHead}
 import type {TranscriptDependency} from '../memory-context/context-contracts';
 import type {NativeHistoryEndpoint,NativeHistoryEndpointFactory,NativeHistoryIdentity} from './native-history-transport';
 
-type CoverageReason='snapshot-missing'|'transcript-missing'|'not-acquired'|'partial-source'|'selection-budget-exhausted';
+type CoverageReason='snapshot-missing'|'transcript-missing'|'not-acquired'|'partial-source'|'selection-budget-exhausted'|'disabled-after-forget';
 export interface NativeHistoryCoverageInsufficient {status:'coverage-insufficient';source:'native-h';coverage:'partial';reason:CoverageReason;diagnostics:string[];selection:{selected:1;covered:0;excluded:1}}
 export type NativeHistoryCaptureOutcome=NativeHistoryCoverageInsufficient|{status:'captured';source:'native-h';coverage:'complete';captured:number;diagnostics:string[];selection:{selected:1;covered:1;excluded:0}};
 export type NativeHistoryQueryOutcome=NativeHistoryCoverageInsufficient|{status:'queried';source:'native-h';coverage:'complete';result:Awaited<ReturnType<ReturnType<typeof createMainHistory>['query']>>};
@@ -136,7 +136,10 @@ export function createNativeHistoryProvider(options:Options){
  async function capture(signal?:AbortSignal):Promise<NativeHistoryCaptureOutcome>{
   authorize();if(publishing)fail('MEMORY_HISTORY_STALE');publishing=true;
   try{revoke();await cleanupHeads();
-   await options.history.assertUnboundCaptureAllowed(options.actorToken);
+    if(!await options.history.unboundCaptureAllowed(options.actorToken)){
+     coverage=insufficient('disabled-after-forget',['MEMORY_HISTORY_DISABLED_AFTER_FORGET']);
+     return structuredClone(coverage);
+    }
    return await acquire(async operation=>{
     const captureEpoch=epoch;
     for(const [locator,record] of operation.documents){

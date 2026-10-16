@@ -163,7 +163,7 @@ export function createMainDefaultMemory(options: MainDefaultMemoryOptions) {
   const models = createProductionModelRegistry({ settings: options.settings });
   const admissions = new Map<string, { grant: object; users: number; revision: number; controller: AbortController; signal: AbortSignal }>();
   let revision = 0, closing = false, closePromise: Promise<void> | undefined;
-  type SessionRecord = { actor: object; access: object; entry: "desktop" | "channel" | "scheduler" | "proactive" | "child"; native: ReturnType<typeof createNativeHistoryProvider>; releaseObserver?: () => void; active: boolean };
+  type SessionRecord = { actor: object; access: object; entry: "desktop" | "channel" | "scheduler" | "proactive" | "child"; native: ReturnType<typeof createNativeHistoryProvider>; eventEpochs: Map<string, number>; releaseObserver?: () => void; active: boolean };
   const records = new Map<string, SessionRecord>();
   /** Temporary sessions hold only an in-memory actor: no native history provider, no stored state. */
   const temporaryRecords = new Map<string, { actor: object; active: boolean }>();
@@ -213,7 +213,16 @@ export function createMainDefaultMemory(options: MainDefaultMemoryOptions) {
     if (closing || !owned(id)) return fail();
     const grant = authority.bind(event, id); source.attachSession(grant, id); return grant;
   }
-  function beforeCanonicalMutation(id: string, state: SessionRecord, kind: TranscriptMutation, entry?: TranscriptEntry, ticket?: object): Promise<void> {
+  async function beforeCanonicalMutation(id: string, state: SessionRecord, kind: TranscriptMutation, entry?: TranscriptEntry, ticket?: object): Promise<void> {
+    // The session observer exists before the first user append, while its S adapter is per run.
+    // Preserve that live observation; reading/backfilling an old transcript never creates one.
+    let epoch: number | undefined;
+    if (entry && !entry.id.startsWith("backfill:v1:")) {
+      const core = await boot; if (!core) return fail("MEMORY_CONTEXT_CAPTURE_UNSUPPORTED");
+      const actor = core.actorAuthority.requireActor(state.actor);
+      epoch = await core.actorAuthority.coordinate(() => core.backend.transport.policyCommand({ kind: "generation", scopeKey: actor.scopeKey, body: { actorKey: actor.actorKey } })) as number;
+      if (!Number.isSafeInteger(epoch) || epoch < 0) return fail("MEMORY_CONTEXT_INPUT_INVALID");
+    }
     if (kind === "delete" || kind === "repair") { attachments.revokeSession(id); forgetAttachmentProofs(id); }
     else if (entry?.kind === "turn_rewind") {
       attachments.revokeTurn(id, entry.payload.anchorUserTurnId);
@@ -222,7 +231,9 @@ export function createMainDefaultMemory(options: MainDefaultMemoryOptions) {
       if (entry.payload.disposition !== "keep_user") attachmentProofs.delete(attachmentKey(id, entry.payload.anchorUserTurnId));
     }
     else if (entry?.kind === "user" && entry.turnId) attachments.revokeTurn(id, entry.turnId);
-    return state.native.beforeMutation(kind, entry, ticket);
+    await state.native.beforeMutation(kind, entry, ticket);
+    if (kind === "delete" || kind === "repair") state.eventEpochs.clear();
+    if (epoch !== undefined && entry) state.eventEpochs.set(entry.id, epoch);
   }
   function nativeObserver(id: string, state: SessionRecord) {
     if (closing || state.active || state.releaseObserver) return;
@@ -302,7 +313,7 @@ export function createMainDefaultMemory(options: MainDefaultMemoryOptions) {
           state.releaseObserver?.(); state.releaseObserver = undefined;
           try {
             const capture = createDefaultRunCapture({ ...target, context, store: options.store, runReader: options.runReader, actorAuthority, actorToken: state.actor, registry,
-              beforeMutation: (kind, entry, ticket) => beforeCanonicalMutation(id, state, kind, entry, ticket),
+              beforeMutation: (kind, entry, ticket) => beforeCanonicalMutation(id, state, kind, entry, ticket), observedEventEpochs: state.eventEpochs,
               attachmentProjection: attachments.token,
               ...(run.identity.entry === "desktop" && run.identity.sessionMode === "persistent" ? { onUserSource: (item: { sourceRef: BoundSourceRef; userTurnId: string; userText: string }) => {
                 const message = options.getSession(id)?.messages.find(current => current.id === item.userTurnId);
@@ -371,7 +382,7 @@ export function createMainDefaultMemory(options: MainDefaultMemoryOptions) {
       const actor = core.actorAuthority.bindActor(core.access, core.router.token, { providerId: PROVIDER, sessionId: id, messageId: "main-actor-binding" }, { project: () => projectOf(id) });
       const native = createNativeHistoryProvider({ actorAuthority: core.actorAuthority, actorToken: actor, store: options.store, history: core.history,
         endpointFactory: core.backend.endpointFactory, deadlineMs: 30000 });
-      state = { actor, access: core.access, entry: "desktop", native, active: false }; records.set(id, state); nativeObserver(id, state);
+      state = { actor, access: core.access, entry: "desktop", native, eventEpochs: new Map(), active: false }; records.set(id, state); nativeObserver(id, state);
     }
     return state;
   }
@@ -508,7 +519,7 @@ export function createMainDefaultMemory(options: MainDefaultMemoryOptions) {
           core.router.register({ scopeKey: context.scopeKey, anchorIdentity: { providerId: PROVIDER, sessionId: context.sessionId, messageId: "main-actor-binding" }, sourceToken: channelSource.token });
           const actor = core.actorAuthority.bindActor(access, core.router.token, { providerId: PROVIDER, sessionId: context.sessionId, messageId: "main-actor-binding" });
           const native = createNativeHistoryProvider({ actorAuthority: core.actorAuthority, actorToken: actor, store: options.store, history: core.history, endpointFactory: core.backend.endpointFactory, deadlineMs: 30000 });
-          state = { actor, access, native, entry: "channel", active: false }; records.set(context.sessionId, state); nativeObserver(context.sessionId, state);
+          state = { actor, access, native, eventEpochs: new Map(), entry: "channel", active: false }; records.set(context.sessionId, state); nativeObserver(context.sessionId, state);
         }
         if (state.entry !== "channel") return fail("MEMORY_ACTOR_DENIED");
         const channelState = state, controller = new AbortController();
@@ -643,7 +654,7 @@ export function createMainDefaultMemory(options: MainDefaultMemoryOptions) {
           core.router.register({ scopeKey, anchorIdentity: { providerId: PROVIDER, sessionId: context.sessionId, messageId: "main-actor-binding" }, sourceToken: taskSource.token });
           const actor = core.actorAuthority.bindActor(access, core.router.token, { providerId: PROVIDER, sessionId: context.sessionId, messageId: "main-actor-binding" });
           const native = createNativeHistoryProvider({ actorAuthority: core.actorAuthority, actorToken: actor, store: options.store, history: core.history, endpointFactory: core.backend.endpointFactory, deadlineMs: 30000 });
-          state = { actor, access, native, entry: context.entry, active: false }; records.set(context.sessionId, state); nativeObserver(context.sessionId, state);
+          state = { actor, access, native, eventEpochs: new Map(), entry: context.entry, active: false }; records.set(context.sessionId, state); nativeObserver(context.sessionId, state);
         }
         const backgroundState = state, controller = new AbortController();
         const signal = AbortSignal.any([ownerLifetime.signal, context.signal, controller.signal, ...(parent ? [parent.signal] : []), ...(input.signal ? [input.signal] : [])]);

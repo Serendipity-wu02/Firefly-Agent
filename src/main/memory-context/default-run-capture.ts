@@ -19,6 +19,8 @@ import { prepareRuntimeSummary } from "./runtime-summary";
 import type { MainMemoryCapture, MainMemoryRunLifecycle } from "./main-memory-runtime";
 
 export interface DefaultRunCaptureOptions {
+  /** Main-owned live event provenance, retained between runs; never inferred from stored history. */
+  observedEventEpochs?: Map<string, number>;
   context: ReturnType<typeof createMainContext>;
   actorAuthority: MainActorAuthority;
   actorToken: object;
@@ -72,7 +74,7 @@ export function createDefaultRunCapture(options: DefaultRunCaptureOptions): Main
   const summary = options.summary ? { protectedRecentTurns: options.summary.protectedRecentTurns, leaseMs: options.summary.leaseMs ?? 60000 } : undefined;
   if (summary && (!Number.isSafeInteger(summary.protectedRecentTurns) || summary.protectedRecentTurns < 1 || summary.protectedRecentTurns > 1000
     || !Number.isSafeInteger(summary.leaseMs) || summary.leaseMs < 1 || summary.leaseMs > 300000)) contextFail("MEMORY_CONTEXT_INPUT_INVALID");
-  const transcript = createConversationTranscriptAdapter({ enabled: true, store, context, actorAuthority, actorToken, runReader: options.runReader, beforeMutation: options.beforeMutation, attachmentProjection: options.attachmentProjection })!;
+  const transcript = createConversationTranscriptAdapter({ enabled: true, store, context, actorAuthority, actorToken, runReader: options.runReader, beforeMutation: options.beforeMutation, attachmentProjection: options.attachmentProjection, observedEventEpochs: options.observedEventEpochs })!;
   const target = { conversationId, runId, assistantTurnId };
   let captured = false, closed = false, interrupted = false, round: Round | undefined;
   let tail: Promise<void> = Promise.resolve();
