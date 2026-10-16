@@ -84,3 +84,7 @@
 
 /* 侧栏顶部的触发器行：左缘与下面的 .ff-side-action 行对齐。 */
 .ff-page-mode { flex-shrink: 0; padding: 0 2px 2px; }
+
+/* 侧栏顶部的模式胶囊：整行宽度，三个模式按文字长度分配。 */
+.ff-mode-switch { display: flex; width: 100%; padding: 2px 2px 0; }
+.ff-mode-switch .ff-sliding-tabs { width: 100%; }
