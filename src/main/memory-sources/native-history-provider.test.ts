@@ -22,7 +22,7 @@ async function fixture(options:{missing?:string;rootMismatch?:boolean;failPut?:n
  const transport={...f.transport,historyCommand:async(c:any)=>{commands.push(c);if(c.kind==='put'){expect(held).toBe(2);if(++puts===options.failPut)throw Error('injected put')}return f.repo.historyCommand(c)},contextCommand:async(c:any)=>{if(c.kind==='transcriptPublish')expect(held).toBe(2);return f.transport.contextCommand(c)}};
  const history=createMainHistory({actorAuthority:f.authority,registry:f.registry,transport});
  const endpointFactory=async()=>{const ordinal=++starts;let acquired=false,disposed=false;return {rootIdentity:{volumeSerial:42,fileIndex:options.rootMismatch&&ordinal===2?'2222222222222222':'1111111111111111'},async read(components:readonly string[],maxBytes:number){reads++;if(options.missing===components[1])throw Error('history-leaf-missing');const file=path.join(storage.dataRoot,'transcripts',...components);if(!fs.existsSync(file))throw Error('history-leaf-missing');const bytes=fs.readFileSync(file);if(bytes.length>maxBytes)throw Error('history-invalid-budget');acquired=true;held++;return {identity:{volumeSerial:42,fileIndex:components[1]==='snapshot.json'?'bbbbbbbbbbbbbbbb':'aaaaaaaaaaaaaaaa'},bytes}},assertLive(){if(disposed)throw Error('dead helper')},async dispose(){if(!disposed&&acquired)held--;disposed=true}}};
- const native=createNativeHistoryProvider({actorAuthority:f.authority,actorToken:f.actor,store,history,endpointFactory,deadlineMs:1000});return {...f,store,history,native,endpointFactory,commands,options,get held(){return held},get reads(){return reads}};
+ const native=createNativeHistoryProvider({actorAuthority:f.authority,actorToken:f.actor,store,history,endpointFactory,deadlineMs:1000});return {...f,store,history,native,endpointFactory,historyTransport:transport,commands,options,get held(){return held},get reads(){return reads}};
 }
 it('captures one stable native pair and retrieves opaque quotes without M support or leaked lease',async()=>{
  const f=await fixture();expect(await f.native.capture()).toMatchObject({status:'captured',captured:1,coverage:'complete'});expect(f.held).toBe(0);
@@ -39,7 +39,11 @@ it('successful capture followed by external snapshot deletion revokes old synchr
 });
 it('invalidates on mutation, close and forget without restoring authority from identical files',async()=>{
  const f=await fixture();await f.native.capture();const q=await f.native.query({query:'harbor'});if(q.status!=='queried')throw Error('expected queried');await f.native.beforeMutation('append');expect(()=>readHistoryEvidence(f.authority,f.actor,q.result.evidence)).toThrow();expect(await f.native.query({query:'harbor'})).toMatchObject({reason:'not-acquired'});
- await f.native.capture();const fact=await f.active();await f.native.invalidate('forget');await f.policy.act(f.actor,await f.policy.event(f.actor,{kind:'forget',nonce:crypto.randomUUID(),factId:fact.factId,revision:1}));const reads=f.reads;await expect(f.native.capture()).resolves.toMatchObject({status:'coverage-insufficient',reason:'disabled-by-forget',diagnostics:expect.arrayContaining(['MEMORY_HISTORY_DISABLED_BY_FORGET'])});expect(f.reads).toBe(reads);expect(await f.native.query({query:'harbor'})).toMatchObject({status:'coverage-insufficient',reason:'disabled-by-forget'});await f.native.close();await f.native.close();await expect(f.native.capture()).rejects.toThrow('MEMORY_HISTORY_PROVIDER_DENIED');
+ await f.native.capture();const fact=await f.active();await f.native.invalidate('forget');await f.policy.act(f.actor,await f.policy.event(f.actor,{kind:'forget',nonce:crypto.randomUUID(),factId:fact.factId,revision:1}));const reads=f.reads,puts=f.commands.filter(c=>c.kind==='put').length;
+ expect(await f.native.capture()).toMatchObject({status:'coverage-insufficient',reason:'disabled-by-forget',diagnostics:['MEMORY_HISTORY_COVERAGE_INSUFFICIENT','MEMORY_HISTORY_DISABLED_BY_FORGET']});
+ expect(await f.native.query({query:'harbor'})).toMatchObject({status:'coverage-insufficient',reason:'disabled-by-forget'});
+ expect(f.reads).toBe(reads);expect(f.commands.filter(c=>c.kind==='put')).toHaveLength(puts);
+ await f.native.close();await f.native.close();await expect(f.native.capture()).rejects.toThrow('MEMORY_HISTORY_PROVIDER_DENIED');
 });
 it('partial tail and per-session record budget cannot yield partial publication',async()=>{
  const f=await fixture();fs.appendFileSync(path.join(storage.dataRoot,'transcripts','session-a','transcript.jsonl'),'BROKEN');expect(await f.native.capture()).toMatchObject({reason:'partial-source'});expect(f.commands.some(c=>c.kind==='put')).toBe(false);
@@ -109,6 +113,27 @@ it('a new boot can reacquire unchanged files without inheriting the old evidence
  const f=await fixture();await f.native.capture();const old=await f.native.query({query:'harbor'});if(old.status!=='queried')throw Error('expected queried');await f.native.close();
  const authority=createMainActorAuthority({resolveActor:()=> 'actor-a'}),registry=createMainSourceRegistry(f.transport,{coordinate:authority.coordinate}),access=registry.authority.access('scope-a'),actor=authority.bindActor(access,f.provider.adapter,f.identity),history=createMainHistory({actorAuthority:authority,registry,transport:{...f.transport,historyCommand:async(c)=>f.repo.historyCommand(c)}});
  const native=createNativeHistoryProvider({actorAuthority:authority,actorToken:actor,store:f.store,history,endpointFactory:f.endpointFactory,deadlineMs:1000});await expect(native.capture()).resolves.toMatchObject({status:'captured'});expect((await native.query({query:'harbor'})).status).toBe('queried');expect(()=>readHistoryEvidence(authority,actor,old.result.evidence)).toThrow('MEMORY_HISTORY_EVIDENCE_DENIED');await native.close();
+});
+it('forget remains disabled after repository and Main restart without disabling another actor',async()=>{
+ const f=await fixture();await f.native.capture();
+ const fact=await f.active();await f.native.invalidate('forget');
+ await f.policy.act(f.actor,await f.policy.event(f.actor,{kind:'forget',nonce:crypto.randomUUID(),factId:fact.factId,revision:1}));
+ await f.native.close();f.reopen();
+ await f.store.append('session-b',{id:'other-user',kind:'user',turnId:'other-turn',revision:1,payload:{text:'independent actor orchard'},at:2000});await f.store.checkpoint('session-b');
+ const authority=createMainActorAuthority({resolveActor:(_scope,id)=>id.sessionId==='session-a'?'actor-a':'actor-b'});
+ const registry=createMainSourceRegistry(f.historyTransport,{coordinate:authority.coordinate}),access=registry.authority.access('scope-a');
+ const actor=authority.bindActor(access,f.provider.adapter,f.identity),other=authority.bindActor(access,f.provider.adapter,{...f.identity,sessionId:'session-b'});
+ const history=createMainHistory({actorAuthority:authority,registry,transport:f.historyTransport});
+ const native=(actorToken:object)=>createNativeHistoryProvider({actorAuthority:authority,actorToken,store:f.store,history,endpointFactory:f.endpointFactory,deadlineMs:1000});
+ const forgotten=native(actor),independent=native(other),reads=f.reads;
+ try{
+  expect(await forgotten.capture()).toMatchObject({status:'coverage-insufficient',reason:'disabled-by-forget'});expect(f.reads).toBe(reads);
+  expect(await forgotten.query({query:'harbor'})).toMatchObject({status:'coverage-insufficient',reason:'disabled-by-forget'});
+  expect(await independent.capture()).toMatchObject({status:'captured'});
+  const result=await independent.query({query:'orchard'});expect(result.status).toBe('queried');if(result.status!=='queried')throw Error('expected queried');
+  expect(result.result.hits.map(hit=>hit.document.sessionId)).toEqual(['session-b']);
+  expect(result.result.hits[0].document.messages[0].text).toBe('independent actor orchard');
+ }finally{await forgotten.close();await independent.close()}
 });
 
 it('a queued acquisition deadline rejects before the held S barrier is released',async()=>{

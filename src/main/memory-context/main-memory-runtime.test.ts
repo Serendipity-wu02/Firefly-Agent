@@ -1,7 +1,7 @@
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
-import { afterEach, expect, it, vi } from "vitest";
+import { afterAll, afterEach, beforeAll, expect, it, vi } from "vitest";
 import { composePromptLayers } from "../orchestrator/prompt-layers";
 import { createTranscriptSink, requireTranscriptSinkBinding, wrapTranscriptSink } from "../orchestrator/transcript-sink";
 import { ConversationTranscriptStore } from "../orchestrator/conversation-transcript-store";
@@ -17,10 +17,33 @@ import { createSmhFixture } from "./smh-fixture.test-support";
 import { createMainMemoryRuntime, type MainMemoryCapture, type MainMemoryModelBinding } from "./main-memory-runtime";
 import { createDefaultRunCapture } from "./default-run-capture";
 
+// Real prompt-dump I/O stays in a test-owned home even with diagnostics enabled.
+const diagnosticIO = vi.hoisted(() => {
+  const fs = require("node:fs"), os = require("node:os"), path = require("node:path");
+  return { home: fs.mkdtempSync(path.join(os.tmpdir(), "runtime-diagnostic-home-")), pending: [] as Promise<void>[] };
+});
+vi.mock("os", async importOriginal => {
+  const actual = await importOriginal<typeof import("node:os")>();
+  return { ...actual, default: { ...actual, homedir: () => diagnosticIO.home }, homedir: () => diagnosticIO.home };
+});
+vi.mock("fs", async importOriginal => {
+  const actual = await importOriginal<typeof import("node:fs")>();
+  const writeFile: typeof actual.writeFile = ((...args: Parameters<typeof actual.writeFile>) => {
+    const callback = args.at(-1) as (error: NodeJS.ErrnoException | null) => void;
+    diagnosticIO.pending.push(new Promise<void>(resolve => {
+      args[args.length - 1] = (error: NodeJS.ErrnoException | null) => { try { callback(error); } finally { resolve(); } };
+      Reflect.apply(actual.writeFile, actual, args);
+    }));
+  }) as typeof actual.writeFile;
+  return { ...actual, default: { ...actual, writeFile }, writeFile };
+});
+beforeAll(() => { vi.stubEnv("FIREFLY_PROMPT_DUMP", "1"); });
+afterAll(() => { vi.unstubAllEnvs(); fs.rmSync(diagnosticIO.home, { recursive: true, force: true }); });
+
 vi.mock("../token-usage-store", () => ({ recordUsage: vi.fn(), recordRequest: vi.fn() }));
 vi.mock("electron", () => ({ app: { getPath: () => { throw Error("PRODUCT_DATA_READ_FORBIDDEN"); } } }));
 const cleanup: Array<() => Promise<void> | void> = [];
-afterEach(async () => { for (const close of cleanup.splice(0).reverse()) await close(); vi.unstubAllGlobals(); vi.restoreAllMocks(); setVendorRuntimeSettingsGetter(() => ({})); });
+afterEach(async () => { await Promise.all(diagnosticIO.pending.splice(0)); for (const close of cleanup.splice(0).reverse()) await close(); vi.unstubAllGlobals(); vi.restoreAllMocks(); setVendorRuntimeSettingsGetter(() => ({})); });
 const deferred = <T = void>() => { let resolve!: (value: T) => void; const promise = new Promise<T>(done => { resolve = done; }); return { promise, resolve }; };
 
 async function fixture(mode: "persistent" | "temporary" = "persistent", temporaryCaptureSupported = false, options: { defaultCapture?: boolean; anthropic?: boolean; attachmentProjection?: object; attachments?: import("../../shared/chat-types").PendingChatAttachment[] } = {}) {
@@ -89,6 +112,42 @@ it("uses genuine grants and canonical S with the unchanged saved non-default mod
   expect(f.commands.filter((c: any) => c.kind === "claim")).toHaveLength(1);
   expect(f.commands.filter((c: any) => c.kind === "confirmUse")).toHaveLength(1);
   expect(await f.policy.recall(f.actor)).toEqual([]);
+});
+
+it.each([
+  ["temporary", "success"], ["temporary", "failure"], ["temporary", "cancel"],
+  ["persistent", "success"], ["persistent", "failure"], ["persistent", "cancel"],
+] as const)("%s streaming diagnostics respect trusted persistence on %s", async (mode, terminal) => {
+  const f = await fixture(mode, mode === "temporary"), run = await f.runtime.openRun(f.grant());
+  const sentinel = `diagnostic-${mode}-${terminal}`, controller = new AbortController();
+  const dumpRoot = path.join(diagnosticIO.home, ".firefly", "prompt-dumps");
+  const before = new Set(fs.existsSync(dumpRoot) ? fs.readdirSync(dumpRoot, { recursive: true }).map(String) : []);
+  f.setTemporaryText(sentinel);
+  if (mode === "persistent") await f.store.append("session-a", { id: "diagnostic-user", at: 2000, kind: "user", turnId: "diagnostic-user", revision: 1, payload: { text: sentinel } });
+  f.onFetch(async () => terminal === "failure"
+    ? Response.json({ error: { message: sentinel } }, { status: 400 })
+    : new Response([
+      { choices: [{ delta: { content: sentinel }, finish_reason: null }] },
+      { choices: [{ delta: {}, finish_reason: "stop" }] },
+    ].map(event => `data: ${JSON.stringify(event)}\n\n`).join(""), { headers: { "content-type": "text/event-stream" } }));
+  const input = f.input(); input.request.stream = true;
+  const result = run.call({ ...input, signal: controller.signal,
+    // Caller metadata must never override the genuine temporary run's policy.
+    ...({ persistDiagnostics: true } as object),
+    onDelta: () => { if (terminal === "cancel") controller.abort(new DOMException(sentinel, "AbortError")); },
+  });
+  if (terminal === "success") await expect(result).resolves.toMatchObject({ text: sentinel });
+  else await expect(result).rejects.toThrow();
+  await Promise.all(diagnosticIO.pending);
+  const files = fs.existsSync(dumpRoot) ? fs.readdirSync(dumpRoot, { recursive: true }).map(String).filter(file => file.endsWith(".json")) : [];
+  const payloads = files.map(file => fs.readFileSync(path.join(dumpRoot, file), "utf8")).filter(text => text.includes(sentinel)).map(text => JSON.parse(text));
+  if (mode === "temporary") { expect(files.filter(file => !before.has(file))).toEqual([]); expect(payloads).toEqual([]); }
+  else {
+    const request = payloads.find(payload => payload.phase === "request"); expect(request?.body).toBeDefined();
+    const response = files.map(file => JSON.parse(fs.readFileSync(path.join(dumpRoot, file), "utf8"))).find(payload => payload.phase === "response" && payload.traceId === request.traceId);
+    expect(response).toMatchObject({ ok: terminal === "success" });
+    if (terminal === "success") expect(response.text).toBe(sentinel);
+  }
 });
 
 it("rejects forged grants before captures, counting, or persistent commands", async () => {

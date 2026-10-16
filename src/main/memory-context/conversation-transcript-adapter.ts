@@ -25,6 +25,8 @@ interface AdapterOptions {
  context:Pick<ReturnType<typeof createMainContext>,"captureTranscript"|"prepareTranscriptChanges"|"transcriptGeneration"> & Partial<Pick<ReturnType<typeof createMainContext>,"observeResponseMutation">>;
  /** Main-owned fanout; an error aborts the canonical mutation before dispatch. */
  beforeMutation?:(kind:"append"|"delete"|"repair",entry?:TranscriptEntry,ticket?:object)=>Promise<void>;
+ /** Main session owner retains only genuinely observed event epochs across per-run adapters. */
+ observedEventEpochs?:Map<string,number>;
 }
 const LOCATOR="conversation";
 
@@ -34,7 +36,7 @@ export function createConversationTranscriptAdapter(options:AdapterOptions) {
  const actor=options.actorAuthority.requireActor(options.actorToken);
  if(actor.sessionMode==="temporary")contextFail("MEMORY_CONTEXT_TEMPORARY_UNSUPPORTED");
  let closed=false,incarnation=randomUUID(),revision=1,mutationEpoch=0;
- const published=new Map<string,object>(),eventEpochs=new Map<string,number>();
+ const published=new Map<string,object>(),eventEpochs=options.observedEventEpochs??new Map<string,number>();
  // These versions describe Main's S projection, never physical JSONL sequence/user revision.
  const projectionEpochs=new Map<string,number>(),turnVersions=new Map<string,{physicalThroughSeq:number;userRevision:number;projectionEpoch:number;version:number}>();
  type RunBinding={incarnation:string;userTurnId:string;userRevision:number;throughSeq:number};

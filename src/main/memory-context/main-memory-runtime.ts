@@ -187,7 +187,7 @@ export function createMainMemoryRuntime(options: MainMemoryRuntimeOptions): Main
       const request: ChatRequest = sOnly
         ? { model: config.model, stream: false, ...(frame.request.maxTokens === undefined ? {} : { maxTokens: frame.request.maxTokens }), messages: contextMessages(units) }
         : { ...frame.request, messages: [...frame.request.messages.filter(message => message.role === "system"), ...(frame.contextNotice ? [{ role: "system" as const, content: frame.contextNotice }] : []), ...memoryMessages(facts), ...contextMessages(units), ...frame.trustedPromptContext] };
-      const call = prepareModelCall(supplied.adapter, request, config, { providerId: capability.providerId, model: capability.model, transport: capability.transport, framingVersion: capability.framingVersion }, { validateCurrent: frame.validateCurrent ?? assertCurrent });
+      const call = prepareModelCall(supplied.adapter, request, config, { providerId: capability.providerId, model: capability.model, transport: capability.transport, framingVersion: capability.framingVersion }, { validateCurrent: frame.validateCurrent ?? assertCurrent, persistDiagnostics: !temporary });
       if ((call.request.maxOutputTokens ?? 0) > budget.reservedOutputTokens) contextFail("MEMORY_CONTEXT_OUTPUT_RESERVE_INVALID");
       frame.cache.set(cacheKey, call);
       if (!sOnly) frame.calls.set(requestDigest(call.request), call);
