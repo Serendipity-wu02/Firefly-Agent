@@ -1,7 +1,6 @@
 import React, { useEffect, useRef, useState } from "react";
 import { Popover } from "antd";
-import { Ellipsis, Search } from "lucide-react";
-import { ClockCircleOutlined } from "@ant-design/icons";
+import { CalendarClock, Ellipsis, Search } from "lucide-react";
 import { useTranslation } from "../../../i18n";
 import type { ChatSessionMeta, ConversationMode } from "../../../../../shared/chat-types";
 import type { TodoState } from "../../../../../shared/todo-types";
@@ -213,7 +212,7 @@ export const ChatPageNavigation = React.memo(function ChatPageNavigation({
                 <SkillModeButton active={activePanel === "skill"} onClick={() => chooseMorePanel("skill")} />
                 <ModelModeButton active={activePanel === "model"} onClick={() => chooseMorePanel("model")} />
                 <button type="button" className="ff-side-action" onClick={chooseScheduledTasks} title={t("ui.scheduledTasks")} aria-label={t("ui.scheduledTasks")}>
-                  <span className="ff-side-action-icon"><ClockCircleOutlined aria-hidden="true" /></span>
+                  <span className="ff-side-action-icon"><CalendarClock size={16} strokeWidth={1.8} aria-hidden="true" /></span>
                   <span className="ff-side-action-label">{t("ui.scheduledTasks")}</span>
                 </button>
               </div>

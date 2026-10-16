@@ -689,10 +689,6 @@ body {
 	  border-color: rgba(var(--rb-accent-rgb), 0.32);
 	}
 
-.setting-row--about {
-  justify-content: flex-start;
-}
-
 
 .theme-options {
   grid-template-columns: repeat(2, minmax(96px, 1fr));

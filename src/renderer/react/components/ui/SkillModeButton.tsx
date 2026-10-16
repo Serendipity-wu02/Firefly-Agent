@@ -1,3 +1,4 @@
+import { Sparkles } from "lucide-react";
 import { useTranslation } from "../../i18n";
 
 interface SkillModeButtonProps {
@@ -16,7 +17,7 @@ export function SkillModeButton({ active = false, onClick }: SkillModeButtonProp
       aria-pressed={active}
     >
       <span className="ff-side-action-icon">
-        <span aria-hidden="true">✦</span>
+        <Sparkles size={16} strokeWidth={1.8} aria-hidden="true" />
       </span>
       <span className="ff-side-action-label">{t("ui.skills")}</span>
     </button>

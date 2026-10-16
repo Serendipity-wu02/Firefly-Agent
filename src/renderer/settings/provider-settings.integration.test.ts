@@ -152,7 +152,7 @@ it("saves the language choice immediately without resetting the persisted hidden
   expect(general.sidebarVisible).toBe(false);
 });
 
-it("places the desktop card between the language and about cards with both switches", () => {
+it("places the desktop card after the language card with both switches and no About card", () => {
   const form = element("general-form");
   const toast = element<HTMLInputElement>("toast-sound-enabled");
   const launch = element<HTMLInputElement>("launch-at-login");
@@ -162,9 +162,9 @@ it("places the desktop card between the language and about cards with both switc
   expect(toast.closest("label")?.textContent).toContain("提醒音效");
   expect(launch.closest("label")?.textContent).toContain("开机自启");
   const language = element("language-select");
-  const about = form.querySelector(".setting-row--about")!;
   expect(language.compareDocumentPosition(toast) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
-  expect(launch.compareDocumentPosition(about) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+  expect(form.querySelector(".setting-row--about")).toBeNull();
+  expect(form.textContent).not.toContain("轻量情感陪伴");
 });
 
 it("puts the local file permission control in the general settings, not in the tools panel", () => {
