@@ -171,7 +171,7 @@ export function createMainHistory(options:Options){
  }
  async function prepareTranscriptChange(token:object,value:object){actor(token);const state=transcriptCaps.get(value);if(!state||state.actorToken!==token)fail('MEMORY_HISTORY_PROVIDER_DENIED');if(state.invalidation)return state.invalidation;if(!state.active)return;state.active=false;state.invalidation=reserveTranscript(state.actor,state.ref.headId,state.ref).then(()=>undefined);await state.invalidation}
  function retireResponseTranscript(token:object,value:object,ref:TranscriptDependency){actor(token);const state=transcriptCaps.get(value);if(!state||state.actorToken!==token||canonicalJson(state.ref)!==canonicalJson(ref))fail('MEMORY_HISTORY_PROVIDER_DENIED');state.active=false;state.invalidation=Promise.resolve()}
- /** An explicit forget disables unbound native history; it does not revoke the actor's S/M authority. */
- async function unboundCaptureAllowed(token:object){const a=actor(token),baseline=await command<{generation:number}>(a,'baseline',{});if(!Number.isSafeInteger(baseline.generation)||baseline.generation<0)fail('MEMORY_HISTORY_INPUT_INVALID');return baseline.generation===0}
- return {captureSource,captureTranscript,prepareTranscriptChange,retireResponseTranscript,unboundCaptureAllowed,grantSessions,query,remove};
+ /** After a forget the raw transcripts of this actor stay unreadable (anti-resurrection). That is a policy outcome, not an integrity failure, so it has its own code. */
+ async function assertUnboundCaptureAllowed(token:object){const a=actor(token),baseline=await command<{generation:number}>(a,'baseline',{});if(baseline.generation>0)fail('MEMORY_HISTORY_DISABLED_BY_FORGET')}
+ return {captureSource,captureTranscript,prepareTranscriptChange,retireResponseTranscript,assertUnboundCaptureAllowed,grantSessions,query,remove};
 }

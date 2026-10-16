@@ -56,7 +56,8 @@ export async function queryScopedHistory(options:Options):Promise<{tokens:object
  const coverage:ScopedHistoryCoverage=Object.freeze({status:sourcesComplete&&retrieval==="complete"&&timeComplete?"complete":"insufficient",selected:actors.length,covered:covered.length,diagnostics:Object.freeze([...diagnostics]),retrieval,...(temporal?{temporal:temporal.status}:{})});
  const parts:string[]=[];
  if(!sourcesComplete)parts.push("历史检索覆盖不足，仅检索了已授权且来源可验证的会话；不能据此断言历史不存在。未修复或改写原会话，也未回退旧检索。");
- if(retrieval!=="complete")parts.push("历史检索结果不完整："+(retrieval==="index-budget-exhausted"?"候选历史超出索引预算，未能返回任何历史证据":"部分命中因摘录预算用尽被省略，只返回了其余命中")+"；不能据此断言历史不存在或已检索完整。");
+ if(diagnostics.has("MEMORY_HISTORY_DISABLED_BY_FORGET"))parts.push("你执行过遗忘，被遗忘范围内的原始会话历史不再读取；本轮仅依据当前上下文回答，不能据此断言历史不存在。");
+if(retrieval!=="complete")parts.push("历史检索结果不完整："+(retrieval==="index-budget-exhausted"?"候选历史超出索引预算，未能返回任何历史证据":"部分命中因摘录预算用尽被省略，只返回了其余命中")+"；不能据此断言历史不存在或已检索完整。");
  if(temporal&&options.timeIntent){
   parts.push("已按时间限定检索历史："+options.timeIntent.label+"；该时间段之外的历史未被检索。");
   if(temporal.status!=="applied")parts.push("时间限定只部分生效："+temporal.unknownDocuments+" 份历史缺少可证明的时间，已被排除；不能据此断言该时间段没有相关历史。");

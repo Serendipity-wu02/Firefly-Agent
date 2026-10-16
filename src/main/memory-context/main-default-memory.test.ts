@@ -424,7 +424,7 @@ it.each(['session-a','session-b'])('keeps authorized S and remaining M usable in
  await expect(run.call(f.call())).resolves.toMatchObject({text:'synthetic answer'});
  const request=f.sent.at(-1)!;
  expect(request).toContain('Which language do I prefer?');expect(request).toContain('I prefer English');
- expect(request).not.toContain('I prefer PowerShell');if(id==='session-b')expect(request).toContain('MEMORY_HISTORY_DISABLED_AFTER_FORGET');
+ expect(request).not.toContain('I prefer PowerShell');if(id==='session-b')expect(request).toContain('MEMORY_HISTORY_DISABLED_BY_FORGET');
  expect(f.nativeStarts).toBe(reads);expect(f.historyCommands.filter(command=>command.kind==='put')).toHaveLength(puts);
  if(id==='session-b')expect(f.memory.getHistoryCoverage(id)).toMatchObject({status:'insufficient',selected:1,covered:0});
  expect((await f.memory.settingsHost.getState(f.settingsEvent)).facts.map(fact=>fact.assertion)).toEqual(['I prefer English']);

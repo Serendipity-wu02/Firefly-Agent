@@ -114,9 +114,9 @@ export function createMainDesktopMemory(options:Options){
       facts:{currentUserSource:async current=>{requireRun(id);return core.registry.capture(core.access,source.token,{providerId:PROVIDER,sessionId:id,messageId:current.userTurnId})},coordinator:core.coordinator,selector:core.selector,limits:{maxFacts:8}},
       history:{query:async(current,signal)=>{
        requireRun(id);const selected=[id,...options.listSessionIds().filter(other=>other!==id&&owned(other)&&options.getSession(other)?.messages.some(message=>message.role==="user"))];if(selected.length>32)throw Error("MEMORY_HISTORY_ACCESS_DENIED");
-       const actors:object[]=[];
-       for(const other of selected){const historical=await record(other);if(other===id)await options.store.checkpoint(id);const outcome=await historical.native.capture(signal);if(outcome.status!=='captured')throw Error("MEMORY_HISTORY_COVERAGE_INSUFFICIENT");if(other!==id)actors.push(historical.actor)}
-       requireRun(id);const partition=core.history.grantSessions(state.actor,actors);return [(await core.history.query(state.actor,{query:current.userText,scope:partition,signal})).evidence];
+       const actors:object[]=[];let forgotten=false;
+       for(const other of selected){const historical=await record(other);if(other===id)await options.store.checkpoint(id);const outcome=await historical.native.capture(signal);if(outcome.status!=='captured'){if(outcome.reason==='disabled-by-forget'){forgotten=true;continue}throw Error("MEMORY_HISTORY_COVERAGE_INSUFFICIENT")}if(other!==id)actors.push(historical.actor)}
+       requireRun(id);if(forgotten&&!actors.length)return [];const partition=core.history.grantSessions(state.actor,actors);return [(await core.history.query(state.actor,{query:current.userText,scope:partition,signal})).evidence];
       }},
       createTranscript:context=>(state.adapter=createConversationTranscriptAdapter({enabled:true,store:options.store,actorAuthority:core.actorAuthority,actorToken:state.actor,context,beforeMutation:(kind,entry,ticket)=>state.native.beforeMutation(kind,entry,ticket)})!)});
      if(!port)fail();state.port={run:input=>{const grant=requireRun(id),binding=authority.require(grant,id);const pending=port.run({...input,signal:input.signal?AbortSignal.any([input.signal,binding.signal]):binding.signal});activePorts.add(pending);void pending.then(()=>activePorts.delete(pending),()=>activePorts.delete(pending));return pending}};

@@ -40,8 +40,8 @@ it('successful capture followed by external snapshot deletion revokes old synchr
 it('invalidates on mutation, close and forget without restoring authority from identical files',async()=>{
  const f=await fixture();await f.native.capture();const q=await f.native.query({query:'harbor'});if(q.status!=='queried')throw Error('expected queried');await f.native.beforeMutation('append');expect(()=>readHistoryEvidence(f.authority,f.actor,q.result.evidence)).toThrow();expect(await f.native.query({query:'harbor'})).toMatchObject({reason:'not-acquired'});
  await f.native.capture();const fact=await f.active();await f.native.invalidate('forget');await f.policy.act(f.actor,await f.policy.event(f.actor,{kind:'forget',nonce:crypto.randomUUID(),factId:fact.factId,revision:1}));const reads=f.reads,puts=f.commands.filter(c=>c.kind==='put').length;
- expect(await f.native.capture()).toMatchObject({status:'coverage-insufficient',reason:'disabled-after-forget',diagnostics:['MEMORY_HISTORY_COVERAGE_INSUFFICIENT','MEMORY_HISTORY_DISABLED_AFTER_FORGET']});
- expect(await f.native.query({query:'harbor'})).toMatchObject({status:'coverage-insufficient',reason:'disabled-after-forget'});
+ expect(await f.native.capture()).toMatchObject({status:'coverage-insufficient',reason:'disabled-by-forget',diagnostics:['MEMORY_HISTORY_COVERAGE_INSUFFICIENT','MEMORY_HISTORY_DISABLED_BY_FORGET']});
+ expect(await f.native.query({query:'harbor'})).toMatchObject({status:'coverage-insufficient',reason:'disabled-by-forget'});
  expect(f.reads).toBe(reads);expect(f.commands.filter(c=>c.kind==='put')).toHaveLength(puts);
  await f.native.close();await f.native.close();await expect(f.native.capture()).rejects.toThrow('MEMORY_HISTORY_PROVIDER_DENIED');
 });
@@ -127,8 +127,8 @@ it('forget remains disabled after repository and Main restart without disabling 
  const native=(actorToken:object)=>createNativeHistoryProvider({actorAuthority:authority,actorToken,store:f.store,history,endpointFactory:f.endpointFactory,deadlineMs:1000});
  const forgotten=native(actor),independent=native(other),reads=f.reads;
  try{
-  expect(await forgotten.capture()).toMatchObject({status:'coverage-insufficient',reason:'disabled-after-forget'});expect(f.reads).toBe(reads);
-  expect(await forgotten.query({query:'harbor'})).toMatchObject({status:'coverage-insufficient',reason:'disabled-after-forget'});
+  expect(await forgotten.capture()).toMatchObject({status:'coverage-insufficient',reason:'disabled-by-forget'});expect(f.reads).toBe(reads);
+  expect(await forgotten.query({query:'harbor'})).toMatchObject({status:'coverage-insufficient',reason:'disabled-by-forget'});
   expect(await independent.capture()).toMatchObject({status:'captured'});
   const result=await independent.query({query:'orchard'});expect(result.status).toBe('queried');if(result.status!=='queried')throw Error('expected queried');
   expect(result.result.hits.map(hit=>hit.document.sessionId)).toEqual(['session-b']);

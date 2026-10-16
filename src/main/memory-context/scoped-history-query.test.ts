@@ -12,6 +12,16 @@ it("a missing native helper leaves a clear coverage gap rather than an empty-his
 it.each(["MEMORY_ACTOR_DENIED","MEMORY_HISTORY_STALE","private raw failure"])("never hides an authorization or integrity failure as partial coverage: %s",async code=>{
  await expect(queryScopedHistory({actors:[{}],assertCurrent:()=>{},capture:async()=>{throw Error(code)},query:vi.fn()})).rejects.toThrow(code);
 });
+it("a forgotten actor is a reported coverage gap: nothing is read for it and the turn is not failed",async()=>{
+ const a={},b={},evidence={},query=vi.fn(async()=>({evidence,status:"ok" as const}));
+ const result=await queryScopedHistory({actors:[a,b],assertCurrent:()=>{},capture:async actor=>actor===a?{status:"captured",diagnostics:[]}:{status:"coverage-insufficient",diagnostics:["MEMORY_HISTORY_COVERAGE_INSUFFICIENT","MEMORY_HISTORY_DISABLED_BY_FORGET"]},query});
+ expect(query).toHaveBeenCalledWith([a]);expect(result.coverage).toMatchObject({status:"insufficient",selected:2,covered:1});
+ expect(result.coverage.diagnostics).toContain("MEMORY_HISTORY_DISABLED_BY_FORGET");expect(result.notice).toContain("遗忘");expect(result.notice).toContain("不能据此断言历史不存在");
+});
+it("when every actor is forgotten there is no retrieval and the answer proceeds on the current context",async()=>{
+ const query=vi.fn();const result=await queryScopedHistory({actors:[{}],assertCurrent:()=>{},capture:async()=>({status:"coverage-insufficient",diagnostics:["MEMORY_HISTORY_DISABLED_BY_FORGET"]}),query});
+ expect(query).not.toHaveBeenCalled();expect(result.tokens).toEqual([]);expect(result.coverage.status).toBe("insufficient");expect(result.notice).toContain("遗忘");
+});
 it("bounds actual reads while reporting the entire authorized selection",async()=>{
  const actors=Array.from({length:40},()=>({})),capture=vi.fn(async()=>({status:"captured" as const,diagnostics:[]}));
  const result=await queryScopedHistory({actors,assertCurrent:()=>{},capture,query:async()=>({evidence:{},status:"ok" as const})});expect(capture).toHaveBeenCalledTimes(31);expect(result.coverage).toMatchObject({selected:40,covered:31,status:"insufficient"});expect(result.notice).toContain("MEMORY_HISTORY_SELECTION_BUDGET_EXHAUSTED");

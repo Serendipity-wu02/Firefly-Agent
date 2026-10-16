@@ -197,8 +197,8 @@ it("native H joins S and M through one observer and coverage never invokes legac
  const outcome=await native.query({query:'harbor'});expect(outcome).toMatchObject({status:'coverage-insufficient',reason:'snapshot-missing'});expect(outcome).not.toHaveProperty('result');for(const spy of Object.values(fallback))expect(spy).not.toHaveBeenCalled();expect(await f.policy.recall(f.actor)).toHaveLength(1);
  await native.invalidate('forget');await f.policy.act(f.actor,await f.policy.event(f.actor,{kind:'forget',nonce:'native-forget',factId:facts[0].factId,revision:facts[0].revision}));
  const readsBeforeForgetCapture=nativeReads,disabled=await native.capture();
- expect(disabled).toMatchObject({status:'coverage-insufficient',reason:'disabled-after-forget',diagnostics:['MEMORY_HISTORY_COVERAGE_INSUFFICIENT','MEMORY_HISTORY_DISABLED_AFTER_FORGET']});expect(disabled).not.toHaveProperty('result');
- expect(await native.query({query:'harbor'})).toMatchObject({status:'coverage-insufficient',reason:'disabled-after-forget'});expect(nativeReads).toBe(readsBeforeForgetCapture);expect(await f.policy.recall(f.actor)).toEqual([]);
+ expect(disabled).toMatchObject({status:'coverage-insufficient',reason:'disabled-by-forget',diagnostics:['MEMORY_HISTORY_COVERAGE_INSUFFICIENT','MEMORY_HISTORY_DISABLED_BY_FORGET']});expect(disabled).not.toHaveProperty('result');
+ expect(await native.query({query:'harbor'})).toMatchObject({status:'coverage-insufficient',reason:'disabled-by-forget'});expect(nativeReads).toBe(readsBeforeForgetCapture);expect(await f.policy.recall(f.actor)).toEqual([]);
  for(const spy of Object.values(fallback))expect(spy).not.toHaveBeenCalled();
  await adapter.close();await native.close();
 });
