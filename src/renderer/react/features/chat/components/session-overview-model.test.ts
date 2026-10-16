@@ -105,9 +105,20 @@ describe("summarizeTasks", () => {
       output("r1", [], [task("a", "completed"), task("b", "failed"), task("c", "running"), task("d", "cancelled")]),
     ]);
 
-    expect(summary.running.map((item) => item.invocationId)).toEqual(["c"]);
+    expect(summary.running.map((item) => item.task.invocationId)).toEqual(["c"]);
     expect(summary.finished).toBe(3);
     expect(summary.failed).toBe(1);
+  });
+
+  it("keeps the originating run of a resumed agent that reuses its taskId", () => {
+    const first = output("r1", [], [task("a", "completed")]);
+    const second = output("r2", [], [{ ...task("b", "running"), taskId: "task-a" }]);
+
+    const summary = summarizeTasks([first, second]);
+
+    expect(summary.running).toHaveLength(1);
+    expect(summary.running[0].task.taskId).toBe("task-a");
+    expect(summary.running[0].output).toBe(second);
   });
 
   it("lets a later record of the same invocation replace the earlier status", () => {

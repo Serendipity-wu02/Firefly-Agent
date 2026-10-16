@@ -92,8 +92,14 @@ export function summarizeChanges(outputs: readonly WorkspaceRunOutput[]): Overvi
   };
 }
 
+export interface OverviewRunningTask {
+  task: TaskDelegationDisplayRecord;
+  /** 该次委托所在的运行结果：续跑的 agent 沿用 taskId，只有它能指到"这一次"。 */
+  output: WorkspaceRunOutput;
+}
+
 export interface OverviewTasks {
-  running: TaskDelegationDisplayRecord[];
+  running: OverviewRunningTask[];
   /** 已结束（完成 / 失败 / 取消）的数量。 */
   finished: number;
   failed: number;
@@ -101,14 +107,14 @@ export interface OverviewTasks {
 
 /** 以 invocationId 去重，后出现的记录覆盖先出现的（同一委托的状态推进）。 */
 export function summarizeTasks(outputs: readonly WorkspaceRunOutput[]): OverviewTasks {
-  const byInvocation = new Map<string, TaskDelegationDisplayRecord>();
+  const byInvocation = new Map<string, OverviewRunningTask>();
   for (const output of outputs) {
-    for (const task of output.tasks) byInvocation.set(task.invocationId, task);
+    for (const task of output.tasks) byInvocation.set(task.invocationId, { task, output });
   }
-  const tasks = [...byInvocation.values()];
+  const entries = [...byInvocation.values()];
   return {
-    running: tasks.filter((task) => task.status === "running"),
-    finished: tasks.filter((task) => task.status !== "running").length,
-    failed: tasks.filter((task) => task.status === "failed").length,
+    running: entries.filter((entry) => entry.task.status === "running"),
+    finished: entries.filter((entry) => entry.task.status !== "running").length,
+    failed: entries.filter((entry) => entry.task.status === "failed").length,
   };
 }

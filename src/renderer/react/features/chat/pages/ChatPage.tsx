@@ -1309,6 +1309,11 @@ export function ChatPage() {
     openResultTab(output.id);
     setFocusTask(current => ({ taskId, seq: (current?.seq ?? 0) + 1 }));
   };
+  // The overview already knows which run a task belongs to; a resumed agent keeps its taskId across runs.
+  const openTaskInRun = (output: WorkspaceRunOutput, taskId: string) => {
+    openResultTab(output.id);
+    setFocusTask(current => ({ taskId, seq: (current?.seq ?? 0) + 1 }));
+  };
   const inspectorActions = useMemo<ChatInspectorActions>(() => ({ openDelegation: (taskId: string) => openDelegationRef.current(taskId) }), []);
   const openResultDiff = (output: WorkspaceRunOutput, file: WorkspaceChangedFile) => {
     if (output.sessionId !== activeSessionId) return;
@@ -1785,7 +1790,7 @@ export function ChatPage() {
                   usage: latestContextUsage,
                   outputs: workspaceOutputs,
                   onOpenChange: openResultDiff,
-                  onOpenTask: (taskId) => openDelegationRef.current(taskId),
+                  onOpenTask: openTaskInRun,
                 }}
                 pendingWorkspaceName={pendingWorkspaceByMode[mode]?.displayName}
                 onChooseWorkspace={mode !== "chat" ? () => void chooseWorkspace() : undefined}

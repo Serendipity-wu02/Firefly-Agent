@@ -115,7 +115,7 @@ export interface SessionOverviewPanelProps {
   usage?: ContextUsageSnapshot;
   outputs: readonly WorkspaceRunOutput[];
   onOpenChange?: (output: WorkspaceRunOutput, file: WorkspaceChangedFile) => void;
-  onOpenTask?: (taskId: string) => void;
+  onOpenTask?: (output: WorkspaceRunOutput, taskId: string) => void;
 }
 
 export function SessionOverviewPanel({ usage, outputs, onOpenChange, onOpenTask }: SessionOverviewPanelProps) {
@@ -135,10 +135,10 @@ export function SessionOverviewPanel({ usage, outputs, onOpenChange, onOpenTask 
         {!hasTasks && <p className="ff-overview-card__empty">{t("sessionOverview.tasksEmpty")}</p>}
         {tasks.running.length > 0 && (
           <ul className="ff-overview-list">
-            {tasks.running.map((task) => (
+            {tasks.running.map(({ task, output }) => (
               <li key={task.invocationId}>
                 <button type="button" className="ff-overview-list__row" disabled={!onOpenTask}
-                  onClick={() => onOpenTask?.(task.taskId)} title={task.description}>
+                  onClick={() => onOpenTask?.(output, task.taskId)} title={task.description}>
                   <span className="ff-overview-list__pulse" aria-hidden="true" />
                   <span className="ff-overview-list__name">{task.description || task.nickname}</span>
                   <span className="ff-overview-list__meta">{task.nickname}</span>
