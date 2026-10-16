@@ -18,9 +18,10 @@ describe("ChatPage feedback", () => {
   it("opens the rail settings entry on General", () => {
     expect(chatPageSource).toContain('sidebarApi()?.openSettings("general")');
   });
-  it("opens scheduled tasks in the settings window through the more menu, not a settings nav entry", () => {
-    expect(chatPageSource).toContain('sidebarApi()?.openSettings("tasks")');
-    expect(chatPageSource).toContain("onOpenScheduledTasks={navOpenScheduledTasks}");
+  it("keeps scheduled tasks in the main window's more menu instead of the settings window", () => {
+    expect(chatPageSource).not.toContain('openSettings("tasks")');
+    expect(chatPageSource).not.toContain("onOpenScheduledTasks");
+    expect(chatPageSource).not.toContain("navOpenScheduledTasks");
   });
   it("统一反馈入口承接错误上报与确认流程，不残留浏览器默认弹窗", () => {
     expect(chatPageSource).toContain("useFeedback");
