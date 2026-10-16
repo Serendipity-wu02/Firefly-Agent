@@ -382,11 +382,7 @@
           "title": "Launch at login",
           "desc": "Automatically open Firefly when the system starts."
         },
-        "desktopSaveFailed": "Saving failed. Please retry.",
-        "about": {
-          "title": "About",
-          "desc": " · Lightweight emotional companion desktop agent"
-        }
+        "desktopSaveFailed": "Saving failed. Please retry."
       },
       "firefly": {
         "sticker": {

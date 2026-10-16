@@ -448,11 +448,7 @@
           "title": "开机自启",
           "desc": "系统启动时自动打开流萤。"
         },
-        "desktopSaveFailed": "保存失败，请重试。",
-        "about": {
-          "title": "关于",
-          "desc": "· 轻量情感陪伴桌面 Agent"
-        }
+        "desktopSaveFailed": "保存失败，请重试。"
       },
       "firefly": {
         "heading": "流萤设置",
