@@ -194,3 +194,66 @@ it('budget statistics reach the optional sink as numbers only, and a failing sin
  const failing=fixture({onBudgetStats:()=>{throw new Error('disk full')}});await capture(failing,'cat B');
  expect((await failing.history.query(failing.actor,{query:'cat'})).hits).toHaveLength(1);
 });
+
+// ---- excerpts of an oversized transcript: labelled, bound to the stored document, validated on every use ----
+const NEEDLE='zebra passport';
+function bigTranscript(source:any,count=20,needleAt=9){
+ const messages:any[]=[{id:'u',role:'user',text:'cat',occurredAt:null,timeZone:null,sourceRef:source.ref}];
+ for(let i=1;i<count;i++)messages.push({id:'a'+i,role:'assistant',text:(i===needleAt?NEEDLE+' ':'filler '+i+' ')+'y'.repeat(700),occurredAt:5000+i,timeZone:'Etc/UTC'});
+ return {id:'big-turn',incarnation:'v1',revision:1,origin:'canonical',sourceDeps:[{sourceRef:source.ref,subjectKeys:null,derivedRefs:null}],vector:null,messages};
+}
+const evidencePayload=(unit:any)=>{const text:string=unit.messages[0].text;return JSON.parse(text.slice(text.indexOf('\n')+1))};
+async function bigFixture(extra:any={}){
+ const f=fixture(extra),source=await f.source('cat');let current:any=bigTranscript(source);
+ const provider=createMainHistoryProvider(f.authority,f.actor,{withLease:async(_id,run)=>run(async()=>structuredClone(current))});
+ return {f,source,provider,doc:()=>current,edit:(next:any)=>{current=next}};
+}
+it('an oversized transcript is returned as a labelled excerpt and the model sees only that range, with per-message time, zone, id and position',async()=>{
+ const {f,provider,doc}=await bigFixture();await f.history.captureTranscript(f.actor,provider,'big-turn');
+ const q=await f.history.query(f.actor,{query:NEEDLE});expect(q.status).toBe('ok');expect(q.hits).toHaveLength(1);
+ expect(q.hits[0].document.excerpt).toMatchObject({start:6,end:12,total:20});expect(q.hits[0].document.messages.map((m:any)=>m.id)).toEqual(['a6','a7','a8','a9','a10','a11']);
+ const {unit,dependencies}=readHistoryEvidence(f.authority,f.actor,q.evidence),payload=evidencePayload(unit);
+ expect(payload).toHaveLength(1);const hit=payload[0];
+ expect(hit.excerpt).toMatchObject({partial:true,firstMessage:7,lastMessage:12,totalMessages:20,digest:dependencies[0].excerpt!.digest});expect(hit.excerpt.note).toMatch(/fragment|excerpt/i);
+ expect(hit.digest).toBe(dependencies[0].digest);expect(hit.digest).not.toBe(hit.excerpt.digest);
+ expect(hit.messages.map((m:any)=>[m.messageId,m.eventTime,m.timeZone,m.position,m.text])).toEqual(doc().messages.slice(6,12).map((m:any,i:number)=>[m.id,m.occurredAt,m.timeZone,7+i,m.text]));
+ const snap=await f.context.assemble(f.actor,{sessionId:'session-a',sourceRefs:[],historyTokens:[q.evidence]}),body=JSON.stringify(snap.request.body);
+ expect(body).toContain(NEEDLE);expect(body).toContain('totalMessages');expect(body).not.toContain('filler 3 ');expect(body).not.toContain('filler 15 ');
+});
+it('a document that fits is quoted whole with no excerpt label and no per-message position',async()=>{
+ const f=fixture();await capture(f,'cat quoted history');const q=await f.history.query(f.actor,{query:'cat'}),payload=evidencePayload(readHistoryEvidence(f.authority,f.actor,q.evidence).unit);
+ expect(payload[0].excerpt).toBeUndefined();expect(payload[0].messages[0].position).toBeUndefined();expect(q.hits[0].document.excerpt).toBeUndefined();
+});
+it('excerpt evidence is bound to the full stored document: any later change to the transcript, even outside the excerpted range, invalidates it',async()=>{
+ const {f,provider,doc,edit}=await bigFixture();await f.history.captureTranscript(f.actor,provider,'big-turn');
+ const q=await f.history.query(f.actor,{query:NEEDLE}),s=await f.context.assemble(f.actor,{sessionId:'session-a',sourceRefs:[],historyTokens:[q.evidence]}),p=await f.context.validateForDispatch(f.actor,s);
+ edit({...doc(),revision:2,messages:doc().messages.map((m:any)=>m.id==='a18'?{...m,text:'edited far away from the excerpt'}:m)});
+ let sends=0;await expect(f.context.dispatch(f.actor,p,()=>{sends++;return 'bad'})).rejects.toThrow();expect(sends).toBe(0);
+ await expect(f.context.assemble(f.actor,{sessionId:'session-a',sourceRefs:[],historyTokens:[q.evidence]})).rejects.toThrow();
+});
+async function tampered(mutate:(hit:any)=>void){
+ const f=fixture(),source=await f.source('cat'),doc=bigTranscript(source);
+ const history=createMainHistory({actorAuthority:f.authority,registry:f.registry,transport:{...f.transport,historyCommand:async(c:any)=>{const r:any=f.repo.historyCommand(c);if(c.kind==='query')r.hits.forEach(mutate);return r}}});
+ const provider=createMainHistoryProvider(f.authority,f.actor,{withLease:async(_id,run)=>run(async()=>structuredClone(doc))});await history.captureTranscript(f.actor,provider,'big-turn');
+ return history.query(f.actor,{query:NEEDLE});
+}
+it('Main refuses an excerpt whose range, digest, marker or quoted text no longer agree with each other',async()=>{
+ const ok=await tampered(()=>{});expect(ok.hits[0].document.excerpt).toBeDefined();
+ await expect(tampered(h=>{h.dependency.excerpt={...h.dependency.excerpt,start:h.dependency.excerpt.start+1}})).rejects.toThrow('MEMORY_HISTORY_STALE');
+ await expect(tampered(h=>{h.document.excerpt={...h.document.excerpt,end:h.document.excerpt.end+1}})).rejects.toThrow('MEMORY_HISTORY_STALE');
+ await expect(tampered(h=>{h.document.messages[0].text='tampered quote'})).rejects.toThrow('MEMORY_HISTORY_STALE');
+ await expect(tampered(h=>{h.document.messages=h.document.messages.map((m:any,i:number,all:any[])=>all[(i+1)%all.length])})).rejects.toThrow('MEMORY_HISTORY_STALE');
+ await expect(tampered(h=>{delete h.document.excerpt})).rejects.toThrow('MEMORY_HISTORY_STALE');
+ await expect(tampered(h=>{delete h.dependency.excerpt})).rejects.toThrow('MEMORY_HISTORY_STALE');
+ await expect(tampered(h=>{h.dependency.digest='e'.repeat(64)})).rejects.toThrow('MEMORY_HISTORY_STALE');
+});
+it('temporal queries still work with an excerpt and are still refused together with a vector',async()=>{
+ const {f,provider}=await bigFixture();await f.history.captureTranscript(f.actor,provider,'big-turn');
+ const q=await f.history.query(f.actor,{query:NEEDLE,temporal:{kind:'latest'}} as any);expect(q.hits[0].document.excerpt).toBeDefined();expect((q as any).temporal).toMatchObject({kind:'latest'});
+ const embedding={name:'synthetic-embed',dims:2,embed:async()=>[1,0],embedBatch:async()=>[[1,0]]},vectored=createMainHistory({actorAuthority:f.authority,registry:f.registry,transport:f.transport,syntheticEmbedding:embedding as any});
+ await expect(vectored.query(f.actor,{query:NEEDLE,temporal:{kind:'latest'}} as any)).rejects.toThrow('MEMORY_HISTORY_TEMPORAL_VECTOR_UNSUPPORTED');
+});
+it('budget statistics count excerpted documents and still carry numbers only',async()=>{
+ const seen:any[]=[],{f,provider}=await bigFixture({onBudgetStats:(s:any)=>seen.push(s)});await f.history.captureTranscript(f.actor,provider,'big-turn');await f.history.query(f.actor,{query:NEEDLE});
+ expect(seen).toEqual([expect.objectContaining({ranked:1,returned:1,excerpted:1,droppedOversized:0})]);expect(JSON.stringify(seen)).not.toMatch(/zebra|filler|big-turn|session/);
+});

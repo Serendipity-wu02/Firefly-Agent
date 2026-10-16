@@ -41,9 +41,23 @@ describe('createHistoryBudgetStatsRecorder',()=>{
   expect(fs.existsSync(file)).toBe(false);expect(write).not.toHaveBeenCalled();
   vi.advanceTimersByTime(1000);
   const saved=JSON.parse(fs.readFileSync(file,'utf8'));
-  expect(saved.days['2026-10-14']).toEqual({queries:2,queriesWithDrops:1,ranked:7,returned:4,droppedOversized:2,droppedOverTotal:1,oversizedExcerptable:1,droppedSizes:{'le-6k':1,'6k-12k':2,'12k-24k':0,'24k-48k':0,'gt-48k':0}});
+  expect(saved.days['2026-10-14']).toEqual({queries:2,queriesWithDrops:1,ranked:7,returned:4,excerpted:0,droppedOversized:2,droppedOverTotal:1,oversizedExcerptable:1,droppedSizes:{'le-6k':1,'6k-12k':2,'12k-24k':0,'24k-48k':0,'gt-48k':0}});
   expect(saved.days['2026-10-15']).toMatchObject({queries:1,queriesWithDrops:0});
   expect(recorder.read()).toEqual(saved);
+ });
+
+ it('counts excerpted documents per day, and a file written before that counter existed still loads and keeps counting',()=>{
+  const file=tempFile(),clock=()=>day('2026-10-14');
+  const legacy={queries:4,queriesWithDrops:1,ranked:9,returned:8,droppedOversized:1,droppedOverTotal:0,oversizedExcerptable:1,droppedSizes:{'le-6k':0,'6k-12k':1,'12k-24k':0,'24k-48k':0,'gt-48k':0}};
+  fs.writeFileSync(file,JSON.stringify({schemaVersion:1,days:{'2026-10-14':legacy,'2026-10-13':{...legacy,excerpted:2}}}));
+  const recorder=createHistoryBudgetStatsRecorder(()=>file,{clock});recorder.record(stats({ranked:2,returned:2,excerpted:1}));recorder.flush();
+  const days=recorder.read().days;expect(days['2026-10-14']).toEqual({...legacy,queries:5,ranked:11,returned:10,excerpted:1});expect(days['2026-10-13']).toMatchObject({excerpted:2});
+ });
+ it('rejects a day record whose excerpted counter is not a count',()=>{
+  const warn=vi.spyOn(console,'warn').mockImplementation(()=>{});
+  const file=tempFile(),bad={queries:0,queriesWithDrops:0,ranked:0,returned:0,excerpted:-1,droppedOversized:0,droppedOverTotal:0,oversizedExcerptable:0,droppedSizes:{'le-6k':0,'6k-12k':0,'12k-24k':0,'24k-48k':0,'gt-48k':0}};
+  fs.writeFileSync(file,JSON.stringify({schemaVersion:1,days:{'2026-10-14':bad}}));const before=fs.readFileSync(file,'utf8');
+  const recorder=createHistoryBudgetStatsRecorder(()=>file,{clock:()=>day('2026-10-14')});recorder.record(stats());recorder.flush();expect(fs.readFileSync(file,'utf8')).toBe(before);expect(warn).toHaveBeenCalled();
  });
 
  it('a steady stream of queries still flushes by the maximum wait',()=>{
@@ -62,7 +76,7 @@ describe('createHistoryBudgetStatsRecorder',()=>{
  it('the file holds only counters: no text, ids or other strings besides dates and fixed key names',()=>{
   const file=tempFile(),recorder=createHistoryBudgetStatsRecorder(()=>file,{clock:()=>day('2026-10-14')});recorder.record(stats({ranked:2,returned:2}));recorder.flush();
   const strings=[...fs.readFileSync(file,'utf8').matchAll(/"([^"]*)"/g)].map(m=>m[1]);
-  expect(new Set(strings)).toEqual(new Set(['schemaVersion','days','2026-10-14','queries','queriesWithDrops','ranked','returned','droppedOversized','droppedOverTotal','oversizedExcerptable','droppedSizes','le-6k','6k-12k','12k-24k','24k-48k','gt-48k']));
+  expect(new Set(strings)).toEqual(new Set(['schemaVersion','days','2026-10-14','queries','queriesWithDrops','ranked','returned','excerpted','droppedOversized','droppedOverTotal','oversizedExcerptable','droppedSizes','le-6k','6k-12k','12k-24k','24k-48k','gt-48k']));
  });
 
  it(`keeps only the most recent ${HISTORY_BUDGET_RETAINED_DAYS} days`,()=>{
@@ -74,7 +88,7 @@ describe('createHistoryBudgetStatsRecorder',()=>{
  it('ignores malformed statistics and never overwrites an existing file it cannot validate',()=>{
   const warn=vi.spyOn(console,'warn').mockImplementation(()=>{});
   const file=tempFile(),recorder=createHistoryBudgetStatsRecorder(()=>file,{clock:()=>day('2026-10-14')});
-  recorder.record({...stats(),ranked:-1});recorder.record({...stats(),returned:1.5});recorder.flush();expect(fs.existsSync(file)).toBe(false);
+  recorder.record({...stats(),ranked:-1});recorder.record({...stats(),returned:1.5});recorder.record({...stats(),excerpted:-1});recorder.flush();expect(fs.existsSync(file)).toBe(false);
   fs.writeFileSync(file,'{"not":"ours"}');recorder.record(stats());expect(()=>recorder.flush()).not.toThrow();
   expect(fs.readFileSync(file,'utf8')).toBe('{"not":"ours"}');expect(warn).toHaveBeenCalled();
  });
