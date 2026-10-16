@@ -30,7 +30,7 @@
   width: 100%;
   flex-direction: column;
   overflow: hidden;
-  border-radius: 12px;
+  border-radius: 18px;
   background: var(--ff-bg-subtle);
   box-shadow: var(--ff-shadow-bubble-neutral);
 }
@@ -39,13 +39,14 @@
   transform: translateY(-15px);
 }
 
+/* The composer floats above the thread as one rounded card. */
 .ff-composer.ant-sender {
   position: relative;
   z-index: 1;
   border: 1px solid var(--ff-border);
-  border-radius: 12px;
+  border-radius: 18px;
   background: var(--ff-surface);
-  box-shadow: var(--ff-shadow-bubble-neutral);
+  box-shadow: var(--ff-shadow-popover);
   transition:
     border-color 160ms ease,
     box-shadow 160ms ease;

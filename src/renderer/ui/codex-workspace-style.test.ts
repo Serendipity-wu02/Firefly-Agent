@@ -93,9 +93,10 @@ describe("Codex-reference workbench presentation", () => {
   it("does not paint an accent box behind a sticker-only user message", () => {
     expect(value("messages", ":root[data-ui-colors] .ff-message--user:has(.ff-message__sticker:only-child) .ant-bubble-content", "background")).toBe("transparent");
   });
-  it("keeps default user bubbles light and retains chosen custom accent colors", () => {
-    expect(value("messages", ".ff-message--user .ant-bubble-content", "background")).toBe("var(--ff-bg-active)");
-    expect(value("messages", ".ff-message--user .ant-bubble-content", "color")).toBe("var(--ff-text)");
+  it("draws user bubbles in the accent with paired text, dark text on the dark theme, and keeps custom accent colors", () => {
+    expect(value("messages", ".ff-message--user .ant-bubble-content", "background")).toBe("var(--ff-accent)");
+    expect(value("messages", ".ff-message--user .ant-bubble-content", "color")).toBe("var(--ff-on-accent)");
+    expect(value("messages", ':root[data-ui-theme="firefly-dark"] .ff-message--user .ant-bubble-content', "color")).toBe("var(--ff-bg-page)");
     expect(value("messages", ":root[data-ui-colors] .ff-message--user .ant-bubble-content", "background")).toBe("var(--ff-accent)");
     expect(value("messages", ":root[data-ui-colors] .ff-message--user .ant-bubble-content", "color")).toBe("var(--rb-text-on-pink)");
   });
