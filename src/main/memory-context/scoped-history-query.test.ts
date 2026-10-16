@@ -37,6 +37,21 @@ it("no covered session means no retrieval and no retrieval claim",async()=>{
  const result=await queryScopedHistory({actors:[{}],assertCurrent:()=>{},capture:async()=>({status:"coverage-insufficient",diagnostics:[]}),query:vi.fn()});
  expect(result.coverage.retrieval).toBe("complete");expect(result.coverage.status).toBe("insufficient");
 });
+const label="上周（2026-10-05 至 2026-10-11，时区 Asia/Shanghai）";
+it("tells the model which time window was applied without calling the result incomplete",async()=>{
+ const result=await queryScopedHistory({actors:[{}],assertCurrent:()=>{},capture:captured,timeIntent:{label},query:async()=>({evidence:{},status:"ok",temporal:{kind:"range",status:"applied",unknownDocuments:0}})});
+ expect(result.coverage).toMatchObject({status:"complete",retrieval:"complete",temporal:"applied"});expect(result.coverage.diagnostics).toEqual([]);
+ expect(result.notice).toContain("已按时间限定检索历史");expect(result.notice).toContain(label);expect(result.notice).not.toContain("不完整");
+});
+it.each([["partial",2,"MEMORY_HISTORY_TEMPORAL_PARTIAL"],["unavailable",3,"MEMORY_HISTORY_TEMPORAL_UNAVAILABLE"]] as const)("a %s time filter is a gap: documents without provable time were excluded",async(status,unknownDocuments,code)=>{
+ const result=await queryScopedHistory({actors:[{}],assertCurrent:()=>{},capture:captured,timeIntent:{label},query:async()=>({evidence:{},status:"ok",temporal:{kind:"range",status,unknownDocuments}})});
+ expect(result.coverage).toMatchObject({status:"insufficient",temporal:status});expect(result.coverage.diagnostics).toContain(code);
+ expect(result.notice).toContain(String(unknownDocuments));expect(result.notice).toContain("缺少可证明的时间");expect(result.notice).toContain("不能据此断言该时间段没有相关历史");
+});
+it("without a time intent nothing about time is reported",async()=>{
+ const result=await queryScopedHistory({actors:[{}],assertCurrent:()=>{},capture:captured,query:async()=>({evidence:{},status:"ok"})});
+ expect(result.coverage.temporal).toBeUndefined();expect(result.notice).toBeUndefined();
+});
 it("rechecks live authority and does not query after cancellation",async()=>{
  let live=true;const query=vi.fn();await expect(queryScopedHistory({actors:[{}],assertCurrent:()=>{if(!live)throw Error("MEMORY_RUN_CANCELLED")},capture:async()=>{live=false;return {status:"captured",diagnostics:[]}},query})).rejects.toThrow("MEMORY_RUN_CANCELLED");expect(query).not.toHaveBeenCalled();
 });
