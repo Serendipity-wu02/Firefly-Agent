@@ -666,3 +666,19 @@
 .ff-composer .ant-sender-actions-btn { width: 32px; height: 32px; border-radius: 8px; transition: transform 150ms ease, opacity 150ms ease; }
 .ff-composer .ant-sender-actions-btn:active:not(:disabled) { transform: scale(0.95); }
 @media (prefers-reduced-motion: reduce) { .ff-composer .ant-sender-actions-btn { transition: none; } }
+/* Model pill: an outlined chip led by an accent dot, like the reference model switcher. */
+.ff-composer__toolbar .ff-model-effort {
+  height: 32px;
+  margin-left: 0;
+  padding: 0 10px;
+  border: 1px solid var(--ff-border);
+  border-radius: 8px;
+}
+.ff-composer__toolbar .ff-model-effort::before {
+  content: "";
+  flex: none;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--ff-accent);
+}
