@@ -113,6 +113,9 @@ export function permissionInteraction(request: PermissionApprovalRequest): Compo
     toolName: request.toolName || request.toolId,
     summary: describePermissionRequest(request),
     targetPath: target,
+    ...(request.agentId ? { agentId: request.agentId } : {}),
+    ...(request.toolCallId ? { toolCallId: request.toolCallId } : {}),
+    ...(request.childRunId ? { childRunId: request.childRunId } : {}),
   };
 }
 

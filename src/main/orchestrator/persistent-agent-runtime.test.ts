@@ -137,8 +137,14 @@ describe("persistent specialist runtime", () => {
     expect(runHarness).toHaveBeenCalledWith(expect.objectContaining({
       tools: [read], vendorConfig: expect.objectContaining({ model: "fixture-model" }),
       config: expect.objectContaining({ contextWindowTokens: 64000 }),
-      checkPermission: parent.checkPermission, includeInteractiveTools: false,
+      checkPermission: expect.any(Function), includeInteractiveTools: false,
       toolContext: expect.objectContaining({ allowedSkillIds: new Set() }),
+    }));
+    // The child asks through the parent's checker (so the parent's decision still binds it) and tags itself.
+    const childCheck = runHarness.mock.calls[0][0].checkPermission!;
+    expect(await childCheck("read_file", { path: "x" }, undefined, { toolCallId: "call-1" })).toBe(false);
+    expect(parent.checkPermission).toHaveBeenCalledWith("read_file", { path: "x" }, undefined, expect.objectContaining({
+      toolCallId: "call-1", agentId: profile.id, childRunId: expect.any(String),
     }));
     expect(runHarness.mock.calls[0][0].systemPrompt).not.toContain("parent persona");
     expect(runHarness.mock.calls[0][0].agentExecutor).toBeUndefined();

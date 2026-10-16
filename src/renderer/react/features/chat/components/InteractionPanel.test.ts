@@ -1,8 +1,8 @@
 import React, { createElement } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import { beforeAll, describe, expect, it, vi } from "vitest";
-import { AskUserPanel } from "./InteractionPanel";
-import type { AskUserInteraction } from "./run-presentation";
+import { AskUserPanel, PermissionPanel } from "./InteractionPanel";
+import type { AskUserInteraction, PermissionInteraction } from "./run-presentation";
 
 // 面板结构测试不覆盖 Markdown/LaTeX 渲染细节；真实渲染链在 node 测试环境
 // 会加载带 CSS 的 CJS 模块而无法静态渲染，这里替换为直通文本
@@ -65,5 +65,14 @@ describe("AskUserPanel", () => {
     expect(html).toContain('role="radiogroup"');
     expect(html).not.toContain("其他回答");
     expect(html).not.toContain("输入你的回答");
+  });
+
+  it("names the sub-agent behind an approval and stays quiet for the main agent", () => {
+    const base: PermissionInteraction = { kind: "permission", id: "p1", toolName: "write_file", summary: "写入文件" };
+    const render = (interaction: PermissionInteraction) => renderToStaticMarkup(createElement(PermissionPanel, { interaction }));
+
+    expect(render({ ...base, agentId: "reviewer" })).toContain("来自子任务");
+    expect(render({ ...base, agentId: "reviewer" })).toContain("reviewer");
+    expect(render(base)).not.toContain("来自子任务");
   });
 });
