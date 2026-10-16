@@ -64,6 +64,8 @@ export interface DefaultMemoryHistoryCoverage {
   readonly retrieval?: "complete" | "index-budget-exhausted" | "excerpt-budget-exhausted";
   /** Present only when the question carried a time intent; anything but `applied` means some history had no provable time. */
   readonly temporal?: "applied" | "partial" | "unavailable";
+  /** Present only when some retrieved hits are fragments of a longer conversation: fully retrieved, but partial in content. */
+  readonly excerpted?: number;
 }
 export interface MainDefaultMemoryOptions extends Pick<AuthorityOptions, "getChatWindow" | "targets"> {
   getSettingsWindow?(): Pick<BrowserWindow, "webContents" | "isDestroyed"> | null;
@@ -350,7 +352,7 @@ export function createMainDefaultMemory(options: MainDefaultMemoryOptions) {
                     const partition = history.grantSessions(state.actor, covered, { includeCurrent: false });
                     // The index status travels with the evidence: an exhausted budget is a gap in the result.
                     const retrieved = await history.query(state.actor, { query: current.userText, scope: partition, signal, ...(timeIntent ? { temporal: timeIntent.query } : {}) });
-                    return { evidence: retrieved.evidence, status: retrieved.status, ...(retrieved.temporal ? { temporal: retrieved.temporal } : {}) };
+                    return { evidence: retrieved.evidence, status: retrieved.status, excerpted: retrieved.hits.filter(hit => hit.document.excerpt !== undefined).length, ...(retrieved.temporal ? { temporal: retrieved.temporal } : {}) };
                   },
                 });
                 status(id, result.coverage);
@@ -724,6 +726,15 @@ export function createMainDefaultMemory(options: MainDefaultMemoryOptions) {
     }
     return result;
   }
+  /** Display names of the projects Main currently knows, by opaque project key; a project nobody is bound to anymore has no name. */
+  function projectNames(): Map<string, string> {
+    const names = new Map<string, string>();
+    for (const id of options.listSessionIds()) {
+      const binding = options.getSession(id)?.workspaceBinding;
+      if (binding?.workspaceRoot && binding.displayName) names.set(projectKeyForWorkspaceRoot(binding.workspaceRoot), binding.displayName);
+    }
+    return names;
+  }
   async function allCandidates(core: Awaited<ReturnType<typeof initialize>>) {
     const items: Awaited<ReturnType<typeof core.policy.candidates>>["items"] = [];
     let cursor: object | null = null;
@@ -737,7 +748,15 @@ export function createMainDefaultMemory(options: MainDefaultMemoryOptions) {
       const grant = settingsGrant(event);
       try { return await serialized(async () => {
         settingsSource.require(grant); const core = await resources(); settingsSource.require(grant);
-        const facts = await core.policy.recall(core.settingsActor), candidates = await allCandidates(core); settingsSource.require(grant);
+        const recalled = await core.policy.recall(core.settingsActor), pending = await allCandidates(core); settingsSource.require(grant);
+        const names = projectNames();
+        const place = <T extends { projectKey?: string }>(item: T): Omit<T, "projectKey"> & { projectName?: string } => {
+          const { projectKey, ...rest } = item;
+          const projectName = projectKey === undefined ? undefined : names.get(projectKey);
+          return { ...rest, ...(projectName ? { projectName } : {}) };
+        };
+        const facts = recalled.map(place);
+        const candidates = pending.map(item => ({ ...place(item), scope: item.projectKey === undefined ? "global" as const : "project" as const }));
         return { facts, candidates, backendStatus: { available: true }, coverage: { status: "not-measured", reason: "MEMORY_HISTORY_COVERAGE_NOT_MEASURED", population: null, present: null, missing: null, unknownDenied: null, exactRatio: null, lowerRatio: null, upperRatio: null, reasons: {}, evidence: { status: "not-evaluated", eligible: null, ineligible: null, unknown: null, ratio: null } } };
       }); } finally { settingsSource.release(grant); }
     },

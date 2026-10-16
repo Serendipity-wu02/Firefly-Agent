@@ -12,7 +12,7 @@ export function historyBudgetBucket(chars:number):HistoryBudgetSizeBucket {
 }
 
 export function emptyHistoryBudgetStats():HistoryBudgetStats {
- return {ranked:0,returned:0,droppedOversized:0,droppedOverTotal:0,oversizedExcerptable:0,droppedSizes:Object.fromEntries(HISTORY_BUDGET_SIZE_BUCKETS.map(b=>[b,0])) as Record<HistoryBudgetSizeBucket,number>};
+ return {ranked:0,returned:0,excerpted:0,droppedOversized:0,droppedOverTotal:0,oversizedExcerptable:0,droppedSizes:Object.fromEntries(HISTORY_BUDGET_SIZE_BUCKETS.map(b=>[b,0])) as Record<HistoryBudgetSizeBucket,number>};
 }
 
 /** 被丢弃的文档在排序阶段的形状：每条消息的字符数，以及词法命中的最佳窗口（只有按窗口排序时才有）。 */
@@ -22,6 +22,7 @@ export interface HistoryBudgetDrop {length:number;messageSizes:ReadonlyArray<num
  * 记一份被预算丢弃的文档：单份超限优先于总预算用完。
  * 单份超限时，再看排序选中的最佳窗口本身能否放进 maxExcerptChars——能放下才算摘录救得回来。
  * 这是上限估计：不考虑工具调用与结果必须成组的约束；只靠向量命中、没有最佳窗口的文档算作救不回来。
+ * 检索端现在会先摘录再丢弃，所以到这里的超限文档就是摘录没能救回来的：`oversizedExcerptable` 只剩下被工具成组、或被剩余总预算挡住的那部分。
  */
 export function countHistoryBudgetDrop(stats:HistoryBudgetStats,drop:HistoryBudgetDrop,maxExcerptChars:number):void {
  if(drop.length>maxExcerptChars){
@@ -31,7 +32,9 @@ export function countHistoryBudgetDrop(stats:HistoryBudgetStats,drop:HistoryBudg
  stats.droppedSizes[historyBudgetBucket(drop.length)]++;
 }
 
-const STAT_KEYS=['ranked','returned','droppedOversized','droppedOverTotal','oversizedExcerptable'] as const;
+const STAT_KEYS=['ranked','returned','excerpted','droppedOversized','droppedOverTotal','oversizedExcerptable'] as const;
+/** 文件里的某天可以没有 excerpted（摘录功能之前写入的）；其余计数一律必须有。 */
+const OPTIONAL_COUNTERS=['excerpted'] as const;
 const COUNTERS=['queries','queriesWithDrops',...STAT_KEYS] as const;
 export interface HistoryBudgetDay extends Record<typeof COUNTERS[number],number> {droppedSizes:Record<HistoryBudgetSizeBucket,number>}
 export interface HistoryBudgetStatsFile {schemaVersion:1;days:Record<string,HistoryBudgetDay>}
@@ -41,7 +44,9 @@ export const HISTORY_BUDGET_RETAINED_DAYS=90;
 const count=(v:unknown)=>typeof v==='number'&&Number.isSafeInteger(v)&&v>=0;
 const isRecord=(v:unknown):v is Record<string,unknown>=>!!v&&typeof v==='object'&&!Array.isArray(v);
 function validDay(v:unknown):boolean {
- if(!isRecord(v)||Object.keys(v).length!==COUNTERS.length+1||!COUNTERS.every(k=>count(v[k])))return false;
+ if(!isRecord(v))return false;
+ const keys=Object.keys(v),allowed:readonly string[]=[...COUNTERS,'droppedSizes'],optional:readonly string[]=OPTIONAL_COUNTERS;
+ if(keys.some(k=>!allowed.includes(k))||allowed.some(k=>!keys.includes(k)&&!optional.includes(k))||!COUNTERS.every(k=>v[k]===undefined?optional.includes(k):count(v[k])))return false;
  const sizes=v.droppedSizes;return isRecord(sizes)&&Object.keys(sizes).length===HISTORY_BUDGET_SIZE_BUCKETS.length&&HISTORY_BUDGET_SIZE_BUCKETS.every(b=>count(sizes[b]));
 }
 export function validHistoryBudgetStatsFile(v:unknown):v is HistoryBudgetStatsFile {
@@ -75,7 +80,7 @@ export function createHistoryBudgetStatsRecorder(resolveFile:()=>string,options:
   const batch=pending;pending=new Map();
   try{
    const s=storeFor(),current=s.read({schemaVersion:1,days:{}}),days={...current.days};
-   for(const [key,delta] of batch){const day=days[key]?structuredClone(days[key]):emptyDay();addDay(day,delta);days[key]=day}
+   for(const [key,delta] of batch){const day=days[key]?{...emptyDay(),...structuredClone(days[key])}:emptyDay();addDay(day,delta);days[key]=day}
    s.write({schemaVersion:1,days:Object.fromEntries(Object.entries(days).sort(([a],[b])=>a.localeCompare(b)).slice(-HISTORY_BUDGET_RETAINED_DAYS))});
   }catch(error){console.warn('[memory-history] budget stats write failed:',(error as Error).message)}
  }
@@ -93,6 +98,7 @@ export function createHistoryBudgetStatsRecorder(resolveFile:()=>string,options:
    maxWaitTimer??=timer(maxWaitMs);
   },
   flush,
-  read():HistoryBudgetStatsFile {return storeFor().read({schemaVersion:1,days:{}})},
+  /** 摘录计数出现之前写入的天补 0，使调用方总能看到完整的计数。 */
+  read():HistoryBudgetStatsFile {const file=storeFor().read({schemaVersion:1,days:{}});return {...file,days:Object.fromEntries(Object.entries(file.days).map(([key,day])=>[key,{...emptyDay(),...day}]))}},
  });
 }

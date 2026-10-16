@@ -220,6 +220,24 @@ it("reports an exhausted history excerpt budget as an incomplete result, not as 
   await run.close();
 });
 
+it("returns a labelled excerpt of an oversized earlier conversation instead of dropping it, and tells the model it is partial", async () => {
+  const f = await fixture(); await f.user("session-a", "start of an old discussion", "ua");
+  for (let i = 1; i < 20; i++) await f.store.append("session-a", { id: "assistant-" + i, kind: "assistant", turnId: "assistant-" + i, runId: "old-run", payload: { role: "assistant", content: (i === 9 ? "zebra passport " : "filler " + i + " ") + "y".repeat(700) } });
+  await f.store.checkpoint("session-a");
+  f.sessions.set("session-b", { id: "session-b", mode: "code", messages: [], modelProfileId: "luna" }); f.select("session-b");
+  await f.user("session-b", "zebra passport question", "ub"); f.memory.authorizeRun(f.event, "session-b");
+  const run = await f.memory.openRun(f.input("session-b", "run-b"));
+  await expect(run.call(f.call())).resolves.toMatchObject({ text: "synthetic answer" });
+  const request = f.sent[0];
+  expect(request).toContain("zebra passport");
+  expect(request).toContain("totalMessages"); expect(request).toContain("firstMessage"); expect(request).toContain("assistant-9");
+  expect(request).not.toContain("filler 2 "); expect(request).not.toContain("filler 17 ");
+  expect(request).toContain("并非完整会话"); expect(request).toContain("不能据此断言片段之外没有相关内容");
+  expect(request).not.toContain("历史检索结果不完整");
+  expect(f.memory.getHistoryCoverage("session-b")).toMatchObject({ status: "complete", selected: 1, covered: 1, retrieval: "complete", excerpted: 1 });
+  await run.close();
+});
+
 async function twoDatedSessions(f: Awaited<ReturnType<typeof fixture>>, question: string) {
   const day = 86_400_000, now = Date.now();
   await f.user("session-a", "harbor recent plan", "ua", now - day); await f.store.checkpoint("session-a");
@@ -1009,6 +1027,34 @@ it("ordinary sessions keep their persistent memory behaviour next to a temporary
   expect(fs.existsSync(path.join(storage.dataRoot, "transcripts", "session-a"))).toBe(true);
 });
 
+// ── One continuous user story: remember → recall in another session → correct → forget → keep chatting ──
+it("remember, recall in a new session, correct, forget, and keep chatting without resurrecting the forgotten text", async () => {
+  const f = await fixture("chat");
+  // History is read from checkpointed transcripts, so every story turn is checkpointed once it ends.
+  const turn = async (id: string, text: string) => { const request = await turnIn(f, id, "chat", null, text); await f.store.checkpoint(id); return request; };
+  await turn("story-1", "请叫我小林");
+  const stated = (await f.memory.settingsHost.getState(f.settingsEvent)).facts.find((fact: any) => fact.assertion.includes("小林"))!;
+  expect(stated).toBeTruthy();
+
+  const recalled = await turn("story-2", "你好");
+  expect(recalled).toContain(MEMORY_MARKER); expect(recalled).toContain("请叫我小林");
+
+  const corrected = await f.memory.settingsHost.applyAction(f.settingsEvent, { kind: "correct", id: stated.factId, expectedRevision: stated.revision, text: "请叫我小萤" });
+  expect(corrected).toMatchObject({ status: "active" });
+  // Control: before the forget the same question does reach raw history, so the later absence is meaningful.
+  const afterCorrect = await turn("story-3", "请叫我什么");
+  expect(afterCorrect).toContain("请叫我小萤"); expect(afterCorrect).toContain("quoted historical evidence");
+
+  expect(await f.memory.settingsHost.applyAction(f.settingsEvent, { kind: "forget", id: stated.factId, expectedRevision: corrected.factRevision! })).toMatchObject({ status: "forgotten" });
+  // The next turns must not fail, must not carry the fact, and must not bring the forgotten wording back through raw history.
+  const afterForget = await turn("story-4", "请叫我什么");
+  expect(afterForget).not.toContain(MEMORY_MARKER); expect(afterForget).not.toContain("quoted historical evidence");
+  expect(afterForget).not.toContain("小萤"); expect(afterForget).not.toContain("小林");
+  const stillChatting = await turn("story-5", "继续聊别的");
+  expect(stillChatting).toBeTruthy(); expect(stillChatting).not.toContain("小萤");
+  expect((await f.memory.settingsHost.getState(f.settingsEvent)).facts.filter((fact: any) => /小林|小萤/.test(fact.assertion))).toEqual([]);
+});
+
 // ── Project isolation: facts learned in one bound workspace never reach another ──
 const binding = (name: string) => ({ workspaceRoot: "C:\\work\\" + name, displayName: name, boundAt: 1 });
 async function turnIn(f: Awaited<ReturnType<typeof fixture>>, id: string, mode: "chat" | "code", workspace: string | null, text: string) {
@@ -1074,4 +1120,23 @@ it("an unbound session never reads project history", async () => {
   await historyTurn(f, "h-chat", "chat", null, "zephyr chatmark");
   const request = await turnIn(f, "ask-chat", "chat", null, "zephyr");
   expect(request).toContain("chatmark"); expect(request).not.toContain("alphamark");
+});
+
+// ── The settings view says where a memory applies and which project it belongs to ──
+it("settings state labels a project fact with its project name and a global fact as global, without exposing the project key", async () => {
+  const f = await fixture("code");
+  await turnIn(f, "learn-alpha", "code", "alpha", "I prefer bash");
+  await turnIn(f, "learn-chat", "chat", null, "请叫我小林");
+  const state = await f.memory.settingsHost.getState(f.settingsEvent);
+  const byText = (text: string) => state.facts.find((fact: any) => fact.assertion.includes(text)) as any;
+  expect(byText("bash")).toMatchObject({ scope: "project", projectName: "alpha" });
+  expect(byText("小林")).toMatchObject({ scope: "global" }); expect(byText("小林").projectName).toBeUndefined();
+  expect(JSON.stringify(state)).not.toMatch(/project-[a-f0-9]{64}/);
+});
+it("a project fact keeps its scope but loses the name once no session is bound to that project any more", async () => {
+  const f = await fixture("code");
+  await turnIn(f, "learn-alpha", "code", "alpha", "I prefer bash");
+  f.sessions.delete("learn-alpha");
+  const fact = (await f.memory.settingsHost.getState(f.settingsEvent)).facts.find((item: any) => item.assertion.includes("bash")) as any;
+  expect(fact.scope).toBe("project"); expect(fact.projectName).toBeUndefined();
 });

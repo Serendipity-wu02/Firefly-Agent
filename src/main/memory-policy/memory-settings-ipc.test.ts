@@ -36,6 +36,20 @@ describe("settings memory IPC trust boundary", () => {
     expect(await f.api.applyMemoryPanelAction(f.event, confirm)).toEqual({ status: "active", factId: "fact-1", factRevision: 1 });
     expect((await f.api.getMemoryPanelState(f.event)).candidates).toEqual([]);
   });
+  it("keeps the scope and project name of facts and candidates, and never lets an internal project key through", async () => {
+    const f = fixture();
+    const source = { sourceId: "source-1", revision: 1 };
+    f.state.facts = [{ factId: "fact-1", revision: 1, subjectKey: "k", assertion: "我默认用 bash", assertionKind: "user-statement", time: { validFrom: 1, validTo: null, referenceTime: 1 }, sourceRef: source,
+      recordedAt: 1, acceptedAt: 1, supersededAt: null, activationReason: "explicitUserConfirmed", policyVersion: "t", provenance: { candidateId: null, evidenceId: null, activationSourceRef: source },
+      scope: "project", projectName: "alpha", projectKey: "project-deadbeef" } as any];
+    f.state.candidates = [{ ...f.state.candidates[0], scope: "project", projectName: "beta", projectKey: "project-cafe" } as any];
+    const out = await f.api.getMemoryPanelState(f.event);
+    expect(out.facts[0]).toMatchObject({ scope: "project", projectName: "alpha" });
+    expect(out.candidates[0]).toMatchObject({ scope: "project", projectName: "beta" });
+    expect(JSON.stringify(out)).not.toContain("project-deadbeef"); expect(JSON.stringify(out)).not.toContain("project-cafe");
+    f.state.facts = [{ ...f.state.facts[0], scope: "somewhere", projectName: 42 } as any];
+    expect(Object.keys((await f.api.getMemoryPanelState(f.event)).facts[0])).not.toEqual(expect.arrayContaining(["scope", "projectName"]));
+  });
   it("stale_revision_or_foreign_window_rejected", async () => {
     const f = fixture();
     expect(await f.api.applyMemoryPanelAction(f.event, { ...confirm, expectedRevision: 2 })).toEqual({ status: "rejected", reason: "MEMORY_REVISION_CONFLICT" });

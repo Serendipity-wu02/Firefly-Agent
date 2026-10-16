@@ -9,6 +9,7 @@ import {RecordCodec} from '../memory-core/record-codec';
 import {executeTransaction,type TransactionFault} from '../memory-core/command-transactions';
 import {transactionNow,withTransactionClock} from '../memory-core/transaction-clock';
 import {toWindows} from './history-windows';
+import {HISTORY_EXCERPT_CONTEXT_WINDOWS,HISTORY_EXCERPT_VERSION,atomicGroups,excerptRef,excerptToolSafe,selectExcerpt,sliceExcerpt,verifyExcerpt,type ExcerptRange} from './history-excerpts';
 import {SourceLedger} from '../memory-core/source-ledger';
 import {Suppression} from '../memory-core/suppression';
 import {validateUnit} from '../memory-context/token-budget';
@@ -21,7 +22,7 @@ import type {SourceDependency} from '../memory-context/context-contracts';
 import {TranscriptLedger} from '../memory-context/transcript-ledger';
 import {createHistoryTokenizer,normalizeVector,rankHistory} from './history-ranking';
 import {historyTimeSpan,parseHistoryTemporal} from './history-temporal';
-import type {HistoryDocument,HistoryMessage,HistorySession,HistoryPartition,HistoryDependency,StoredHistory,HistoryResult,HistorySettings,HistoryVector,ReadonlyHistoryProvenance} from './history-contracts';
+import type {HistoryDocument,HistoryMessage,HistorySession,HistoryPartition,HistoryDependency,HistoryExcerptRef,HistoryHitDocument,StoredHistory,HistoryResult,HistorySettings,HistoryVector,ReadonlyHistoryProvenance} from './history-contracts';
 function fail(code='MEMORY_HISTORY_INPUT_INVALID'):never {throw new Error(code)}
 const natural=(v:unknown):number=>{if(!Number.isSafeInteger(v)||(v as number)<0)fail();return v as number};
 const list=(v:unknown,max=128):unknown[]=>{if(!Array.isArray(v)||v.length>max)fail();return v};
@@ -70,7 +71,8 @@ function settings(v:unknown):HistorySettings {const s=objectFields(v,['version',
  for(const key of ['limit','candidateLimit','rrfK','maxTotalChars','maxExcerptChars','maxIndexDocuments','maxIndexBytes'])if(natural(s[key])<1)fail();
  if((s.limit as number)>8||(s.candidateLimit as number)>50||(s.maxIndexDocuments as number)>4096||(s.maxIndexBytes as number)>32*1024*1024||(s.maxTotalChars as number)>65536||(s.maxExcerptChars as number)>65536||!Number.isFinite(s.mmrLambda as number)||(s.mmrLambda as number)<0||(s.mmrLambda as number)>1)fail();return {windowTurns:0,recencyAlpha:0,recencyHalfLifeDays:30,...s,version:parseInternalId(s.version)} as unknown as HistorySettings;
 }
-export function parseHistoryDependencies(v:unknown):HistoryDependency[]{return list(v,8).map(raw=>{const d=objectFields(raw,['documentId','providerId','sessionId','incarnation','revision','digest','generation','partition','indexVersion','tokenizerVersion','rankingVersion','recallDeps']),p=objectFields(d.partition,['actorKey','sessions']);if(typeof d.digest!=='string'||! /^[a-f0-9]{64}$/.test(d.digest))fail();return {documentId:parseInternalId(d.documentId),providerId:parseInternalId(d.providerId),sessionId:parseInternalId(d.sessionId),incarnation:parseInternalId(d.incarnation),revision:positiveRevision(d.revision),digest:d.digest,generation:natural(d.generation),partition:{actorKey:parseInternalId(p.actorKey),sessions:parseHistorySessions(p.sessions)},indexVersion:text(d.indexVersion,128),tokenizerVersion:text(d.tokenizerVersion,128),rankingVersion:text(d.rankingVersion,128),recallDeps:parseRecallDependencies(d.recallDeps)}})}
+function parseExcerptRef(v:unknown):HistoryExcerptRef{const e=objectFields(v,['version','start','end','total','digest']);if(e.version!==HISTORY_EXCERPT_VERSION||typeof e.digest!=='string'||!/^[a-f0-9]{64}$/.test(e.digest))fail();return {version:HISTORY_EXCERPT_VERSION,start:natural(e.start),end:natural(e.end),total:natural(e.total),digest:e.digest}}
+export function parseHistoryDependencies(v:unknown):HistoryDependency[]{return list(v,8).map(raw=>{const d=objectFields(raw,['documentId','providerId','sessionId','incarnation','revision','digest','generation','partition','indexVersion','tokenizerVersion','rankingVersion','recallDeps'],['excerpt']),p=objectFields(d.partition,['actorKey','sessions']);if(typeof d.digest!=='string'||! /^[a-f0-9]{64}$/.test(d.digest))fail();return {documentId:parseInternalId(d.documentId),providerId:parseInternalId(d.providerId),sessionId:parseInternalId(d.sessionId),incarnation:parseInternalId(d.incarnation),revision:positiveRevision(d.revision),digest:d.digest,generation:natural(d.generation),partition:{actorKey:parseInternalId(p.actorKey),sessions:parseHistorySessions(p.sessions)},indexVersion:text(d.indexVersion,128),tokenizerVersion:text(d.tokenizerVersion,128),rankingVersion:text(d.rankingVersion,128),recallDeps:parseRecallDependencies(d.recallDeps),...(d.excerpt!==undefined?{excerpt:parseExcerptRef(d.excerpt)}:{})}})}
 /** Frozen native transcript provenance only; generic canonical/imported H stays current. */
 export function isResponseNativeHistoryDocument(d:HistoryDocument):boolean {
  return d.origin==='canonical'&&d.classification==='raw-history'&&/^native-[a-f0-9]{64}$/.test(d.id)&&/^native-[a-f0-9]{64}$/.test(d.incarnation)&&d.sourceDeps.length===0&&d.messages.length>0&&d.messages.every(m=>!m.sourceRef)&&d.provenance?.length===d.messages.length&&d.provenance.every(p=>p.format==='transcript-v1'&&p.active&&p.field===undefined&&p.incarnation===d.incarnation&&Number.isSafeInteger(p.seq)&&p.seq!>0);
@@ -126,11 +128,17 @@ export class HistoryRepository {
   const roots=d.sourceDeps.map(dep=>dep.sourceRef.sourceId),subjects=d.sourceDeps.flatMap(dep=>dep.subjectKeys??[]),facts=new PolicyRepository(this.db,this.key).eligibleFactsWithinTransaction(scope,d.actorKey,transactionNow(this.db)).filter(f=>roots.includes(f.sourceRef.sourceId)||roots.includes(f.provenance.activationSourceRef.sourceId)||subjects.includes(f.subjectKey));
   return new RecallRepository(this.db,this.key,()=>transactionNow(this.db)).readVisibleFactsWithinTransaction(scope,d.actorKey,facts.map(f=>({factId:f.factId,revision:f.revision})),expected).recallDeps;
  }
+ /** Best window of an oversized document plus neighbours, within what the budgets allow. Only the repository's own stored messages are measured and sliced; ranking contributes just the window index. Null means no safe range: the caller drops the document, nothing is truncated. */
+ private excerptRange(d:StoredHistory,sizes:number[],unit:number|undefined,config:HistorySettings,remaining:number):ExcerptRange|null {
+  if(unit===undefined)return null;const maxChars=Math.min(config.maxExcerptChars,remaining);
+  const range=selectExcerpt({sizes,windowTurns:config.windowTurns,bestUnit:unit,maxChars,contextWindows:HISTORY_EXCERPT_CONTEXT_WINDOWS,groups:atomicGroups(d.messages)});
+  if(!range||range.start===0&&range.end===d.messages.length||sizes.slice(range.start,range.end).reduce((n,x)=>n+x,0)>maxChars||!excerptToolSafe(d.messages,range))return null;return range;
+ }
  private validateDocuments(scope:string,actorKey:string,value:unknown,response?:{owner:{actorKey:string;providerId:string;sessionId:string};operationId:string}):StoredHistory[]{
   return parseHistoryDependencies(value).map(dep=>{
    if(dep.partition.actorKey!==actorKey||!dep.partition.sessions.some(s=>s.providerId===dep.providerId&&s.sessionId===dep.sessionId))fail('MEMORY_HISTORY_ACCESS_DENIED');
    if(dep.generation!==this.generation(scope,actorKey)||dep.indexVersion!=='history-index-v1'||dep.rankingVersion!=='history-ranking-v4'||!/^history-jieba-v2-[a-f0-9]{64}$/.test(dep.tokenizerVersion))fail('MEMORY_HISTORY_STALE');
-   const d=this.read(scope,actorKey,dep,dep.documentId);if(!d||d.incarnation!==dep.incarnation||d.revision!==dep.revision||d.digest!==dep.digest)fail('MEMORY_HISTORY_STALE');this.checkedDocument(scope,d,dep.recallDeps,response);return d;
+   const d=this.read(scope,actorKey,dep,dep.documentId);if(!d||d.incarnation!==dep.incarnation||d.revision!==dep.revision||d.digest!==dep.digest)fail('MEMORY_HISTORY_STALE');if(dep.excerpt&&!verifyExcerpt(d,d.digest,dep.excerpt))fail('MEMORY_HISTORY_STALE');this.checkedDocument(scope,d,dep.recallDeps,response);return d;
   });
  }
  /** Only ContextRepository's claimed response path supplies this reservation-bound exception. */
@@ -172,8 +180,14 @@ export class HistoryRepository {
     const ranked=rankHistory([...candidateDocuments].map(([id,d])=>({id,text:d.messages.map(m=>m.text).join('\n'),...(()=>{const units=toWindows(d.messages,config.windowTurns);return units?{units}:{}})(),timeSpan:historyTimeSpan(d.messages),exactIdentity:createHmac('sha256',this.key).update(canonicalJson({origin:d.origin,providerId:d.providerId,sessionId:d.sessionId,messages:d.messages,sourceDeps:d.sourceDeps,transcriptRef:d.transcriptRef??null,...(!d.sourceDeps.length?{documentId:d.id,incarnation:d.incarnation}:{})})).digest('hex'),...(v?{vector:d.vector!.values}:{})})),query,{limit:config.limit,candidateLimit:config.candidateLimit,rrfK:config.rrfK,mmrLambda:config.mmrLambda,...(temporal?{temporal}:{}),...(v?{queryVector:v.values}:{}),...(config.recencyAlpha>0?{recency:{alpha:config.recencyAlpha,halfLifeDays:config.recencyHalfLifeDays,now:transactionNow(this.db)}}:{}),tokenizer});
     if(ranked.temporal)result.temporal=ranked.temporal;
     const budget=result.budget=emptyHistoryBudgetStats();budget.ranked=ranked.items.length;
-    let used=0;for(const candidate of ranked.items){const d=candidateDocuments.get(candidate.id)!,sizes=d.messages.map(historyMessageChars),length=sizes.reduce((n,x)=>n+x,0);if(length>config.maxExcerptChars||used+length>config.maxTotalChars){result.status='excerpt-budget-exhausted';countHistoryBudgetDrop(budget,{length,messageSizes:sizes,windowTurns:config.windowTurns,...(candidate.unit!==undefined?{bestUnit:candidate.unit}:{})},config.maxExcerptChars);continue}used+=length;budget.returned++;
-     result.hits.push({document:d,score:candidate.score,dependency:{documentId:d.id,providerId:d.providerId,sessionId:d.sessionId,incarnation:d.incarnation,revision:d.revision,digest:d.digest,generation:this.generation(scope,owner.actorKey),partition,indexVersion:'history-index-v1',tokenizerVersion:ranked.tokenizerVersion,rankingVersion:ranked.version,recallDeps:this.checkedDocument(scope,d)}});
+    let used=0;for(const candidate of ranked.items){const d=candidateDocuments.get(candidate.id)!,sizes=d.messages.map(historyMessageChars),length=sizes.reduce((n,x)=>n+x,0);let shown:HistoryHitDocument=d,excerpt:HistoryExcerptRef|undefined,chars=length;
+     if(length>config.maxExcerptChars||used+length>config.maxTotalChars){
+      // Only a document too large for the per-document limit is excerpted; one that merely no longer fits the remaining total is dropped as before.
+      const range=length>config.maxExcerptChars?this.excerptRange(d,sizes,candidate.unit,config,config.maxTotalChars-used):null;
+      if(!range){result.status='excerpt-budget-exhausted';countHistoryBudgetDrop(budget,{length,messageSizes:sizes,windowTurns:config.windowTurns,...(candidate.unit!==undefined?{bestUnit:candidate.unit}:{})},config.maxExcerptChars);continue}
+      excerpt=excerptRef(d.digest,d,range);shown={...d,...sliceExcerpt(d,range),excerpt};chars=sizes.slice(range.start,range.end).reduce((n,x)=>n+x,0);budget.excerpted++;
+     }used+=chars;budget.returned++;
+     result.hits.push({document:shown,score:candidate.score,dependency:{documentId:d.id,providerId:d.providerId,sessionId:d.sessionId,incarnation:d.incarnation,revision:d.revision,digest:d.digest,generation:this.generation(scope,owner.actorKey),partition,indexVersion:'history-index-v1',tokenizerVersion:ranked.tokenizerVersion,rankingVersion:ranked.version,recallDeps:this.checkedDocument(scope,d),...(excerpt?{excerpt}:{})}});
     }return result;
    }fail();
   };

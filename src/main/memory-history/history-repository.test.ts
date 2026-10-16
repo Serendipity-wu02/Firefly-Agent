@@ -122,10 +122,127 @@ it('query reports numbers-only budget drop counts, separating oversized document
  const imported=(id:string,sizes:number[],words=sizes.map(()=>'cat '))=>({id,incarnation:'v1',revision:1,origin:'synthetic-import',sourceDeps:[],vector:null,messages:sizes.map((size,i)=>({id:id+'-m'+i,role:i%2===0?'user':'assistant',text:words[i].repeat(size).slice(0,size),occurredAt:null,timeZone:null}))});
  // long-message: the only window is 7000 chars; split: the only window (2 turns) is 8000; tail: the matched first window is short and the long message sits in a later window.
  put(f,imported('long-message',[7000]));put(f,imported('split',[4000,4000]));put(f,imported('tail',[100,100,7000,10],['cat ','cat ','zz ','zz ']));
- const q=query(f);expect(q.status).toBe('excerpt-budget-exhausted');expect(q.hits.map((h:any)=>h.document.id)).toEqual([small.id]);
- expect(q.budget).toEqual({ranked:4,returned:1,droppedOversized:3,droppedOverTotal:0,oversizedExcerptable:1,droppedSizes:{'le-6k':0,'6k-12k':3,'12k-24k':0,'24k-48k':0,'gt-48k':0}});
+ const q=query(f);expect(q.status).toBe('excerpt-budget-exhausted');expect(q.hits.map((h:any)=>h.document.id).sort()).toEqual([small.id,'tail'].sort());expect(q.hits.find((h:any)=>h.document.id==='tail').document.excerpt).toMatchObject({start:0,end:2,total:4});
+ expect(q.budget).toEqual({ranked:4,returned:2,excerpted:1,droppedOversized:2,droppedOverTotal:0,oversizedExcerptable:0,droppedSizes:{'le-6k':0,'6k-12k':2,'12k-24k':0,'24k-48k':0,'gt-48k':0}});
  expect(JSON.stringify(q.budget)).not.toMatch(/cat|zz|split|tail|long-message|session/);
  const total=query(f,{settings:{...DEFAULT_HISTORY_SETTINGS,maxExcerptChars:65536,maxTotalChars:9000}});
  expect(total.budget).toMatchObject({ranked:4,droppedOversized:0,oversizedExcerptable:0});expect(total.budget.returned+total.budget.droppedOverTotal).toBe(4);expect(total.budget.droppedOverTotal).toBeGreaterThanOrEqual(1);
  expect(query(f,{settings:{...DEFAULT_HISTORY_SETTINGS,maxIndexDocuments:1}}).budget).toBeUndefined();
+});
+
+// ---- excerpts: an oversized matched document returns its best window plus neighbours instead of being dropped ----
+const NEEDLE_QUERY='zebra passport';
+const imp=(id:string,messages:any[],extra:any={})=>({id,incarnation:'v1',revision:1,origin:'synthetic-import',sourceDeps:[],vector:null,messages,...extra});
+const row=(i:number,text:string,extra:any={})=>({id:'m'+i,role:i%2===0?'user':'assistant',text,occurredAt:null,timeZone:null,...extra});
+/** n messages of about `size` chars; message `needleAt` is the only one that matches NEEDLE_QUERY. */
+function longMessages(n:number,needleAt:number,size=700){return Array.from({length:n},(_,i)=>row(i,(i===needleAt?'zebra passport ':'filler '+i+' ')+'y'.repeat(size)))}
+const excerptOf=(r:any,i=0)=>r.hits[i].document.excerpt;
+const textLength=(messages:any[])=>messages.reduce((n:number,m:any)=>n+m.text.length,0);
+it('an oversized matched document returns the best window plus neighbouring windows, whole messages only, and says it is an excerpt',async()=>{
+ const f=fixture(),messages=longMessages(20,9);put(f,imp('big',messages));
+ expect(textLength(messages)).toBeGreaterThan(DEFAULT_HISTORY_SETTINGS.maxExcerptChars);
+ const r=query(f,{query:NEEDLE_QUERY});expect(r.status).toBe('ok');expect(r.hits).toHaveLength(1);
+ const hit=r.hits[0],e=hit.document.excerpt;expect(e).toMatchObject({version:'history-excerpt-v1',start:6,end:12,total:20});
+ expect(hit.document.messages).toEqual(messages.slice(6,12));// whole stored messages, byte for byte
+ expect(hit.document.messages.some((m:any)=>m.text.startsWith('zebra passport'))).toBe(true);
+ expect(textLength(hit.document.messages)).toBeLessThanOrEqual(DEFAULT_HISTORY_SETTINGS.maxExcerptChars);
+ expect(hit.dependency.excerpt).toEqual(e);expect(hit.dependency.digest).toBe(hit.document.digest);
+ expect(e.digest).toMatch(/^[a-f0-9]{64}$/);expect(e.digest).not.toBe(hit.document.digest);
+ expect(r.budget).toMatchObject({ranked:1,returned:1,excerpted:1,droppedOversized:0,droppedOverTotal:0});
+});
+it('the excerpt is cut from the stored document and is reproducible from it',async()=>{
+ const f=fixture(),messages=longMessages(20,9);put(f,imp('big',messages));
+ const a=query(f,{query:NEEDLE_QUERY}),b=query(f,{query:NEEDLE_QUERY});expect(excerptOf(b)).toEqual(excerptOf(a));
+ const stored=f.command('validate',{dependencies:[a.hits[0].dependency]}).documents[0];
+ expect(stored.messages).toHaveLength(20);expect(stored.messages.slice(6,12)).toEqual(a.hits[0].document.messages);
+ f.reopen();expect(excerptOf(query(f,{query:NEEDLE_QUERY}))).toEqual(excerptOf(a));
+});
+it('excerpts stay at the document edges and grow only on the open side',async()=>{
+ for(const [needleAt,start,end] of [[0,0,4],[19,16,20]] as const){
+  const f=fixture();put(f,imp('big',longMessages(20,needleAt)));const e=excerptOf(query(f,{query:NEEDLE_QUERY}));expect([e.start,e.end]).toEqual([start,end]);
+ }
+});
+it('a document that fits the per-document budget is still returned whole, with no excerpt marker',async()=>{
+ const f=fixture();put(f,imp('small',longMessages(6,2,100)));const r=query(f,{query:NEEDLE_QUERY});
+ expect(r.hits[0].document.messages).toHaveLength(6);expect(r.hits[0].document.excerpt).toBeUndefined();expect(r.hits[0].dependency.excerpt).toBeUndefined();expect(r.budget).toMatchObject({returned:1,excerpted:0});
+});
+it('an excerpt is limited to what is left of the total budget as well as the per-document limit',async()=>{
+ const f=fixture();put(f,imp('first',longMessages(3,1,300)));put(f,imp('big',longMessages(20,9)));
+ const r=query(f,{query:NEEDLE_QUERY,settings:{...DEFAULT_HISTORY_SETTINGS,maxTotalChars:2800}});
+ expect(r.hits.reduce((n:number,h:any)=>n+textLength(h.document.messages),0)).toBeLessThanOrEqual(2800);
+ expect(r.hits.find((h:any)=>h.document.id==='big').document.excerpt).toMatchObject({start:8,end:10});// the neighbouring windows would not fit the 2800 total
+});
+const dropCases:[string,()=>any,any][]=[
+ ['a single message larger than the budget',()=>imp('d',[row(0,'zebra passport '+'y'.repeat(7000)),row(1,'short')]),{}],
+ ['a best window that does not fit',()=>imp('d',[...longMessages(12,5,200).slice(0,4),row(4,'y'.repeat(2500)),row(5,'zebra passport '+'y'.repeat(4000)),...longMessages(12,5,200).slice(6)]),{}],
+ ['a document no longer than one window',()=>imp('d',[row(0,'zebra passport '+'y'.repeat(3500)),row(1,'y'.repeat(3500))]),{}],
+ ['windowing switched off',()=>imp('d',longMessages(20,9)),{windowTurns:0}],
+];
+it.each(dropCases)('falls back to dropping the document (status excerpt-budget-exhausted) rather than truncating when there is %s',async(_,build,patch)=>{
+ const f=fixture();put(f,build());const r=query(f,{query:NEEDLE_QUERY,settings:{...DEFAULT_HISTORY_SETTINGS,...patch}});
+ expect(r.status).toBe('excerpt-budget-exhausted');expect(r.hits).toEqual([]);expect(r.budget).toMatchObject({returned:0,excerpted:0,droppedOversized:1});
+});
+it('a document found only by vector similarity has no best window and is dropped, not guessed at',async()=>{
+ const f=fixture();put(f,imp('big',longMessages(20,9),{vector:{identity:'synthetic-v1',values:[1,0]}}));
+ const r=query(f,{query:'nothing matches lexically',vector:{identity:'synthetic-v1',values:[1,0]}});
+ expect(r.hits).toEqual([]);expect(r.status).toBe('excerpt-budget-exhausted');
+ const hit=query(f,{query:NEEDLE_QUERY,vector:{identity:'synthetic-v1',values:[1,0]}});expect(hit.diversity).toBe('vector-mmr');expect(excerptOf(hit)).toMatchObject({start:6,end:12});
+});
+it('a document that only exceeds the remaining total budget is dropped as before, not excerpted, even though a window of it would fit',async()=>{
+ const f=fixture();put(f,imp('a',longMessages(8,3,700)));put(f,imp('b',longMessages(8,3,700)));
+ const r=query(f,{query:NEEDLE_QUERY,settings:{...DEFAULT_HISTORY_SETTINGS,maxTotalChars:7200}});
+ expect(r.hits).toHaveLength(1);expect(r.hits[0].document.excerpt).toBeUndefined();expect(r.status).toBe('excerpt-budget-exhausted');expect(r.budget).toMatchObject({returned:1,excerpted:0,droppedOverTotal:1,droppedOversized:0});
+});
+// message 3 is a tool call and 4,5 are its results; the needle is only in result 4
+function toolDoc(resultSize:number,callAt=3,huge=-1){const m:any[]=longMessages(14,-1,700);
+ m[callAt]={...row(callAt,'calling '+'c'.repeat(300)),role:'assistant',toolCallIds:['t1','t2'],toolCalls:[{id:'t1',name:'lookup',arguments:'{}'},{id:'t2',name:'lookup',arguments:'{}'}]};
+ m[callAt+1]={...row(callAt+1,'zebra passport '+'r'.repeat(resultSize)),role:'tool',toolCallId:'t1',name:'lookup'};m[callAt+2]={...row(callAt+2,'r'.repeat(resultSize)),role:'tool',toolCallId:'t2',name:'lookup'};
+ m[callAt+3]={...m[callAt+3],role:'assistant'};if(huge>=0)m[huge]={...m[huge],text:'h'.repeat(4500)};return imp('tools',m)}
+it('a tool call and all of its results always travel together: a window that cuts the group pulls in the call',async()=>{
+ // The best window [6,8) holds only the two results; the call is message 5. The big neighbour 4 keeps the context from reaching back, so only the group rule can bring the call in.
+ const f=fixture();put(f,toolDoc(300,5,4));const r=query(f,{query:NEEDLE_QUERY}),e=excerptOf(r),shown=r.hits[0].document.messages;
+ expect(e.start).toBe(5);expect(e.end).toBeGreaterThanOrEqual(8);expect(shown.map((m:any)=>m.id)).toEqual(expect.arrayContaining(['m5','m6','m7']));
+ for(const m of shown.filter((x:any)=>x.role==='tool'))expect(shown.some((c:any)=>c.toolCallIds?.includes(m.toolCallId))).toBe(true);
+ expect(()=>f.command('validate',{dependencies:[r.hits[0].dependency]})).not.toThrow();
+});
+it('when the tool group the best window needs does not fit, nothing is returned for the document instead of an orphaned result',async()=>{
+ const f=fixture();put(f,toolDoc(2900));const r=query(f,{query:NEEDLE_QUERY});
+ expect(r.hits).toEqual([]);expect(r.status).toBe('excerpt-budget-exhausted');expect(r.budget).toMatchObject({returned:0,droppedOversized:1});
+ // The two results alone ([4,6), 5.8k) would fit the budget; with their call the group is over 6k, and the group rule must refuse the orphaned results.
+ expect(r.budget.oversizedExcerptable).toBe(1);
+});
+it('a dependency with an excerpt validates against the authoritative document and rejects a stale, shifted or swapped range',async()=>{
+ const f=fixture();put(f,imp('big',longMessages(20,9)));put(f,imp('twin',longMessages(20,9)));
+ const r=query(f,{query:NEEDLE_QUERY}),deps=r.hits.map((h:any)=>h.dependency),dep=deps.find((d:any)=>d.documentId==='big');expect(dep).toBeDefined();
+ expect(f.command('validate',{dependencies:[dep]}).documents[0].id).toBe('big');
+ const bad=(patch:any)=>expect(()=>f.command('validate',{dependencies:[{...dep,excerpt:{...dep.excerpt,...patch}}]})).toThrow('MEMORY_HISTORY_STALE');
+ bad({start:dep.excerpt.start+2});bad({end:dep.excerpt.end+2});bad({digest:'c'.repeat(64)});bad({total:21});bad({start:0,end:20});
+ expect(()=>f.command('validate',{dependencies:[{...dep,digest:'d'.repeat(64)}]})).toThrow('MEMORY_HISTORY_STALE');
+ // an excerpt made for one document cannot be replayed on another document of identical shape
+ const twin=deps.find((d:any)=>d.documentId==='twin');expect(twin).toBeDefined();expect(()=>f.command('validate',{dependencies:[{...twin,excerpt:dep.excerpt}]})).toThrow('MEMORY_HISTORY_STALE');
+});
+it('malformed excerpt references are rejected on parse, never coerced',async()=>{
+ const f=fixture();put(f,imp('big',longMessages(20,9)));const dep=query(f,{query:NEEDLE_QUERY}).hits[0].dependency;
+ for(const excerpt of [null,'x',[],{...dep.excerpt,extra:1},{...dep.excerpt,start:'6'},{...dep.excerpt,end:1.5},{...dep.excerpt,version:'v0'},{start:6,end:12,total:20}])
+  expect(()=>f.command('validate',{dependencies:[{...dep,excerpt}]})).toThrow();
+});
+it('a deleted document produces no excerpt and its old excerpt dependency stops validating',async()=>{
+ const f=fixture();put(f,imp('big',longMessages(20,9)));const dep=query(f,{query:NEEDLE_QUERY}).hits[0].dependency;
+ f.command('delete',{documentId:'big',revision:1},randomUUID());expect(query(f,{query:NEEDLE_QUERY}).hits).toEqual([]);expect(()=>f.command('validate',{dependencies:[dep]})).toThrow('MEMORY_HISTORY_STALE');
+});
+it('after a forget the anti-resurrection rule applies before any excerpting',async()=>{
+ const f=fixture(),a=await f.active();put(f,imp('big',longMessages(20,9)));
+ const r=query(f,{query:NEEDLE_QUERY}),dep=r.hits[0].dependency;expect(r.hits[0].document.excerpt).toBeDefined();
+ await f.policy.act(f.actor,await f.policy.event(f.actor,{kind:'forget',nonce:randomUUID(),factId:a.factId,revision:1}));
+ const after=query(f,{query:NEEDLE_QUERY});expect(after.hits).toEqual([]);expect(after.budget).toMatchObject({ranked:0,returned:0,excerpted:0});
+ expect(()=>f.command('validate',{dependencies:[dep]})).toThrow('MEMORY_HISTORY_STALE');
+});
+it('time-limited retrieval can return an excerpt too',async()=>{
+ const f=fixture(),m=longMessages(20,9).map((x:any,i:number)=>({...x,occurredAt:1000+i,timeZone:'Etc/UTC'}));put(f,imp('big',m));
+ const r=query(f,{query:NEEDLE_QUERY,temporal:{kind:'range',from:900,to:2000}});expect(r.temporal).toMatchObject({status:'applied'});expect(r.hits[0].document.excerpt).toMatchObject({start:6,end:12});
+ expect(r.hits[0].document.messages.map((x:any)=>x.occurredAt)).toEqual([1006,1007,1008,1009,1010,1011]);
+});
+it('128 half-kilobyte messages (the largest allowed document shape) are searchable through an excerpt',async()=>{
+ const f=fixture();put(f,imp('max',longMessages(128,70,500)));const r=query(f,{query:NEEDLE_QUERY});
+ expect(r.status).toBe('ok');expect(excerptOf(r)).toMatchObject({total:128});expect(r.hits[0].document.messages.some((m:any)=>m.id==='m70')).toBe(true);
 });

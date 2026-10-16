@@ -11,6 +11,10 @@ export interface FactView extends FactDraft {
  provenance:{candidateId:string|null;evidenceId:string|null;activationSourceRef:SourceRef};
  /** Where the fact applies: every session (`global`) or only the workspace it was learned in (`project`). Set by policy recall. */
  scope?:"global"|"project";
+ /** Opaque project key, Main-internal: the settings DTO replaces it with `projectName`. */
+ projectKey?:string;
+ /** Display name of the project a project-scoped fact belongs to, when Main still knows a session bound to it. */
+ projectName?:string;
 }
 export interface MutationResult {id:string;revision:number}
 export interface EvidenceInput {commandId:string;evidenceId:string;sourceRef:SourceRef;text:string}
