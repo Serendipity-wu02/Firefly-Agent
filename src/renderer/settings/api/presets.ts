@@ -5,6 +5,13 @@
 import type { ModelPreset } from "../shared/types";
 import { CUSTOM_ENDPOINT_PROVIDERS } from "../custom-endpoint-state";
 
+/**
+ * 厂商卡片的展示顺序：按名称首字母 A→Z。只影响展示；MODEL_PRESETS 的原顺序仍决定“新建档案”默认选谁。
+ */
+export function sortPresetsForDisplay(presets: readonly ModelPreset[]): ModelPreset[] {
+  return [...presets].sort((a, b) => a.shortName.localeCompare(b.shortName, "en", { sensitivity: "base" }));
+}
+
 export const MODEL_PRESETS: ModelPreset[] = [
   // 当前已适配 9 家：MiniMax / DeepSeek / 智谱 GLM / Kimi / Qwen / ChatGPT / Claude / MiMo / OpenRouter（聚合网关）
   // 顺序按使用频率 + 适配优先级；未在此清单内的厂商已硬删，需要时再补回。
@@ -96,13 +103,13 @@ export const MODEL_PRESETS: ModelPreset[] = [
   },
   {
     // OpenRouter：聚合多家模型的 OpenAI 兼容网关。型号数百个，不在此预置型号 id，由“获取模型列表”拉取后选择。
-    // 暂无官方图标资源，先用通用占位图标（不引入第三方图标）。
+    // 图标取自 OpenRouter 官网的品牌字形（brand/v2/openrouter-glyph-light.svg），仅用于标识该厂商。
     providerName: "OpenRouter",
     shortName: "OpenRouter",
     baseUrl: "https://openrouter.ai/api/v1",
     transport: "openai",
     mainModels: [],
-    iconUrl: "../icons/providers/custom-endpoint.svg",
+    iconUrl: "../icons/providers/openrouter.svg",
     websiteUrl: "https://openrouter.ai/",
   },
   {

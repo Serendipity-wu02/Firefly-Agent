@@ -86,7 +86,7 @@ import type {
   SettingsApi,
   UserApi,
 } from "./shared/types";
-import { MODEL_PRESETS } from "./api/presets";
+import { MODEL_PRESETS, sortPresetsForDisplay } from "./api/presets";
 import { showConfirm, showHtmlModal, showInputModal } from "./shared/modal";
 import {
   setSaveStatus, setFireflySaveStatus, setPreferencesSaveStatus, setAppearanceSaveStatus,
@@ -456,7 +456,7 @@ function renderUiIcon(icon: UiIcon): void {
 function fillPresetOptions(): void {
   if (!presetCards) return;
   presetCards.replaceChildren();
-  for (const preset of MODEL_PRESETS) {
+  for (const preset of sortPresetsForDisplay(MODEL_PRESETS)) {
     if (preset.hiddenInPresetList || preset.customEndpointMode) continue;
     const card = document.createElement("button");
     card.type = "button";
