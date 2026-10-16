@@ -19,6 +19,8 @@ export const ephemeralConversations = Object.freeze({
     ephemeral.add(conversationId);
   },
   has(conversationId: string): boolean { return ephemeral.has(conversationId); },
+  /** True once any temporary conversation exists in this process, for diagnostics that cannot tell whose content they handle. */
+  any(): boolean { return ephemeral.size > 0; },
   /** Test support only. */
   release(conversationId: string): void { ephemeral.delete(conversationId); },
 });
