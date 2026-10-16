@@ -242,6 +242,26 @@ it('time-limited retrieval can return an excerpt too',async()=>{
  const r=query(f,{query:NEEDLE_QUERY,temporal:{kind:'range',from:900,to:2000}});expect(r.temporal).toMatchObject({status:'applied'});expect(r.hits[0].document.excerpt).toMatchObject({start:6,end:12});
  expect(r.hits[0].document.messages.map((x:any)=>x.occurredAt)).toEqual([1006,1007,1008,1009,1010,1011]);
 });
+// A time range is applied to whole documents, so a long document can overlap the range while its best window lies outside it.
+// The returned fragment must never reach outside the asked range while the result is labelled as time-limited.
+const timed=(n:number,needleAt:number)=>longMessages(n,needleAt).map((x:any,i:number)=>({...x,occurredAt:1000+i,timeZone:'Etc/UTC'}));
+it('a time-limited excerpt contains only messages inside the asked range, even when the document overlaps it',async()=>{
+ const f=fixture();put(f,imp('big',timed(20,10)));
+ const r=query(f,{query:NEEDLE_QUERY,temporal:{kind:'range',from:1010,to:1019}});
+ expect(r.temporal).toMatchObject({status:'applied'});expect(r.hits).toHaveLength(1);
+ const times=r.hits[0].document.messages.map((x:any)=>x.occurredAt);
+ expect(times.length).toBeGreaterThan(0);expect(Math.min(...times)).toBeGreaterThanOrEqual(1010);expect(Math.max(...times)).toBeLessThanOrEqual(1019);
+ expect(r.hits[0].document.excerpt.start).toBeGreaterThanOrEqual(10);expect(r.hits[0].document.messages.some((x:any)=>x.text.startsWith('zebra passport'))).toBe(true);
+});
+it('is dropped rather than returned when the best window of an overlapping document lies outside the asked range',async()=>{
+ const f=fixture();put(f,imp('big',timed(20,5)));
+ const r=query(f,{query:NEEDLE_QUERY,temporal:{kind:'range',from:1010,to:1019}});
+ expect(r.hits).toEqual([]);expect(r.status).toBe('excerpt-budget-exhausted');expect(r.budget).toMatchObject({returned:0,excerpted:0,droppedOversized:1});
+});
+it('a latest-first query is not range-limited, so its excerpt is unchanged',async()=>{
+ const f=fixture();put(f,imp('big',timed(20,9)));
+ const r=query(f,{query:NEEDLE_QUERY,temporal:{kind:'latest'}});expect(r.hits[0].document.excerpt).toMatchObject({start:6,end:12});
+});
 it('128 half-kilobyte messages (the largest allowed document shape) are searchable through an excerpt',async()=>{
  const f=fixture();put(f,imp('max',longMessages(128,70,500)));const r=query(f,{query:NEEDLE_QUERY});
  expect(r.status).toBe('ok');expect(excerptOf(r)).toMatchObject({total:128});expect(r.hits[0].document.messages.some((m:any)=>m.id==='m70')).toBe(true);
