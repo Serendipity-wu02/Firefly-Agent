@@ -79,6 +79,7 @@ import {
   findSessionIdForRun,
   hasActiveRunForSession,
   isCurrentRunBusy,
+  markInteractionResolved,
   removeInteractionById,
   removeSessionInteractionsWhere,
   sessionInteraction,
@@ -1718,7 +1719,11 @@ export function ChatPage() {
               const settings = settingsApprovalApi();
               if (!settings) return Promise.resolve({ ok: false, error: "E_QUIZ_NO_BRIDGE" });
               // 展示态切换由卡片组件处理，这里只透传判分结果
-              return settings.resolvePopQuiz(submission);
+              return settings.resolvePopQuiz(submission).then((result) => {
+                // 判分后的抽查卡留在屏上等 run 终态收卡，但不能再挡住之后到达的审批和提问。
+                if (result.ok) setInteractionsBySession((current) => markInteractionResolved(current, "quiz", submission.quizId));
+                return result;
+              });
             }}
             onQuizSkip={(quizId) => {
               const settings = settingsApprovalApi();
