@@ -10,6 +10,7 @@
 import * as fs from "fs";
 import * as os from "os";
 import * as path from "path";
+import { ephemeralConversations } from "../../ephemeral-conversations";
 
 const DUMP_ROOT = path.join(os.homedir(), ".firefly", "prompt-dumps");
 const ENV_FLAG = "FIREFLY_PROMPT_DUMP";
@@ -18,6 +19,9 @@ let enabledCache: boolean | null = null;
 let seqCounter = 0;
 
 function isEnabled(): boolean {
+  // 临时聊天承诺零正文持久化。模型调用这一层不知道请求属于哪个会话，
+  // 所以进程里一旦出现过临时聊天，整个进程就不再落任何请求/响应原文（重启后恢复）。
+  if (ephemeralConversations.any()) return false;
   if (enabledCache !== null) return enabledCache;
   try {
     enabledCache = fireflyEnvironment(process.env, "FIREFLY_PROMPT_DUMP") === "1";
