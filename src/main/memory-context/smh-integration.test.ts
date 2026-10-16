@@ -194,6 +194,6 @@ it("native H joins S and M through one observer and coverage never invokes legac
  legacy.registerRecallHistoryTool();const recallTool=vi.mocked(toolRegistry.register).mock.calls.at(-1)![0];
  const fallback={recall_history:vi.spyOn(recallTool,'execute').mockImplementation(async()=>{throw Error('LEGACY_FALLBACK_FORBIDDEN')}),searchHistoryEntries:vi.mocked(rag.searchHistoryEntries),indexConversationTurn:vi.spyOn(legacy,'indexConversationTurn').mockImplementation(async()=>{throw Error('LEGACY_FALLBACK_FORBIDDEN')})};
  const outcome=await native.query({query:'harbor'});expect(outcome).toMatchObject({status:'coverage-insufficient',reason:'snapshot-missing'});expect(outcome).not.toHaveProperty('result');for(const spy of Object.values(fallback))expect(spy).not.toHaveBeenCalled();expect(await f.policy.recall(f.actor)).toHaveLength(1);
- await native.invalidate('forget');await f.policy.act(f.actor,await f.policy.event(f.actor,{kind:'forget',nonce:'native-forget',factId:facts[0].factId,revision:facts[0].revision}));await expect(native.capture()).rejects.toThrow('MEMORY_HISTORY_STALE');
+ await native.invalidate('forget');await f.policy.act(f.actor,await f.policy.event(f.actor,{kind:'forget',nonce:'native-forget',factId:facts[0].factId,revision:facts[0].revision}));await expect(native.capture()).resolves.toMatchObject({status:'coverage-insufficient',reason:'disabled-by-forget'});for(const spy of Object.values(fallback))expect(spy).not.toHaveBeenCalled();
  await adapter.close();await native.close();
 });
