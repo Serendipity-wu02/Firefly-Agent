@@ -12,7 +12,8 @@ vi.mock("@ant-design/x", () => ({ Conversations: ({ items }: any) => createEleme
 const flattenMenu = (items: any[] = []): any[] => items.flatMap(item => item?.children ? flattenMenu(item.children) : item?.key
   ? [createElement("button", { key: item.key, type: "button", "data-menu-key": item.key, disabled: item.disabled, onClick: item.onClick }, String(item.key))] : []);
 vi.mock("antd", () => ({ Input: () => null, Menu: () => null, Popover: ({ children, content }: any) => createElement("div", null, children, content),
-  Dropdown: ({ children, menu }: any) => createElement("div", null, children, flattenMenu(menu.items)) }));
+  Dropdown: ({ children, menu }: any) => createElement("div", null, children, flattenMenu(menu.items)),
+  Modal: ({ open, children }: any) => open ? createElement("div", null, children) : null }));
 let host: HTMLDivElement, root: ReturnType<typeof createRoot>, snapshot: SidebarSnapshot, api: SidebarLayoutApi;
 let changed: () => void;
 const sessions = [
@@ -52,4 +53,14 @@ it("writes sort intent using the latest server revision", async () => {
   expect(api.mutate).toHaveBeenCalledWith({ expectedRevision: 0, patch: { kind: "set-sort", mode: "work", sortMode: "manual" } });
   expect(snapshot.layout.modes.work.sortMode).toBe("manual");
   expect(host.querySelector('[data-menu-key="sort:recent"]')).not.toBeNull();
+});
+it("creates a section from the groups dialog with the latest server revision", async () => {
+  await render();
+  await act(async () => host.querySelector<HTMLButtonElement>('[data-menu-key="new-section"]')!.click());
+  const form = host.querySelector<HTMLFormElement>(".ff-sidebar-groups__add")!;
+  const input = form.querySelector<HTMLInputElement>("input")!;
+  act(() => { Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, "value")!.set!.call(input, "Sprint"); input.dispatchEvent(new Event("input", { bubbles: true })); });
+  await act(async () => form.dispatchEvent(new Event("submit", { bubbles: true, cancelable: true })));
+  expect(api.mutate).toHaveBeenCalledWith({ expectedRevision: 0, patch: { kind: "create-section", mode: "work", name: "Sprint" } });
+  expect(host.querySelector('[data-menu-key="manage"]')).not.toBeNull();
 });
