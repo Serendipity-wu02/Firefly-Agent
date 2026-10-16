@@ -21,11 +21,12 @@ export function assistantRenderStages(message: AssistantVisibilityState): Array<
   return stages;
 }
 
+/** Reasoning starts open (and is locked open while it streams); once done, the user's fold choice is kept. */
 export function resolveReasoningExpanded(
   expandedById: Readonly<Record<string, boolean>>,
   messageId: string,
 ): boolean {
-  return expandedById[messageId] ?? false;
+  return expandedById[messageId] ?? true;
 }
 
 export function updateReasoningExpanded(

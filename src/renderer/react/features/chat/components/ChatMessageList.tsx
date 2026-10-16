@@ -2,7 +2,7 @@ import { FIREFLY_STICKERS } from "../../../../../shared/firefly-stickers";
 import { isRetiredStickerId } from "../../../../../shared/retired-stickers";
 import { StickerImage } from "./StickerImage";
 import { Bubble, Think, ThoughtChain, type BubbleItemType } from "@ant-design/x";
-import { Component, createContext, createElement, useCallback, useContext, useEffect, useMemo, useRef, useState, type ErrorInfo, type KeyboardEvent, type ReactNode } from "react";
+import { Component, createContext, createElement, useCallback, useContext, useEffect, useMemo, useRef, useState, type ErrorInfo, type KeyboardEvent, type MouseEvent as ReactMouseEvent, type ReactNode } from "react";
 import { t, useTranslation } from "../../../i18n";
 import { normalizeModelMarkdown } from "./markdown-normalize";
 import { resolveAsset } from "../../../../../shared/renderer-base";
@@ -18,7 +18,7 @@ import { formatElapsed, resolveRunActivityExpanded, resolveRunActivitySnapshot, 
 import { RunStageIndicator } from "./RunStageIndicator";
 import { TaskPlanCard } from "./TaskPlanCard";
 import type { AgentRunStage, TaskPlanPresentation } from "./run-presentation";
-import { CopyButton } from "./CopyButton";
+import { CopyButton, copyTextToClipboard } from "./CopyButton";
 
 import { LastTurnActionButton } from "./LastTurnActionButton";
 import { resolveRevisableLastTurn } from "./last-turn-actions";
@@ -316,6 +316,12 @@ function ModelWaitContent() {
   );
 }
 
+const ignoreExpand = () => {};
+/** Markdown blockquote of the text, one `> ` per line. */
+export function toQuote(text: string): string {
+  return text.trim().split("\n").map((line) => (line ? `> ${line}` : ">")).join("\n");
+}
+
 function ReasoningContent({
   content,
   loading,
@@ -328,18 +334,39 @@ function ReasoningContent({
   onExpand: (expanded: boolean) => void;
 }) {
   const { t } = useTranslation();
+  const [copied, setCopied] = useState(false);
+  const copiedTimer = useRef<number | undefined>(undefined);
+  useEffect(() => () => window.clearTimeout(copiedTimer.current), []);
+  const copyAsQuote = async (event: ReactMouseEvent) => {
+    // 头部整行可点击折叠；复制不能顺带触发折叠。
+    event.stopPropagation();
+    if (!content.trim() || !(await copyTextToClipboard(toQuote(content)))) return;
+    setCopied(true);
+    window.clearTimeout(copiedTimer.current);
+    copiedTimer.current = window.setTimeout(() => setCopied(false), 2000);
+  };
+  // 生成中锁定展开、收回折叠权，避免视口抖动；生成结束后交还给用户。
   return (
     <Think
-      rootClassName="ff-message-reasoning"
-      title={loading ? t("messageList.thinkingTitle") : t("messageList.thinkingDoneTitle")}
+      rootClassName={`ff-message-reasoning${loading ? " is-live" : ""}`}
+      title={
+        <span className="ff-message-reasoning__title">
+          <span>{loading ? t("messageList.thinkingTitle") : t("messageList.thinkingDoneTitle")}</span>
+          {content.trim() && (
+            <button type="button" className="ff-message-reasoning__quote" onClick={copyAsQuote}>
+              {copied ? t("messageList.quoteCopied") : t("messageList.copyAsQuote")}
+            </button>
+          )}
+        </span>
+      }
       icon={
         <span className={`ff-reasoning-status-art${loading ? " is-thinking" : " is-complete"}`} aria-hidden="true">
           {loading && <DotSpinner />}
         </span>
       }
       blink={loading}
-      expanded={expanded}
-      onExpand={onExpand}
+      expanded={loading || expanded}
+      onExpand={loading ? ignoreExpand : onExpand}
       destroyOnHidden
     >
       {content && <MarkdownContent content={content} streaming={loading} />}
@@ -360,8 +387,8 @@ function useRunActivityNow(processing: boolean): number {
 
 function RunActivityReasoningBlock({ block }: { block: ReasoningBlock }) {
   const streaming = Boolean(block.streaming);
-  // 与纯聊天模式保持一致：思考块默认折叠（含流式生成期间），仅用户点击后展开
-  const [expanded, setExpanded] = useState(false);
+  // 与纯聊天模式一致：默认展开，生成中锁定；结束后由用户折叠。
+  const [expanded, setExpanded] = useState(true);
   return (
     <ReasoningContent
       content={block.content}

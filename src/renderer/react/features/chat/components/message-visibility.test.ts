@@ -51,12 +51,11 @@ describe("assistantRenderStages", () => {
   it("keeps a user's collapsed choice while streaming content rerenders", () => {
     const collapsed = updateReasoningExpanded({}, "assistant-1", false);
     expect(resolveReasoningExpanded(collapsed, "assistant-1")).toBe(false);
-    expect(resolveReasoningExpanded(collapsed, "assistant-2")).toBe(false);
     expect(updateReasoningExpanded(collapsed, "assistant-1", false)).toBe(collapsed);
   });
 
-  it("defaults every new reasoning chain to collapsed", () => {
-    expect(resolveReasoningExpanded({}, "assistant-new")).toBe(false);
+  it("starts every reasoning chain open until the user folds it", () => {
+    expect(resolveReasoningExpanded({}, "assistant-new")).toBe(true);
   });
 
   it("groups a run's reasoning and tools under one activity item with unique keys", () => {
