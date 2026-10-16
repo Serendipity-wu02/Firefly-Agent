@@ -1,10 +1,8 @@
 .external-skills { box-sizing: border-box; width: 100%; max-width: 1080px; margin: 0 auto; padding: 16px 28px 32px; min-width: 0; color: var(--ff-text, var(--ff-text)); font-size: 13px; line-height: 1.5; user-select: text; }
 .external-skills__notice { margin: 0 0 16px; color: var(--ff-text-muted, var(--ff-text-muted)); max-width: 76ch; }
 .external-skills__toolbar { display: flex; align-items: center; flex-wrap: wrap; gap: 12px; padding-bottom: 18px; border-bottom: 1px solid var(--ff-border, var(--ff-border)); margin-bottom: 20px; }
-.external-skills__sources { display: flex; flex-wrap: wrap; gap: 4px; padding: 4px; border-radius: 12px; background: var(--ff-bg-page, var(--ff-bg-subtle)); }
 .external-skills button, .external-skills input { color: var(--ff-text, var(--ff-text)); background: var(--ff-bg-page, var(--ff-bg-subtle)); border: 1px solid var(--ff-border, var(--ff-border)); border-radius: 10px; padding: 8px 12px; font: inherit; }
 .external-skills button { cursor: pointer; }
-.external-skills__sources button { border-color: transparent; background: transparent; }
 .external-skills button[aria-pressed="true"] { color: var(--ff-accent, var(--ff-accent)); background: var(--ff-bg-active, var(--ff-bg-hover)); }
 .external-skills button:disabled { opacity: .55; cursor: not-allowed; }
 .external-skills button:focus-visible, .external-skills input:focus-visible { outline: 2px solid var(--ff-accent, var(--ff-accent)); outline-offset: 3px; }
