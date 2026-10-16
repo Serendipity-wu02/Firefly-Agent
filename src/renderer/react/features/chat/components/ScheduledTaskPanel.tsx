@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { Switch } from "antd";
 import { History, Pencil, Play, Plus, Trash2 } from "lucide-react";
 import { useTranslation } from "../../../i18n";
@@ -28,7 +28,7 @@ type PluginListing = PluginEntryLike[] | { plugins?: PluginEntryLike[] };
 type ChatWindowWithScheduler = Window & {
   fireflyScheduler?: SchedulerApi;
   schedulerEvents?: { onEvent: (callback: (event: unknown) => void) => () => void };
-  plugins?: { list?: () => Promise<unknown> };
+  plugins?: { list?: () => Promise<unknown>; onChanged?: (callback: (overview: unknown) => void) => () => void };
 };
 
 interface HistoryState {
@@ -83,6 +83,18 @@ export function ScheduledTaskPanel() {
   const [editor, setEditor] = useState<{ task?: ScheduledTask } | null>(null);
   /** 存在键即表示该任务的历史已展开。 */
   const [histories, setHistories] = useState<Record<string, HistoryState>>({});
+  const historiesRef = useRef(histories);
+  historiesRef.current = histories;
+
+  /** Re-reads one expanded history in place: the rows stay on screen while it loads, and a failure keeps them. */
+  const refreshHistory = useCallback(async (taskId: string) => {
+    try {
+      const result = await getSchedulerApi()?.getHistory(taskId, 10);
+      setHistories((current) => current[taskId] && result?.ok
+        ? { ...current, [taskId]: { loading: false, rows: result.value ?? [] } }
+        : current);
+    } catch { /* an expanded list that cannot refresh keeps what it shows */ }
+  }, []);
 
   const reload = useCallback(async () => {
     try {
@@ -98,12 +110,14 @@ export function ScheduledTaskPanel() {
       if (toolsResult.ok) setTools(toolsResult.value ?? []);
       setPluginRunning(running);
       setLoadError(null);
+      // Histories that are open must follow the run boundary too, or they keep showing a finished run as running.
+      void Promise.all(Object.keys(historiesRef.current).map(refreshHistory));
     } catch (err) {
       setLoadError(err instanceof Error ? err.message : t("scheduledPanel.loadFailed"));
     } finally {
       setLoading(false);
     }
-  }, [t]);
+  }, [t, refreshHistory]);
 
   useEffect(() => {
     void reload();
@@ -116,8 +130,13 @@ export function ScheduledTaskPanel() {
       if (isRunBoundaryEvent(event)) refresh();
     });
     window.addEventListener("focus", refresh);
+    // A plugin can start or stop while the panel keeps focus; only the cached run state needs re-reading.
+    const offPlugins = (window as ChatWindowWithScheduler).plugins?.onChanged?.(() => {
+      void readPluginRunning().then(setPluginRunning).catch(() => undefined);
+    });
     return () => {
       off?.();
+      offPlugins?.();
       window.removeEventListener("focus", refresh);
     };
   }, [reload]);

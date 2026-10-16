@@ -419,6 +419,62 @@ describe("ScheduledTaskPanel — plugin-owned tasks", () => {
   });
 });
 
+describe("ScheduledTaskPanel — review follow-ups", () => {
+  it("follows plugin status changes while the panel stays focused", async () => {
+    const task: ScheduledTask = { ...DAILY_TASK, id: "task-plugin", ownerPluginId: "demo.plugin" };
+    installScheduler({ list: vi.fn(async () => ({ ok: true, value: [task] })) });
+    let status = "disabled"; let changed: (() => void) | undefined;
+    (window as unknown as Record<string, unknown>).plugins = {
+      list: vi.fn(async () => ({ plugins: [{ id: "demo.plugin", status }] })),
+      onChanged: vi.fn((callback: () => void) => { changed = callback; return () => { changed = undefined; }; }),
+    };
+    await renderPanel();
+    expect(buttonByText("立即运行").disabled).toBe(true);
+    status = "running";
+    await act(async () => { changed!(); });
+    await flush();
+    expect(buttonByText("立即运行").disabled).toBe(false);
+    status = "stopped";
+    await act(async () => { changed!(); });
+    await flush();
+    expect(buttonByText("立即运行").disabled).toBe(true);
+  });
+
+  it("stops listening to plugin changes when the panel unmounts", async () => {
+    installScheduler();
+    const off = vi.fn();
+    (window as unknown as Record<string, unknown>).plugins = { list: vi.fn(async () => ({ plugins: [] })), onChanged: vi.fn(() => off) };
+    await renderPanel();
+    await act(async () => { root.unmount(); });
+    expect(off).toHaveBeenCalled();
+  });
+
+  it("refreshes an expanded history when a run finishes, keeping the rows while it loads", async () => {
+    const row = (id: string, status: string) => ({ id, taskId: "task-daily", taskTitle: "早安信息整理", firedAt: NOW, status, durationMs: 1000, effectiveToolIds: [] });
+    let rows: any[] = [row("run-1", "running")];
+    const api = installScheduler({ getHistory: vi.fn(async () => ({ ok: true, value: rows })) });
+    (window as unknown as Record<string, unknown>).schedulerEvents = { onEvent: vi.fn((callback: Listener) => { emit = callback; return () => { emit = undefined; }; }) };
+    await renderPanel();
+    await click(buttonByText("历史"));
+    expect(text()).toContain("运行中");
+    rows = [row("run-1", "success"), row("run-0", "failed")];
+    await act(async () => { emit!({ type: "RUN_FINISHED" }); });
+    await flush();
+    expect(api.getHistory.mock.calls.length).toBeGreaterThanOrEqual(2);
+    expect(text()).not.toContain("运行中");
+    expect(text()).toContain("失败");
+  });
+
+  it("does not fetch history for tasks whose history is collapsed", async () => {
+    const api = installScheduler();
+    (window as unknown as Record<string, unknown>).schedulerEvents = { onEvent: vi.fn((callback: Listener) => { emit = callback; return () => { emit = undefined; }; }) };
+    await renderPanel();
+    await act(async () => { emit!({ type: "RUN_FINISHED" }); });
+    await flush();
+    expect(api.getHistory).not.toHaveBeenCalled();
+  });
+});
+
 describe("ScheduledTaskPanel — live refresh", () => {
   it("reloads when a run starts, finishes or fails, but not on streaming chunks", async () => {
     const api = installScheduler();
