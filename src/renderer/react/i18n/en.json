@@ -747,7 +747,6 @@
     "viewAll": "Show all projects",
     "sectionName": "Section name",
     "addSection": "Add",
-    "removeSection": "Remove section",
     "moveUp": "Move up",
     "moveDown": "Move down",
     "moveToSection": "Move to section",
@@ -787,7 +786,18 @@
     "recentSessions": "Recent tasks",
     "noSearchResults": "No matching tasks",
     "viewProjectsShort": "Projects",
-    "viewMergedShort": "Merged"
+    "viewMergedShort": "Merged",
+    "dragToReorder": "Drag to reorder",
+    "reorderHint": "Drag, or press Alt+Up or Alt+Down, to reorder",
+    "groupOrder": "Group order",
+    "renameSection": "Rename section",
+    "deleteSection": "Delete section",
+    "deleteSectionQuestion": "Delete this section?",
+    "deleteSectionHint": "Its conversations return to the default list.",
+    "confirmDelete": "Delete",
+    "hideProject": "Hide project",
+    "showProject": "Show project",
+    "projectVisibility": "Project visibility"
   },
   "workRead": {
     "complete": "Complete read verified",

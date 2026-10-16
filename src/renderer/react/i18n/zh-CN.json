@@ -747,7 +747,6 @@
     "viewAll": "显示全部项目",
     "sectionName": "分组名称",
     "addSection": "添加",
-    "removeSection": "移除分组",
     "moveUp": "上移",
     "moveDown": "下移",
     "moveToSection": "移到分组",
@@ -787,7 +786,18 @@
     "recentSessions": "最近任务",
     "noSearchResults": "没有匹配的任务",
     "viewProjectsShort": "项目",
-    "viewMergedShort": "合并"
+    "viewMergedShort": "合并",
+    "dragToReorder": "拖动排序",
+    "reorderHint": "拖动或按 Alt+↑ / Alt+↓ 调整顺序",
+    "groupOrder": "分组顺序",
+    "renameSection": "重命名分组",
+    "deleteSection": "删除分组",
+    "deleteSectionQuestion": "删除这个分组？",
+    "deleteSectionHint": "分组内的对话会回到默认列表。",
+    "confirmDelete": "删除",
+    "hideProject": "隐藏项目",
+    "showProject": "显示项目",
+    "projectVisibility": "项目显示"
   },
   "workRead": {
     "complete": "完整读取已验证",
