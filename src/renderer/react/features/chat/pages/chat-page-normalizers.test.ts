@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from "vitest";
 import type { ChatSession } from "../../../../../shared/chat-types";
-import { getInitialMode, LAST_MODE_STORAGE_KEY, normalizeWeatherData, stageForStep, toUiMessages } from "./chat-page-normalizers";
+import { getInitialMode, LAST_MODE_STORAGE_KEY, normalizeWeatherData, permissionInteraction, stageForStep, toUiMessages } from "./chat-page-normalizers";
 
 describe("chat page normalizers", () => {
   it.each(["success","pending","unknown","interrupted"] as const)("canonical %s wins over conflicting recovered cache",state=>{
@@ -11,6 +11,15 @@ describe("chat page normalizers", () => {
     expect(view.runStage?.kind).toBe(state==="success"?"completed":"failed");
     if(state!=="success")expect(view.ttsCacheKey).toBeUndefined();
     expect(JSON.stringify(session)).toBe(before);
+  });
+  it("keeps the sub-agent origin of an approval request on its card", () => {
+    const request = { id: "approve-1", toolId: "write_file", toolName: "Write", toolDescription: "", args: { path: "a.txt" }, risk: "fs-write" as const, runId: "run-1" };
+
+    expect(permissionInteraction({ ...request, agentId: "reviewer", toolCallId: "call-1", childRunId: "child-1" }))
+      .toMatchObject({ kind: "permission", id: "approve-1", agentId: "reviewer", toolCallId: "call-1", childRunId: "child-1" });
+    const plain = permissionInteraction(request);
+    expect(plain).not.toHaveProperty("agentId");
+    expect(plain).not.toHaveProperty("childRunId");
   });
   it("ignores a removed mode in stored navigation state", () => {
     vi.stubGlobal("localStorage", { getItem: () => "learn" });

@@ -1,5 +1,6 @@
 import { app } from "electron";
 import type { BaseEvent } from "@ag-ui/core";
+import type { ApprovalOrigin } from "../../../../shared/permission-approval";
 import type { ToolDefinition } from "../../tools/registry/tool-registry";
 import { toolRegistry } from "../../tools/registry/tool-registry";
 import { checkPermission, getCurrentLevel, type ToolRiskLevel } from "../../../permission";
@@ -50,6 +51,7 @@ export function prepareToolRuntime(input: {
     toolId: string,
     args: Record<string, unknown>,
     invocationSignal?: AbortSignal,
+    origin?: ApprovalOrigin,
   ): Promise<boolean> => {
     const tool = toolRegistry.getById(toolId);
     if (!tool) return false;
@@ -70,6 +72,7 @@ export function prepareToolRuntime(input: {
       args,
       risk,
       runId,
+      origin,
       signal: invocationSignal && invocationSignal !== signal ? AbortSignal.any([signal, invocationSignal]) : signal,
       level: fileAccessLevel,
     });

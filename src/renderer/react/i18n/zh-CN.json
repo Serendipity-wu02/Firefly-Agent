@@ -513,6 +513,7 @@
     "questionProgressAria": "问题完成情况",
     "submitAll": "提交全部",
     "submit": "提交",
+    "agentLabel": "来自子任务",
     "workspaceLabel": "工作区",
     "targetLabel": "目标",
     "deny": "拒绝",

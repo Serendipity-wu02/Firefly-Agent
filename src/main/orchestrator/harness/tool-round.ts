@@ -332,7 +332,7 @@ async function executeToolCallWithRetry(run: HarnessRun, execution: ToolCallExec
     delegationScope: execution.delegationScope,
     checkPermission: run.toolDispatchContext.checkPermission
       ? (toolId: string, args: Record<string, unknown>) => raceWithSignal(
-          run.toolDispatchContext.checkPermission!(toolId, args, input.signal), input.signal,
+          run.toolDispatchContext.checkPermission!(toolId, args, input.signal, { toolCallId: call.id }), input.signal,
         ) : undefined,
     onExecutionStarted: () => {
       if (run.toolCallStartedAt.has(call.id)) return;

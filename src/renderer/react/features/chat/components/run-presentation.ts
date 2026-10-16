@@ -80,6 +80,10 @@ export interface PermissionInteraction {
   summary: string;
   workspaceName?: string;
   targetPath?: string;
+  /** 请求来自某个子 agent 时由主进程附带；主 agent 的审批为空。 */
+  agentId?: string;
+  toolCallId?: string;
+  childRunId?: string;
 }
 
 export interface PopQuizInteraction {

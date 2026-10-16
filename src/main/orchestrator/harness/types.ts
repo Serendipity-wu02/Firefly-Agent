@@ -10,6 +10,7 @@
 import type { ChatMessage, ToolCall, ToolSpec } from "../vendors/types";
 import type { ToolDefinition } from "../tools/registry/tool-registry";
 import type { FireflyRunTerminalResult } from "../../../shared/run-terminal";
+import type { ApprovalOrigin } from "../../../shared/permission-approval";
 import type { TodoItem } from "../../../shared/task-session";
 import type { ToolErrorCategory } from "../tools/registry/tool-execution-error";
 import type { ToolRiskLevel } from "../../permission-policy";
@@ -310,7 +311,7 @@ export interface HarnessInput {
   /** 工具上下文（权限检查等） */
   toolContext?: import("../tools/registry/tool-context").ToolContext;
   /** 权限检查函数 */
-  checkPermission?: (toolId: string, args: Record<string, unknown>, signal?: AbortSignal) => Promise<boolean>;
+  checkPermission?: (toolId: string, args: Record<string, unknown>, signal?: AbortSignal, origin?: ApprovalOrigin) => Promise<boolean>;
   /** ExecutionLedger：可选的同进程工具去重缓存（用于副作用重复执行防护） */
   executionLedger?: import("../execution-ledger").ExecutionLedger;
   /** ToolOutputStore：生产 Harness 注入的完整工具结果存储。 */

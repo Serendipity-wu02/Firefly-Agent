@@ -513,6 +513,7 @@
     "questionProgressAria": "Question progress",
     "submitAll": "Submit all",
     "submit": "Submit",
+    "agentLabel": "From sub-agent",
     "workspaceLabel": "Workspace",
     "targetLabel": "Target",
     "deny": "Deny",

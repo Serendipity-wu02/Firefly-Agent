@@ -40,7 +40,10 @@ const unchangedBoundaries = {
   // See docs/browser-reference-audit-2026-10-15.md (boundary preimage review).
   "src/main/browser/electron-browser-guest.ts": "a71fade70a93bb0c1ab40e7cbee856c2b423e87092bbaf4f3174a3d896de8d21",
   "src/main/permission-policy.ts": "b83f34a3ab293c4ea87ddf6f2bb13cd8cf4e6fc31ff266be06f7f5b5f89b1903",
-  "src/main/permission.ts": "268ffc75b7f18be3e0438a7c81e1a5ab3e2e3d6c16b29abb5db5491e3e9911a3",
+  // Reviewed approval-origin change: checkPermission accepts an optional { toolCallId, childRunId, agentId } and forwards it
+  // unchanged into the approval request so cards can name the asking sub-agent. No policy decision, level, risk or
+  // allow/deny path changed; cancellation and settlement still key on the approval id and runId.
+  "src/main/permission.ts": "654fa51defb14ea31406a6a1e5a6ad9c6a4213f7d65b8434bc0d30f672613577",
   "src/main/permission/bootstrap.ts": "4419a194aa95f813f9f6aa90d250c1b71036ef49b508b6c0c716a0dc8ffc70a0",
 } as const;
 it.each(Object.entries(unchangedBoundaries))("no_execution_or_permission_expansion: %s exactly matches approved boundary preimage", (file, expected) => { expect(hash(file)).toBe(expected); });
