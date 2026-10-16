@@ -1,3 +1,4 @@
+import { SlidingTabs } from "../../../components/ui/SlidingTabs";
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "../../../i18n";
 import "./SkillModePanel.css";
@@ -253,9 +254,19 @@ export const SkillModePanel: React.FC = () => {
         </div>
       </header>
 
-      <div className="skill-panel__views" aria-label={t("skillPanel.views")}>
-        <button type="button" aria-pressed={view === "installed"} disabled={committing || enabling} onClick={() => { if (!commitInFlight.current && !enableInFlight.current) setView("installed"); }}>{t("skillPanel.installed")}</button>
-        <button type="button" aria-pressed={view === "external"} disabled={committing || enabling} onClick={() => { if (commitInFlight.current || enableInFlight.current) return; setEnableCandidate(undefined); setView("external"); }}>{t("skillPanel.marketplace")}</button>
+      <div className="skill-panel__views">
+        <SlidingTabs
+          ariaLabel={t("skillPanel.views")}
+          activeId={view}
+          tabs={[
+            { id: "installed", label: t("skillPanel.installed"), disabled: committing || enabling },
+            { id: "external", label: t("skillPanel.marketplace"), disabled: committing || enabling },
+          ]}
+          onChange={(id) => {
+            if (commitInFlight.current || enableInFlight.current) return;
+            if (id === "external") { setEnableCandidate(undefined); setView("external"); } else setView("installed");
+          }}
+        />
       </div>
 
       <div role="status" aria-live="polite">
