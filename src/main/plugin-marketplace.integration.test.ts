@@ -121,3 +121,67 @@ describe("real marketplace / installer / manager loop", () => {
     expect(readdirSync(path.join(root, "plugin-install-staging"))).toEqual([]);
   });
 });
+
+describe("every bundled catalog plugin through the real marketplace / installer / manager loop", () => {
+  const catalogIds = ["text-stats", "json-tools", "timezone-tools", "code-language", "text-trim"];
+  const sampleCalls: Record<string, [string, Record<string, unknown>, unknown]> = {
+    "text-stats": ["text-stats_count", { text: "a b" }, { characters: 3, words: 2, nonEmptyLines: 1 }],
+    "json-tools": ["json-tools_compare", { left: '{"a":1,"b":2}', right: '{"b":2,"a":1.0}' }, { equal: true }],
+    "timezone-tools": ["timezone-tools_convert", { time: "2026-03-08T12:00:00Z", to: "America/New_York" },
+      { instant: "2026-03-08T12:00:00.000Z", to: { zone: "America/New_York", local: "2026-03-08T08:00:00.000", offset: "-04:00" } }],
+    "code-language": ["code-language_detect", { paths: ["a/b.ts"] }, { results: [{ path: "a/b.ts", language: "typescript", shortName: "ts" }] }],
+    "text-trim": ["text-trim_cap", { text: "abcdef", maxBytes: 2 }, { text: "ab", truncated: true, totalBytes: 6, keptBytes: 2, omittedBytes: 4, notice: "Omitted 4 bytes." }],
+  };
+
+  it("lists all plugins, installs each disabled with its pinned hash, runs its real tool once enabled, and removes it", async () => {
+    const market = localMarket();
+    const listed = await market.listMarket();
+    expect(listed).toMatchObject({ ok: true, mode: "bundled" });
+    expect(listed.plugins.map((plugin) => plugin.id).sort()).toEqual([...catalogIds].sort());
+    for (const plugin of listed.plugins) {
+      expect(plugin).toMatchObject({ compatible: true, source: "bundled", pluginApiVersion: 1 });
+      expect(plugin.capabilities?.length).toBeGreaterThan(0);
+    }
+    for (const id of catalogIds) expect(await market.installFromMarket(id), id).toMatchObject({ ok: true, plugin: { id, version: "1.0.0" } });
+    expect(manager.list().map((plugin) => plugin.id).sort()).toEqual([...catalogIds].sort());
+    for (const plugin of manager.list()) expect(plugin).toMatchObject({ origin: "market", status: "disabled", enabled: false });
+    expect(tools.size).toBe(0);
+    for (const id of catalogIds) {
+      expect(await manager.setEnabled(id, true), id).toEqual({ ok: true });
+      const [toolId, args, expected] = sampleCalls[id];
+      const tool = tools.get(toolId)!;
+      expect(tool, toolId).toBeDefined();
+      expect(tool).toMatchObject({ risk: "safe", effectKind: "read" });
+      expect(JSON.parse(await tool.execute(args, { userQuery: "check" })), id).toEqual(expected);
+    }
+    expect([...tools.keys()].sort()).toEqual([
+      "code-language_detect", "json-tools_compare", "json-tools_validate", "text-stats_count",
+      "text-trim_cap", "timezone-tools_canonicalize", "timezone-tools_convert",
+    ]);
+    for (const id of catalogIds) {
+      expect(await manager.setEnabled(id, false), id).toEqual({ ok: true });
+      expect(await manager.uninstall(id), id).toMatchObject({ ok: true });
+    }
+    expect(tools.size).toBe(0);
+    expect(manager.list()).toEqual([]);
+    expect(readdirSync(path.join(root, "cache"))).toEqual([]);
+  });
+
+  it("refuses a bundled package whose bytes no longer match the catalog hash and installs nothing", async () => {
+    const market = localMarket();
+    await market.listMarket();
+    const zipPath = path.join(bundledDir, "json-tools-1.0.0.zip");
+    const original = readFileSync(zipPath);
+    const tampered = Buffer.from(original);
+    tampered[tampered.length - 1] ^= 0xff;
+    writeFileSync(zipPath, tampered);
+    expect(await market.installFromMarket("json-tools")).toMatchObject({ ok: false, error: expect.stringContaining("SHA-256") });
+    expect(manager.list()).toEqual([]);
+    expect(readdirSync(path.join(root, "cache"))).toEqual([]);
+    // The hash check runs before the installer is reached, so nothing was even staged.
+    expect(existsSync(path.join(root, "plugin-install-staging"))).toBe(false);
+    expect(existsSync(path.join(root, "plugins", "json-tools"))).toBe(false);
+    // Other plugins are unaffected.
+    expect(await market.installFromMarket("text-trim")).toMatchObject({ ok: true });
+  });
+});

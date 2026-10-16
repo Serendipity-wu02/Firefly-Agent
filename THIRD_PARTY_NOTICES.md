@@ -15,6 +15,10 @@ backport, not an upstream released version or a claim that npm audit is clear.
 
 Portions of this project derive from [Cyrene-Agent](https://github.com/Playa-0v0/Cyrene-Agent). Original MIT copyright: `Copyright (c) 2026 Playa`. The original MIT notice is preserved in [LICENSE](./LICENSE). Firefly_Agent is independently maintained; retaining this provenance does not claim original authorship of upstream work.
 
+## Marketplace plugins adapted from deepseek-harness
+
+The offline marketplace plugins `json-tools`, `timezone-tools`, `code-language` and `text-trim` (under `examples/`) adapt small, dependency-free utilities from [deepseek-harness](https://github.com/deepseek-ai/deepseek-harness), which is MIT-licensed, `Copyright (c) 2026 DeepSeek`: `packages/util/values`, `packages/util/time`, `packages/util/code-language` and `packages/util/output-retention` (the code-language table was copied from commit `86a402200d95fecef4529d969836f1fe13c6cb0d`). Each package's own `LICENSE` and `README.md` keep that notice and say what is adapted and what is new Firefly code. Only the logic of those libraries is reused; no deepseek-harness runtime, service, dependency or native code is included, and these plugins are not endorsed by or affiliated with DeepSeek.
+
 ## Character and visual assets
 
 - The Firefly Live2D files in `src/renderer/public/models/firefly/` match assets from the old local Firefly project. The project owner confirms having obtained authorization from the model's original creator; the repository does not yet contain the creator's attribution or the authorization's covered files and redistribution terms. The avatar in `src/renderer/public/avatars/firefly-avatar.png`, the Firefly icon preset, and the twelve task portraits require their own scope check. **Do not publish an installer or asset bundle until the applicable creator, source, scope, and redistribution terms are documented.**

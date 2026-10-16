@@ -359,7 +359,8 @@ export function PluginModePanel({ api: providedApi }: PluginModePanelProps) {
   const inMarket = view === "market";
   const visibleMarket = market.plugins.filter(entry => {
     const keyword = marketFilter.trim().toLowerCase();
-    return [entry.id, entry.name, entry.description, entry.author].some(value => value.toLowerCase().includes(keyword));
+    // Capability declarations are searchable too, so a keyword such as "离线" narrows the catalog by what a plugin says it does.
+    return [entry.id, entry.name, entry.description, entry.author, ...(entry.capabilities ?? [])].some(value => value.toLowerCase().includes(keyword));
   });
   const marketToggleLabel = inMarket ? t("pluginPanel.market.back") : t("pluginPanel.market.toggle");
   const catalogNotice = market.mode === "bundled"
