@@ -123,52 +123,74 @@ describe("ChatPageNavigation", () => {
 });
 
 describe("ChatPageNavigation more menu", () => {
-  it("opens the scheduled-task page of the settings window from the more menu", async () => {
+  const menuProps = (overrides: Record<string, unknown>) => ({
+    collapsed: false,
+    activePanel: null,
+    mode: "chat",
+    sessions: [],
+    sessionListStatus: "ready",
+    activeSessionId: undefined,
+    onToggleCollapsed: () => undefined,
+    onModeChange: () => undefined,
+    onNewTask: () => undefined,
+    onTogglePanel: () => undefined,
+    onSelectSession: () => undefined,
+    onOpenProject: () => undefined,
+    onRenameSession: () => undefined,
+    onDeleteSession: () => undefined,
+    onTogglePinSession: () => undefined,
+    onExportSession: () => undefined,
+    onMinimize: () => undefined,
+    onMaximize: () => undefined,
+    onCloseWindow: () => undefined,
+    onOpenSettings: () => undefined,
+    ...overrides,
+  });
+
+  async function renderNavigation(props: Record<string, unknown>) {
     vi.stubGlobal("matchMedia", () => ({ matches: false, addListener() {}, removeListener() {}, addEventListener() {}, removeEventListener() {} }));
     vi.stubGlobal("ResizeObserver", class { observe() {} unobserve() {} disconnect() {} });
     const container = document.createElement("div");
     document.body.append(container);
-    const onOpenScheduledTasks = vi.fn();
-    const onOpenSettings = vi.fn();
     const root = createRoot(container);
-    const element = createElement(ChatPageNavigation, {
-      collapsed: false,
-      activePanel: null,
-      mode: "chat",
-      sessions: [],
-      sessionListStatus: "ready",
-      activeSessionId: undefined,
-      onToggleCollapsed: () => undefined,
-      onModeChange: () => undefined,
-      onNewTask: () => undefined,
-      onTogglePanel: () => undefined,
-      onSelectSession: () => undefined,
-      onOpenProject: () => undefined,
-      onRenameSession: () => undefined,
-      onDeleteSession: () => undefined,
-      onTogglePinSession: () => undefined,
-      onExportSession: () => undefined,
-      onMinimize: () => undefined,
-      onMaximize: () => undefined,
-      onCloseWindow: () => undefined,
-      onOpenSettings,
-      onOpenScheduledTasks,
-    });
+    await act(async () => { root.render(createElement(ChatPageNavigation, menuProps(props) as never)); });
+    return {
+      container,
+      cleanup: async () => {
+        await act(async () => { root.unmount(); });
+        container.remove();
+        vi.unstubAllGlobals();
+      },
+    };
+  }
+
+  const moreButton = (container: HTMLElement) => container.querySelector<HTMLButtonElement>('button[aria-label="更多"]');
+  const scheduledItem = () => [...document.querySelectorAll<HTMLButtonElement>("button")]
+    .find(button => button.getAttribute("aria-label") === "定时任务");
+
+  it("toggles the in-app scheduled-task panel from the more menu and never opens the settings window", async () => {
+    const onTogglePanel = vi.fn();
+    const onOpenSettings = vi.fn();
+    const { container, cleanup } = await renderNavigation({ onTogglePanel, onOpenSettings });
     try {
-      await act(async () => { root.render(element); });
-      const more = container.querySelector<HTMLButtonElement>('button[aria-label="更多"]');
-      expect(more).not.toBeNull();
-      await act(async () => { more!.click(); });
-      const item = [...document.querySelectorAll<HTMLButtonElement>("button")].find(button => button.getAttribute("aria-label") === "定时任务");
-      expect(item).toBeDefined();
-      await act(async () => { item!.click(); });
-      expect(onOpenScheduledTasks).toHaveBeenCalledTimes(1);
+      expect(moreButton(container)).not.toBeNull();
+      await act(async () => { moreButton(container)!.click(); });
+      expect(scheduledItem()).toBeDefined();
+      await act(async () => { scheduledItem()!.click(); });
+      expect(onTogglePanel).toHaveBeenCalledTimes(1);
+      expect(onTogglePanel).toHaveBeenCalledWith("scheduled");
       expect(onOpenSettings).not.toHaveBeenCalled();
-    } finally {
-      await act(async () => { root.unmount(); });
-      container.remove();
-      vi.unstubAllGlobals();
-    }
+    } finally { await cleanup(); }
+  });
+
+  it("marks the more button and the scheduled-task item active while that panel is open", async () => {
+    const { container, cleanup } = await renderNavigation({ activePanel: "scheduled" });
+    try {
+      expect(moreButton(container)?.classList.contains("is-active")).toBe(true);
+      await act(async () => { moreButton(container)!.click(); });
+      expect(scheduledItem()?.getAttribute("aria-pressed")).toBe("true");
+      expect(scheduledItem()?.classList.contains("is-active")).toBe(true);
+    } finally { await cleanup(); }
   });
 });
 
