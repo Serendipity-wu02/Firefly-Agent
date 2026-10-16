@@ -31,6 +31,7 @@ import { extractFileChanges, FileChangeCard } from "./FileChangeCard";
 import { ReviewPanel } from "./ReviewPanel";
 import { reportChatPerfRender } from "./chat-perf-probe";
 import { StreamdownMessageContent } from "./StreamdownMessageContent";
+import { useScrollPinning } from "./useScrollPinning";
 
 export interface ChatMessageItem {
   sSettlement?: import("../../../../../shared/chat-types").ChatMessage["sSettlement"];
@@ -1256,38 +1257,21 @@ export function ChatMessageList({
       setEditDraft("");
     });
   }, [editDraft, editingMessageId, onEditLastUserMessage, revisionBusy]);
-  const containerRef = useRef<HTMLDivElement>(null);
-  const isNearBottomRef = useRef(true);
-
-  const scrollToBottom = useCallback((behavior: ScrollBehavior = "smooth") => {
-    const el = containerRef.current;
-    if (!el) return;
-    el.scrollTo({ top: el.scrollHeight, behavior });
-  }, []);
+  // 流式输出时钉在底部；用户往上滚即松开，回到底部重新钉住（见 useScrollPinning）。
+  const { containerRef, onScroll: updateScrollState, scrollToBottom } = useScrollPinning(onScrollToBottomVisibilityChange);
 
   // 向父组件注册滚动到底部的回调
   useEffect(() => {
     onRegisterScrollToBottom?.(scrollToBottom);
   }, [onRegisterScrollToBottom, scrollToBottom]);
 
-  const updateScrollState = useCallback(() => {
-    const el = containerRef.current;
-    if (!el) return;
-    const distance = el.scrollHeight - el.scrollTop - el.clientHeight;
-    const nearBottom = distance < 100;
-    isNearBottomRef.current = nearBottom;
-    onScrollToBottomVisibilityChange?.(!nearBottom);
-  }, [onScrollToBottomVisibilityChange]);
-
-  // 打开/切换会话时滚动到底部
+  // 打开/切换会话时滚动到底部并重新钉住
   useEffect(() => {
     scrollToBottom("auto");
     // 内容渲染后再次兜底滚动
     const timer = window.setTimeout(() => scrollToBottom("auto"), 100);
-    isNearBottomRef.current = true;
-    onScrollToBottomVisibilityChange?.(false);
     return () => window.clearTimeout(timer);
-  }, [conversationId, onScrollToBottomVisibilityChange, scrollToBottom]);
+  }, [conversationId, scrollToBottom]);
 
   // roles 不闭包 lastTurn（footer 动作组件经 LastTurnIdsContext 读取）：流式阶段边界
   // （推理结束/正文开始/运行结束）lastTurn 在 null 与非 null 间切换是真实值变化，若进入
