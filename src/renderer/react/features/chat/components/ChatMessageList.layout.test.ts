@@ -11,6 +11,9 @@ describe("chat reading width", () => {
     expect(stylesheet).toMatch(/\.ff-message-list \.ant-bubble-list \{[^}]*max-width: var\(--ff-reading-width\);[^}]*margin-inline: auto;/);
     const root = readFileSync(resolve(__dirname, "../../../styles/react-root.css"), "utf8");
     expect(root).toMatch(/--ff-reading-width: clamp\(\d+px, \d+%, \d+px\);/);
+    // 最大化时对话栏和输入框不能被拉得过长：上限固定在 800px 以内
+    const cap = Number(/--ff-reading-width: clamp\(\d+px, \d+%, (\d+)px\);/.exec(root)![1]);
+    expect(cap).toBeLessThanOrEqual(800);
     expect(stylesheet).toMatch(/\.ff-message--activity \{[\s\S]*width: var\(--ff-message-reading-width\)/);
   });
 

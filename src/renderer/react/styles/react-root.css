@@ -1,7 +1,7 @@
 /* ===== 设计变量 ===== */
 :root {
-  /* 对话区阅读宽度：随窗口自动调节——窗口窄时占满，窗口宽时占九成，封顶 1680px；消息列表、输入框、交互面板共用 */
-  --ff-reading-width: clamp(560px, 90%, 1680px);
+  /* 对话区阅读宽度：窗口窄时占满，宽时占九成，封顶 800px（最大化也不再拉长）；消息列表、输入框、交互面板共用 */
+  --ff-reading-width: clamp(560px, 90%, 800px);
   --ff-app-titlebar-height: 50px;
   --ff-workspace-header-height: 48px;
   --ff-workspace-gutter: 8px;
