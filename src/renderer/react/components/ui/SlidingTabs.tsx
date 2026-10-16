@@ -48,6 +48,8 @@ export function SlidingTabs({ tabs, activeId, onChange, onClose, size = "md", ar
   const [thumb, setThumb] = useState<Thumb | null>(null);
   const [settled, setSettled] = useState(false);
   const activeKey = tabs.some(tab => tab.id === activeId) ? activeId : null;
+  // Roving tab stop: the selected tab, unless it is disabled; then the first enabled tab, so the strip stays reachable by keyboard.
+  const stopId = (tabs.find(tab => tab.id === activeKey && !tab.disabled) ?? tabs.find(tab => !tab.disabled))?.id;
 
   const measure = useCallback(() => {
     const element = track.current?.querySelector<HTMLElement>(".ff-sliding-tabs__item[data-active='true']");
@@ -109,7 +111,7 @@ export function SlidingTabs({ tabs, activeId, onChange, onClose, size = "md", ar
           <div key={tab.id} className={["ff-sliding-tabs__item", tab.className, tab.closing ? "is-closing" : ""].filter(Boolean).join(" ")}
             data-active={active} data-closable={closable || undefined}
             onAuxClick={event => { if (event.button === 1 && closable && !tab.disabled) { event.preventDefault(); onClose!(tab.id); } }}>
-            <button type="button" role="tab" aria-selected={active} tabIndex={active || (activeKey === null && tab === tabs[0]) ? 0 : -1}
+            <button type="button" role="tab" aria-selected={active} tabIndex={tab.id === stopId ? 0 : -1}
               disabled={tab.disabled} title={tab.title} className="ff-sliding-tabs__tab" onClick={() => onChange(tab.id)} {...tab.tabData}>
               {tab.icon && <span className="ff-sliding-tabs__icon" aria-hidden="true">{tab.icon}</span>}
               <span className="ff-sliding-tabs__label">{tab.label}</span>

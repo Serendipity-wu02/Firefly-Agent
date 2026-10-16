@@ -89,6 +89,16 @@ describe("SlidingTabs", () => {
     vi.restoreAllMocks();
   });
 
+  it("keeps an enabled tab in the tab order when the selected tab is disabled", async () => {
+    const list = items(); list[0] = { ...list[0], disabled: true };
+    await act(async () => root.render(createElement(SlidingTabs, { tabs: list, activeId: "a", onChange() {} })));
+    expect(tabs().map(tab => tab.tabIndex)).toEqual([-1, 0, -1]);
+    // With nothing enabled there is no tab stop to give.
+    const all = items().map(tab => ({ ...tab, disabled: true }));
+    await act(async () => root.render(createElement(SlidingTabs, { tabs: all, activeId: "a", onChange() {} })));
+    expect(tabs().every(tab => tab.tabIndex === -1)).toBe(true);
+  });
+
   it("shows no thumb when nothing is selected, and marks a closing tab for its collapse", async () => {
     const list = items(); list[1] = { ...list[1], closing: true, className: "extra" };
     await act(async () => root.render(createElement(SlidingTabs, { tabs: list, activeId: null, onChange() {} })));
