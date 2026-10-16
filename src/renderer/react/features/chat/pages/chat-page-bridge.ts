@@ -38,7 +38,7 @@ export interface ChatStoreApi {
   list: (options?: { mode?: ConversationMode }) => Promise<ChatSessionMeta[]>;
   get: (id: string) => Promise<ChatSession | null>;
   exportWorkMarkdown: (id: string) => Promise<{ ok: boolean; canceled?: boolean; error?: string }>;
-  create: (input: { identityId: null; mode: ConversationMode; title?: string }) => Promise<ChatSession>;
+  create: (input: { identityId: null; mode: ConversationMode; title?: string; temporary?: boolean }) => Promise<ChatSession>;
   append: (id: string, message: ChatMessage) => Promise<ChatSession | null>;
   upsert: (id: string, message: ChatMessage) => Promise<ChatSession | null>;
   replaceTail: (id: string, startIndex: number, messages: ChatMessage[]) => Promise<ChatSession | null>;

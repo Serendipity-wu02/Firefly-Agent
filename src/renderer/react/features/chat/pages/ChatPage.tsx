@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "../../../i18n";
+import { MessageSquareDashed } from "lucide-react";
 import { DownOutlined, GlobalOutlined, FolderOpenOutlined, ProfileOutlined, UnorderedListOutlined } from "@ant-design/icons";
 import { Group, Panel, Separator, useDefaultLayout, type GroupImperativeHandle } from "react-resizable-panels";
 import { useCompactDock } from "./useCompactDock";
@@ -147,6 +148,7 @@ function sessionMetaListEqual(a: ChatSessionMeta[], b: ChatSessionMeta[]): boole
 /** 导航动作函数的最小签名（供 navActionsRef 转发，见组件内注释） */
 interface NavActions {
   createNewTask: () => Promise<void>;
+  startTemporaryChat: () => Promise<void>;
   selectSession: (sessionId: string, targetMode?: ConversationMode) => Promise<SessionSelectionResult>;
   handleRenameSession: (sessionId: string, newTitle: string) => Promise<void>;
   handleDeleteSession: (sessionId: string) => Promise<void>;
@@ -193,6 +195,8 @@ export function ChatPage() {
   const [requiredReadsByScope, setRequiredReadsByScope] = useState<Record<string, boolean>>({});
 
   const [workspaceNames, setWorkspaceNames] = useState<Partial<Record<ConversationMode, string>>>({});
+  /** 点了“临时聊天”但还没发第一条消息：会话在发送时才创建，届时带上 temporary。 */
+  const [pendingTemporary, setPendingTemporary] = useState(false);
   const [pendingWorkspaceByMode, setPendingWorkspaceByMode] = useState<
     Partial<Record<ConversationMode, { path: string; displayName?: string }>>
   >({});
@@ -973,14 +977,27 @@ export function ChatPage() {
     const store = chatStore();
     if (!store) throw new Error(t("chatPage.errorChatStoreUnavailable"));
     const hasPendingWorkspace = !!pendingWorkspaceByMode[targetMode];
-    const session = await store.create({
-      identityId: null,
-      mode: targetMode,
-      title:
-        targetMode === "work" || targetMode === "code" || hasPendingWorkspace
-          ? t("chatPage.newTaskTitle")
-          : t("chatPage.newChatTitle"),
-    });
+    const temporary = targetMode === "chat" && pendingTemporary;
+    let session: ChatSession;
+    try {
+      session = await store.create({
+        identityId: null,
+        mode: targetMode,
+        title:
+          targetMode === "work" || targetMode === "code" || hasPendingWorkspace
+            ? t("chatPage.newTaskTitle")
+            : t("chatPage.newChatTitle"),
+        ...(temporary ? { temporary: true } : {}),
+      });
+    } catch (error) {
+      // 受控记忆模式不托管临时会话：不要悄悄退化成会落盘的普通聊天。
+      if (temporary) {
+        setPendingTemporary(false);
+        throw new Error(t("chatPage.temporaryUnavailable"));
+      }
+      throw error;
+    }
+    if (temporary) setPendingTemporary(false);
     // 欢迎页暂存的模型选择在此落地（问题 2：无会话时选择器曾被静默丢弃）。
     const pendingModelProfileId = pendingModelProfileByMode[targetMode];
     if (pendingModelProfileId) {
@@ -1031,6 +1048,7 @@ export function ChatPage() {
     const store = chatStore();
     if (!store) return;
 
+    setPendingTemporary(false);
     // 点“新建”不真正创建 session，只清空当前模式的状态并回到欢迎页。
     // 工作区保留：如果当前 session 已绑定项目，新任务继续在该项目下创建；
     // 否则沿用之前通过 chooseWorkspace 选好的待绑定目录。
@@ -1072,6 +1090,13 @@ export function ChatPage() {
       return next;
     });
     setActivePanel(null);
+  }
+
+  /** 回到欢迎页，下一条消息开出一个不落盘、不进记忆的临时会话（仅 Chat 模式）。 */
+  async function startTemporaryChat() {
+    if (mode !== "chat") return;
+    await createNewTask();
+    setPendingTemporary(true);
   }
 
   async function handleRenameSession(sessionId: string, newTitle: string) {
@@ -1422,6 +1447,7 @@ export function ChatPage() {
   // 外层回调引用恒定，配合 React.memo 让导航/侧栏子树在流式期间保持命中。
   const navActionsRef = useRef<NavActions>({
     createNewTask: () => Promise.resolve(),
+    startTemporaryChat: () => Promise.resolve(),
     selectSession: () => Promise.resolve("unavailable"),
     handleRenameSession: () => Promise.resolve(),
     handleDeleteSession: () => Promise.resolve(),
@@ -1431,6 +1457,7 @@ export function ChatPage() {
   // 渲染期同步最新实现（函数声明在组件体内提升，此处可安全引用）
   navActionsRef.current = {
     createNewTask,
+    startTemporaryChat,
     selectSession,
     handleRenameSession,
     handleDeleteSession,
@@ -1447,17 +1474,22 @@ export function ChatPage() {
   const navModeChange = useCallback((nextMode: string) => {
     if (isConversationMode(nextMode)) {
       sessionSelectionGeneration.current++;
+      setPendingTemporary(false);
       setMode(nextMode);
     }
   }, []);
   const navNewTask = useCallback(() => {
     void navActionsRef.current.createNewTask();
   }, []);
+  const navNewTemporaryChat = useCallback(() => {
+    void navActionsRef.current.startTemporaryChat();
+  }, []);
   const navTogglePanel = useCallback((panel: ChatPagePanel) => {
     setActivePanel((current) => current === panel ? null : panel);
   }, []);
   const navSelectSession = useCallback((sessionId: string) => {
     setActivePanel(null);
+    setPendingTemporary(false);
     void navActionsRef.current.selectSession(sessionId);
   }, []);
   const navOpenProject = useCallback((workspaceRoot: string) => {
@@ -1506,6 +1538,7 @@ export function ChatPage() {
         onToggleCollapsed={navToggleCollapsed}
         onModeChange={navModeChange}
         onNewTask={navNewTask}
+        onNewTemporaryChat={navNewTemporaryChat}
         onTogglePanel={navTogglePanel}
         onSelectSession={navSelectSession}
         onOpenProject={navOpenProject}
@@ -1623,6 +1656,12 @@ export function ChatPage() {
           <h2 className="ff-workspace-greeting__title">{t(mode === "chat" ? "chatPage.emptyGreeting" : "chatPage.emptyGreetingTask")}</h2>
           <p className="ff-workspace-greeting__hint">{t(`chatPage.emptyHint.${mode}`)}</p>
         </div>}
+        {mode === "chat" && (pendingTemporary || activeSession?.temporary === true) && (
+          <p className="ff-temporary-chat-banner" role="status">
+            <MessageSquareDashed size={14} strokeWidth={1.8} aria-hidden="true" />
+            {t("chatPage.temporaryBanner")}
+          </p>
+        )}
         <div className="ff-workspace-composer">
           {scrollToBottomVisible && (
             <button
