@@ -522,6 +522,8 @@
           "kindInference": "流萤推断",
           "activationConfirmed": "你已确认",
           "activationAuto": "自动记住",
+          "scopeGlobal": "所有会话",
+          "scopeProject": "仅限某个项目",
           "pendingTag": "待确认",
           "pendingNeedsConfirm": "等你确认后才会记住",
           "pendingUntitled": "候选内容待明确",

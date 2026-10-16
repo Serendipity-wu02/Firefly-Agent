@@ -439,7 +439,11 @@ export function createMainDefaultMemory(options: MainDefaultMemoryOptions) {
     try {
       // A former H session becoming current S cannot retain a stale history publication.
       await state.native.invalidate("grant-change"); requireAdmission(id);
-      const others = [...new Set(options.listSessionIds())].filter(other => other !== id && owned(other) && !isTemporary(other) && options.getSession(other)?.messages.some(message => message.role === "user"));
+      // Same boundary as project facts: a session reads unbound history, plus its own project's when it has one.
+      // An unbound session never reads project history, and no session reads another project's.
+      const project = projectOf(id);
+      const others = [...new Set(options.listSessionIds())].filter(other => other !== id && owned(other) && !isTemporary(other)
+        && [undefined, project].includes(projectOf(other)) && options.getSession(other)?.messages.some(message => message.role === "user"));
       const readActorTokens: object[] = [core.settingsActor];
       for (const other of others) readActorTokens.push((await record(other)).actor);
       grant = core.runAuthority.issue({ identity: { entry: "desktop", sessionId: id, runId: input.runId, modelProfileId: profileId, sessionMode: sessionModes.require(id) },

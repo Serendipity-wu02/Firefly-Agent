@@ -220,6 +220,8 @@
           "kindInference": "Inferred by Firefly",
           "activationConfirmed": "You confirmed",
           "activationAuto": "Remembered automatically",
+          "scopeGlobal": "All sessions",
+          "scopeProject": "One project only",
           "pendingTag": "Pending",
           "pendingNeedsConfirm": "Remembered only after you confirm",
           "pendingUntitled": "Untitled pending item",

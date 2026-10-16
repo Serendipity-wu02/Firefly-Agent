@@ -42,6 +42,13 @@ describe("memory entries panel", () => {
     expect(f.root.textContent).not.toContain("source-1");
     expect(f.root.textContent).not.toMatch(/L0|L1|无历史|SMH|Cyrene|覆盖|证据资格/);
   });
+  it("shows where each fact applies when the policy reports it, and nothing when it does not", async () => {
+    const f = fixture(); f.state.facts = [{ ...fact("我默认用 bash", "fact-p"), scope: "project" }, { ...fact("请叫我小林", "fact-g"), scope: "global" }, fact("无范围信息", "fact-n")]; await f.panel.load();
+    const text = (assertion: string) => [...f.root.querySelectorAll("article")].find((node) => node.textContent?.includes(assertion))!.textContent!;
+    expect(text("我默认用 bash")).toContain("仅限某个项目");
+    expect(text("请叫我小林")).toContain("所有会话");
+    expect(text("无范围信息")).not.toMatch(/所有会话|仅限某个项目/);
+  });
   it("filters by type and searches loaded text locally", async () => {
     const f = fixture(); f.state.facts = [fact("我住在上海")]; await f.panel.load();
     const filter = (value: string) => (f.root.querySelector(`[data-memory-filter="${value}"]`) as HTMLButtonElement).click();
