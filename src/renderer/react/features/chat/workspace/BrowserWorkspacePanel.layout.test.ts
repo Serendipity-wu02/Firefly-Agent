@@ -72,11 +72,20 @@ it("uses the user's contrast tokens for browser error and keyboard-focus surface
   expect(property(".ff-browser-permission button:focus-visible", "outline")).toContain("var(--ff-accent");
 });
 
-it("sets the toolbar as one 44px row whose address is a full pill", () => {
-  expect(property(".ff-browser-workspace__toolbar", "height")).toBe("44px");
-  expect(property(".ff-browser-workspace__address", "border-radius")).toBe("16px");
-  expect(property(".ff-browser-workspace__address", "height")).toBe("32px");
+it("sets the toolbar as one 56px row whose address is a full pill", () => {
+  expect(property(".ff-browser-workspace__toolbar", "height")).toBe("56px");
+  expect(property(".ff-browser-workspace__address", "border-radius")).toBe("18px");
+  expect(property(".ff-browser-workspace__address", "height")).toBe("36px");
   expect(property(".ff-browser-workspace__toolbar button", "border-radius")).toBe("8px");
+});
+
+it("groups back and forward in one outlined pill and draws reload, download and more as round buttons", () => {
+  expect(property(".ff-browser-workspace__nav", "border-radius")).toBe("18px");
+  expect(property(".ff-browser-workspace__nav", "height")).toBe("36px");
+  for (const selector of [".ff-browser-workspace__toolbar .ff-browser-workspace__reload", ".ff-browser-workspace__toolbar .ff-browser-tools button"]) {
+    expect(property(selector, "border-radius")).toBe("50%");
+    expect(property(selector, "width")).toBe("36px");
+  }
 });
 
 it("opens and closes a tab in about 150ms, collapsing its width and fading it", () => {

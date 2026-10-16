@@ -6,7 +6,7 @@ import { resolve } from "node:path";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { JSDOM } from "jsdom";
 vi.mock("../../../i18n", () => ({ useTranslation: () => ({ t: (key: string) => key }) }));
-import { BROWSER_START_SITES, BrowserNewTab, clearRecentSites, recentSites, rememberVisitedSite } from "./BrowserNewTab";
+import { BROWSER_START_SITES, BrowserNewTab, BrowserNewTabToolsContext, clearRecentSites, recentSites, rememberVisitedSite, type BrowserNewTabTool } from "./BrowserNewTab";
 
 let host: HTMLDivElement, root: Root;
 beforeEach(() => {
@@ -19,6 +19,10 @@ afterEach(() => { act(() => root.unmount()); host.remove(); vi.unstubAllGlobals(
 function render(props: { available?: boolean; onOpen?: (url: string) => void } = {}) {
   act(() => root.render(createElement(BrowserNewTab, { onOpen: props.onOpen ?? (() => {}), available: props.available })));
 }
+function renderWithTools(tools: BrowserNewTabTool[]) {
+  act(() => root.render(createElement(BrowserNewTabToolsContext.Provider, { value: tools }, createElement(BrowserNewTab, { onOpen: () => {} }))));
+}
+const toolButtons = () => Array.from(host.querySelectorAll<HTMLButtonElement>("[data-browser-tool]"));
 const tiles = () => Array.from(host.querySelectorAll<HTMLButtonElement>("[data-browser-site]"));
 
 describe("browser new-tab page", () => {
@@ -30,6 +34,28 @@ describe("browser new-tab page", () => {
     expect(first.querySelector(".ff-browser-newtab__icon")?.textContent).toBe("B");
     expect(first.querySelector(".ff-browser-newtab__name")?.textContent).toBe(BROWSER_START_SITES[0]!.title);
     expect(first.getAttribute("title")).toBe(BROWSER_START_SITES[0]!.url);
+  });
+
+  it("shows no Tools group when the host offers none", () => {
+    render();
+    expect(host.querySelector("[data-browser-tool]")).toBeNull();
+    expect(host.querySelector('[aria-label="browserWorkspace.newTabTools"]')).toBeNull();
+  });
+
+  it("lists the offered workspace tools above the recommended sites and runs the chosen one", () => {
+    const openFiles = vi.fn();
+    const openTasks = vi.fn();
+    renderWithTools([
+      { id: "files", label: "Files", icon: null, onSelect: openFiles },
+      { id: "tasks", label: "Tasks", icon: null, onSelect: openTasks },
+    ]);
+
+    const headings = Array.from(host.querySelectorAll("h3")).map(heading => heading.textContent);
+    expect(headings).toEqual(["browserWorkspace.newTabTools", "browserWorkspace.newTabSites"]);
+    expect(toolButtons().map(button => button.dataset.browserTool)).toEqual(["files", "tasks"]);
+    act(() => toolButtons()[1]!.click());
+    expect(openTasks).toHaveBeenCalledTimes(1);
+    expect(openFiles).not.toHaveBeenCalled();
   });
 
   it("headings the start sites as recommended and omits the recent group until a site was visited", () => {

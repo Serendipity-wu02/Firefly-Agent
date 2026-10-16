@@ -1777,6 +1777,11 @@ export function ChatPage() {
                 filesTabPinned={filesTabPinned}
                 browserTabOpen={browserTabOpen}
                 tasksTabOpen={tasksTabOpen}
+                onOpenFilesTab={openFilesTab}
+                onOpenTasksTab={mode !== "chat" || workspaceOutputs.length > 0
+                  ? () => { setTasksTabOpen(true); setInspectorHidden(false); setActiveTabId("tasks"); } : undefined}
+                onOpenOverviewTab={activeSessionId
+                  ? () => { setOverviewTabOpen(true); setInspectorHidden(false); setActiveTabId("overview"); } : undefined}
                 overviewTabOpen={overviewTabOpen}
                 overview={{
                   usage: latestContextUsage,

@@ -4,7 +4,8 @@
 import type { ToolFileChange } from "../../../../../shared/chat-types";
 import { WorkspaceChangeDiff, WorkspaceRunResults } from "../workspace/WorkspaceRunResults";
 import type { WorkspaceChangedFile, WorkspaceRunOutput } from "../workspace/workspace-artifacts";
-import { useEffect, useRef, useState, type ReactNode } from "react";
+import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
+import { FolderTree, LayoutList, SquareTerminal } from "lucide-react";
 import { useTranslation } from "../../../i18n";
 import { FileTreePanel, FilePreviewContent } from "./FileTreePanel";
 import { requestWorkspaceEditorClose, workspaceEditorKey, useWorkspaceEditorState } from "./WorkspaceTextEditor";
@@ -13,6 +14,7 @@ import { ReviewDiffContent } from "./ReviewInspector";
 import { RightInspector, type InspectorTab } from "./RightInspector";
 import type { ManualBrowserTabHandle } from "../workspace/ManualBrowserTab";
 import { BrowserWorkspaceTabs } from "../workspace/BrowserWorkspaceTabs";
+import { BrowserNewTabToolsContext, type BrowserNewTabTool } from "../workspace/BrowserNewTab";
 import { SessionOverviewPanel, type SessionOverviewPanelProps } from "./SessionOverviewPanel";
 import "./ChatPageInspector.css";
 
@@ -98,6 +100,10 @@ export interface ChatPageInspectorProps {
   overviewTabOpen?: boolean;
   overview?: SessionOverviewPanelProps;
   taskPanel?: ReactNode;
+  /** Entry points offered on the browser new-tab page; omit one to hide it. */
+  onOpenFilesTab?: () => void;
+  onOpenTasksTab?: () => void;
+  onOpenOverviewTab?: () => void;
   pendingWorkspaceName?: string;
   onChooseWorkspace?: () => void;
   fileTabs: ChatPageInspectorFileTab[];
@@ -128,6 +134,9 @@ export function ChatPageInspector({
   overviewTabOpen = false,
   overview,
   taskPanel,
+  onOpenFilesTab,
+  onOpenTasksTab,
+  onOpenOverviewTab,
   pendingWorkspaceName,
   onChooseWorkspace,
   fileTabs,
@@ -143,6 +152,11 @@ export function ChatPageInspector({
   const { t } = useTranslation();
   const browserRef = useRef<ManualBrowserTabHandle>(null);
   const moving = useInspectorMotion(visible);
+  const newTabTools = useMemo<BrowserNewTabTool[]>(() => [
+    ...(onOpenOverviewTab ? [{ id: "overview", label: t("sessionOverview.tab"), icon: <LayoutList size={16} strokeWidth={1.8} />, onSelect: onOpenOverviewTab }] : []),
+    ...(onOpenFilesTab ? [{ id: "files", label: t("fileTree.title"), icon: <FolderTree size={16} strokeWidth={1.8} />, onSelect: onOpenFilesTab }] : []),
+    ...(onOpenTasksTab ? [{ id: "tasks", label: t("workspace.tasks"), icon: <SquareTerminal size={16} strokeWidth={1.8} />, onSelect: onOpenTasksTab }] : []),
+  ], [onOpenFilesTab, onOpenOverviewTab, onOpenTasksTab, t]);
   const tabs: InspectorTab[] = [];
 
   if (overviewTabOpen && overview) {
@@ -220,9 +234,11 @@ export function ChatPageInspector({
       id: "browser",
       kind: "browser",
       label: t("browserWorkspace.title"),
-      content: <BrowserWorkspaceTabs ref={browserRef} sessionId={sessionId} paneClose={soleTab}
-        active={visible && !moving && (activeTabId === "browser" || (!tabs.some(tab => tab.id === activeTabId) && tabs.length === 0))}
-        onClose={() => onCloseTab("browser")} />,
+      content: <BrowserNewTabToolsContext.Provider value={newTabTools}>
+        <BrowserWorkspaceTabs ref={browserRef} sessionId={sessionId} paneClose={soleTab}
+          active={visible && !moving && (activeTabId === "browser" || (!tabs.some(tab => tab.id === activeTabId) && tabs.length === 0))}
+          onClose={() => onCloseTab("browser")} />
+      </BrowserNewTabToolsContext.Provider>,
     });
   }
   if (tabs.length === 0) return null;

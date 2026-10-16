@@ -69,14 +69,14 @@ export function BrowserWorkspacePanel({
             disabled={!navigationAvailable || page.closed || !page.canGoForward} onClick={() => onCommand("forward")}>
             <ArrowRight size={16} aria-hidden="true" />
           </button>
-          {busy ? <button type="button" aria-label={labels.stop} title={labels.stop}
-            disabled={!navigationAvailable || page.closed || page.requestId === 0} onClick={() => onCommand("stop")}>
-            <Square size={14} aria-hidden="true" />
-          </button> : <button type="button" aria-label={labels.reload} title={labels.reload}
-            disabled={!navigationAvailable || page.closed || !page.url} onClick={() => onCommand("reload")}>
-            <RotateCw size={16} aria-hidden="true" />
-          </button>}
         </div>
+        {busy ? <button type="button" className="ff-browser-workspace__reload" aria-label={labels.stop} title={labels.stop}
+          disabled={!navigationAvailable || page.closed || page.requestId === 0} onClick={() => onCommand("stop")}>
+          <Square size={14} aria-hidden="true" />
+        </button> : <button type="button" className="ff-browser-workspace__reload" aria-label={labels.reload} title={labels.reload}
+          disabled={!navigationAvailable || page.closed || !page.url} onClick={() => onCommand("reload")}>
+          <RotateCw size={16} aria-hidden="true" />
+        </button>}
         <form className="ff-browser-workspace__address" onSubmit={(event) => {
           event.preventDefault();
           if (canSubmit) onNavigate(address.trim());

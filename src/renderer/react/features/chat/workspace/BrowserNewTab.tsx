@@ -1,5 +1,16 @@
+import { createContext, useContext, type ReactNode } from "react";
 import { useTranslation } from "../../../i18n";
 import "./BrowserNewTab.css";
+
+/** A workspace entry point offered on the new-tab page. Only real inspector tabs are listed; nothing is a placeholder. */
+export interface BrowserNewTabTool {
+  id: string;
+  label: string;
+  icon: ReactNode;
+  onSelect(): void;
+}
+/** Provided by the inspector that hosts the browser, so the page needs no prop chain through the tab components. */
+export const BrowserNewTabToolsContext = createContext<readonly BrowserNewTabTool[]>([]);
 
 /** Fixed starting points. Brand names are not translated, and no favicon is fetched: letters keep this page offline. */
 export const BROWSER_START_SITES: readonly { title: string; url: string }[] = Object.freeze([
@@ -39,7 +50,17 @@ function Tile({ title, url, onOpen }: { title: string; url: string; onOpen(url: 
 export function BrowserNewTab({ onOpen, available = true }: { onOpen(url: string): void; available?: boolean }) {
   const { t } = useTranslation();
   const recent = recentSites();
+  const tools = useContext(BrowserNewTabToolsContext);
   return <div className="ff-browser-newtab" data-browser-newtab data-disabled={!available || undefined}>
+    {tools.length > 0 && <section aria-label={t("browserWorkspace.newTabTools")}>
+      <h3>{t("browserWorkspace.newTabTools")}</h3>
+      <ul className="ff-browser-newtab__tools">{tools.map(tool => <li key={tool.id}>
+        <button type="button" className="ff-browser-newtab__tool" data-browser-tool={tool.id} onClick={tool.onSelect}>
+          <span className="ff-browser-newtab__tool-icon" aria-hidden="true">{tool.icon}</span>
+          <span className="ff-browser-newtab__tool-label">{tool.label}</span>
+        </button>
+      </li>)}</ul>
+    </section>}
     {recent.length > 0 && <section aria-label={t("browserWorkspace.newTabRecent")}>
       <h3>{t("browserWorkspace.newTabRecent")}</h3>
       <div className="ff-browser-newtab__row">{recent.map(site => <Tile key={site.url} {...site} onOpen={onOpen} />)}</div>

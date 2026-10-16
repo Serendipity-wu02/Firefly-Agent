@@ -849,6 +849,7 @@
     "cleanupFailed": "浏览器清理失败，浏览已禁用。请手动重启 Firefly_Agent 后再试。",
     "ready": "输入网址或搜索内容开始浏览。",
     "newTabTitle": "新标签页",
+    "newTabTools": "工具",
     "newTabSites": "推荐",
     "newTabRecent": "最近",
     "newTabLocalHint": "本机或内网地址（如 localhost:5173、192.168.1.5:3000）直接输入即可，打开前会单独确认。",

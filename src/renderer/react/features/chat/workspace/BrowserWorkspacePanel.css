@@ -15,9 +15,9 @@
   display: flex;
   flex-shrink: 0;
   align-items: center;
-  gap: 4px;
-  height: 44px;
-  padding: 0 8px;
+  gap: 8px;
+  height: 56px;
+  padding: 0 10px;
   background: var(--ff-bg-workspace, var(--ff-surface));
   app-region: no-drag;
 }
@@ -41,10 +41,31 @@
 .ff-browser-workspace__toolbar button:active:enabled { background: var(--ff-bg-active); }
 .ff-browser-workspace__toolbar button:disabled { opacity: 0.35; cursor: default; }
 .ff-browser-workspace__toolbar button:focus-visible { outline: 2px solid var(--ff-accent, #6b9982); outline-offset: 2px; }
-.ff-browser-workspace__nav { display: inline-flex; flex: 0 0 auto; align-items: center; gap: 2px; }
+/* Back and forward share one outlined pill; reload, download and more are separate round buttons. */
+.ff-browser-workspace__nav {
+  display: inline-flex;
+  flex: 0 0 auto;
+  align-items: center;
+  gap: 0;
+  height: 36px;
+  padding: 0 2px;
+  border: 1px solid var(--ff-border);
+  border-radius: 18px;
+  background: var(--ff-bg-page, var(--ff-surface));
+}
+.ff-browser-workspace__toolbar .ff-browser-workspace__nav button { width: 32px; height: 32px; border-radius: 50%; }
+.ff-browser-workspace__toolbar .ff-browser-workspace__reload,
+.ff-browser-workspace__toolbar .ff-browser-tools button {
+  width: 36px;
+  height: 36px;
+  border: 1px solid var(--ff-border);
+  border-radius: 50%;
+  background: var(--ff-bg-page, var(--ff-surface));
+}
+.ff-browser-workspace__toolbar .ff-browser-tools { gap: 8px; }
 
 /* The address field is the pill itself: the input carries the rounded fill, the submit arrow sits inside it. */
-.ff-browser-workspace__address { position: relative; display: flex; flex: 1 1 0; min-width: 0; height: 32px; border-radius: 16px; }
+.ff-browser-workspace__address { position: relative; display: flex; flex: 1 1 0; min-width: 0; height: 36px; border-radius: 18px; }
 .ff-browser-workspace__address:focus-within { outline: 2px solid var(--ff-accent, #6b9982); outline-offset: 1px; }
 .ff-browser-workspace__toolbar .ff-browser-workspace__address input {
   flex: 1 1 auto;
@@ -54,8 +75,8 @@
   box-sizing: border-box;
   padding: 0 34px 0 14px;
   border: 1px solid transparent;
-  border-radius: 16px;
-  background: var(--ff-bg-page, var(--ff-bg-subtle));
+  border-radius: 18px;
+  background: var(--ff-bg-hover, var(--ff-bg-subtle));
   color: inherit;
   font: inherit;
   font-size: 12.5px;

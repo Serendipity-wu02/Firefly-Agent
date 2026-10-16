@@ -848,6 +848,7 @@
     "connectionFailed": "Could not connect to the website.",
     "cleanupFailed": "Browser cleanup failed. Browsing is disabled. Please restart Firefly_Agent manually to recover.",
     "newTabTitle": "New tab",
+    "newTabTools": "Tools",
     "newTabSites": "Recommended",
     "newTabRecent": "Recent",
     "newTabLocalHint": "Type a local or private-network address such as localhost:5173 or 192.168.1.5:3000; it is confirmed separately before opening.",
