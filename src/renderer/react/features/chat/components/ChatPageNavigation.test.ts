@@ -171,3 +171,40 @@ describe("ChatPageNavigation more menu", () => {
     }
   });
 });
+
+describe("ChatPageNavigation temporary chat entry", () => {
+  const props = (mode: "chat" | "work", onNewTemporaryChat?: () => void) => ({
+    collapsed: false, activePanel: null, mode, sessions: [], sessionListStatus: "ready" as const, activeSessionId: undefined,
+    onToggleCollapsed: () => undefined, onModeChange: () => undefined, onNewTask: () => undefined, onTogglePanel: () => undefined,
+    onSelectSession: () => undefined, onOpenProject: () => undefined, onRenameSession: () => undefined, onDeleteSession: () => undefined,
+    onTogglePinSession: () => undefined, onExportSession: () => undefined, onMinimize: () => undefined, onMaximize: () => undefined,
+    onCloseWindow: () => undefined, onOpenSettings: () => undefined, onNewTemporaryChat,
+  });
+  async function render(mode: "chat" | "work", handler?: () => void) {
+    vi.stubGlobal("matchMedia", () => ({ matches: false, addListener() {}, removeListener() {}, addEventListener() {}, removeEventListener() {} }));
+    vi.stubGlobal("ResizeObserver", class { observe() {} unobserve() {} disconnect() {} });
+    const container = document.createElement("div");
+    document.body.append(container);
+    const root = createRoot(container);
+    await act(async () => { root.render(createElement(ChatPageNavigation, props(mode, handler))); });
+    return { container, cleanup: async () => { await act(async () => { root.unmount(); }); container.remove(); vi.unstubAllGlobals(); } };
+  }
+  const entry = (container: HTMLElement) => container.querySelector<HTMLButtonElement>("button.ff-side-action--temporary");
+
+  it("offers the entry in chat mode and calls the handler", async () => {
+    const handler = vi.fn();
+    const { container, cleanup } = await render("chat", handler);
+    try {
+      expect(entry(container)?.textContent).toBe("临时聊天");
+      await act(async () => { entry(container)!.click(); });
+      expect(handler).toHaveBeenCalledTimes(1);
+    } finally { await cleanup(); }
+  });
+
+  it("is absent outside chat mode and when no handler is provided", async () => {
+    for (const [mode, handler] of [["work", vi.fn()], ["chat", undefined]] as const) {
+      const { container, cleanup } = await render(mode, handler);
+      try { expect(entry(container)).toBeNull(); } finally { await cleanup(); }
+    }
+  });
+});

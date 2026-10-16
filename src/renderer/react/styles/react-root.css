@@ -511,6 +511,12 @@ body {
   font: 600 26px/1.35 var(--rb-font-sans, sans-serif);
   letter-spacing: -0.01em;
 }
+.ff-temporary-chat-banner {
+  display: flex; align-items: center; justify-content: center; gap: 6px;
+  margin: 0 auto 8px; padding: 4px 12px; width: fit-content; max-width: calc(100% - 32px);
+  border-radius: 999px; background: var(--ff-surface-muted, rgba(127, 127, 127, 0.12));
+  color: var(--ff-text-muted); font: 400 12px/1.5 var(--rb-font-sans, inherit);
+}
 .ff-workspace-greeting__hint { margin: 6px 0 0; color: var(--ff-text-muted); font: 400 13px/1.5 var(--rb-font-sans, sans-serif); }
 /* Like the Codex window: the greeting takes the free space and the composer stays docked at the bottom,
    so sending the first message does not move it. */

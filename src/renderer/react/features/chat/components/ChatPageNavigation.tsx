@@ -1,6 +1,6 @@
 import React, { useEffect, useRef, useState } from "react";
 import { Popover } from "antd";
-import { CalendarClock, Ellipsis, Search } from "lucide-react";
+import { CalendarClock, Ellipsis, MessageSquareDashed, Search } from "lucide-react";
 import { useTranslation } from "../../../i18n";
 import type { ChatSessionMeta, ConversationMode } from "../../../../../shared/chat-types";
 import type { TodoState } from "../../../../../shared/todo-types";
@@ -37,6 +37,8 @@ export interface ChatPageNavigationProps {
   onToggleCollapsed: () => void;
   onModeChange: (mode: string) => void;
   onNewTask: () => void;
+  /** 仅 Chat 模式显示；缺省则不渲染入口。 */
+  onNewTemporaryChat?: () => void;
   onTogglePanel: (panel: ChatPagePanel) => void;
   onSelectSession: (sessionId: string) => void;
   onOpenProject: (workspaceRoot: string) => void;
@@ -67,6 +69,7 @@ export const ChatPageNavigation = React.memo(function ChatPageNavigation({
   onToggleCollapsed,
   onModeChange,
   onNewTask,
+  onNewTemporaryChat,
   onTogglePanel,
   onSelectSession,
   onOpenProject,
@@ -194,6 +197,12 @@ export const ChatPageNavigation = React.memo(function ChatPageNavigation({
         )}
         <div className="ff-page-newtask">
           <NewTaskButton label={mode === "chat" ? undefined : t("ui.newTaskButton")} onClick={onNewTask} />
+          {mode === "chat" && onNewTemporaryChat && (
+            <button type="button" className="ff-side-action ff-side-action--temporary" onClick={onNewTemporaryChat} title={t("ui.temporaryChatHint")}>
+              <span className="ff-side-action-icon"><MessageSquareDashed size={16} strokeWidth={1.8} aria-hidden="true" /></span>
+              <span className="ff-side-action-label">{t("ui.temporaryChat")}</span>
+            </button>
+          )}
           <button type="button" className="ff-side-action ff-side-action--search" onClick={() => setSearchOpen(true)} aria-label={t("sidebar.searchAction")} aria-keyshortcuts="Control+K">
             <span className="ff-side-action-icon"><Search size={16} strokeWidth={1.8} aria-hidden="true" /></span>
             <span className="ff-side-action-label">{t("sidebar.searchAction")}</span>
