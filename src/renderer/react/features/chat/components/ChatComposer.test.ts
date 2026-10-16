@@ -23,6 +23,12 @@ vi.mock("../../../../../shared/renderer-base", () => ({ resolveAsset: (path: str
 
 import { ChatComposer, composerAddMenuEntries, parseComposerMessage, splitStickerMarkers } from "./ChatComposer";
 
+/** Renders the Sender footer toolbar the composer passes, with stand-in send controls. */
+function renderToolbar(): string {
+  const footer = senderProps?.footer as (action: React.ReactNode, info: { components: Record<string, () => null> }) => React.ReactElement;
+  return renderToStaticMarkup(footer(createElement("button", { "data-send": "" }), { components: { LoadingButton: () => null, SendButton: () => null } }));
+}
+
 describe("ChatComposer cancellation", () => {
   beforeEach(() => {
     senderProps = undefined;
@@ -125,7 +131,7 @@ describe("ChatComposer Code sticker policy", () => {
     expect(composerAddMenuEntries(true)).toEqual(["upload", "screenshot", "sticker"]);
     // The composer decides per mode; the one "+" entry is always present.
     renderToStaticMarkup(createElement(ChatComposer, { ...baseProps, mode: "code" }));
-    expect(renderToStaticMarkup(senderProps?.prefix as React.ReactElement)).toContain('aria-label="添加"');
+    expect(renderToolbar()).toContain('aria-label="添加"');
   });
 
   it("strips sticker markers without turning them into a Code message sticker", () => {
@@ -147,9 +153,21 @@ describe("ChatComposer Code sticker policy", () => {
       mode: "code",
       conversationId: "session-1",
     }));
-    const html = renderToStaticMarkup(senderProps?.prefix as React.ReactElement);
+    const html = renderToolbar();
 
     expect(html).toContain("计划模式 · off");
     expect(html).toContain("ff-plan-control");
+  });
+  it("puts every control in one toolbar under the text: add and mode on the left, send on the right", () => {
+    renderToStaticMarkup(createElement(ChatComposer, { ...baseProps, mode: "code", conversationId: "session-1" }));
+    expect(senderProps?.suffix).toBe(false);
+    expect(senderProps?.prefix).toBeUndefined();
+    const html = renderToolbar();
+    const start = html.slice(html.indexOf("ff-composer__toolbar-start"), html.indexOf("ff-composer__toolbar-end"));
+    const end = html.slice(html.indexOf("ff-composer__toolbar-end"));
+    expect(start).toContain('aria-label="添加"');
+    expect(start).toContain("ff-plan-control");
+    expect(end).toContain("data-send");
+    expect(start).not.toContain("data-send");
   });
 });
