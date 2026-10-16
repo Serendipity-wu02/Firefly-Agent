@@ -1140,3 +1140,20 @@ it("a project fact keeps its scope but loses the name once no session is bound t
   const fact = (await f.memory.settingsHost.getState(f.settingsEvent)).facts.find((item: any) => item.assertion.includes("bash")) as any;
   expect(fact.scope).toBe("project"); expect(fact.projectName).toBeUndefined();
 });
+
+it("settings state loads without touching any session when no listed memory belongs to a project", async () => {
+  const f = await fixture("chat");
+  await turnIn(f, "learn-chat", "chat", null, "请叫我小林");
+  const get = vi.spyOn(f.sessions, "get"); get.mockClear();
+  const state = await f.memory.settingsHost.getState(f.settingsEvent);
+  expect(state.facts.some((fact: any) => fact.assertion.includes("小林"))).toBe(true);
+  expect(get).not.toHaveBeenCalled();
+});
+it("a session that cannot be read never fails the settings list; the project fact just has no name", async () => {
+  const f = await fixture("code");
+  await turnIn(f, "learn-alpha", "code", "alpha", "I prefer bash");
+  vi.spyOn(f.sessions, "get").mockImplementation(() => { throw new Error("SESSION_READ_FAILED"); });
+  const state = await f.memory.settingsHost.getState(f.settingsEvent);
+  const fact = state.facts.find((item: any) => item.assertion.includes("bash")) as any;
+  expect(fact).toMatchObject({ scope: "project" }); expect(fact.projectName).toBeUndefined();
+});

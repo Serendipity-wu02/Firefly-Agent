@@ -241,6 +241,7 @@ export function createDefaultApplicationDependencies(): ApplicationDependencies 
   }):null;
   const defaultMemory=memoryEnabled?null:createMainDefaultMemory({getChatWindow:()=>reactChatWindow,getSettingsWindow:()=>settingsWindow,
     targets:activeChatTargetRegistry,getSession:chatsStore.getSession,listSessionIds:()=>chatsStore.listSessions().map(session=>session.id),
+    listProjectBindings:()=>chatsStore.listSessions().map(session=>({workspaceRoot:session.workspaceRoot,displayName:session.workspaceDisplayName})),
     store:getConversationTranscriptStore(getStorageContext().dataRoot),settings:loadModelSettings,
     runReader:{get:runId=>getHarnessRunStore(getStorageContext().dataRoot).get(runId)},
   });
