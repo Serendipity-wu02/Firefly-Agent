@@ -130,7 +130,8 @@ export function createMemoryEntriesPanel(
     const activation = item.activationReason === "explicitUserConfirmed"
       ? t("settings.panel.memory.entries.activationConfirmed")
       : t("settings.panel.memory.entries.activationAuto");
-    const entry = row(item.assertion, `${kind} · ${activation} · ${t("settings.panel.memory.entries.recordedAt", { time: time(item.recordedAt) })}`);
+    const scope = item.scope ? ` · ${t(item.scope === "project" ? "settings.panel.memory.entries.scopeProject" : "settings.panel.memory.entries.scopeGlobal")}` : "";
+    const entry = row(item.assertion, `${kind} · ${activation}${scope} · ${t("settings.panel.memory.entries.recordedAt", { time: time(item.recordedAt) })}`);
     button(entry.actions, t("settings.panel.memory.entries.edit"), "correct", () => {
       if (entry.main.querySelector("textarea")) return;
       const editor = element("div", "memory-field memory-field--full");

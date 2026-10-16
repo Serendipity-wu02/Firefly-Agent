@@ -63,6 +63,12 @@ it("a tool preference learned in a workspace session is stored under that projec
  expect(await pick(f,inBeta,"session-b","给我终端命令")).toEqual([]);
  expect(await pick(f,unbound,"session-a","给我终端命令")).toEqual([]);
 });
+it("policy recall labels each fact with where it applies, so a settings view can show it",async()=>{
+ const f=fixture(),inAlpha=session(f,"session-a",()=>ALPHA);
+ const shell=await say(f,inAlpha,"session-a","我默认用 bash"),lang=await say(f,inAlpha,"session-a","我默认用中文");
+ const scopes=Object.fromEntries((await f.policy.recall(f.actor)).map(fact=>[fact.factId,fact.scope]));
+ expect(scopes[shell.result.factId]).toBe("project");expect(scopes[lang.result.factId]).toBe("global");
+});
 it("two projects keep independent values of the same single-value attribute without conflict",async()=>{
  const f=fixture(),inAlpha=session(f,"session-a",()=>ALPHA),inBeta=session(f,"session-b",()=>BETA);
  const a=await say(f,inAlpha,"session-a","我默认用 bash"),b=await say(f,inBeta,"session-b","我默认用 PowerShell");

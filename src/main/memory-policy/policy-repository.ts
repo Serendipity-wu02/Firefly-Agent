@@ -203,7 +203,7 @@ export class PolicyRepository {
     const owners=this.records(scope).filter(r=>r.actorKey===actor&&r.factId!==null),facts=this.facts.current(scope);
     let result:unknown;
     if(cmd.kind==="audit"){const id=parseInternalId(input.factId);if(!owners.some(r=>r.factId===id))throw new Error("MEMORY_FACT_NOT_FOUND");result=this.supports.audit(scope,actor,id,facts.find(f=>f.factId===id));}
-    else result=this.eligibleFactsWithinTransaction(scope,actor,transactionNow(this.db));
+    else result=this.eligibleFactsWithinTransaction(scope,actor,transactionNow(this.db)).map(f=>({...f,scope:(owners.find(r=>r.factId===f.factId)?.projectKey!==undefined?"project":"global") as "global"|"project"}));
     this.db.exec("COMMIT");return result;
    });}catch(error){this.db.exec("ROLLBACK");throw error}
   }

@@ -1028,3 +1028,25 @@ it("rebinding a session to another workspace changes which project facts it sees
   expect(f.sent.at(-1)).toContain(MEMORY_MARKER); expect(f.sent.at(-1)).toContain("I prefer bash");
   await run.close(); admission.release();
 });
+
+// ── Project isolation also bounds which other sessions' raw history a turn may read ──
+async function historyTurn(f: Awaited<ReturnType<typeof fixture>>, id: string, mode: "chat" | "code", workspace: string | null, text: string) {
+  f.sessions.set(id, { id, mode, messages: [], modelProfileId: "luna", ...(workspace ? { workspaceBinding: binding(workspace) } : {}) });
+  f.select(id); await f.user(id, text, "u-" + id); await f.store.checkpoint(id);
+}
+it("a project session reads history from its own project and from unbound chats, never from another project", async () => {
+  const f = await fixture("code");
+  await historyTurn(f, "h-alpha", "code", "alpha", "zephyr alphamark");
+  await historyTurn(f, "h-beta", "code", "beta", "zephyr betamark");
+  await historyTurn(f, "h-chat", "chat", null, "zephyr chatmark");
+  const request = await turnIn(f, "ask-alpha", "code", "alpha", "zephyr");
+  expect(request).toContain("alphamark"); expect(request).toContain("chatmark"); expect(request).not.toContain("betamark");
+});
+
+it("an unbound session never reads project history", async () => {
+  const f = await fixture("code");
+  await historyTurn(f, "h-alpha", "code", "alpha", "zephyr alphamark");
+  await historyTurn(f, "h-chat", "chat", null, "zephyr chatmark");
+  const request = await turnIn(f, "ask-chat", "chat", null, "zephyr");
+  expect(request).toContain("chatmark"); expect(request).not.toContain("alphamark");
+});

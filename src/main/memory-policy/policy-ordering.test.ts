@@ -28,7 +28,7 @@ it.each(["I prefer bash","I now prefer bash"])("newer same-value support advance
  const f=fixture(),a=await f.integrate("I prefer bash",1000),original=structuredClone(f.repo.current("scope-a")[0]),evidence=f.repo.readRows("evidence","scope-a");
  const same=await f.integrate(text,3000);expect(same.result).toMatchObject({status:"active",factId:a.result.factId,factRevision:1,reason:"duplicate-support"});
  expect(f.repo.current("scope-a")[0]).toEqual(original);expect(f.repo.history("scope-a",original.factId)).toHaveLength(1);expect(f.repo.readRows("evidence","scope-a")).toEqual(evidence);
- f.reopen();const late=await f.integrate("I now prefer cmd instead of bash",2000);expect(late.result).toMatchObject({status:"candidate",reason:"out-of-order"});expect((await f.policy.recall(f.actor))[0]).toEqual(original);
+ f.reopen();const late=await f.integrate("I now prefer cmd instead of bash",2000);expect(late.result).toMatchObject({status:"candidate",reason:"out-of-order"});expect((await f.policy.recall(f.actor))[0]).toEqual({...original,scope:"global"});
  const audit=await f.policy.audit(f.actor,original.factId);expect(audit.supports.filter(s=>s.validity==="valid").map(s=>s.sourceRef.sourceId).sort()).toEqual([a.s.ref.sourceId,same.s.ref.sourceId].sort());
 });
 it.each([2000,3000])("older or equal-time denial cannot overrule the latest confirmation at 3000: %s",async at=>{

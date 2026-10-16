@@ -9,6 +9,8 @@ export interface FactView extends FactDraft {
  factId:string;revision:number;sourceRef:SourceRef;recordedAt:number;acceptedAt:number;
  supersededAt:number|null;activationReason:ActivationReason;policyVersion:string|null;
  provenance:{candidateId:string|null;evidenceId:string|null;activationSourceRef:SourceRef};
+ /** Where the fact applies: every session (`global`) or only the workspace it was learned in (`project`). Set by policy recall. */
+ scope?:"global"|"project";
 }
 export interface MutationResult {id:string;revision:number}
 export interface EvidenceInput {commandId:string;evidenceId:string;sourceRef:SourceRef;text:string}
