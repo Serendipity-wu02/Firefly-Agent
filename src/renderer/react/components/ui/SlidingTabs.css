@@ -1,0 +1,115 @@
+/* SlidingTabs: a capsule track with a thumb that slides to the selected tab.
+   Colours come from the shared --ff-* tokens, so both themes follow without extra rules. */
+.ff-sliding-tabs {
+  --ff-tabs-height: 32px;
+  --ff-tabs-pad: 2px;
+  position: relative;
+  display: flex;
+  flex: 0 1 auto;
+  flex-wrap: nowrap;
+  align-items: stretch;
+  box-sizing: border-box;
+  min-width: 0;
+  height: var(--ff-tabs-height);
+  padding: var(--ff-tabs-pad);
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--ff-text) 7%, transparent);
+  overflow-x: auto;
+  overflow-y: hidden;
+  scrollbar-width: none;
+  user-select: none;
+  app-region: no-drag;
+}
+.ff-sliding-tabs::-webkit-scrollbar { display: none; }
+.ff-sliding-tabs[data-size="sm"] { --ff-tabs-height: 28px; }
+.ff-sliding-tabs[data-stretch] { flex: 1 1 auto; }
+.ff-sliding-tabs[data-stretch] .ff-sliding-tabs__item { flex: 1 1 0; justify-content: center; }
+
+/* The thumb sits behind every tab and is positioned from the measured active tab. */
+.ff-sliding-tabs__thumb {
+  position: absolute;
+  top: var(--ff-tabs-pad);
+  bottom: var(--ff-tabs-pad);
+  left: 0;
+  z-index: 0;
+  border-radius: 999px;
+  background: var(--ff-surface);
+  box-shadow: inset 0 0 0 1px var(--ff-border), 0 1px 2px rgb(31 35 48 / 8%);
+  pointer-events: none;
+}
+.ff-sliding-tabs[data-settled] .ff-sliding-tabs__thumb {
+  transition: transform 180ms cubic-bezier(0.32, 0.72, 0, 1), width 180ms cubic-bezier(0.32, 0.72, 0, 1);
+}
+
+.ff-sliding-tabs__item {
+  position: relative;
+  z-index: 1;
+  display: inline-flex;
+  /* Tabs keep their own width (long names ellipsize at max-width); the track scrolls instead of squeezing them. */
+  flex: 0 0 auto;
+  align-items: center;
+  min-width: 0;
+  max-width: 200px;
+  border-radius: 999px;
+  color: var(--ff-text-muted);
+  transition: color 120ms ease, opacity 150ms ease, max-width 150ms ease-out;
+}
+.ff-sliding-tabs__item:hover { color: var(--ff-text); }
+.ff-sliding-tabs__item[data-active="true"] { color: var(--ff-text); }
+.ff-sliding-tabs__item.is-closing { max-width: 0; opacity: 0; overflow: hidden; }
+
+.ff-sliding-tabs__tab {
+  display: inline-flex;
+  flex: 1 1 auto;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+  height: 100%;
+  padding: 0 12px;
+  border: 0;
+  border-radius: 999px;
+  background: transparent;
+  color: inherit;
+  font: 500 12.5px/1 var(--rb-font-sans, sans-serif);
+  white-space: nowrap;
+  cursor: pointer;
+}
+.ff-sliding-tabs__item[data-closable] .ff-sliding-tabs__tab { padding-right: 6px; }
+.ff-sliding-tabs__tab:disabled { opacity: var(--ff-disabled-opacity, 0.5); cursor: default; }
+.ff-sliding-tabs__tab:focus-visible { outline: var(--ff-focus-ring, 2px solid var(--ff-accent)); outline-offset: -2px; }
+.ff-sliding-tabs__icon { display: inline-flex; flex: none; }
+.ff-sliding-tabs__label { min-width: 0; overflow: hidden; text-overflow: ellipsis; }
+
+/* The close control keeps its width so tabs do not jump; it shows on hover, focus and the selected tab. */
+.ff-sliding-tabs__close {
+  display: inline-grid;
+  flex: none;
+  place-items: center;
+  width: 18px;
+  height: 18px;
+  margin-right: 6px;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  background: transparent;
+  color: inherit;
+  cursor: pointer;
+  opacity: 0;
+  transition: opacity 120ms ease, background-color 120ms ease;
+}
+.ff-sliding-tabs__item:hover .ff-sliding-tabs__close,
+.ff-sliding-tabs__item:focus-within .ff-sliding-tabs__close,
+.ff-sliding-tabs__item[data-active="true"] .ff-sliding-tabs__close { opacity: 0.7; }
+.ff-sliding-tabs__close:hover:enabled { opacity: 1; background: var(--ff-bg-active); }
+.ff-sliding-tabs__close:focus-visible { opacity: 1; outline: var(--ff-focus-ring, 2px solid var(--ff-accent)); outline-offset: 1px; }
+.ff-sliding-tabs__close:disabled { cursor: default; }
+
+@media (prefers-reduced-motion: reduce) {
+  .ff-sliding-tabs[data-settled] .ff-sliding-tabs__thumb,
+  .ff-sliding-tabs__item,
+  .ff-sliding-tabs__close { transition: none; }
+}
+
+/* Custom colour mode: the track and thumb follow the generated palette so they stay paired with its foreground. */
+:root[data-ui-colors] .ff-sliding-tabs { background: var(--ff-bg-hover); }
+:root[data-ui-colors] .ff-sliding-tabs__thumb { background: var(--ff-bg-workspace); }

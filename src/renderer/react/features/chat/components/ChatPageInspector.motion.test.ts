@@ -34,7 +34,7 @@ describe("docked pane motion", () => {
     expect(css).not.toMatch(/translate|transform/);
   });
   it("hides the inspector's tab bar only when the browser is the single tab", () => {
-    expect(css).toMatch(/\.ff-chat-inspector\.is-browser-only \.ff-right-inspector__tabs > \.ant-tabs-nav \{\s*display: none;\s*\}/);
+    expect(css).toMatch(/\.ff-chat-inspector\.is-browser-only \.ff-right-inspector__bar \{\s*display: none;\s*\}/);
     expect(source).toContain("const browserOnly = tabs.length === 1 && tabs[0].id === \"browser\";");
   });
 });

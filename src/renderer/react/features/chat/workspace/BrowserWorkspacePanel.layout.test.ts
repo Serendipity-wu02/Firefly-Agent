@@ -46,7 +46,9 @@ it("keeps the committed URL compact and long addresses inside the inspector", ()
   expect(property(".ff-browser-workspace__toolbar", "background")).toBe("var(--ff-bg-workspace, var(--ff-surface))");
 });
 
-const tabsCss = readFileSync(new URL("./BrowserWorkspaceTabs.css", import.meta.url), "utf8");
+// The tab row is a SlidingTabs capsule, so its rules come from both stylesheets.
+const tabsCss = readFileSync(new URL("./BrowserWorkspaceTabs.css", import.meta.url), "utf8")
+  + "\n" + readFileSync(new URL("../../../components/ui/SlidingTabs.css", import.meta.url), "utf8");
 function tabsProperty(selector: string, name: string): string {
   const dom = new JSDOM(`<style>${tabsCss}</style>`);
   const rules = [...dom.window.document.styleSheets[0].cssRules] as CSSStyleRule[];
@@ -55,10 +57,11 @@ function tabsProperty(selector: string, name: string): string {
   dom.window.close(); return value;
 }
 it("keeps tabs in one scrollable row and the close control reachable by hover, focus and selection", () => {
-  expect(tabsProperty(".ff-browser-window__tabs", "flex-wrap")).toBe("nowrap");
-  expect(tabsProperty(".ff-browser-window__tabs", "overflow-x")).toBe("auto");
-  expect(tabsProperty(".ff-browser-window__tab > button[data-browser-close-tab]", "opacity")).toBe("0");
-  expect(tabsProperty(".ff-browser-window__tab:focus-within > button[data-browser-close-tab]", "opacity")).toBe("1");
+  expect(tabsProperty(".ff-sliding-tabs", "flex-wrap")).toBe("nowrap");
+  expect(tabsProperty(".ff-sliding-tabs", "overflow-x")).toBe("auto");
+  expect(tabsProperty(".ff-sliding-tabs__close", "opacity")).toBe("0");
+  expect(tabsProperty(".ff-sliding-tabs__item:focus-within .ff-sliding-tabs__close", "opacity")).not.toBe("0");
+  expect(tabsProperty(".ff-sliding-tabs__item[data-active=\"true\"] .ff-sliding-tabs__close", "opacity")).not.toBe("0");
 });
 it("shows load progress without removing the committed address row", () => {
   expect(property(".ff-browser-workspace__toolbar[data-browser-busy]::after", "animation")).toContain("ff-browser-load");
@@ -90,13 +93,13 @@ it("groups back and forward in one outlined pill and draws reload, download and 
 
 it("opens and closes a tab in about 150ms, collapsing its width and fading it", () => {
   expect(tabsProperty(".ff-browser-window__tab", "animation")).toContain("ff-browser-tab-in 150ms");
-  expect(tabsProperty(".ff-browser-window__tab.is-closing", "opacity")).toBe("0");
-  expect(tabsProperty(".ff-browser-window__tab.is-closing", "max-width")).toBe("0px");
-  expect(tabsProperty(".ff-browser-window__tab", "transition")).toContain("150ms");
+  expect(tabsProperty(".ff-sliding-tabs__item.is-closing", "opacity")).toBe("0");
+  expect(tabsProperty(".ff-sliding-tabs__item.is-closing", "max-width")).toBe("0px");
+  expect(tabsProperty(".ff-sliding-tabs__item", "transition")).toContain("150ms");
 });
 
 it("aligns the tab strip with the chat header's shared 48px row", () => {
   expect(tabsProperty(".ff-browser-window__strip", "height")).toBe("var(--ff-workspace-header-height, 48px)");
   expect(tabsProperty(".ff-browser-window__strip", "border-bottom")).toContain("var(--ff-border)");
-  expect(tabsProperty(".ff-browser-window__tab > button[role=\"tab\"]", "border-radius")).toBe("16px");
+  expect(tabsProperty(".ff-sliding-tabs", "border-radius")).toBe("999px");
 });

@@ -7,6 +7,7 @@ const sources = {
   inspector: readFileSync(new URL("../react/features/chat/components/RightInspector.css", import.meta.url), "utf8"),
   theme: readFileSync(new URL("./theme.css", import.meta.url), "utf8"),
   messages: readFileSync(new URL("../react/features/chat/components/ChatMessageList.css", import.meta.url), "utf8"),
+  tabs: readFileSync(new URL("../react/components/ui/SlidingTabs.css", import.meta.url), "utf8"),
 };
 function value(file: keyof typeof sources, selector: string, property: string, media?: string): string {
   const dom = new JSDOM(`<style>${sources[file]}</style>`);
@@ -53,7 +54,7 @@ describe("Codex-reference workbench presentation", () => {
     expect(value("root", ":root", "--ff-workspace-header-height")).toBe("48px");
     expect(value("root", ".ff-workspace-header", "height")).toBe("var(--ff-workspace-header-height)");
     expect(value("root", ".ff-page-titlebar", "height")).toBe("var(--ff-app-titlebar-height)");
-    expect(value("inspector", ".ff-right-inspector__tabs > .ant-tabs-nav", "height"))
+    expect(value("inspector", ".ff-right-inspector__bar", "height"))
       .toBe("var(--ff-workspace-header-height)");
   });
   it("keeps the titlebar clear when the narrow sidebar floats over the workspace", () => {
@@ -75,8 +76,10 @@ describe("Codex-reference workbench presentation", () => {
     expect(value("root", ".ff-sidebar-resizer::after", "background")).toBe("var(--ff-border)");
   });
   it("uses rounded tab chips and keeps native browser bounds stable during entry", () => {
-    expect(value("inspector", ".ff-right-inspector__tabs.ant-tabs .ant-tabs-tab", "border-radius")).toBe("12px");
-    expect(value("inspector", ".ff-right-inspector__tabs .ant-tabs-tab.ant-tabs-tab-active", "box-shadow")).toBe("none");
+    // One capsule strip serves every tab row; its thumb slides to the selected tab.
+    expect(value("tabs", ".ff-sliding-tabs", "border-radius")).toBe("999px");
+    expect(value("tabs", ".ff-sliding-tabs__thumb", "border-radius")).toBe("999px");
+    expect(value("tabs", ".ff-sliding-tabs__thumb", "pointer-events")).toBe("none");
     expect(sources.inspector).not.toContain("transform: translateX");
   });
   it("centres the empty-state greeting in the free space and docks the composer at the bottom, without changing the composer's component lifetime", () => {
