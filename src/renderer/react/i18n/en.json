@@ -972,6 +972,24 @@
       "printStarted": "The print dialog is open."
     }
   },
+  "sessionOverview": {
+    "title": "Session overview",
+    "tab": "Overview",
+    "open": "Open session overview",
+    "tasks": "Background tasks",
+    "tasksRunning": "{{count}} running",
+    "tasksFinished": "{{count}} finished",
+    "tasksFailed": "{{count}} failed",
+    "tasksEmpty": "No background tasks",
+    "context": "Context",
+    "contextUsed": "{{percent}}% used",
+    "contextUsedUnknown": "Used",
+    "contextFree": "Free space",
+    "contextEmpty": "Context usage appears after you send a message",
+    "contextEstimate": "Estimated from text length, not the provider's reported usage.",
+    "changes": "Changes",
+    "changesEmpty": "No file changes in this session yet"
+  },
   "workspace": {
     "resizeSidebar": "Resize conversation sidebar",
     "tasks": "Tasks and project",
