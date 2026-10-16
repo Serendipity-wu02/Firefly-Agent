@@ -79,7 +79,10 @@ import {
   findSessionIdForRun,
   hasActiveRunForSession,
   isCurrentRunBusy,
+  removeInteractionById,
+  removeSessionInteractionsWhere,
   sessionInteraction,
+  sessionInteractionPending,
   setSessionInteraction,
   setSessionInteractionBusy,
   type SessionInteractionState,
@@ -290,16 +293,7 @@ export function ChatPage() {
     // 结算广播：pending 已在主进程被结算（用户已答 / run 取消），
     // 渲染端据此立即清卡——这是「僵尸审批卡（点了没反应）」的根治点。
     const offSettled = settings.onPermissionApprovalSettled((settlement) => {
-      setInteractionsBySession((current) => {
-        for (const [sessionId, entry] of Object.entries(current)) {
-          if (entry.interaction.kind === "permission" && entry.interaction.id === settlement.id) {
-            const next = { ...current };
-            delete next[sessionId];
-            return next;
-          }
-        }
-        return current;
-      });
+      setInteractionsBySession((current) => removeInteractionById(current, "permission", settlement.id));
     });
     return () => {
       offRequest();
@@ -331,16 +325,7 @@ export function ChatPage() {
     });
     const offSettled = settings.onPopQuizSettled((settlement) => {
       if (settlement.reason === "submitted") return;
-      setInteractionsBySession((current) => {
-        for (const [sessionId, entry] of Object.entries(current)) {
-          if (entry.interaction.kind === "quiz" && entry.interaction.id === settlement.quizId) {
-            const next = { ...current };
-            delete next[sessionId];
-            return next;
-          }
-        }
-        return current;
-      });
+      setInteractionsBySession((current) => removeInteractionById(current, "quiz", settlement.quizId));
     });
     return () => {
       offRequest();
@@ -384,6 +369,7 @@ export function ChatPage() {
   const activeInteraction = sessionInteraction(interactionsBySession, activeSessionId);
   const composerInteraction = activeInteraction?.interaction;
   const interactionBusy = activeInteraction?.busy ?? false;
+  const interactionPending = sessionInteractionPending(activeInteraction);
   const hasMessages = messages.length > 0;
   const {
     attachments,
@@ -585,11 +571,11 @@ export function ChatPage() {
       if (event.name === "firefly.choice.dismiss") {
         // run 事件闸之外的 dismiss（老版选择卡超时 / run 结束后发出的结算）：
         // 匹配当前 ask 卡时清掉，避免留下点不出结果的僵尸卡。
-        setInteractionsBySession((current) => {
-          const entry = current[activeSessionId];
-          if (!entry || entry.interaction.kind !== "ask" || !shouldDismissAsk(entry.interaction, event.value)) return current;
-          return clearSessionInteraction(current, activeSessionId);
-        });
+        setInteractionsBySession((current) => removeSessionInteractionsWhere(
+          current,
+          activeSessionId,
+          (interaction) => interaction.kind === "ask" && shouldDismissAsk(interaction, event.value),
+        ));
         return;
       }
       if (!event.name.startsWith("firefly.plan.")) return;
@@ -642,8 +628,8 @@ export function ChatPage() {
     setInteractionsBySession((current) => setSessionInteraction(current, sessionId, interaction));
   }
 
-  function clearInteractionForSession(sessionId: string): void {
-    setInteractionsBySession((current) => clearSessionInteraction(current, sessionId));
+  function clearInteractionForSession(sessionId: string, interactionId?: string): void {
+    setInteractionsBySession((current) => clearSessionInteraction(current, sessionId, interactionId));
   }
 
   function setInteractionBusyForSession(sessionId: string, busy: boolean): void {
@@ -819,11 +805,11 @@ export function ChatPage() {
           });
         },
         dismissAskIfMatched: (sessionId, value) => {
-          setInteractionsBySession((current) => {
-            const interaction = sessionInteraction(current, sessionId)?.interaction;
-            if (interaction?.kind !== "ask" || !shouldDismissAsk(interaction, value)) return current;
-            return clearSessionInteraction(current, sessionId);
-          });
+          setInteractionsBySession((current) => removeSessionInteractionsWhere(
+            current,
+            sessionId,
+            (interaction) => interaction.kind === "ask" && shouldDismissAsk(interaction, value),
+          ));
         },
         updateTodos: (_sessionId, updater) => setTodoStateBySession((current) => updater(current)),
         updateContextUsage: (sessionId, snapshot) => setSessionContextUsageBySession((current) => ({
@@ -1683,6 +1669,7 @@ export function ChatPage() {
             />}
             interaction={composerInteraction}
             interactionBusy={interactionBusy}
+            interactionPending={interactionPending}
             onAnswer={(id, answer) => {
               if (!activeSessionId) return;
               const choice = choiceApi();
@@ -1694,7 +1681,7 @@ export function ChatPage() {
                 if (result.ok) {
                   runCheckpointBySessionRef.current[activeSessionId]?.("running");
                 }
-                clearInteractionForSession(activeSessionId);
+                clearInteractionForSession(activeSessionId, id);
                 setInteractionBusyForSession(activeSessionId, false);
               }).catch(() => setInteractionBusyForSession(activeSessionId, false));
             }}
@@ -1708,7 +1695,7 @@ export function ChatPage() {
                 if (result.ok) {
                   runCheckpointBySessionRef.current[activeSessionId]?.("running");
                 }
-                clearInteractionForSession(activeSessionId);
+                clearInteractionForSession(activeSessionId, id);
                 setInteractionBusyForSession(activeSessionId, false);
               }).catch(() => setInteractionBusyForSession(activeSessionId, false));
             }}
@@ -1723,7 +1710,7 @@ export function ChatPage() {
                 if (result.ok) {
                   runCheckpointBySessionRef.current[activeSessionId]?.("running");
                 }
-                clearInteractionForSession(activeSessionId);
+                clearInteractionForSession(activeSessionId, id);
                 setInteractionBusyForSession(activeSessionId, false);
               }).catch(() => setInteractionBusyForSession(activeSessionId, false));
             }}

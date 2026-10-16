@@ -504,6 +504,7 @@
   "interaction": {
     "askingTitle": "I need to ask you something",
     "permissionTitle": "Waiting for your approval",
+    "pendingMore": "{{count}} more waiting",
     "pagerAria": "Switch question",
     "prevQuestion": "Previous question",
     "nextQuestion": "Next question",

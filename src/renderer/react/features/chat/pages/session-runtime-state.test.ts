@@ -14,8 +14,11 @@ import {
   mergeHarnessTodosForSession,
   patchSessionMessage,
   recoverInterruptedMessage,
+  removeInteractionById,
   sessionInteraction,
+  sessionInteractionPending,
   setSessionInteraction,
+  setSessionInteractionBusy,
   startSessionTodos,
 } from "./session-runtime-state";
 
@@ -100,6 +103,111 @@ describe("session runtime presentation state", () => {
 
     expect(sessionInteraction(next, "session-a")).toBeUndefined();
     expect(sessionInteraction(next, "session-b")?.interaction.id).toBe("ask-b");
+  });
+
+  describe("interaction queue", () => {
+    const permission = (id: string): ComposerInteraction => ({
+      kind: "permission",
+      id,
+      toolName: "write_file",
+      summary: id,
+    });
+
+    it("queues a second approval instead of overwriting the visible one", () => {
+      const state = setSessionInteraction(
+        setSessionInteraction({}, "s", permission("p1")),
+        "s",
+        permission("p2"),
+      );
+
+      const entry = sessionInteraction(state, "s");
+      expect(entry?.interaction.id).toBe("p1");
+      expect(entry?.queued.map((item) => item.id)).toEqual(["p2"]);
+      expect(sessionInteractionPending(entry)).toBe(1);
+    });
+
+    it("treats a main-process replay of a known request as the same card", () => {
+      const first = setSessionInteraction(
+        setSessionInteraction({}, "s", permission("p1")),
+        "s",
+        permission("p2"),
+      );
+      const replayed = setSessionInteraction(setSessionInteraction(first, "s", permission("p1")), "s", permission("p2"));
+
+      const entry = sessionInteraction(replayed, "s");
+      expect(entry?.interaction.id).toBe("p1");
+      expect(entry?.queued.map((item) => item.id)).toEqual(["p2"]);
+    });
+
+    it("does not let an identical id of another kind collapse into the card", () => {
+      const state = setSessionInteraction(setSessionInteraction({}, "s", permission("x")), "s", ask("x"));
+
+      expect(sessionInteraction(state, "s")?.queued.map((item) => item.kind)).toEqual(["ask"]);
+    });
+
+    it("promotes the next card, with a fresh busy flag, once the visible one is cleared", () => {
+      const busy = setSessionInteractionBusy(
+        setSessionInteraction(setSessionInteraction({}, "s", permission("p1")), "s", permission("p2")),
+        "s",
+        true,
+      );
+
+      const next = clearSessionInteraction(busy, "s", "p1");
+
+      expect(sessionInteraction(next, "s")?.interaction.id).toBe("p2");
+      expect(sessionInteraction(next, "s")?.busy).toBe(false);
+      expect(sessionInteraction(next, "s")?.queued).toEqual([]);
+    });
+
+    it("drops every card of the session when no id is given (run terminal)", () => {
+      const state = setSessionInteraction(
+        setSessionInteraction({}, "s", permission("p1")),
+        "s",
+        permission("p2"),
+      );
+
+      expect(sessionInteraction(clearSessionInteraction(state, "s"), "s")).toBeUndefined();
+    });
+
+    it("clears a queued card by id without touching the visible one", () => {
+      const state = setSessionInteraction(
+        setSessionInteraction({}, "s", permission("p1")),
+        "s",
+        permission("p2"),
+      );
+
+      const next = clearSessionInteraction(state, "s", "p2");
+
+      expect(sessionInteraction(next, "s")?.interaction.id).toBe("p1");
+      expect(sessionInteraction(next, "s")?.queued).toEqual([]);
+    });
+
+    it("ignores a clear for an id that is not pending", () => {
+      const state = setSessionInteraction({}, "s", permission("p1"));
+
+      expect(clearSessionInteraction(state, "s", "gone")).toBe(state);
+    });
+
+    it("removes a settled card from any session, queue position included", () => {
+      const state = setSessionInteraction(
+        setSessionInteraction(setSessionInteraction({}, "a", permission("p1")), "a", permission("p2")),
+        "b",
+        permission("p3"),
+      );
+
+      const next = removeInteractionById(removeInteractionById(state, "permission", "p2"), "permission", "p3");
+
+      expect(sessionInteraction(next, "a")?.interaction.id).toBe("p1");
+      expect(sessionInteraction(next, "a")?.queued).toEqual([]);
+      expect(sessionInteraction(next, "b")).toBeUndefined();
+    });
+
+    it("leaves the state untouched when the settled card is unknown", () => {
+      const state = setSessionInteraction({}, "a", permission("p1"));
+
+      expect(removeInteractionById(state, "permission", "other")).toBe(state);
+      expect(removeInteractionById(state, "quiz", "p1")).toBe(state);
+    });
   });
 
   it("keeps updating the background session message", () => {

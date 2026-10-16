@@ -5,11 +5,18 @@ import type { TodoItem } from "../../../../../shared/todo-types";
 import { t } from "../../../i18n";
 
 export interface SessionInteractionEntry {
+  /** 当前展示的卡片。 */
   interaction: ComposerInteraction;
   busy: boolean;
+  /** 已到达、等待当前卡片处理完后依次展示的卡片（并行子 agent 可同时挂起多个审批）。 */
+  queued: ComposerInteraction[];
 }
 
 export type SessionInteractionState = Record<string, SessionInteractionEntry>;
+
+function isSameInteraction(a: ComposerInteraction, kind: ComposerInteraction["kind"], id: string): boolean {
+  return a.kind === kind && a.id === id;
+}
 
 export function bindWorkspaceName(
   state: Partial<Record<ConversationMode, string>>,
@@ -26,23 +33,93 @@ export function sessionInteraction(
   return sessionId ? state[sessionId] : undefined;
 }
 
+/** 展示卡片之外还在排队的数量。 */
+export function sessionInteractionPending(entry: SessionInteractionEntry | undefined): number {
+  return entry?.queued.length ?? 0;
+}
+
+/**
+ * 登记一张到达的卡片。同 kind + id 视为主进程的幂等重播：原位刷新内容、不改顺序、不重置 busy；
+ * 新卡片排在已有卡片之后，不覆盖正在展示的那张。
+ */
 export function setSessionInteraction(
   state: SessionInteractionState,
   sessionId: string,
   interaction: ComposerInteraction,
   busy = false,
 ): SessionInteractionState {
-  return { ...state, [sessionId]: { interaction, busy } };
+  const current = state[sessionId];
+  if (!current) return { ...state, [sessionId]: { interaction, busy, queued: [] } };
+  if (isSameInteraction(current.interaction, interaction.kind, interaction.id)) {
+    return { ...state, [sessionId]: { ...current, interaction } };
+  }
+  const queuedIndex = current.queued.findIndex((item) => isSameInteraction(item, interaction.kind, interaction.id));
+  const queued = queuedIndex < 0
+    ? [...current.queued, interaction]
+    : current.queued.map((item, index) => (index === queuedIndex ? interaction : item));
+  return { ...state, [sessionId]: { ...current, queued } };
 }
 
+/** 去掉一张卡片并推进队列；队列为空则删掉该会话条目。 */
+function dropInteraction(
+  state: SessionInteractionState,
+  sessionId: string,
+  kind: ComposerInteraction["kind"],
+  id: string,
+): SessionInteractionState {
+  const current = state[sessionId];
+  if (!current) return state;
+  if (isSameInteraction(current.interaction, kind, id)) {
+    const [head, ...rest] = current.queued;
+    const next = { ...state };
+    if (head) next[sessionId] = { interaction: head, busy: false, queued: rest };
+    else delete next[sessionId];
+    return next;
+  }
+  if (!current.queued.some((item) => isSameInteraction(item, kind, id))) return state;
+  return {
+    ...state,
+    [sessionId]: { ...current, queued: current.queued.filter((item) => !isSameInteraction(item, kind, id)) },
+  };
+}
+
+/** 不带 id：清掉该会话的全部卡片（run 终态）；带 id：只清这一张（展示中或排队中）并推进队列。 */
 export function clearSessionInteraction(
   state: SessionInteractionState,
   sessionId: string,
+  id?: string,
 ): SessionInteractionState {
-  if (!state[sessionId]) return state;
-  const next = { ...state };
-  delete next[sessionId];
-  return next;
+  const current = state[sessionId];
+  if (!current) return state;
+  if (id === undefined) {
+    const next = { ...state };
+    delete next[sessionId];
+    return next;
+  }
+  const target = [current.interaction, ...current.queued].find((item) => item.id === id);
+  return target ? dropInteraction(state, sessionId, target.kind, id) : state;
+}
+
+/** 清掉该会话中满足条件的卡片（展示中或排队中），按序推进队列。 */
+export function removeSessionInteractionsWhere(
+  state: SessionInteractionState,
+  sessionId: string,
+  predicate: (interaction: ComposerInteraction) => boolean,
+): SessionInteractionState {
+  const current = state[sessionId];
+  if (!current) return state;
+  return [current.interaction, ...current.queued]
+    .filter(predicate)
+    .reduce((acc, item) => dropInteraction(acc, sessionId, item.kind, item.id), state);
+}
+
+/** 主进程广播某张卡片已结算：不论它在哪个会话、排第几位，都清掉。 */
+export function removeInteractionById(
+  state: SessionInteractionState,
+  kind: ComposerInteraction["kind"],
+  id: string,
+): SessionInteractionState {
+  return Object.keys(state).reduce((acc, sessionId) => dropInteraction(acc, sessionId, kind, id), state);
 }
 
 export function setSessionInteractionBusy(

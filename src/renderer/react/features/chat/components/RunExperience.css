@@ -152,6 +152,22 @@
 }
 
 .ff-composer-slot__composer { opacity: 1; transform: translateY(0); }
+/* Approvals queue up when several agents ask at once; this pill says how many sit behind the visible card. */
+.ff-composer-slot__pending {
+  position: absolute;
+  top: 0;
+  left: 50%;
+  z-index: 2;
+  padding: 2px 10px;
+  border: 1px solid var(--ff-border);
+  border-radius: 999px;
+  background: var(--ff-bg-workspace, var(--ff-surface));
+  color: var(--ff-text-muted);
+  font-size: 11px;
+  line-height: 18px;
+  pointer-events: none;
+  transform: translate(-50%, -50%);
+}
 .ff-composer-slot__interaction { z-index: 1; animation: ff-interaction-enter 220ms ease both; }
 .ff-composer-slot.is-ask .ff-composer-slot__composer,
 .ff-composer-slot.is-permission .ff-composer-slot__composer,
