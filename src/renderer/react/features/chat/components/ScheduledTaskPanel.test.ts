@@ -465,6 +465,33 @@ describe("ScheduledTaskPanel — review follow-ups", () => {
     expect(text()).toContain("失败");
   });
 
+  it("refreshes only the history of the task a run event names, and every open history on focus", async () => {
+    const second: ScheduledTask = { ...DAILY_TASK, id: "task-second", title: "每周报告" };
+    const api = installScheduler({ list: vi.fn(async () => ({ ok: true, value: [DAILY_TASK, second] })) });
+    (window as unknown as Record<string, unknown>).schedulerEvents = { onEvent: vi.fn((callback: Listener) => { emit = callback; return () => { emit = undefined; }; }) };
+    await renderPanel();
+    for (const button of [...container.querySelectorAll<HTMLButtonElement>("button")].filter((b) => b.textContent?.trim() === "历史")) await click(button);
+    const calls = () => api.getHistory.mock.calls.map((call) => call[0]);
+    expect(calls().sort()).toEqual(["task-daily", "task-second"]);
+    api.getHistory.mockClear();
+    await act(async () => { emit!({ type: "RUN_FINISHED", schedulerTaskId: "task-second", schedulerRunId: "r1" }); });
+    await flush();
+    expect(calls()).toEqual(["task-second"]);
+    api.getHistory.mockClear();
+    await act(async () => { emit!({ type: "CUSTOM", name: "scheduler.started", schedulerTaskId: "task-daily", value: {} }); });
+    await flush();
+    expect(calls()).toEqual(["task-daily"]);
+    api.getHistory.mockClear();
+    await act(async () => { window.dispatchEvent(new Event("focus")); });
+    await flush();
+    expect(calls().sort()).toEqual(["task-daily", "task-second"]);
+    // An event that does not say which task it belongs to cannot be narrowed, so every open history is refreshed.
+    api.getHistory.mockClear();
+    await act(async () => { emit!({ type: "RUN_ERROR", message: "x" }); });
+    await flush();
+    expect(calls().sort()).toEqual(["task-daily", "task-second"]);
+  });
+
   it("does not fetch history for tasks whose history is collapsed", async () => {
     const api = installScheduler();
     (window as unknown as Record<string, unknown>).schedulerEvents = { onEvent: vi.fn((callback: Listener) => { emit = callback; return () => { emit = undefined; }; }) };
