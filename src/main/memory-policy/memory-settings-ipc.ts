@@ -62,12 +62,16 @@ function fact(item: FactView): FactView {
   return { factId: item.factId, revision: item.revision, subjectKey: item.subjectKey, assertion: item.assertion, assertionKind: item.assertionKind,
     time: { validFrom: item.time.validFrom, validTo: item.time.validTo, referenceTime: item.time.referenceTime }, sourceRef: source(item.sourceRef),
     recordedAt: item.recordedAt, acceptedAt: item.acceptedAt, supersededAt: item.supersededAt, activationReason: item.activationReason, policyVersion: item.policyVersion,
-    provenance: { candidateId: item.provenance.candidateId, evidenceId: item.provenance.evidenceId, activationSourceRef: source(item.provenance.activationSourceRef) } };
+    provenance: { candidateId: item.provenance.candidateId, evidenceId: item.provenance.evidenceId, activationSourceRef: source(item.provenance.activationSourceRef) },
+    ...(item.scope === "global" || item.scope === "project" ? { scope: item.scope } : {}),
+    ...(typeof item.projectName === "string" && item.projectName ? { projectName: item.projectName.slice(0, 200) } : {}) };
 }
 function stateDto(state: MemoryPanelState): MemoryPanelState {
   const c = state.coverage;
   return { facts: state.facts.map(fact), candidates: state.candidates.map((item) => ({ candidateId: item.candidateId, revision: item.revision, attribute: item.attribute,
-    value: item.value, assertion: item.assertion, reason: item.reason, sourceRef: source(item.sourceRef), ...(item.occurredAt !== undefined ? { occurredAt: item.occurredAt } : {}) })),
+    value: item.value, assertion: item.assertion, reason: item.reason, sourceRef: source(item.sourceRef), ...(item.occurredAt !== undefined ? { occurredAt: item.occurredAt } : {}),
+      ...(item.scope === "global" || item.scope === "project" ? { scope: item.scope } : {}),
+      ...(typeof item.projectName === "string" && item.projectName ? { projectName: item.projectName.slice(0, 200) } : {}) })),
     backendStatus: { available: state.backendStatus.available, ...(state.backendStatus.reason ? { reason: state.backendStatus.reason } : {}) },
     coverage: { status: c.status, ...(c.reason ? { reason: c.reason } : {}), population: c.population, present: c.present, missing: c.missing, unknownDenied: c.unknownDenied,
       exactRatio: c.exactRatio, lowerRatio: c.lowerRatio, upperRatio: c.upperRatio, reasons: { ...c.reasons }, evidence: { status: "not-evaluated", eligible: null, ineligible: null, unknown: c.evidence.unknown, ratio: null } } };

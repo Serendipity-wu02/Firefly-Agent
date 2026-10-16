@@ -1517,7 +1517,6 @@ export function ChatPage() {
   const navCloseWindow = useCallback(() => window.chat?.close(), []);
   const navOpenSettings = useCallback(() => sidebarApi()?.openSettings("general"), []);
   const navOpenApiSettings = useCallback(() => sidebarApi()?.openSettings("api"), []);
-  const navOpenScheduledTasks = useCallback(() => sidebarApi()?.openSettings("tasks"), []);
   const activeSessionTitle = sessions.find(session => session.id === activeSessionId)?.title
     || (activeSession && activeSession.id === activeSessionId ? activeSession.title : "")
     || t("chatPage.newTaskTitle");
@@ -1551,7 +1550,6 @@ export function ChatPage() {
         onCloseWindow={navCloseWindow}
         onOpenSettings={navOpenSettings}
         onOpenApiSettings={navOpenApiSettings}
-        onOpenScheduledTasks={navOpenScheduledTasks}
       />
       {/* 右栏可拖宽布局：聊天区 Panel 常驻（保证内容不重挂载），右侧面板按需挂载 */}
       <Group

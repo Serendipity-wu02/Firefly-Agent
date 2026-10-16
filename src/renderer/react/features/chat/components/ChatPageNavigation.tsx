@@ -22,7 +22,7 @@ import { ModelConnectionIndicator } from "./ModelConnectionIndicator";
 import { useSidebarWidth } from "../pages/useSidebarWidth";
 import { reportChatPerfRender } from "./chat-perf-probe";
 
-export type ChatPagePanel = "tool" | "skill" | "model" | "plugin";
+export type ChatPagePanel = "tool" | "skill" | "model" | "plugin" | "scheduled";
 
 export interface ChatPageNavigationProps {
   collapsed: boolean;
@@ -51,8 +51,6 @@ export interface ChatPageNavigationProps {
   onCloseWindow: () => void;
   onOpenSettings: () => void;
   onOpenApiSettings?: () => void;
-  /** 打开设置窗口的“定时任务”页（不在设置导航里，只从这里进入）。 */
-  onOpenScheduledTasks?: () => void;
 }
 
 // 阶段 1A：memo 隔离——ChatPage 流式重渲染时，只要 props 引用稳定（sessions/回调由父级保证），
@@ -82,7 +80,6 @@ export const ChatPageNavigation = React.memo(function ChatPageNavigation({
   onCloseWindow,
   onOpenSettings,
   onOpenApiSettings,
-  onOpenScheduledTasks,
 }: ChatPageNavigationProps) {
   // 性能探针：perf harness 注册后统计导航子树执行次数（阶段 1A 验收：流式期间应为 0）
   reportChatPerfRender("navigationRenders");
@@ -150,11 +147,7 @@ export const ChatPageNavigation = React.memo(function ChatPageNavigation({
     onTogglePanel(panel);
     moreRef.current?.focus();
   };
-  const chooseScheduledTasks = () => {
-    setMoreOpen(false);
-    onOpenScheduledTasks?.();
-    moreRef.current?.focus();
-  };
+  const chooseScheduledTasks = () => chooseMorePanel("scheduled");
 
   const resizeHandle = <div className={`ff-sidebar-resizer ${sidebar.isResizing ? "is-resizing" : ""}`} role="separator" tabIndex={0}
         aria-label={t("workspace.resizeSidebar")} aria-orientation="vertical"
@@ -170,7 +163,7 @@ export const ChatPageNavigation = React.memo(function ChatPageNavigation({
           sidebar.resizeBy(delta);
         }} />;
 
-  const morePanelActive = activePanel === "tool" || activePanel === "skill" || activePanel === "model";
+  const morePanelActive = activePanel === "tool" || activePanel === "skill" || activePanel === "model" || activePanel === "scheduled";
   return (
     <>
       <header className="ff-page-titlebar">
@@ -220,7 +213,7 @@ export const ChatPageNavigation = React.memo(function ChatPageNavigation({
                 <ToolModeButton active={activePanel === "tool"} onClick={() => chooseMorePanel("tool")} />
                 <SkillModeButton active={activePanel === "skill"} onClick={() => chooseMorePanel("skill")} />
                 <ModelModeButton active={activePanel === "model"} onClick={() => chooseMorePanel("model")} />
-                <button type="button" className="ff-side-action" onClick={chooseScheduledTasks} title={t("ui.scheduledTasks")} aria-label={t("ui.scheduledTasks")}>
+                <button type="button" className={`ff-side-action ${activePanel === "scheduled" ? "is-active" : ""}`} onClick={chooseScheduledTasks} title={t("ui.scheduledTasks")} aria-label={t("ui.scheduledTasks")} aria-pressed={activePanel === "scheduled"}>
                   <span className="ff-side-action-icon"><CalendarClock size={16} strokeWidth={1.8} aria-hidden="true" /></span>
                   <span className="ff-side-action-label">{t("ui.scheduledTasks")}</span>
                 </button>
