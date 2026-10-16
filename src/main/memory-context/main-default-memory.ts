@@ -58,6 +58,8 @@ export interface DefaultMemoryHistoryCoverage {
   readonly selected: number;
   readonly covered: number;
   readonly diagnostics: readonly string[];
+  /** Absent until a query ran. Anything but `complete` means a budget cut the retrieval short, whatever `covered` says. */
+  readonly retrieval?: "complete" | "index-budget-exhausted" | "excerpt-budget-exhausted";
 }
 export interface MainDefaultMemoryOptions extends Pick<AuthorityOptions, "getChatWindow" | "targets"> {
   getSettingsWindow?(): Pick<BrowserWindow, "webContents" | "isDestroyed"> | null;
@@ -310,7 +312,9 @@ export function createMainDefaultMemory(options: MainDefaultMemoryOptions) {
                   },
                   query: async covered => {
                     const partition = history.grantSessions(state.actor, covered, { includeCurrent: false });
-                    return (await history.query(state.actor, { query: current.userText, scope: partition, signal })).evidence;
+                    // The index status travels with the evidence: an exhausted budget is a gap in the result.
+                    const retrieved = await history.query(state.actor, { query: current.userText, scope: partition, signal });
+                    return { evidence: retrieved.evidence, status: retrieved.status };
                   },
                 });
                 status(id, result.coverage);

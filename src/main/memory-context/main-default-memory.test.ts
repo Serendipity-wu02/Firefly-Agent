@@ -208,6 +208,28 @@ it("waits for the actual pending provider settlement before closing the backend"
   expect((await f.store.read("session-a")).entries.map(entry => entry.kind)).toEqual(["user"]);
 });
 
+it("reports an exhausted history excerpt budget as an incomplete result, not as complete coverage", async () => {
+  const f = await fixture(); await f.user("session-a", "harbor " + "x".repeat(7000)); await f.store.checkpoint("session-a");
+  f.sessions.set("session-b", { id: "session-b", mode: "code", messages: [], modelProfileId: "luna" }); f.select("session-b");
+  await f.user("session-b", "harbor current question"); f.memory.authorizeRun(f.event, "session-b");
+  const run = await f.memory.openRun(f.input("session-b", "run-b"));
+  await expect(run.call(f.call())).resolves.toMatchObject({ text: "synthetic answer" });
+  expect(f.memory.getHistoryCoverage("session-b")).toMatchObject({ status: "insufficient", selected: 1, covered: 1, retrieval: "excerpt-budget-exhausted" });
+  expect(f.memory.getHistoryCoverage("session-b").diagnostics).toContain("MEMORY_HISTORY_EXCERPT_BUDGET_EXHAUSTED");
+  expect(f.sent[0]).toContain("历史检索结果不完整"); expect(f.sent[0]).toContain("MEMORY_HISTORY_EXCERPT_BUDGET_EXHAUSTED"); expect(f.sent[0]).toContain("不能据此断言历史不存在");
+  await run.close();
+});
+
+it("keeps complete coverage and sends no incomplete-result notice when the history fits its budgets", async () => {
+  const f = await fixture(); await f.user("session-a", "harbor prior discussion"); await f.store.checkpoint("session-a");
+  f.sessions.set("session-b", { id: "session-b", mode: "code", messages: [], modelProfileId: "luna" }); f.select("session-b");
+  await f.user("session-b", "harbor current question"); f.memory.authorizeRun(f.event, "session-b");
+  const run = await f.memory.openRun(f.input("session-b", "run-b")); await run.call(f.call());
+  expect(f.memory.getHistoryCoverage("session-b")).toMatchObject({ status: "complete", selected: 1, covered: 1, retrieval: "complete" });
+  expect(f.sent[0]).not.toContain("历史检索结果不完整");
+  await run.close();
+});
+
 it("refreshes coverage diagnostics when a retry fails for a different verified reason", async () => {
   const f = await fixture(); await f.user("session-a", "harbor prior discussion");
   f.sessions.set("session-b", { id: "session-b", mode: "work", messages: [], modelProfileId: "luna" }); f.select("session-b");
