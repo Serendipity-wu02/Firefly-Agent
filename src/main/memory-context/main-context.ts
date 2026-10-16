@@ -8,7 +8,8 @@ import {requireMainAccess} from "../memory-core/main-access";
 import type {MainActorAuthority,MainActorContext} from "../memory-core/main-actor-authority";
 import type {createMainSourceRegistry} from "../memory-sources/source-registry";
 import {extractMaintenance} from "../memory-policy/maintenance-extractor";
-import {policySubjectKey} from "../memory-policy/policy-repository";
+import {claimSubjectKeys} from "../memory-policy/policy-repository";
+import {resolveProject} from "../memory-policy/project-scope";
 import {ContextError,contextFail,CONTEXT_CLAIM_WINDOW_MS,type ContextBudget,type TokenCounter,type ContextUnit,type PreparedRequest,type BudgetResult,type ContextTransport,type SourceDependency,type FactDependency,type TranscriptDependency,type StoredSummary,type SummaryReceipt,type SummaryCounting,type SummarySegment} from "./context-contracts";
 import {selectBudget,requestDigest,freezeRequest,countPrepared,countPreparedForAdmission} from "./token-budget";
 import {parseCanonicalTranscript,requireMainTranscriptProvider,type TranscriptEventSource} from "./main-transcript-provider";
@@ -68,7 +69,7 @@ export function createMainContext(options:ContextOptions){
    const existing=deps.find(d=>d.sourceRef.sourceId===ref.sourceId);if(existing){if(canonicalJson(existing.sourceRef)!==canonicalJson(ref))contextFail("MEMORY_SOURCE_STALE");return}if(deps.length>=1000)contextFail("MEMORY_CONTEXT_INPUT_INVALID");
    const text=await readSource(a,ref),verified=options.registry.resolveVerifiedSource(ref),parsed=extractMaintenance(text),origins=options.resolveDerivedRefs?.(ref)??null;
    let secret=false;try{assertContextSecretFree(text)}catch(error){if(error instanceof Error&&error.message==="MEMORY_CONTEXT_TRANSCRIPT_SECRET")secret=true;else throw error}
-   deps.push({sourceRef:ref,subjectKeys:parsed.kind==="claims"?parsed.claims.map(c=>policySubjectKey(a.actorKey,c.attribute,c.context,c.cardinality,c.value)):null,derivedRefs:origins?origins.map(v=>checkedRef(a,v)):null,...(secret?{excludeReason:"secret" as const}:{})});messages.set(ref.sourceId,{role:verified.kind,text});
+   deps.push({sourceRef:ref,subjectKeys:parsed.kind==="claims"?parsed.claims.flatMap(c=>claimSubjectKeys(a.actorKey,c,resolveProject(a))):null,derivedRefs:origins?origins.map(v=>checkedRef(a,v)):null,...(secret?{excludeReason:"secret" as const}:{})});messages.set(ref.sourceId,{role:verified.kind,text});
    for(const origin of origins??[])await read(checkedRef(a,origin));
   }
   for(const ref of refs)await read(ref);return {deps,messages};
@@ -207,7 +208,7 @@ export function createMainContext(options:ContextOptions){
     await options.actorAuthority.coordinate(()=>command(a,"transcriptReserve",{generation:baseline.generation,headId:guardId,operationId:guardOperation,expectedRef:null},randomUUID()));
     guardRefs.push(await options.actorAuthority.coordinate(()=>command<TranscriptDependency>(a,"transcriptPublish",{generation:baseline.generation,headId:guardId,operationId:guardOperation,incarnation:view.incarnation,contentRevision:view.revision,throughSeq:view.throughSeq,digest:view.digest,sourceRefs:[]},randomUUID())));
    }
-   const ref=await options.actorAuthority.coordinate(()=>command<TranscriptDependency>(a,"transcriptPublish",{generation:baseline.generation,headId,operationId,incarnation:snapshot.incarnation,contentRevision:snapshot.revision,throughSeq:snapshot.throughSeq,digest,sourceRefs:refs,...(snapshot.provenance?{provenance:snapshot.provenance.map((source,index)=>{const parsed=extractMaintenance(snapshot.unit.messages[index].text);return {...source,subjectKeys:source.role==="user"&&parsed.kind==="claims"?parsed.claims.map(c=>policySubjectKey(a.actorKey,c.attribute,c.context,c.cardinality,c.value)):null}})}:{})},randomUUID()));
+   const ref=await options.actorAuthority.coordinate(()=>command<TranscriptDependency>(a,"transcriptPublish",{generation:baseline.generation,headId,operationId,incarnation:snapshot.incarnation,contentRevision:snapshot.revision,throughSeq:snapshot.throughSeq,digest,sourceRefs:refs,...(snapshot.provenance?{provenance:snapshot.provenance.map((source,index)=>{const parsed=extractMaintenance(snapshot.unit.messages[index].text);return {...source,subjectKeys:source.role==="user"&&parsed.kind==="claims"?parsed.claims.flatMap(c=>claimSubjectKeys(a.actorKey,c,resolveProject(a))):null}})}:{})},randomUUID()));
    const cap=Object.freeze({});transcriptTokens.set(cap,{actorToken:token,ref,unit:{...snapshot.unit,id:headId},sourceRefs:refs,adapter,locator:id,guardRefs,...(snapshot.provenance?{provenance:snapshot.provenance,firstSeq:Math.min(...snapshot.provenance.map(e=>e.seq)),lastSeq:Math.max(...snapshot.provenance.map(e=>e.seq))}:{})});
    transcriptHeads.set(ref.headId,transcriptTokens.get(cap)!);
    provider.onCaptured?.(cap,id);

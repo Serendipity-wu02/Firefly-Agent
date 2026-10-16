@@ -14,22 +14,29 @@ import type {PolicyCandidate,PolicyOutcome,PolicyBaseline,IntegrationResult} fro
 import {FactSupports,type ConfirmationProof} from "./fact-supports";
 import {transactionNow,withTransactionClock} from "../memory-core/transaction-clock";
 import {isFactEffectiveAt} from "./fact-validity";
+import {isProjectKey,projectForClaim} from "./project-scope";
 
 const POLICY_VERSION="main-preferences-v1";
 interface Candidate {
  id:string;revision:number;actorKey:string;generation:number;
  state:"candidate"|"active"|"rejected"|"invalidated";
  sourceRef:BoundSourceRef;extraction:Exclude<Extraction,{kind:"rejected"}>;
- contextKey?:ContextKey;cardinality?:"one"|"many";
+ contextKey?:ContextKey;cardinality?:"one"|"many";projectKey?:string;
  fact:FactDraft;evidenceId:string|null;reason:string;factId:string|null;
 }
 function generation(value:unknown):number {
  if(!Number.isSafeInteger(value)||(value as number)<0)throw new Error("MEMORY_INPUT_INVALID");return value as number;
 }
-function subject(actor:string,attribute:Attribute,context:ContextKey="default",cardinality:"one"|"many"="one",value:string|null=null):string {
- return "actor-attribute-"+createHash("sha256").update(canonicalJson({actor,attribute,...(context!=="default"?{context}:{}),...(cardinality==="many"?{cardinality,value}:{})})).digest("hex");
+function subject(actor:string,attribute:Attribute,context:ContextKey="default",cardinality:"one"|"many"="one",value:string|null=null,project?:string):string {
+ return "actor-attribute-"+createHash("sha256").update(canonicalJson({actor,attribute,...(context!=="default"?{context}:{}),...(cardinality==="many"?{cardinality,value}:{}),...(project!==undefined?{project}:{})})).digest("hex");
 }
 export {subject as policySubjectKey};
+/** Every subject key a statement can stand for: the global one and, inside a project, that project's own. Suppression must be at least as wide as the fact it protects. */
+export function claimSubjectKeys(actor:string,claim:MaintenanceClaim,project?:string):string[] {
+ const scoped=projectForClaim(claim,project),keys=[subject(actor,claim.attribute,claim.context,claim.cardinality,claim.value)];
+ if(scoped!==undefined)keys.push(subject(actor,claim.attribute,claim.context,claim.cardinality,claim.value,scoped));
+ return keys;
+}
 function extraction(value:unknown):Extraction {
  const base=objectFields(value,["kind","reason"],["attribute","value","text"]);
  if(base.kind==="rejected"){objectFields(value,["kind","reason"]);if(base.reason!=="secret")throw new Error("MEMORY_INPUT_INVALID");return {kind:"rejected",reason:"secret"};}
@@ -61,7 +68,7 @@ export class PolicyRepository {
  private records(scope:string):Candidate[] {
   return this.db.prepare("SELECT id,revision,payload FROM policy_records WHERE scope_key=? ORDER BY id").all(scope).map(row=>{
    const record=this.codec.open<Candidate>("policy-record",scope,row.id as string,row.payload);
-   if(record.id!==row.id||record.revision!==row.revision||record.fact.subjectKey!==subject(record.actorKey,record.extraction.attribute,record.contextKey,record.cardinality,record.extraction.value))throw new Error("MEMORY_DATA_INVALID");
+   if(record.id!==row.id||record.revision!==row.revision||record.fact.subjectKey!==subject(record.actorKey,record.extraction.attribute,record.contextKey,record.cardinality,record.extraction.value,record.projectKey))throw new Error("MEMORY_DATA_INVALID");
    return record;
   });
  }
@@ -86,11 +93,11 @@ export class PolicyRepository {
   if(record.state!=="candidate")throw new Error("MEMORY_CANDIDATE_NOT_FOUND");
   this.source(scope,record.sourceRef);return record;
  }
- private draft(actor:string,parsed:Exclude<Extraction,{kind:"rejected"}>,context:ContextKey="default",cardinality:"one"|"many"="one",referenceTime:number|null=null,validFrom:number|null=null):FactDraft {
-  return {subjectKey:subject(actor,parsed.attribute,context,cardinality,parsed.value),assertion:parsed.kind==="direct"?parsed.text:"",assertionKind:parsed.kind==="direct"?"user-statement":"inference",time:{validFrom,validTo:null,referenceTime}};
+ private draft(actor:string,parsed:Exclude<Extraction,{kind:"rejected"}>,context:ContextKey="default",cardinality:"one"|"many"="one",referenceTime:number|null=null,validFrom:number|null=null,project?:string):FactDraft {
+  return {subjectKey:subject(actor,parsed.attribute,context,cardinality,parsed.value,project),assertion:parsed.kind==="direct"?parsed.text:"",assertionKind:parsed.kind==="direct"?"user-statement":"inference",time:{validFrom,validTo:null,referenceTime}};
  }
- private insert(scope:string,actor:string,gen:number,ref:BoundSourceRef,parsed:Exclude<Extraction,{kind:"rejected"}>,reason:string,context:ContextKey="default",cardinality:"one"|"many"="one",referenceTime:number|null=null):Candidate {
-  const id=randomUUID(),evidenceId=parsed.kind==="direct"?randomUUID():null,fact=this.draft(actor,parsed,context,cardinality,referenceTime);
+ private insert(scope:string,actor:string,gen:number,ref:BoundSourceRef,parsed:Exclude<Extraction,{kind:"rejected"}>,reason:string,context:ContextKey="default",cardinality:"one"|"many"="one",referenceTime:number|null=null,project?:string):Candidate {
+  const id=randomUUID(),evidenceId=parsed.kind==="direct"?randomUUID():null,fact=this.draft(actor,parsed,context,cardinality,referenceTime,null,project);
   if(evidenceId!==null){
    this.facts.applyWithinTransaction(scope,"appendEvidence",{evidenceId,sourceRef:ref,text:parsed.text});
    this.facts.applyWithinTransaction(scope,"proposeCandidate",{candidateId:id,evidenceId,fact});
@@ -98,7 +105,7 @@ export class PolicyRepository {
   // Unknown/sensitive/free-form text may contain an unlabelled secret. Keep a
   // review reference and reason, never a second copy of its arbitrary body.
   const stored=parsed.kind==="direct"?parsed:{...parsed,text:""};
-  const record:Candidate={id,revision:1,actorKey:actor,generation:gen,state:"candidate",sourceRef:ref,extraction:stored,contextKey:context,cardinality,fact,evidenceId,reason,factId:null};this.save(scope,record);return record;
+  const record:Candidate={id,revision:1,actorKey:actor,generation:gen,state:"candidate",sourceRef:ref,extraction:stored,contextKey:context,cardinality,...(project!==undefined?{projectKey:project}:{}),fact,evidenceId,reason,factId:null};this.save(scope,record);return record;
  }
  private active(scope:string,record:Candidate,reason:"policyAccepted"|"explicitUserConfirmed",event:SourceRef,support?:{sourceRef:BoundSourceRef;proof:ConfirmationProof},policyVersion=POLICY_VERSION):PolicyOutcome {
   if(record.extraction.kind!=="direct")throw new Error("MEMORY_POLICY_UNRESOLVED");
@@ -116,7 +123,9 @@ export class PolicyRepository {
   this.facts.applyWithinTransaction(scope,"registerSource",{sourceRef,kind:"user",intent,...target});return sourceRef;
  }
  private integrate(scope:string,actor:string,gen:number,input:Record<string,unknown>):IntegrationResult {
-  const b=objectFields(input,["actorKey","generation","sourceRef","extraction","baseline","policyVersion"]);
+  const b=objectFields(input,["actorKey","generation","sourceRef","extraction","baseline","policyVersion"],["projectKey"]);
+  if(b.projectKey!==undefined&&!isProjectKey(b.projectKey))throw new Error("MEMORY_PROJECT_INVALID");
+  const project=b.projectKey as string|undefined;
   if(b.policyVersion!==MAINTENANCE_VERSION)throw new Error("MEMORY_POLICY_VERSION_INVALID");
   const e=objectFields(b.extraction,["kind"],["reason","attribute","value","text","claims"]);
   let parsed:MaintenanceExtraction;
@@ -131,15 +140,16 @@ export class PolicyRepository {
    const record=this.insert(scope,actor,gen,ref,parsed,parsed.reason);return {items:[{status:"candidate",candidateId:record.id,candidateRevision:1,reason:parsed.reason}]};
   }
   const observed=this.ledger.assertCurrent(scope,ref)!.published!;
-  return {items:parsed.claims.map(claim=>this.integrateClaim(scope,actor,gen,ref,parsed.text,claim,observed.occurredAt??null,observed.role==="user"&&observed.trust==="direct-user-event",baseline))};
+  return {items:parsed.claims.map(claim=>this.integrateClaim(scope,actor,gen,ref,parsed.text,claim,observed.occurredAt??null,observed.role==="user"&&observed.trust==="direct-user-event",baseline,project))};
  }
- private integrateClaim(scope:string,actor:string,gen:number,ref:BoundSourceRef,text:string,claim:MaintenanceClaim,at:number|null,trusted:boolean,baseline:PolicyBaseline[]):PolicyOutcome {
+ private integrateClaim(scope:string,actor:string,gen:number,ref:BoundSourceRef,text:string,claim:MaintenanceClaim,at:number|null,trusted:boolean,baseline:PolicyBaseline[],projectOfSession?:string):PolicyOutcome {
   const parsed:Exclude<Extraction,{kind:"rejected"}>={kind:"direct",attribute:claim.attribute,value:claim.value,reason:"direct-preference",text};
-  const key=subject(actor,claim.attribute,claim.context,claim.cardinality,claim.value);
+  const project=projectForClaim(claim,projectOfSession);
+  const key=subject(actor,claim.attribute,claim.context,claim.cardinality,claim.value,project);
   if(this.suppression.sourceBlocked(scope,ref)||this.suppression.subjectBlocked(scope,key))return {status:"suppressed",reason:"forgotten"};
   const previous=this.facts.current(scope).find(f=>f.subjectKey===key);
   const owner=previous?this.records(scope).find(r=>r.actorKey===actor&&r.factId===previous.factId&&r.state==="active"):undefined;
-  const candidate=(reason:string):PolicyOutcome=>{const record=this.insert(scope,actor,gen,ref,parsed,reason,claim.context,claim.cardinality,at);return {status:"candidate",candidateId:record.id,candidateRevision:1,reason}};
+  const candidate=(reason:string):PolicyOutcome=>{const record=this.insert(scope,actor,gen,ref,parsed,reason,claim.context,claim.cardinality,at,project);return {status:"candidate",candidateId:record.id,candidateRevision:1,reason}};
   if(!trusted)return candidate("untrusted-origin");
   if(at===null)return candidate("unknown-time");
   if(at>transactionNow(this.db))return candidate("future-source");
@@ -163,19 +173,20 @@ export class PolicyRepository {
    if(claim.operation!=="change"||claim.cardinality!=="one"||!owner)return candidate("conflict");
    if(claim.previousValue&&claim.previousValue!==owner.extraction.value)return candidate("change-old-mismatch");
    if(this.supports.audit(scope,actor,previous.factId,previous).status!=="eligible")return candidate("prior-needs-review");
-   const fact=this.draft(actor,parsed,claim.context,claim.cardinality,at,at);
+   const fact=this.draft(actor,parsed,claim.context,claim.cardinality,at,at,project);
    const changed=this.facts.applyWithinTransaction(scope,"correctFact",{factId:previous.factId,expectedRevision:previous.revision,sourceRef:ref,fact,policyVersion:MAINTENANCE_VERSION});
    owner.fact=fact;owner.sourceRef=ref;owner.extraction=parsed;owner.revision++;this.save(scope,owner);
    this.supports.add(scope,actor,this.facts.current(scope).find(f=>f.factId===previous.factId)!,ref,"automatic");
    return {status:"active",factId:previous.factId,factRevision:changed.revision,reason:"clear-current-change"};
   }
-  if(claim.operation==="change")return candidate("change-without-prior");
-  const record=this.insert(scope,actor,gen,ref,parsed,"direct-preference",claim.context,claim.cardinality,at);
+  // Inside a project an explicit change without a project value of its own is that project's first statement; it must not rewrite the global one.
+  if(claim.operation==="change"&&project===undefined)return candidate("change-without-prior");
+  const record=this.insert(scope,actor,gen,ref,parsed,"direct-preference",claim.context,claim.cardinality,at,project);
   return this.active(scope,record,"policyAccepted",ref,undefined,MAINTENANCE_VERSION);
  }
  execute(value:unknown):unknown {
   const cmd=objectFields(value,["kind","scopeKey","body"],["commandId"]),scope=parseInternalId(cmd.scopeKey);
-  const input=objectFields(cmd.body,["actorKey"],["generation","sourceRef","extraction","policyVersion","kind","nonce","candidateId","factId","revision","limit","after","baseline"]),actor=parseInternalId(input.actorKey);
+  const input=objectFields(cmd.body,["actorKey"],["generation","sourceRef","extraction","policyVersion","kind","nonce","candidateId","factId","revision","limit","after","baseline","projectKey"]),actor=parseInternalId(input.actorKey);
   if(cmd.kind==="generation"){objectFields(input,["actorKey"]);return this.suppression.generation(scope);}
   if(cmd.kind==="baseline"){
    objectFields(input,["actorKey"]);this.db.exec("BEGIN");
@@ -251,7 +262,7 @@ export class PolicyRepository {
     if(observed.role!=="user"||observed.trust!=="direct-user-event")throw new Error("MEMORY_EVENT_DENIED");
     if(parsed.attribute!==record.extraction.attribute)throw new Error("MEMORY_POLICY_ATTRIBUTE_MISMATCH");
     if(this.suppression.sourceBlocked(scope,ref)||this.suppression.subjectBlocked(scope,record.fact.subjectKey))throw new Error("MEMORY_POLICY_SUPPRESSED");
-    record.revision++;record.sourceRef=ref;record.extraction=parsed;record.fact=this.draft(actor,parsed,record.contextKey,record.cardinality,observed.occurredAt??null);record.reason="explicit-revision";
+    record.revision++;record.sourceRef=ref;record.extraction=parsed;record.fact=this.draft(actor,parsed,record.contextKey,record.cardinality,observed.occurredAt??null,null,record.projectKey);record.reason="explicit-revision";
     record.evidenceId=randomUUID();this.facts.applyWithinTransaction(scope,"appendEvidence",{evidenceId:record.evidenceId,sourceRef:ref,text:parsed.text});
     this.db.prepare("UPDATE candidates SET revision=?,source_id=?,parent_id=?,payload=? WHERE scope_key=? AND id=?").run(record.revision,ref.sourceId,record.evidenceId,this.codec.seal("candidates",scope,record.id,{sourceRef:ref,fact:record.fact}),scope,record.id);
     this.save(scope,record);return {status:"candidate",candidateId:record.id,candidateRevision:record.revision};
@@ -279,8 +290,8 @@ export class PolicyRepository {
     if(observation.role!=="user"||observation.trust!=="direct-user-event")throw new Error("MEMORY_EVENT_DENIED");
     if(this.suppression.sourceBlocked(scope,source))throw new Error("MEMORY_POLICY_SUPPRESSED");
     // Correct's provenance points at the actual statement, not a synthetic event.
-    const changed=this.facts.applyWithinTransaction(scope,"correctFact",{factId,expectedRevision:revision,sourceRef:source,fact:this.draft(actor,parsed,owner.contextKey,owner.cardinality,observation.occurredAt??null)});
-    owner.fact=this.draft(actor,parsed,owner.contextKey,owner.cardinality,observation.occurredAt??null);owner.sourceRef=source;owner.extraction=parsed;owner.revision++;this.save(scope,owner);
+    const changed=this.facts.applyWithinTransaction(scope,"correctFact",{factId,expectedRevision:revision,sourceRef:source,fact:this.draft(actor,parsed,owner.contextKey,owner.cardinality,observation.occurredAt??null,null,owner.projectKey)});
+    owner.fact=this.draft(actor,parsed,owner.contextKey,owner.cardinality,observation.occurredAt??null,null,owner.projectKey);owner.sourceRef=source;owner.extraction=parsed;owner.revision++;this.save(scope,owner);
     this.supports.add(scope,actor,this.facts.current(scope).find(f=>f.factId===factId)!,source,"explicitUserConfirmed",{nonce,targetId:factId,targetRevision:revision,action:"correct"});
     return {status:"active",factId,factRevision:changed.revision};
    }
