@@ -65,3 +65,17 @@ it("without a time intent nothing about time is reported",async()=>{
 it("rechecks live authority and does not query after cancellation",async()=>{
  let live=true;const query=vi.fn();await expect(queryScopedHistory({actors:[{}],assertCurrent:()=>{if(!live)throw Error("MEMORY_RUN_CANCELLED")},capture:async()=>{live=false;return {status:"captured",diagnostics:[]}},query})).rejects.toThrow("MEMORY_RUN_CANCELLED");expect(query).not.toHaveBeenCalled();
 });
+it("an excerpted hit is a complete retrieval of that hit but partial content, and the notice says so instead of reporting plain complete",async()=>{
+ const result=await queryScopedHistory({actors:[{}],assertCurrent:()=>{},capture:captured,query:async()=>({evidence:{},status:"ok",excerpted:2})});
+ expect(result.coverage).toMatchObject({status:"complete",selected:1,covered:1,retrieval:"complete",excerpted:2});expect(result.coverage.diagnostics).toEqual([]);
+ expect(result.notice).toContain("2 份");expect(result.notice).toContain("连续消息");expect(result.notice).toContain("消息范围和总条数");expect(result.notice).toContain("并非完整会话");expect(result.notice).toContain("不能据此断言片段之外没有相关内容");
+ expect(result.notice).toContain('"excerpted":2');expect(result.notice).not.toContain("历史检索结果不完整");
+});
+it.each([undefined,0])("no excerpt note and no excerpted count when excerpted is %s",async excerpted=>{
+ const result=await queryScopedHistory({actors:[{}],assertCurrent:()=>{},capture:captured,query:async()=>({evidence:{},status:"ok",...(excerpted===undefined?{}:{excerpted})})});
+ expect(result.notice).toBeUndefined();expect(result.coverage.excerpted).toBeUndefined();expect(Object.keys(result.coverage)).not.toContain("excerpted");
+});
+it("an excerpt note never hides an exhausted budget: both are reported",async()=>{
+ const result=await queryScopedHistory({actors:[{}],assertCurrent:()=>{},capture:captured,query:async()=>({evidence:{},status:"excerpt-budget-exhausted",excerpted:1})});
+ expect(result.coverage).toMatchObject({status:"insufficient",retrieval:"excerpt-budget-exhausted",excerpted:1});expect(result.notice).toContain("历史检索结果不完整");expect(result.notice).toContain("并非完整会话");
+});

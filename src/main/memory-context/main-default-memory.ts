@@ -64,6 +64,8 @@ export interface DefaultMemoryHistoryCoverage {
   readonly retrieval?: "complete" | "index-budget-exhausted" | "excerpt-budget-exhausted";
   /** Present only when the question carried a time intent; anything but `applied` means some history had no provable time. */
   readonly temporal?: "applied" | "partial" | "unavailable";
+  /** Present only when some retrieved hits are fragments of a longer conversation: fully retrieved, but partial in content. */
+  readonly excerpted?: number;
 }
 export interface MainDefaultMemoryOptions extends Pick<AuthorityOptions, "getChatWindow" | "targets"> {
   getSettingsWindow?(): Pick<BrowserWindow, "webContents" | "isDestroyed"> | null;
@@ -350,7 +352,7 @@ export function createMainDefaultMemory(options: MainDefaultMemoryOptions) {
                     const partition = history.grantSessions(state.actor, covered, { includeCurrent: false });
                     // The index status travels with the evidence: an exhausted budget is a gap in the result.
                     const retrieved = await history.query(state.actor, { query: current.userText, scope: partition, signal, ...(timeIntent ? { temporal: timeIntent.query } : {}) });
-                    return { evidence: retrieved.evidence, status: retrieved.status, ...(retrieved.temporal ? { temporal: retrieved.temporal } : {}) };
+                    return { evidence: retrieved.evidence, status: retrieved.status, excerpted: retrieved.hits.filter(hit => hit.document.excerpt !== undefined).length, ...(retrieved.temporal ? { temporal: retrieved.temporal } : {}) };
                   },
                 });
                 status(id, result.coverage);
