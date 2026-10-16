@@ -359,14 +359,14 @@ function useRunActivityNow(processing: boolean): number {
 
 function RunActivityReasoningBlock({ block }: { block: ReasoningBlock }) {
   const streaming = Boolean(block.streaming);
-  // 与纯聊天模式保持一致：思考块默认折叠（含流式生成期间），仅用户点击后展开
-  const [expanded, setExpanded] = useState(false);
+  // 与纯聊天模式一致：生成中展开、完成后收起；用户点过就以用户的选择为准。
+  const [choice, setChoice] = useState<boolean | undefined>(undefined);
   return (
     <ReasoningContent
       content={block.content}
       loading={streaming}
-      expanded={expanded}
-      onExpand={setExpanded}
+      expanded={choice ?? streaming}
+      onExpand={setChoice}
     />
   );
 }
@@ -930,7 +930,7 @@ function createRoles(
         content={info.extraInfo?.reasoning ?? ""}
         loading={Boolean(info.extraInfo?.reasoningStreaming)}
         expanded={info.extraInfo?.reasoningId
-          ? resolveReasoningExpanded(reasoningExpanded, info.extraInfo.reasoningId)
+          ? resolveReasoningExpanded(reasoningExpanded, info.extraInfo.reasoningId, Boolean(info.extraInfo.reasoningStreaming))
           : false}
         onExpand={(expanded) => {
           if (info.extraInfo?.reasoningId) onReasoningExpand(info.extraInfo.reasoningId, expanded);

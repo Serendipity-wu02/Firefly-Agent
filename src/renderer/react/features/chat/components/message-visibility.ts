@@ -21,11 +21,13 @@ export function assistantRenderStages(message: AssistantVisibilityState): Array<
   return stages;
 }
 
+/** Reasoning shows open while it streams and folds away when done; a choice the user made wins either way. */
 export function resolveReasoningExpanded(
   expandedById: Readonly<Record<string, boolean>>,
   messageId: string,
+  streaming: boolean,
 ): boolean {
-  return expandedById[messageId] ?? false;
+  return expandedById[messageId] ?? streaming;
 }
 
 export function updateReasoningExpanded(
