@@ -8,7 +8,11 @@ import { ConversationSidebar } from "./ConversationSidebar";
 vi.mock("../../../i18n", () => ({ useTranslation: () => ({ t: (key: string) => key }) }));
 vi.mock("../../../components/feedback/FeedbackProvider", () => ({ useFeedback: () => ({ confirm: vi.fn() }) }));
 vi.mock("@ant-design/x", () => ({ Conversations: ({ items }: any) => createElement("div", null, items.map((item: any) => createElement("button", { key: item.key, "data-session-id": item.key, "data-group": item.group }, item.label))) }));
-vi.mock("antd", () => ({ Input: () => null, Menu: () => null, Popover: ({ children, content }: any) => createElement("div", null, children, content) }));
+// The arrangement menu is an antd Dropdown; here it is flattened into plain buttons keyed by menu key, so the test drives the real item handlers.
+const flattenMenu = (items: any[] = []): any[] => items.flatMap(item => item?.children ? flattenMenu(item.children) : item?.key
+  ? [createElement("button", { key: item.key, type: "button", "data-menu-key": item.key, disabled: item.disabled, onClick: item.onClick }, String(item.key))] : []);
+vi.mock("antd", () => ({ Input: () => null, Menu: () => null, Popover: ({ children, content }: any) => createElement("div", null, children, content),
+  Dropdown: ({ children, menu }: any) => createElement("div", null, children, flattenMenu(menu.items)) }));
 let host: HTMLDivElement, root: ReturnType<typeof createRoot>, snapshot: SidebarSnapshot, api: SidebarLayoutApi;
 let changed: () => void;
 const sessions = [
@@ -42,9 +46,10 @@ it("projects server-owned hidden projects and refreshes restored visibility", as
 });
 it("writes sort intent using the latest server revision", async () => {
   await render();
-  const select = host.querySelector<HTMLSelectElement>('[data-sidebar-sort]');
-  expect(select).not.toBeNull();
-  await act(async () => { select!.value = "manual"; select!.dispatchEvent(new Event("change", { bubbles: true })); });
+  const manual = host.querySelector<HTMLButtonElement>('[data-menu-key="sort:manual"]');
+  expect(manual).not.toBeNull();
+  await act(async () => manual!.click());
   expect(api.mutate).toHaveBeenCalledWith({ expectedRevision: 0, patch: { kind: "set-sort", mode: "work", sortMode: "manual" } });
-  expect(select!.value).toBe("manual");
+  expect(snapshot.layout.modes.work.sortMode).toBe("manual");
+  expect(host.querySelector('[data-menu-key="sort:recent"]')).not.toBeNull();
 });
