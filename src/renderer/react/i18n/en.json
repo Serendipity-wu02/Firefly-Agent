@@ -902,7 +902,7 @@
     "renameSection": "Rename section",
     "deleteSection": "Delete section",
     "deleteSectionQuestion": "Delete this section?",
-    "deleteSectionHint": "Its conversations return to the default list.",
+    "deleteSectionHint": "Its conversations are kept: in the project view they go back under their project, the others return to the default list.",
     "confirmDelete": "Delete",
     "hideProject": "Hide project",
     "showProject": "Show project",

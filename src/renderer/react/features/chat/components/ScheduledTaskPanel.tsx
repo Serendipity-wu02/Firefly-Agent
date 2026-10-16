@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { Switch } from "antd";
 import { History, Pencil, Play, Plus, Trash2 } from "lucide-react";
 import { useTranslation } from "../../../i18n";
@@ -28,7 +28,7 @@ type PluginListing = PluginEntryLike[] | { plugins?: PluginEntryLike[] };
 type ChatWindowWithScheduler = Window & {
   fireflyScheduler?: SchedulerApi;
   schedulerEvents?: { onEvent: (callback: (event: unknown) => void) => () => void };
-  plugins?: { list?: () => Promise<unknown> };
+  plugins?: { list?: () => Promise<unknown>; onChanged?: (callback: (overview: unknown) => void) => () => void };
 };
 
 interface HistoryState {
@@ -52,6 +52,15 @@ async function readPluginRunning(): Promise<Record<string, boolean>> {
 }
 
 /** 运行边界事件：任务触发、运行结束或失败时任务的 lastFiredAt / nextFireAt 会变化。 */
+/** Which expanded histories a reload re-reads: all of them (focus, or an event that names no task), one task, or none. */
+type HistoryScope = "all" | "none" | { taskId: string };
+
+/** The task a scheduler event belongs to; absent when the event does not say. */
+function eventTaskId(raw: unknown): string | undefined {
+  const id = (raw as { schedulerTaskId?: unknown } | null)?.schedulerTaskId;
+  return typeof id === "string" && id ? id : undefined;
+}
+
 function isRunBoundaryEvent(raw: unknown): boolean {
   const event = raw as { type?: string; name?: string } | null;
   if (!event) return false;
@@ -83,8 +92,20 @@ export function ScheduledTaskPanel() {
   const [editor, setEditor] = useState<{ task?: ScheduledTask } | null>(null);
   /** 存在键即表示该任务的历史已展开。 */
   const [histories, setHistories] = useState<Record<string, HistoryState>>({});
+  const historiesRef = useRef(histories);
+  historiesRef.current = histories;
 
-  const reload = useCallback(async () => {
+  /** Re-reads one expanded history in place: the rows stay on screen while it loads, and a failure keeps them. */
+  const refreshHistory = useCallback(async (taskId: string) => {
+    try {
+      const result = await getSchedulerApi()?.getHistory(taskId, 10);
+      setHistories((current) => current[taskId] && result?.ok
+        ? { ...current, [taskId]: { loading: false, rows: result.value ?? [] } }
+        : current);
+    } catch { /* an expanded list that cannot refresh keeps what it shows */ }
+  }, []);
+
+  const reload = useCallback(async (historyScope: HistoryScope = "none") => {
     try {
       const scheduler = getSchedulerApi();
       if (!scheduler) throw new Error(t("scheduledPanel.apiUnavailable"));
@@ -98,12 +119,17 @@ export function ScheduledTaskPanel() {
       if (toolsResult.ok) setTools(toolsResult.value ?? []);
       setPluginRunning(running);
       setLoadError(null);
+      // Open histories must follow a run boundary or they keep showing a finished run as running. Each history read parses the whole
+      // history file, so a run event refreshes only the task it names; focus (or an unnamed event) refreshes every open one.
+      const open = Object.keys(historiesRef.current);
+      const targets = historyScope === "all" ? open : historyScope === "none" ? [] : open.filter((id) => id === historyScope.taskId);
+      void Promise.all(targets.map(refreshHistory));
     } catch (err) {
       setLoadError(err instanceof Error ? err.message : t("scheduledPanel.loadFailed"));
     } finally {
       setLoading(false);
     }
-  }, [t]);
+  }, [t, refreshHistory]);
 
   useEffect(() => {
     void reload();
@@ -111,14 +137,21 @@ export function ScheduledTaskPanel() {
 
   // 实时刷新：运行事件与窗口重新获得焦点时重新读取（设置窗口里的修改也会在这里生效）
   useEffect(() => {
-    const refresh = () => void reload();
+    const refreshAll = () => void reload("all");
     const off = (window as ChatWindowWithScheduler).schedulerEvents?.onEvent((event) => {
-      if (isRunBoundaryEvent(event)) refresh();
+      if (!isRunBoundaryEvent(event)) return;
+      const taskId = eventTaskId(event);
+      void reload(taskId ? { taskId } : "all");
     });
-    window.addEventListener("focus", refresh);
+    window.addEventListener("focus", refreshAll);
+    // A plugin can start or stop while the panel keeps focus; only the cached run state needs re-reading.
+    const offPlugins = (window as ChatWindowWithScheduler).plugins?.onChanged?.(() => {
+      void readPluginRunning().then(setPluginRunning).catch(() => undefined);
+    });
     return () => {
       off?.();
-      window.removeEventListener("focus", refresh);
+      offPlugins?.();
+      window.removeEventListener("focus", refreshAll);
     };
   }, [reload]);
 

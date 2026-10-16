@@ -902,7 +902,7 @@
     "renameSection": "重命名分组",
     "deleteSection": "删除分组",
     "deleteSectionQuestion": "删除这个分组？",
-    "deleteSectionHint": "分组内的对话会回到默认列表。",
+    "deleteSectionHint": "分组内的对话不会被删除：项目视图下会回到各自的项目，其余回到默认列表。",
     "confirmDelete": "删除",
     "hideProject": "隐藏项目",
     "showProject": "显示项目",
