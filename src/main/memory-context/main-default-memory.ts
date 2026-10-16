@@ -724,6 +724,15 @@ export function createMainDefaultMemory(options: MainDefaultMemoryOptions) {
     }
     return result;
   }
+  /** Display names of the projects Main currently knows, by opaque project key; a project nobody is bound to anymore has no name. */
+  function projectNames(): Map<string, string> {
+    const names = new Map<string, string>();
+    for (const id of options.listSessionIds()) {
+      const binding = options.getSession(id)?.workspaceBinding;
+      if (binding?.workspaceRoot && binding.displayName) names.set(projectKeyForWorkspaceRoot(binding.workspaceRoot), binding.displayName);
+    }
+    return names;
+  }
   async function allCandidates(core: Awaited<ReturnType<typeof initialize>>) {
     const items: Awaited<ReturnType<typeof core.policy.candidates>>["items"] = [];
     let cursor: object | null = null;
@@ -737,7 +746,15 @@ export function createMainDefaultMemory(options: MainDefaultMemoryOptions) {
       const grant = settingsGrant(event);
       try { return await serialized(async () => {
         settingsSource.require(grant); const core = await resources(); settingsSource.require(grant);
-        const facts = await core.policy.recall(core.settingsActor), candidates = await allCandidates(core); settingsSource.require(grant);
+        const recalled = await core.policy.recall(core.settingsActor), pending = await allCandidates(core); settingsSource.require(grant);
+        const names = projectNames();
+        const place = <T extends { projectKey?: string }>(item: T): Omit<T, "projectKey"> & { projectName?: string } => {
+          const { projectKey, ...rest } = item;
+          const projectName = projectKey === undefined ? undefined : names.get(projectKey);
+          return { ...rest, ...(projectName ? { projectName } : {}) };
+        };
+        const facts = recalled.map(place);
+        const candidates = pending.map(item => ({ ...place(item), scope: item.projectKey === undefined ? "global" as const : "project" as const }));
         return { facts, candidates, backendStatus: { available: true }, coverage: { status: "not-measured", reason: "MEMORY_HISTORY_COVERAGE_NOT_MEASURED", population: null, present: null, missing: null, unknownDenied: null, exactRatio: null, lowerRatio: null, upperRatio: null, reasons: {}, evidence: { status: "not-evaluated", eligible: null, ineligible: null, unknown: null, ratio: null } } };
       }); } finally { settingsSource.release(grant); }
     },

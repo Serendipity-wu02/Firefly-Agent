@@ -49,6 +49,17 @@ describe("memory entries panel", () => {
     expect(text("请叫我小林")).toContain("所有会话");
     expect(text("无范围信息")).not.toMatch(/所有会话|仅限某个项目/);
   });
+  it("names the project of a project fact or candidate and shows when a fact takes effect", async () => {
+    const f = fixture();
+    f.state.facts = [{ ...fact("我默认用 bash", "fact-p"), scope: "project", projectName: "alpha", time: { validFrom: 5000, validTo: 9000, referenceTime: 1000 } }];
+    f.state.candidates = [{ ...f.state.candidates[0], assertion: "我可能喜欢 zsh", scope: "project", projectName: "beta" }, { ...f.state.candidates[0], candidateId: "candidate-2", assertion: "我可能喜欢咖啡", scope: "global" }];
+    await f.panel.load();
+    const text = (assertion: string) => [...f.root.querySelectorAll("article")].find((node) => node.textContent?.includes(assertion))!.textContent!;
+    expect(text("我默认用 bash")).toContain("仅限项目「alpha」");
+    expect(text("我默认用 bash")).toContain("生效于"); expect(text("我默认用 bash")).toContain("有效至");
+    expect(text("我可能喜欢 zsh")).toContain("仅限项目「beta」");
+    expect(text("我可能喜欢咖啡")).toContain("所有会话");
+  });
   it("filters by type and searches loaded text locally", async () => {
     const f = fixture(); f.state.facts = [fact("我住在上海")]; await f.panel.load();
     const filter = (value: string) => (f.root.querySelector(`[data-memory-filter="${value}"]`) as HTMLButtonElement).click();

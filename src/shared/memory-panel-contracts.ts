@@ -24,6 +24,11 @@ export interface MemoryPanelCandidate {
   reason: string;
   sourceRef: SourceRef;
   occurredAt?: number | null;
+  /** Where the candidate would apply once confirmed. */
+  scope?: "global" | "project";
+  projectName?: string;
+  /** Main-internal; removed before the renderer sees it. */
+  projectKey?: string;
 }
 /** Structural mirror of the metadata-only native PresenceCoverage, without a Main import. */
 export interface MemoryPanelCoverage {

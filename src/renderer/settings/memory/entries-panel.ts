@@ -29,6 +29,12 @@ export function createMemoryEntriesPanel(
   function time(value: number | null | undefined): string {
     return formatDateTime(value ?? 0);
   }
+  /** " · 所有会话" / " · 仅限项目「name」"; empty when the policy did not report a scope. */
+  function scopeText(item: { scope?: "global" | "project"; projectName?: string }): string {
+    if (!item.scope) return "";
+    if (item.scope === "global") return ` · ${t("settings.panel.memory.entries.scopeGlobal")}`;
+    return ` · ${item.projectName ? t("settings.panel.memory.entries.scopeProjectNamed", { name: item.projectName }) : t("settings.panel.memory.entries.scopeProject")}`;
+  }
   function setDisabled() {
     root.querySelectorAll<HTMLButtonElement>("[data-memory-action]").forEach((node) => {
       node.disabled = busy || !state?.backendStatus.available;
@@ -130,8 +136,11 @@ export function createMemoryEntriesPanel(
     const activation = item.activationReason === "explicitUserConfirmed"
       ? t("settings.panel.memory.entries.activationConfirmed")
       : t("settings.panel.memory.entries.activationAuto");
-    const scope = item.scope ? ` · ${t(item.scope === "project" ? "settings.panel.memory.entries.scopeProject" : "settings.panel.memory.entries.scopeGlobal")}` : "";
-    const entry = row(item.assertion, `${kind} · ${activation}${scope} · ${t("settings.panel.memory.entries.recordedAt", { time: time(item.recordedAt) })}`);
+    const effective = [
+      item.time.validFrom ? t("settings.panel.memory.entries.effectiveFrom", { time: time(item.time.validFrom) }) : "",
+      item.time.validTo ? t("settings.panel.memory.entries.effectiveUntil", { time: time(item.time.validTo) }) : "",
+    ].filter(Boolean).map((part) => ` · ${part}`).join("");
+    const entry = row(item.assertion, `${kind} · ${activation}${scopeText(item)} · ${t("settings.panel.memory.entries.recordedAt", { time: time(item.recordedAt) })}${effective}`);
     button(entry.actions, t("settings.panel.memory.entries.edit"), "correct", () => {
       if (entry.main.querySelector("textarea")) return;
       const editor = element("div", "memory-field memory-field--full");
@@ -178,7 +187,7 @@ export function createMemoryEntriesPanel(
   function renderCandidate(item: MemoryPanelCandidate) {
     const entry = row(
       item.assertion || t("settings.panel.memory.entries.pendingUntitled"),
-      `${t("settings.panel.memory.entries.pendingTag")} · ${t("settings.panel.memory.entries.pendingNeedsConfirm")} · ${time(item.occurredAt)}`,
+      `${t("settings.panel.memory.entries.pendingTag")} · ${t("settings.panel.memory.entries.pendingNeedsConfirm")}${scopeText(item)} · ${time(item.occurredAt)}`,
     );
     button(entry.actions, t("settings.panel.memory.entries.confirm"), "confirm", () => { void submit({ kind: "confirm", id: item.candidateId, expectedRevision: item.revision }); });
     button(entry.actions, t("settings.panel.memory.entries.reject"), "reject", () => { void submit({ kind: "reject", id: item.candidateId, expectedRevision: item.revision }); });

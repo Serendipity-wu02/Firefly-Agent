@@ -203,7 +203,7 @@ export class PolicyRepository {
     const owners=this.records(scope).filter(r=>r.actorKey===actor&&r.factId!==null),facts=this.facts.current(scope);
     let result:unknown;
     if(cmd.kind==="audit"){const id=parseInternalId(input.factId);if(!owners.some(r=>r.factId===id))throw new Error("MEMORY_FACT_NOT_FOUND");result=this.supports.audit(scope,actor,id,facts.find(f=>f.factId===id));}
-    else result=this.eligibleFactsWithinTransaction(scope,actor,transactionNow(this.db)).map(f=>({...f,scope:(owners.find(r=>r.factId===f.factId)?.projectKey!==undefined?"project":"global") as "global"|"project"}));
+    else result=this.eligibleFactsWithinTransaction(scope,actor,transactionNow(this.db)).map(f=>({...f,scope:(owners.find(r=>r.factId===f.factId)?.projectKey!==undefined?"project":"global") as "global"|"project",...(owners.find(r=>r.factId===f.factId)?.projectKey!==undefined?{projectKey:owners.find(r=>r.factId===f.factId)!.projectKey}:{})}));
     this.db.exec("COMMIT");return result;
    });}catch(error){this.db.exec("ROLLBACK");throw error}
   }
@@ -213,7 +213,7 @@ export class PolicyRepository {
    if(body.after)parseInternalId(body.after);
    // Hide pending/stale/deleted records. Confirmed M recall is unchanged.
    return this.records(scope).filter(r=>r.actorKey===actor&&r.generation===gen&&r.state==="candidate"&&r.id>(body.after as string)).filter(r=>{try{this.source(scope,r.sourceRef);return !this.suppression.subjectBlocked(scope,r.fact.subjectKey)&&!this.suppression.sourceBlocked(scope,r.sourceRef)}catch{return false}})
-    .slice(0,body.limit as number).map((r):PolicyCandidate=>({candidateId:r.id,revision:r.revision,attribute:r.extraction.attribute,value:r.extraction.value,reason:r.reason,sourceRef:r.sourceRef,assertion:r.fact.assertion}));
+    .slice(0,body.limit as number).map((r):PolicyCandidate=>({candidateId:r.id,revision:r.revision,attribute:r.extraction.attribute,value:r.extraction.value,reason:r.reason,sourceRef:r.sourceRef,assertion:r.fact.assertion,...(r.projectKey!==undefined?{projectKey:r.projectKey}:{})}));
   }
   if(cmd.kind!=="ingest"&&cmd.kind!=="event"&&cmd.kind!=="reconcileSupports"&&cmd.kind!=="integrate")throw new Error("MEMORY_INPUT_INVALID");
   const commandId=parseInternalId(cmd.commandId);
