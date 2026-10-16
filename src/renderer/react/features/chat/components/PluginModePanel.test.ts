@@ -205,6 +205,33 @@ describe("PluginModePanel", () => {
     expect(api.marketList).toHaveBeenCalledTimes(1);
   });
 
+  it("filters a multi-plugin market by capability declarations and shows the empty state for a miss", async () => {
+    const api = apiFor([]);
+    vi.mocked(api.marketList).mockResolvedValue({ ok: true, plugins: [
+      marketEntry({ id: "json-tools", name: "JSON 工具", author: "A", capabilities: ["JSON 语法与无损校验", "离线计算，不联网"] }),
+      marketEntry({ id: "timezone-tools", name: "时区工具", author: "B", capabilities: ["IANA 时区名校验", "离线计算，不联网"] }),
+      marketEntry({ id: "net-tool", name: "联网工具", author: "C", capabilities: ["访问网络"] }),
+      marketEntry({ id: "no-declaration", name: "未声明", author: "D" }),
+    ] });
+    await renderPanel(api); await clickMarketToggle();
+    const input = container.querySelector<HTMLInputElement>(".plugin-panel__search")!;
+    async function search(value: string) {
+      await act(async () => {
+        Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, "value")!.set!.call(input, value);
+        input.dispatchEvent(new Event("input", { bubbles: true }));
+      });
+      return [...container.querySelectorAll(".plugin-card-ui__name")].map((node) => node.textContent);
+    }
+    expect(container.querySelectorAll(".plugin-card-ui")).toHaveLength(4);
+    expect(await search("不联网")).toEqual(["JSON 工具", "时区工具"]);
+    expect(await search("时区名")).toEqual(["时区工具"]);
+    expect(await search("无损")).toEqual(["JSON 工具"]);
+    expect(await search("不存在的关键词")).toEqual([]);
+    expect(container.textContent).toContain("无匹配插件");
+    expect(await search("")).toHaveLength(4);
+    expect(api.marketList).toHaveBeenCalledTimes(1);
+  });
+
   it("blocks ZIP import and refresh while a market confirmation is pending", async () => {
     const gate = deferred<boolean>(); feedbackSpies.confirm.mockReturnValue(gate.promise);
     const api = apiFor([]); vi.mocked(api.marketList).mockResolvedValue({ ok: true, plugins: [marketEntry()] });

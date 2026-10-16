@@ -1,6 +1,6 @@
 # 插件示例说明
 
-本目录的五个插件用于阅读 API 与集成方式。源码、manifest 和署名保持原样；不把注册冒烟等同于真实宿主验证。
+本目录的前几个插件用于阅读 API 与集成方式。源码、manifest 和署名保持原样；不把注册冒烟等同于真实宿主验证。末尾的“随市场目录分发”五个插件是离线工具，由 `scripts/plugin-marketplace/build.mjs` 打包进离线目录，发布方式见 `docs/plugin-catalog-publishing.md`。
 
 | 目录 | 入口与依赖 | 展示内容 |
 | --- | --- | --- |
@@ -8,6 +8,18 @@
 | `weather-tool/` | `index.ts`；`secrets` | 读取 `openweathermap_key`、OpenWeather 请求失败或未配密钥时改用 Open-Meteo、城市缓存 |
 | `long-term-memory/` | `index.ts`；`llm`、`conversations` | 监听 `host:turn:finished`、读取消息、摘要、动态 Provider |
 | `scheduled-automation/` | `index.ts`；`scheduler` | 自有任务创建、列出、更新、删除；创建即停用，用户在宿主启用 |
+
+### 随市场目录分发的离线插件
+
+这五个插件都只做内存内计算：不联网、不读写文件、不启动命令，首次安装保持停用。每个目录含 `manifest.json`、`index.cjs`、`README.md`、`LICENSE`，以及只供目录条目使用、不进入 ZIP 的 `catalog.json`。测试在 `scripts/plugin-marketplace/`，运行 `npm run test:plugin-marketplace`。
+
+| 目录 | 工具 | 来源 |
+| --- | --- | --- |
+| `text-stats/` | `text-stats_count` | Firefly 插件，随包 LICENSE 记录 Cyrene-Agent 来源 |
+| `json-tools/` | `json-tools_validate`、`json-tools_compare` | 改编自 deepseek-harness `packages/util/values`（MIT） |
+| `timezone-tools/` | `timezone-tools_canonicalize`、`timezone-tools_convert` | 校验规则改编自 deepseek-harness `packages/util/time`（MIT）；换算为 Firefly 新写 |
+| `code-language/` | `code-language_detect` | 改编自 deepseek-harness `packages/util/code-language`（MIT） |
+| `text-trim/` | `text-trim_cap` | 改编自 deepseek-harness `packages/util/output-retention`（MIT） |
 
 ## 构建与安装
 

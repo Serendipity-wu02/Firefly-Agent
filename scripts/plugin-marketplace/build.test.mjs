@@ -12,7 +12,10 @@ import JSZip from "jszip";
 
 const builderUrl = new URL("./build.mjs", import.meta.url);
 const repoRoot = fileURLToPath(new URL("../../", import.meta.url));
-const zipName = "text-stats-1.0.0.zip";
+const pluginIds = ["text-stats", "json-tools", "timezone-tools", "code-language", "text-trim"];
+const zipName = id => `${id}-1.0.0.zip`;
+// text-stats 1.0.0 is already published at this hash in the online catalog; its package bytes must not drift.
+const PUBLISHED_TEXT_STATS_SHA256 = "86a0baccb7ead506d1c2f2ab6925e2a4b5cba6ab6fa488f26a34fb0df388f43d";
 
 async function builder() {
   assert.ok(existsSync(builderUrl), "marketplace artifact builder must exist");
@@ -28,40 +31,60 @@ async function fixture(t) {
 }
 
 async function json(file) { return JSON.parse(await readFile(file, "utf8")); }
+const lf = text => text.replace(/\r\n/g, "\n");
 
-test("bundled catalog identifies a checksummed disabled API v1 plugin with root manifest", async t => {
+test("bundled catalog lists every plugin with a checksummed disabled API v1 package and root manifest", async t => {
   const build = await builder();
   const outDir = await fixture(t);
   const result = await build({ outDir });
   const registry = await json(path.join(outDir, "registry.json"));
-  const bytes = await readFile(path.join(outDir, zipName));
   assert.equal(result.registryPath, path.join(outDir, "registry.json"));
-  assert.equal(result.zipPath, path.join(outDir, zipName));
-  assert.deepEqual(await readdir(outDir), ["registry.json", zipName]);
+  assert.deepEqual((await readdir(outDir)).sort(), ["registry.json", ...pluginIds.map(zipName)].sort());
   assert.equal(registry.apiVersion, 1);
-  assert.equal(registry.plugins.length, 1);
-  const entry = registry.plugins[0];
-  assert.equal(entry.zip, `bundled:${zipName}`);
-  assert.equal(entry.sha256, createHash("sha256").update(bytes).digest("hex"));
-  assert.equal(entry.downloads, 0);
-  assert.equal(entry.pluginApiVersion, 1);
-  assert.ok(entry.capabilities.length > 0 && entry.capabilities.every(x => typeof x === "string" && x.trim()));
-  const zip = await JSZip.loadAsync(bytes);
-  assert.deepEqual(Object.keys(zip.files), ["LICENSE", "README.md", "index.cjs", "manifest.json"]);
-  const manifest = JSON.parse(await zip.file("manifest.json").async("string"));
+  assert.deepEqual(registry.plugins.map(entry => entry.id), pluginIds);
+  assert.deepEqual(result.plugins.map(plugin => plugin.id), pluginIds);
+  // Compatibility for callers that only know the first plugin.
+  assert.equal(result.zipPath, path.join(outDir, zipName("text-stats")));
+  assert.equal(result.sha256, registry.plugins[0].sha256);
   const schema = await json(path.join(repoRoot, "src/plugins/manifest.schema.json"));
   const validate = new Ajv({ strict: false }).compile(schema);
-  assert.equal(validate(manifest), true, JSON.stringify(validate.errors));
-  for (const key of ["id", "name", "version", "description", "author"]) assert.equal(entry[key], manifest[key]);
-  assert.equal(manifest.defaultEnabled, false);
-  assert.equal(manifest.apiVersion, entry.pluginApiVersion);
-  assert.equal(manifest.entry, "index.cjs");
-  assert.equal(await zip.file("index.cjs").async("string"), (await readFile(path.join(repoRoot, "examples/text-stats/index.cjs"), "utf8")).replace(/\r\n/g, "\n"));
-  for (const file of Object.values(zip.files)) {
-    assert.equal(file.dir, false);
-    assert.equal(file.date.toISOString(), "1980-01-01T00:00:00.000Z");
-    assert.equal(file.unixPermissions, 0o100644);
+  const seenHashes = new Set();
+  for (const entry of registry.plugins) {
+    const bytes = await readFile(path.join(outDir, zipName(entry.id)));
+    assert.equal(entry.zip, `bundled:${zipName(entry.id)}`);
+    assert.equal(entry.sha256, createHash("sha256").update(bytes).digest("hex"));
+    seenHashes.add(entry.sha256);
+    assert.equal(entry.downloads, 0);
+    assert.equal(entry.pluginApiVersion, 1);
+    const catalog = await json(path.join(repoRoot, "examples", entry.id, "catalog.json"));
+    assert.deepEqual(entry.capabilities, catalog.capabilities);
+    assert.ok(entry.capabilities.length > 0 && entry.capabilities.every(x => typeof x === "string" && x.trim()));
+    const zip = await JSZip.loadAsync(bytes);
+    assert.deepEqual(Object.keys(zip.files), ["LICENSE", "README.md", "index.cjs", "manifest.json"]);
+    const manifest = JSON.parse(await zip.file("manifest.json").async("string"));
+    assert.equal(validate(manifest), true, JSON.stringify(validate.errors));
+    for (const key of ["id", "name", "version", "description", "author"]) assert.equal(entry[key], manifest[key]);
+    assert.equal(manifest.id, entry.id);
+    assert.equal(manifest.defaultEnabled, false);
+    assert.equal(manifest.apiVersion, entry.pluginApiVersion);
+    assert.equal(manifest.entry, "index.cjs");
+    assert.deepEqual(manifest.deps ?? [], []);
+    for (const name of ["index.cjs", "LICENSE", "README.md"]) {
+      assert.equal(await zip.file(name).async("string"), lf(await readFile(path.join(repoRoot, "examples", entry.id, name), "utf8")));
+    }
+    for (const file of Object.values(zip.files)) {
+      assert.equal(file.dir, false);
+      assert.equal(file.date.toISOString(), "1980-01-01T00:00:00.000Z");
+      assert.equal(file.unixPermissions, 0o100644);
+    }
   }
+  assert.equal(seenHashes.size, pluginIds.length, "every package must be distinct");
+});
+
+test("text-stats 1.0.0 stays byte-identical to the package already published in the online catalog", async t => {
+  const build = await builder();
+  const result = await build({ outDir: await fixture(t) });
+  assert.equal(result.plugins.find(plugin => plugin.id === "text-stats").sha256, PUBLISHED_TEXT_STATS_SHA256);
 });
 
 test("repeated builds in different directories and time zones are byte-for-byte identical", async t => {
@@ -74,38 +97,57 @@ test("repeated builds in different directories and time zones are byte-for-byte 
     cwd: os.tmpdir(), encoding: "utf8", env: { ...process.env, TZ: "Pacific/Honolulu" },
   });
   assert.equal(cli.status, 0, cli.stderr);
-  for (const name of [zipName, "registry.json"]) {
+  for (const id of pluginIds) assert.match(cli.stdout, new RegExp(`${zipName(id)} \\(SHA-256 [0-9a-f]{64}\\)`));
+  for (const name of [...pluginIds.map(zipName), "registry.json"]) {
     assert.deepEqual(await readFile(path.join(first, name)), await readFile(path.join(second, name)));
   }
 });
 
-test("public mode prepares release and catalog URLs only from all explicit inputs", async t => {
+test("public mode gives each plugin its own <id>-<version> release tag unless one tag is named", async t => {
   const build = await builder();
-  const outDir = await fixture(t);
-  const options = { outDir, repository: "example-owner/example-repo", tag: "plugins-v1.0.0", registryRef: "catalog-v1" };
+  const root = await fixture(t);
+  const options = { outDir: path.join(root, "per-plugin"), repository: "example-owner/example-repo", registryRef: "catalog-v1" };
   const result = await build(options);
-  const registry = await json(path.join(outDir, "marketplace/registry.json"));
-  const config = await json(path.join(outDir, "marketplace-config.json"));
-  assert.equal(result.registryPath, path.join(outDir, "marketplace/registry.json"));
-  assert.equal(result.configPath, path.join(outDir, "marketplace-config.json"));
-  assert.equal(registry.plugins[0].zip, `https://github.com/example-owner/example-repo/releases/download/plugins-v1.0.0/${zipName}`);
+  const registry = await json(path.join(options.outDir, "marketplace/registry.json"));
+  const config = await json(path.join(options.outDir, "marketplace-config.json"));
+  assert.equal(result.registryPath, path.join(options.outDir, "marketplace/registry.json"));
+  assert.equal(result.configPath, path.join(options.outDir, "marketplace-config.json"));
+  assert.deepEqual(registry.plugins.map(entry => entry.zip), pluginIds.map(id =>
+    `https://github.com/example-owner/example-repo/releases/download/${id}-1.0.0/${zipName(id)}`));
   assert.deepEqual(config, {
     registryUrls: ["https://raw.githubusercontent.com/example-owner/example-repo/catalog-v1/marketplace/registry.json"],
     zipUrlPrefixes: ["https://github.com/example-owner/example-repo/releases/download/"],
   });
-  assert.equal(existsSync(path.join(outDir, "registry.json")), false);
+  assert.equal(existsSync(path.join(options.outDir, "registry.json")), false);
   const firstRegistry = await readFile(result.registryPath);
   await build(options);
   assert.deepEqual(await readFile(result.registryPath), firstRegistry);
+
+  const single = await build({ ...options, outDir: path.join(root, "single"), tag: "plugins-v1.0.0" });
+  const singleRegistry = await json(single.registryPath);
+  assert.deepEqual(singleRegistry.plugins.map(entry => entry.zip), pluginIds.map(id =>
+    `https://github.com/example-owner/example-repo/releases/download/plugins-v1.0.0/${zipName(id)}`));
 });
 
-test("public and bundled modes use identical ZIP bytes and SHA-256", async t => {
+test("the live catalog's text-stats URL is reproduced by the real repository settings", async t => {
+  const build = await builder();
+  const result = await build({ outDir: await fixture(t), repository: "Serendipity-wu02/Firefly_Agent", registryRef: "plugin-catalog" });
+  const registry = await json(result.registryPath);
+  const textStats = registry.plugins.find(entry => entry.id === "text-stats");
+  assert.equal(textStats.zip, "https://github.com/Serendipity-wu02/Firefly_Agent/releases/download/text-stats-1.0.0/text-stats-1.0.0.zip");
+  assert.equal(textStats.sha256, PUBLISHED_TEXT_STATS_SHA256);
+});
+
+test("public and bundled modes use identical ZIP bytes and SHA-256 for every plugin", async t => {
   const build = await builder();
   const root = await fixture(t);
   const bundled = await build({ outDir: path.join(root, "bundled") });
   const published = await build({ outDir: path.join(root, "public"), repository: "owner/repo", tag: "v1.0.0", registryRef: "main" });
-  assert.deepEqual(await readFile(bundled.zipPath), await readFile(published.zipPath));
-  assert.equal((await json(bundled.registryPath)).plugins[0].sha256, (await json(published.registryPath)).plugins[0].sha256);
+  for (const [index, plugin] of bundled.plugins.entries()) {
+    assert.deepEqual(await readFile(plugin.zipPath), await readFile(published.plugins[index].zipPath));
+  }
+  assert.deepEqual((await json(bundled.registryPath)).plugins.map(entry => entry.sha256),
+    (await json(published.registryPath)).plugins.map(entry => entry.sha256));
 });
 
 test("rejects incomplete or unsafe public options before creating outputs", async t => {
@@ -113,12 +155,12 @@ test("rejects incomplete or unsafe public options before creating outputs", asyn
   const root = await fixture(t);
   const valid = { repository: "owner/repo", tag: "v1.0.0", registryRef: "main" };
   const invalid = [
-    { repository: "owner/repo" }, { tag: "v1" }, { registryRef: "main" },
+    { repository: "owner/repo" }, { tag: "v1" }, { registryRef: "main" }, { repository: "owner/repo", tag: "v1" },
     { ...valid, repository: "https://github.com/owner/repo" },
     { ...valid, repository: "owner/repo/extra" }, { ...valid, repository: "../repo" },
     { ...valid, repository: "owner/repo?token=secret" },
     { ...valid, tag: "../escape" }, { ...valid, tag: "v1?token=secret" },
-    { ...valid, tag: "refs//tags/v1" }, { ...valid, tag: "tag.lock" },
+    { ...valid, tag: "refs//tags/v1" }, { ...valid, tag: "tag.lock" }, { ...valid, tag: "" },
     { ...valid, registryRef: "main#fragment" }, { ...valid, registryRef: "/main" },
     { ...valid, registryRef: "main\\evil" }, { ...valid, registryRef: "a/../main" },
     { ...valid, registryRef: "main " }, { ...valid, registryRef: "" },
@@ -150,7 +192,7 @@ test("public CLI explicitly reports preparation without claiming hosted availabi
   await builder();
   const outDir = await fixture(t);
   const result = spawnSync(process.execPath, [fileURLToPath(builderUrl), "--out-dir", outDir,
-    "--repository", "owner/repo", "--tag", "v1.0.0", "--registry-ref", "main"], { encoding: "utf8" });
+    "--repository", "owner/repo", "--registry-ref", "main"], { encoding: "utf8" });
   assert.equal(result.status, 0, result.stderr);
   assert.match(result.stdout, /prepared/i);
   assert.match(result.stdout, /not published/i);
@@ -165,7 +207,7 @@ async function sourceFixture(t) {
     await mkdir(path.dirname(path.join(root, file)), { recursive: true });
     await cp(path.join(repoRoot, file), path.join(root, file));
   }
-  await cp(path.join(repoRoot, "examples/text-stats"), path.join(root, "examples/text-stats"), { recursive: true });
+  for (const id of pluginIds) await cp(path.join(repoRoot, "examples", id), path.join(root, "examples", id), { recursive: true });
   const { buildMarketplace } = await import(pathToFileURL(path.join(root, "scripts/plugin-marketplace/build.mjs")).href);
   return { root, build: buildMarketplace };
 }
@@ -183,21 +225,59 @@ test("rejects slash-bearing tags and registry refs rather than generating forbid
   assert.equal(config.registryUrls[0], `https://raw.githubusercontent.com/owner/repo/${"a".repeat(40)}/marketplace/registry.json`);
 });
 
-test("bumping the source manifest to another valid SemVer determines the filename and catalog version", async t => {
+test("bumping a source manifest to another valid SemVer determines the filename and catalog version", async t => {
   const { root, build } = await sourceFixture(t);
-  const manifestPath = path.join(root, "examples/text-stats/manifest.json");
+  const manifestPath = path.join(root, "examples/json-tools/manifest.json");
   const manifest = await json(manifestPath);
   manifest.version = "1.2.3-beta.1+Build.2";
   await writeFile(manifestPath, JSON.stringify(manifest));
   const result = await build({ outDir: path.join(root, "output") });
-  assert.equal(path.basename(result.zipPath), "text-stats-1.2.3-beta.1+Build.2.zip");
+  const bumped = result.plugins.find(plugin => plugin.id === "json-tools");
+  assert.equal(path.basename(bumped.zipPath), "json-tools-1.2.3-beta.1+Build.2.zip");
   const catalog = await json(result.registryPath);
-  assert.equal(catalog.plugins[0].version, manifest.version);
-  assert.equal(catalog.plugins[0].zip, "bundled:text-stats-1.2.3-beta.1+Build.2.zip");
+  const entry = catalog.plugins.find(item => item.id === "json-tools");
+  assert.equal(entry.version, manifest.version);
+  assert.equal(entry.zip, "bundled:json-tools-1.2.3-beta.1+Build.2.zip");
+  assert.equal(catalog.plugins.find(item => item.id === "text-stats").version, "1.0.0");
   for (const version of ["01.2.3", "1.2", "1.2.3 ", "../evil", "1.0.0-beta.01"]) {
     manifest.version = version;
     await writeFile(manifestPath, JSON.stringify(manifest));
     await assert.rejects(build({ outDir: path.join(root, "invalid") }), /invalid/i);
   }
   assert.equal(existsSync(path.join(root, "invalid")), false);
+});
+
+test("refuses plugins whose manifest or catalog.json breaks the catalog contract, without creating outputs", async t => {
+  const { root, build } = await sourceFixture(t);
+  const manifestPath = path.join(root, "examples/text-trim/manifest.json");
+  const catalogPath = path.join(root, "examples/text-trim/catalog.json");
+  const manifest = await json(manifestPath);
+  const catalog = await json(catalogPath);
+  const outDir = path.join(root, "output");
+  const manifestCases = [
+    { ...manifest, id: "other-id" }, { ...manifest, defaultEnabled: true }, { ...manifest, deps: ["llm"] },
+    { ...manifest, entry: "main.cjs" }, { ...manifest, apiVersion: 2 }, { ...manifest, extra: true },
+  ];
+  for (const bad of manifestCases) {
+    await writeFile(manifestPath, JSON.stringify(bad));
+    await assert.rejects(build({ outDir }), /text-trim manifest/);
+  }
+  await writeFile(manifestPath, JSON.stringify(manifest));
+  const catalogCases = [{}, { capabilities: [] }, { capabilities: [""] }, { capabilities: [1] }, { capabilities: Array(21).fill("x") },
+    { capabilities: ["x".repeat(501)] }, { ...catalog, extra: 1 }, []];
+  for (const bad of catalogCases) {
+    await writeFile(catalogPath, JSON.stringify(bad));
+    await assert.rejects(build({ outDir }), /text-trim catalog\.json/);
+  }
+  assert.equal(existsSync(outDir), false);
+});
+
+test("the publishing guide lists every catalog package with its current tag and SHA-256", async t => {
+  const build = await builder();
+  const result = await build({ outDir: await fixture(t) });
+  const guide = await readFile(path.join(repoRoot, "docs/plugin-catalog-publishing.md"), "utf8");
+  assert.equal(result.plugins.length, pluginIds.length);
+  for (const plugin of result.plugins) {
+    assert.ok(guide.includes(`\`${plugin.id}-${plugin.version}\` | \`${plugin.sha256}\``), `${plugin.id} row with its current hash`);
+  }
 });
