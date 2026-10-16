@@ -19,9 +19,9 @@ import type {
 import { MarkdownContent } from "./ChatMessageList";
 import "./RunExperience.css";
 
-function PanelShell({ children, title }: { children: ReactNode; title: string }) {
+function PanelShell({ children, title, kind }: { children: ReactNode; title: string; kind?: "permission" }) {
   return (
-    <section className="ff-interaction-panel" aria-label={title}>
+    <section className="ff-interaction-panel" aria-label={title} data-kind={kind}>
       {children}
     </section>
   );
@@ -155,7 +155,7 @@ export function PermissionPanel({
 }) {
   const { t } = useTranslation();
   return (
-    <PanelShell title={t("interaction.permissionTitle")}>
+    <PanelShell title={t("interaction.permissionTitle")} kind="permission">
       <div className="ff-interaction-panel__heading">
         <span className="ff-interaction-panel__status">{t("interaction.permissionTitle")}</span>
       </div>

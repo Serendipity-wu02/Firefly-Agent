@@ -32,3 +32,19 @@ describe("chat reading width", () => {
     expect(stylesheet).not.toContain("data-assistant-bubble");
   });
 });
+
+describe("chat hierarchy from the UI skeleton preview", () => {
+  const composer = readFileSync(resolve(__dirname, "ChatComposer.css"), "utf8");
+  const run = readFileSync(resolve(__dirname, "RunExperience.css"), "utf8");
+  it("gives the user's turn a tucked-corner accent bubble", () => {
+    expect(stylesheet).toMatch(/\.ff-message--user \.ant-bubble-content \{[^}]*border-radius: 16px 16px 4px 16px;[^}]*background: var\(--ff-accent\);/);
+  });
+  it("floats the composer as one rounded card", () => {
+    expect(composer).toMatch(/\.ff-composer\.ant-sender \{[^}]*border-radius: 18px;[^}]*box-shadow: var\(--ff-shadow-popover\);/);
+  });
+  it("marks a pending approval with an amber edge", () => {
+    expect(run).toMatch(/\.ff-interaction-panel\[data-kind="permission"\] \{ border-left: 3px solid var\(--ff-warning\); \}/);
+    const panel = readFileSync(resolve(__dirname, "InteractionPanel.tsx"), "utf8");
+    expect(panel).toContain('kind="permission"');
+  });
+});
