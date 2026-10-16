@@ -1103,3 +1103,22 @@ it("an unbound session never reads project history", async () => {
   const request = await turnIn(f, "ask-chat", "chat", null, "zephyr");
   expect(request).toContain("chatmark"); expect(request).not.toContain("alphamark");
 });
+
+// ── The settings view says where a memory applies and which project it belongs to ──
+it("settings state labels a project fact with its project name and a global fact as global, without exposing the project key", async () => {
+  const f = await fixture("code");
+  await turnIn(f, "learn-alpha", "code", "alpha", "I prefer bash");
+  await turnIn(f, "learn-chat", "chat", null, "请叫我小林");
+  const state = await f.memory.settingsHost.getState(f.settingsEvent);
+  const byText = (text: string) => state.facts.find((fact: any) => fact.assertion.includes(text)) as any;
+  expect(byText("bash")).toMatchObject({ scope: "project", projectName: "alpha" });
+  expect(byText("小林")).toMatchObject({ scope: "global" }); expect(byText("小林").projectName).toBeUndefined();
+  expect(JSON.stringify(state)).not.toMatch(/project-[a-f0-9]{64}/);
+});
+it("a project fact keeps its scope but loses the name once no session is bound to that project any more", async () => {
+  const f = await fixture("code");
+  await turnIn(f, "learn-alpha", "code", "alpha", "I prefer bash");
+  f.sessions.delete("learn-alpha");
+  const fact = (await f.memory.settingsHost.getState(f.settingsEvent)).facts.find((item: any) => item.assertion.includes("bash")) as any;
+  expect(fact.scope).toBe("project"); expect(fact.projectName).toBeUndefined();
+});
