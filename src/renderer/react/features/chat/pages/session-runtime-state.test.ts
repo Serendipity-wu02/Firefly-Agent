@@ -14,6 +14,7 @@ import {
   mergeHarnessTodosForSession,
   patchSessionMessage,
   recoverInterruptedMessage,
+  markInteractionResolved,
   removeInteractionById,
   sessionInteraction,
   sessionInteractionPending,
@@ -200,6 +201,44 @@ describe("session runtime presentation state", () => {
       expect(sessionInteraction(next, "a")?.interaction.id).toBe("p1");
       expect(sessionInteraction(next, "a")?.queued).toEqual([]);
       expect(sessionInteraction(next, "b")).toBeUndefined();
+    });
+
+    describe("a graded quiz that stays on screen until the run ends", () => {
+      const quiz = (id: string): ComposerInteraction => ({
+        kind: "quiz", id, intro: "", questions: [],
+      });
+
+      it("lets a later request take its place instead of queueing behind it", () => {
+        const resolved = markInteractionResolved(setSessionInteraction({}, "s", quiz("q1")), "quiz", "q1");
+
+        const next = setSessionInteraction(resolved, "s", permission("p1"));
+
+        expect(sessionInteraction(next, "s")?.interaction.id).toBe("p1");
+        expect(sessionInteraction(next, "s")?.queued).toEqual([]);
+        expect(sessionInteraction(next, "s")?.busy).toBe(false);
+      });
+
+      it("keeps showing the graded card while nothing else is waiting", () => {
+        const resolved = markInteractionResolved(setSessionInteraction({}, "s", quiz("q1")), "quiz", "q1");
+
+        expect(sessionInteraction(resolved, "s")?.interaction.id).toBe("q1");
+        expect(setSessionInteraction(resolved, "s", quiz("q1")).s.interaction.id).toBe("q1");
+      });
+
+      it("promotes cards that were already queued once it is submitted", () => {
+        const state = setSessionInteraction(setSessionInteraction({}, "s", quiz("q1")), "s", permission("p1"));
+
+        const next = markInteractionResolved(state, "quiz", "q1");
+
+        expect(sessionInteraction(next, "s")?.interaction.id).toBe("p1");
+      });
+
+      it("does not mark a different or already-gone card", () => {
+        const state = setSessionInteraction({}, "s", quiz("q1"));
+
+        expect(markInteractionResolved(state, "quiz", "other")).toBe(state);
+        expect(markInteractionResolved(state, "permission", "q1")).toBe(state);
+      });
     });
 
     it("leaves the state untouched when the settled card is unknown", () => {

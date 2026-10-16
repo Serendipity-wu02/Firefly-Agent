@@ -10,6 +10,8 @@ export interface SessionInteractionEntry {
   busy: boolean;
   /** 已到达、等待当前卡片处理完后依次展示的卡片（并行子 agent 可同时挂起多个审批）。 */
   queued: ComposerInteraction[];
+  /** 展示中的卡片已经答完、只是留在原地等 run 终态收卡（如判分后的抽查卡）：不再阻塞后到的卡片。 */
+  resolved?: boolean;
 }
 
 export type SessionInteractionState = Record<string, SessionInteractionEntry>;
@@ -53,6 +55,8 @@ export function setSessionInteraction(
   if (isSameInteraction(current.interaction, interaction.kind, interaction.id)) {
     return { ...state, [sessionId]: { ...current, interaction } };
   }
+  // 展示中的卡片已答完：后到的卡片直接取代它，否则用户够不着，run 又在等这张新卡。
+  if (current.resolved) return { ...state, [sessionId]: { interaction, busy, queued: [...current.queued] } };
   const queuedIndex = current.queued.findIndex((item) => isSameInteraction(item, interaction.kind, interaction.id));
   const queued = queuedIndex < 0
     ? [...current.queued, interaction]
@@ -98,6 +102,22 @@ export function clearSessionInteraction(
   }
   const target = [current.interaction, ...current.queued].find((item) => item.id === id);
   return target ? dropInteraction(state, sessionId, target.kind, id) : state;
+}
+
+/**
+ * 展示中的卡片已经答完但要留在屏上（抽查卡判分后）：有排队的卡片就直接推进；
+ * 没有就标记为已答完，让之后到达的卡片取代它。
+ */
+export function markInteractionResolved(
+  state: SessionInteractionState,
+  kind: ComposerInteraction["kind"],
+  id: string,
+): SessionInteractionState {
+  const sessionId = Object.keys(state).find((key) => isSameInteraction(state[key].interaction, kind, id));
+  if (!sessionId) return state;
+  const current = state[sessionId];
+  if (current.queued.length > 0) return dropInteraction(state, sessionId, kind, id);
+  return current.resolved ? state : { ...state, [sessionId]: { ...current, resolved: true } };
 }
 
 /** 清掉该会话中满足条件的卡片（展示中或排队中），按序推进队列。 */
