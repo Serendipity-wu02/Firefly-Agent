@@ -126,6 +126,8 @@
     "modelWaitText": "Waiting for the model to respond…",
     "thinkingTitle": "Thinking…",
     "thinkingDoneTitle": "Done thinking",
+    "copyAsQuote": "Copy as quote",
+    "quoteCopied": "Copied",
     "assistantStickerAlt": "Firefly sticker",
     "userStickerAlt": "Your sticker",
     "fireflyAvatarAlt": "Firefly",

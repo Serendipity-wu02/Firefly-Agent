@@ -126,6 +126,8 @@
     "modelWaitText": "流萤正在等模型回应…",
     "thinkingTitle": "正在思考…",
     "thinkingDoneTitle": "思考完成",
+    "copyAsQuote": "复制为引用",
+    "quoteCopied": "已复制",
     "assistantStickerAlt": "流萤表情",
     "userStickerAlt": "用户表情",
     "fireflyAvatarAlt": "流萤",
