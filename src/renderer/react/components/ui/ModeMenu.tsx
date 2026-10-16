@@ -1,21 +1,24 @@
 import { Popover } from "antd";
 import { useEffect, useRef, useState } from "react";
 import { useTranslation } from "../../i18n";
+import { SlidingTabs } from "./SlidingTabs";
 import "./ModeMenu.css";
 
 interface ModeMenuProps {
   value: string;
   onChange: (mode: string) => void;
-  /** sidebar：侧栏顶部的整行触发器；compact：侧栏折叠时放在标题栏头像旁的小触发器。 */
+  /** sidebar：侧栏顶部整行的滑动胶囊（三个模式一眼可见、一次点击切换）；compact：侧栏折叠时放在标题栏头像旁的小下拉。 */
   variant?: "sidebar" | "compact";
 }
 
-/** 模式身份保持 Work/Chat/Code；顺序沿用原来的分段开关。副标题来自 i18n，文案描述各模式的实际用途。 */
+/** 模式身份保持 Work/Chat/Code。说明文案来自 i18n：下拉里是副标题，胶囊里是悬停提示。 */
 const modes = [
   { key: "work", label: "Work", descriptionKey: "ui.modeWorkDescription" },
   { key: "chat", label: "Chat", descriptionKey: "ui.modeChatDescription" },
   { key: "code", label: "Code", descriptionKey: "ui.modeCodeDescription" },
 ];
+/** 胶囊里的顺序：Chat、Work、Code（日常对话在前）。 */
+const capsuleOrder = ["chat", "work", "code"];
 
 function ChevronIcon() {
   return <svg className="ff-mode-menu__chevron" viewBox="0 0 24 24" aria-hidden="true"><path d="m7 10 5 5 5-5" /></svg>;
@@ -68,8 +71,31 @@ function ModeMenuList({ value, onPick, onClose }: ModeMenuListProps) {
   );
 }
 
-/** 侧栏顶部的模式下拉：触发器显示当前模式名和小箭头，点开后每行是模式名 + 一行说明，当前项带勾。 */
+/** 侧栏顶部的模式切换：展开时是滑动胶囊；折叠时是下拉（触发器显示当前模式名和小箭头，点开后每行是模式名 + 一行说明，当前项带勾）。 */
 export function ModeMenu({ value, onChange, variant = "sidebar" }: ModeMenuProps) {
+  if (variant === "sidebar") return <ModeCapsule value={value} onChange={onChange} />;
+  return <ModeDropdown value={value} onChange={onChange} variant={variant} />;
+}
+
+function ModeCapsule({ value, onChange }: Pick<ModeMenuProps, "value" | "onChange">) {
+  const { t } = useTranslation();
+  return (
+    <div className="ff-mode-switch">
+      <SlidingTabs
+        stretch
+        ariaLabel={t("ui.modeMenu")}
+        activeId={value}
+        onChange={(mode) => { if (mode !== value) onChange(mode); }}
+        tabs={capsuleOrder.map((key) => {
+          const mode = modes.find((item) => item.key === key)!;
+          return { id: mode.key, label: mode.label, title: t(mode.descriptionKey), tabData: { "data-mode": mode.key } };
+        })}
+      />
+    </div>
+  );
+}
+
+function ModeDropdown({ value, onChange, variant }: ModeMenuProps & { variant: "sidebar" | "compact" }) {
   const { t } = useTranslation();
   const [open, setOpen] = useState(false);
   const triggerRef = useRef<HTMLButtonElement>(null);
