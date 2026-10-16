@@ -67,10 +67,10 @@ async function fixture(mode: "chat" | "work" | "code" = "chat", options: { witho
       } }; } });
   cleanups.push(async () => { try { await memory.close(); } finally { repo.close(); fs.rmSync(root, { recursive: true, force: true }); } });
   const event = { sender, senderFrame: sender.mainFrame } as any;
-  async function user(id = "session-a", content = "I prefer PowerShell", messageId = "u1") {
+  async function user(id = "session-a", content = "I prefer PowerShell", messageId = "u1", at = 1000) {
     const message = { id: messageId, role: "user" as const, content };
     await memory.appendUser(event, id, message, () => { sessions.get(id).messages.push(message); });
-    await store.append(id, { id: messageId, kind: "user", turnId: messageId, revision: 1, at: 1000, payload: { text: content } });
+    await store.append(id, { id: messageId, kind: "user", turnId: messageId, revision: 1, at, payload: { text: content } });
   }
   function input(id = "session-a", runId = "run-a"): FireflyRunOptions {
     return { settings: { ...config, contextWindowTokens: 128000 }, conversationId: id, conversationMode: sessions.get(id).mode, runId,
@@ -206,6 +206,58 @@ it("waits for the actual pending provider settlement before closing the backend"
   finish(Response.json({ choices: [{ message: { role: "assistant", content: "late" }, finish_reason: "stop" }] }));
   await rejection; await closing; expect(f.closed).toBe(1);
   expect((await f.store.read("session-a")).entries.map(entry => entry.kind)).toEqual(["user"]);
+});
+
+it("reports an exhausted history excerpt budget as an incomplete result, not as complete coverage", async () => {
+  const f = await fixture(); await f.user("session-a", "harbor " + "x".repeat(7000)); await f.store.checkpoint("session-a");
+  f.sessions.set("session-b", { id: "session-b", mode: "code", messages: [], modelProfileId: "luna" }); f.select("session-b");
+  await f.user("session-b", "harbor current question"); f.memory.authorizeRun(f.event, "session-b");
+  const run = await f.memory.openRun(f.input("session-b", "run-b"));
+  await expect(run.call(f.call())).resolves.toMatchObject({ text: "synthetic answer" });
+  expect(f.memory.getHistoryCoverage("session-b")).toMatchObject({ status: "insufficient", selected: 1, covered: 1, retrieval: "excerpt-budget-exhausted" });
+  expect(f.memory.getHistoryCoverage("session-b").diagnostics).toContain("MEMORY_HISTORY_EXCERPT_BUDGET_EXHAUSTED");
+  expect(f.sent[0]).toContain("历史检索结果不完整"); expect(f.sent[0]).toContain("MEMORY_HISTORY_EXCERPT_BUDGET_EXHAUSTED"); expect(f.sent[0]).toContain("不能据此断言历史不存在");
+  await run.close();
+});
+
+async function twoDatedSessions(f: Awaited<ReturnType<typeof fixture>>, question: string) {
+  const day = 86_400_000, now = Date.now();
+  await f.user("session-a", "harbor recent plan", "ua", now - day); await f.store.checkpoint("session-a");
+  f.sessions.set("session-c", { id: "session-c", mode: "chat", messages: [], modelProfileId: "luna" }); f.select("session-c");
+  await f.user("session-c", "harbor old plan", "uc", now - 10 * day); await f.store.checkpoint("session-c");
+  f.sessions.set("session-b", { id: "session-b", mode: "code", messages: [], modelProfileId: "luna" }); f.select("session-b");
+  await f.user("session-b", question, "ub", now); f.memory.authorizeRun(f.event, "session-b");
+  const run = await f.memory.openRun(f.input("session-b", "run-b")); await run.call(f.call()); await run.close();
+  return f.sent[0];
+}
+
+it("limits history retrieval to the time window the user asked for and says so", async () => {
+  const f = await fixture(), request = await twoDatedSessions(f, "最近3天 harbor current question");
+  expect(request).toContain("harbor recent plan"); expect(request).not.toContain("harbor old plan");
+  expect(request).toContain("已按时间限定检索历史"); expect(request).toContain("过去 3 天");
+  expect(f.memory.getHistoryCoverage("session-b")).toMatchObject({ status: "complete", temporal: "applied" });
+});
+
+it("retrieves across all time and sends no time notice when the question has no time intent", async () => {
+  const f = await fixture(), request = await twoDatedSessions(f, "harbor current question");
+  expect(request).toContain("harbor recent plan"); expect(request).toContain("harbor old plan");
+  expect(request).not.toContain("已按时间限定检索历史");
+  expect(f.memory.getHistoryCoverage("session-b").temporal).toBeUndefined();
+});
+
+it("does not guess when the question names two different time windows", async () => {
+  const f = await fixture(), request = await twoDatedSessions(f, "昨天和上周 harbor current question");
+  expect(request).toContain("harbor old plan"); expect(request).not.toContain("已按时间限定检索历史");
+});
+
+it("keeps complete coverage and sends no incomplete-result notice when the history fits its budgets", async () => {
+  const f = await fixture(); await f.user("session-a", "harbor prior discussion"); await f.store.checkpoint("session-a");
+  f.sessions.set("session-b", { id: "session-b", mode: "code", messages: [], modelProfileId: "luna" }); f.select("session-b");
+  await f.user("session-b", "harbor current question"); f.memory.authorizeRun(f.event, "session-b");
+  const run = await f.memory.openRun(f.input("session-b", "run-b")); await run.call(f.call());
+  expect(f.memory.getHistoryCoverage("session-b")).toMatchObject({ status: "complete", selected: 1, covered: 1, retrieval: "complete" });
+  expect(f.sent[0]).not.toContain("历史检索结果不完整");
+  await run.close();
 });
 
 it("refreshes coverage diagnostics when a retry fails for a different verified reason", async () => {

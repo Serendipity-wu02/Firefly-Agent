@@ -47,6 +47,7 @@ import { createShadowService, type ShadowService } from "../memory-shadow/shadow
 import { createShadowModel, type ShadowModel } from "../memory-shadow/shadow-model-call";
 import { recordRequest, recordUsage } from "../token-usage-store";
 import { queryScopedHistory } from "./scoped-history-query";
+import { parseHistoryTimeIntent } from "../memory-history/history-time-intent";
 import { createProductionModelRegistry } from "./production-model-registry";
 import { openProductionMemoryBackend, type ProductionMemoryBackend } from "./production-memory-backend";
 
@@ -59,6 +60,10 @@ export interface DefaultMemoryHistoryCoverage {
   readonly selected: number;
   readonly covered: number;
   readonly diagnostics: readonly string[];
+  /** Absent until a query ran. Anything but `complete` means a budget cut the retrieval short, whatever `covered` says. */
+  readonly retrieval?: "complete" | "index-budget-exhausted" | "excerpt-budget-exhausted";
+  /** Present only when the question carried a time intent; anything but `applied` means some history had no provable time. */
+  readonly temporal?: "applied" | "partial" | "unavailable";
 }
 export interface MainDefaultMemoryOptions extends Pick<AuthorityOptions, "getChatWindow" | "targets"> {
   getSettingsWindow?(): Pick<BrowserWindow, "webContents" | "isDestroyed"> | null;
@@ -71,6 +76,8 @@ export interface MainDefaultMemoryOptions extends Pick<AuthorityOptions, "getCha
   /** Main-only resource seam. One opener belongs to this entire storage-context owner. */
   openBackend?(): Promise<ProductionMemoryBackend>;
   clock?: () => number;
+  /** IANA zone used to read "yesterday"/"last week" in a question; the system zone by default. */
+  timeZone?: string;
   /** Pure status projection for the host UI. It cannot confer run/read authority. */
   onHistoryCoverage?(sessionId: string, coverage: DefaultMemoryHistoryCoverage): void;
 }
@@ -320,7 +327,9 @@ export function createMainDefaultMemory(options: MainDefaultMemoryOptions) {
                 }
                 const actors = run.readActorTokens.filter(token => actorAuthority.requireActor(token).sessionId !== SETTINGS_SESSION);
                 status(id, { status: "not-checked", selected: actors.length, covered: 0, diagnostics: [] });
-                const result = await queryScopedHistory({ actors, assertCurrent,
+                // Only the verified current user question can carry a time intent; history text never does.
+                const timeIntent = parseHistoryTimeIntent(current.userText, clock(), options.timeZone ?? Intl.DateTimeFormat().resolvedOptions().timeZone);
+                const result = await queryScopedHistory({ actors, assertCurrent, ...(timeIntent ? { timeIntent: { label: timeIntent.label } } : {}),
                   capture: token => {
                     const other = actorAuthority.requireActor(token), historical = records.get(other.sessionId);
                     if (!historical || historical.actor !== token || other.sessionId === id) return fail("MEMORY_ACTOR_DENIED");
@@ -328,7 +337,9 @@ export function createMainDefaultMemory(options: MainDefaultMemoryOptions) {
                   },
                   query: async covered => {
                     const partition = history.grantSessions(state.actor, covered, { includeCurrent: false });
-                    return (await history.query(state.actor, { query: current.userText, scope: partition, signal })).evidence;
+                    // The index status travels with the evidence: an exhausted budget is a gap in the result.
+                    const retrieved = await history.query(state.actor, { query: current.userText, scope: partition, signal, ...(timeIntent ? { temporal: timeIntent.query } : {}) });
+                    return { evidence: retrieved.evidence, status: retrieved.status, ...(retrieved.temporal ? { temporal: retrieved.temporal } : {}) };
                   },
                 });
                 status(id, result.coverage);
