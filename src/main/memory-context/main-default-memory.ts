@@ -25,6 +25,7 @@ import { createHistoryBudgetStatsRecorder } from "../memory-history/history-budg
 import { getStorageContext } from "../storage-context";
 import { createMainUserFactCoordinator } from "../memory-policy/main-user-fact-coordinator";
 import { createMainFactSelector } from "../memory-recall/main-fact-selector";
+import { projectKeyForWorkspaceRoot } from "../memory-policy/project-scope";
 import type { ConversationTranscriptStore } from "../orchestrator/conversation-transcript-store";
 import type { FireflyRunOptions } from "../orchestrator/firefly-agent";
 import { createTranscriptSink, readTranscriptSinkBinding } from "../orchestrator/transcript-sink";
@@ -166,6 +167,11 @@ export function createMainDefaultMemory(options: MainDefaultMemoryOptions) {
     const safe = Object.freeze({ ...value, diagnostics: Object.freeze([...new Set(value.diagnostics)]) });
     coverage.set(id, safe);
     try { options.onHistoryCoverage?.(id, safe); } catch { /* UI observers do not alter authority or cleanup. */ }
+  }
+  /** Project key of a Work/Code session's bound workspace; Chat sessions and unbound sessions only see global facts. */
+  function projectOf(id: string): string | undefined {
+    const root = options.getSession(id)?.workspaceBinding?.workspaceRoot;
+    return root ? projectKeyForWorkspaceRoot(root) : undefined;
   }
   function selectedProfile(id: string): string {
     const session = options.getSession(id);
@@ -336,7 +342,8 @@ export function createMainDefaultMemory(options: MainDefaultMemoryOptions) {
     let state = records.get(id);
     if (!state) {
       core.router.register({ scopeKey: SCOPE, anchorIdentity: { providerId: PROVIDER, sessionId: id, messageId: "main-actor-binding" }, sourceToken: source.token });
-      const actor = core.actorAuthority.bindActor(core.access, core.router.token, { providerId: PROVIDER, sessionId: id, messageId: "main-actor-binding" });
+      // The workspace binding can change during a session, so the project is looked up at each use.
+      const actor = core.actorAuthority.bindActor(core.access, core.router.token, { providerId: PROVIDER, sessionId: id, messageId: "main-actor-binding" }, { project: () => projectOf(id) });
       const native = createNativeHistoryProvider({ actorAuthority: core.actorAuthority, actorToken: actor, store: options.store, history: core.history,
         endpointFactory: core.backend.endpointFactory, deadlineMs: 30000 });
       state = { actor, access: core.access, entry: "desktop", native, active: false }; records.set(id, state); nativeObserver(id, state);

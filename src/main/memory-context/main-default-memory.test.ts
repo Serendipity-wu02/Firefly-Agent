@@ -862,3 +862,48 @@ it("keeps working when the memory backend has no shadow storage", async () => {
   expect(shadowRequests(f)).toHaveLength(0);
   await run.close();
 });
+
+// ── Project isolation: facts learned in one bound workspace never reach another ──
+const binding = (name: string) => ({ workspaceRoot: "C:\\work\\" + name, displayName: name, boundAt: 1 });
+async function turnIn(f: Awaited<ReturnType<typeof fixture>>, id: string, mode: "chat" | "code", workspace: string | null, text: string) {
+  f.sessions.set(id, { id, mode, messages: [], modelProfileId: "luna", ...(workspace ? { workspaceBinding: binding(workspace) } : {}) });
+  f.select(id); await f.user(id, text, "u-" + id); const admission = f.memory.authorizeRun(f.event, id);
+  const run = await f.memory.openRun(f.input(id, "run-" + id));
+  await run.call(f.call()); const request = f.sent.at(-1)!;
+  await run.close(); admission.release();
+  return request;
+}
+const MEMORY_MARKER = "User-stated memory with source and time metadata";
+
+it("a tool preference stated in one project is injected only into that project's sessions", async () => {
+  const f = await fixture("code");
+  await turnIn(f, "learn-alpha", "code", "alpha", "I prefer bash");
+  const same = await turnIn(f, "ask-alpha", "code", "alpha", "give me a terminal command");
+  expect(same).toContain(MEMORY_MARKER); expect(same).toContain("I prefer bash");
+  const other = await turnIn(f, "ask-beta", "code", "beta", "give me a terminal command");
+  expect(other).not.toContain(MEMORY_MARKER); expect(other).not.toContain("I prefer bash");
+  const chat = await turnIn(f, "ask-chat", "chat", null, "give me a terminal command");
+  expect(chat).not.toContain(MEMORY_MARKER); expect(chat).not.toContain("I prefer bash");
+});
+
+it("a global preference stated in Chat still reaches every project", async () => {
+  const f = await fixture("chat");
+  await turnIn(f, "learn-chat", "chat", null, "请叫我小林");
+  const alpha = await turnIn(f, "ask-alpha", "code", "alpha", "hello there");
+  expect(alpha).toContain(MEMORY_MARKER); expect(alpha).toContain("请叫我小林");
+});
+
+it("rebinding a session to another workspace changes which project facts it sees", async () => {
+  const f = await fixture("code");
+  await turnIn(f, "learn-alpha", "code", "alpha", "I prefer bash");
+  f.sessions.set("mover", { id: "mover", mode: "code", messages: [], modelProfileId: "luna", workspaceBinding: binding("beta") });
+  f.select("mover"); await f.user("mover", "give me a terminal command", "u-mover-1"); let admission = f.memory.authorizeRun(f.event, "mover");
+  let run = await f.memory.openRun(f.input("mover", "run-mover-1")); await run.call(f.call());
+  expect(f.sent.at(-1)).not.toContain(MEMORY_MARKER);
+  await run.close(); admission.release();
+  f.sessions.get("mover").workspaceBinding = binding("alpha");
+  await f.user("mover", "give me a terminal command", "u-mover-2"); admission = f.memory.authorizeRun(f.event, "mover");
+  run = await f.memory.openRun(f.input("mover", "run-mover-2")); await run.call(f.call());
+  expect(f.sent.at(-1)).toContain(MEMORY_MARKER); expect(f.sent.at(-1)).toContain("I prefer bash");
+  await run.close(); admission.release();
+});
