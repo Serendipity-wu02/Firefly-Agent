@@ -21,7 +21,7 @@ import type {BoundSourceRef} from '../../shared/memory-contracts';
 import type {SourceDependency} from '../memory-context/context-contracts';
 import {TranscriptLedger} from '../memory-context/transcript-ledger';
 import {createHistoryTokenizer,normalizeVector,rankHistory} from './history-ranking';
-import {historyTimeSpan,parseHistoryTemporal} from './history-temporal';
+import {historyTimeSpan,parseHistoryTemporal,type HistoryTemporalQuery} from './history-temporal';
 import type {HistoryDocument,HistoryMessage,HistorySession,HistoryPartition,HistoryDependency,HistoryExcerptRef,HistoryHitDocument,StoredHistory,HistoryResult,HistorySettings,HistoryVector,ReadonlyHistoryProvenance} from './history-contracts';
 function fail(code='MEMORY_HISTORY_INPUT_INVALID'):never {throw new Error(code)}
 const natural=(v:unknown):number=>{if(!Number.isSafeInteger(v)||(v as number)<0)fail();return v as number};
@@ -129,10 +129,14 @@ export class HistoryRepository {
   return new RecallRepository(this.db,this.key,()=>transactionNow(this.db)).readVisibleFactsWithinTransaction(scope,d.actorKey,facts.map(f=>({factId:f.factId,revision:f.revision})),expected).recallDeps;
  }
  /** Best window of an oversized document plus neighbours, within what the budgets allow. Only the repository's own stored messages are measured and sliced; ranking contributes just the window index. Null means no safe range: the caller drops the document, nothing is truncated. */
- private excerptRange(d:StoredHistory,sizes:number[],unit:number|undefined,config:HistorySettings,remaining:number):ExcerptRange|null {
+ private excerptRange(d:StoredHistory,sizes:number[],unit:number|undefined,config:HistorySettings,remaining:number,temporal?:HistoryTemporalQuery):ExcerptRange|null {
   if(unit===undefined)return null;const maxChars=Math.min(config.maxExcerptChars,remaining);
-  const range=selectExcerpt({sizes,windowTurns:config.windowTurns,bestUnit:unit,maxChars,contextWindows:HISTORY_EXCERPT_CONTEXT_WINDOWS,groups:atomicGroups(d.messages)});
-  if(!range||range.start===0&&range.end===d.messages.length||sizes.slice(range.start,range.end).reduce((n,x)=>n+x,0)>maxChars||!excerptToolSafe(d.messages,range))return null;return range;
+  // A time range filters whole documents, so a document can overlap the range while parts of it lie outside. Messages outside the range
+  // are priced out of the excerpt (so neither the best window nor its neighbours can include them) and the result is re-checked below.
+  const inRange=(m:{occurredAt:number|null})=>temporal?.kind!=='range'||m.occurredAt!==null&&m.occurredAt>=temporal.from&&m.occurredAt<=temporal.to;
+  const priced=temporal?.kind==='range'?sizes.map((n,i)=>inRange(d.messages[i])?n:Number.MAX_SAFE_INTEGER):sizes;
+  const range=selectExcerpt({sizes:priced,windowTurns:config.windowTurns,bestUnit:unit,maxChars,contextWindows:HISTORY_EXCERPT_CONTEXT_WINDOWS,groups:atomicGroups(d.messages)});
+  if(!range||range.start===0&&range.end===d.messages.length||sizes.slice(range.start,range.end).reduce((n,x)=>n+x,0)>maxChars||!excerptToolSafe(d.messages,range)||!d.messages.slice(range.start,range.end).every(inRange))return null;return range;
  }
  private validateDocuments(scope:string,actorKey:string,value:unknown,response?:{owner:{actorKey:string;providerId:string;sessionId:string};operationId:string}):StoredHistory[]{
   return parseHistoryDependencies(value).map(dep=>{
@@ -183,7 +187,7 @@ export class HistoryRepository {
     let used=0;for(const candidate of ranked.items){const d=candidateDocuments.get(candidate.id)!,sizes=d.messages.map(historyMessageChars),length=sizes.reduce((n,x)=>n+x,0);let shown:HistoryHitDocument=d,excerpt:HistoryExcerptRef|undefined,chars=length;
      if(length>config.maxExcerptChars||used+length>config.maxTotalChars){
       // Only a document too large for the per-document limit is excerpted; one that merely no longer fits the remaining total is dropped as before.
-      const range=length>config.maxExcerptChars?this.excerptRange(d,sizes,candidate.unit,config,config.maxTotalChars-used):null;
+      const range=length>config.maxExcerptChars?this.excerptRange(d,sizes,candidate.unit,config,config.maxTotalChars-used,temporal):null;
       if(!range){result.status='excerpt-budget-exhausted';countHistoryBudgetDrop(budget,{length,messageSizes:sizes,windowTurns:config.windowTurns,...(candidate.unit!==undefined?{bestUnit:candidate.unit}:{})},config.maxExcerptChars);continue}
       excerpt=excerptRef(d.digest,d,range);shown={...d,...sliceExcerpt(d,range),excerpt};chars=sizes.slice(range.start,range.end).reduce((n,x)=>n+x,0);budget.excerpted++;
      }used+=chars;budget.returned++;
