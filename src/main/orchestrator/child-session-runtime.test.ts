@@ -12,6 +12,7 @@ import { HarnessRunStore, type PersistedToolCall } from "./harness/run-store";
 import { prepareHarnessRecovery } from "./harness/run-recovery";
 import type { ToolDefinition } from "./tools/registry/tool-registry";
 import type { ChatMessage, ChatResponse, ToolCall } from "./vendors/types";
+import type { HarnessInput } from "./harness/index";
 
 // Usage storage belongs to the installed desktop profile; this fixture owns only temporary stores.
 vi.mock("../token-usage-store", () => ({ recordUsage: () => undefined, recordRequest: () => undefined }));
@@ -24,7 +25,7 @@ afterEach(() => {
   for (const root of roots.splice(0)) fs.rmSync(root, { recursive: true, force: true });
 });
 
-function fixture(options: { failPlannedWrite?: boolean; cancelAfterPlannedWrite?: boolean; reasoningDeltas?: number; failAfterReasoning?: boolean } = {}) {
+function fixture(options: { failPlannedWrite?: boolean; cancelAfterPlannedWrite?: boolean; reasoningDeltas?: number; failAfterReasoning?: boolean; checkPermission?: HarnessInput["checkPermission"] } = {}) {
   const root = fs.mkdtempSync(path.join(os.tmpdir(), "firefly-child-planned-"));
   roots.push(root);
   const tasks = new TaskSessionStore(root), runs = new HarnessRunStore(root), transcripts = new ConversationTranscriptStore(root);
@@ -85,10 +86,21 @@ function fixture(options: { failPlannedWrite?: boolean; cancelAfterPlannedWrite?
     tools: [tool], config: { totalTimeoutMs: 0, maxRounds: 3 }, lease: { nickname: "fixture", assetFileName: "fixture.png", release: () => { leaseReleased = true; } },
     parent: { parentConversationId: "fixture-parent", parentRunId: "fixture-parent-run", mode: "code", systemPrompt: "fixture",
       vendorConfig: { provider: "fixture", model: "fixture-model", baseUrl: "https://synthetic.invalid/v1", apiKey: "synthetic-only", explicitTransport: "openai" },
-      tools: [tool], resolvedWorkspaceRoot: root, signal: controller.signal, backgroundMemory: host, includeInteractiveTools: false } });
+      tools: [tool], resolvedWorkspaceRoot: root, signal: controller.signal, backgroundMemory: host, includeInteractiveTools: false,
+      ...(options.checkPermission ? { checkPermission: options.checkPermission } : {}) } });
   return { root, session, tasks, runs, transcripts, calls, plannedWrites, committedWrites, executionSnapshots, execute,
     released: () => leaseReleased, closed: () => memoryClosed };
 }
+
+it("tags approval requests of a child run with its agent and run so parallel children stay distinguishable", async () => {
+  const checkPermission = vi.fn(async () => true);
+  const f = fixture({ checkPermission });
+  expect((await f.execute()).status).toBe("completed");
+  expect(checkPermission).toHaveBeenCalled();
+  for (const call of checkPermission.mock.calls) {
+    expect(call[3]).toMatchObject({ agentId: f.session.agent.id, childRunId: f.session.childRunId });
+  }
+});
 
 it("durably saves every child call in one planned snapshot before entering a real tool body", async () => {
   const f = fixture();

@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "../../../i18n";
-import { DownOutlined, GlobalOutlined, FolderOpenOutlined, UnorderedListOutlined } from "@ant-design/icons";
+import { DownOutlined, GlobalOutlined, FolderOpenOutlined, ProfileOutlined, UnorderedListOutlined } from "@ant-design/icons";
 import { Group, Panel, Separator, useDefaultLayout, type GroupImperativeHandle } from "react-resizable-panels";
 import { useCompactDock } from "./useCompactDock";
 import { useInspectorPanelVisibility } from "./useInspectorPanelVisibility";
@@ -79,7 +79,11 @@ import {
   findSessionIdForRun,
   hasActiveRunForSession,
   isCurrentRunBusy,
+  markInteractionResolved,
+  removeInteractionById,
+  removeSessionInteractionsWhere,
   sessionInteraction,
+  sessionInteractionPending,
   setSessionInteraction,
   setSessionInteractionBusy,
   type SessionInteractionState,
@@ -167,6 +171,7 @@ export function ChatPage() {
   const [filesTabOpen, setFilesTabOpen] = useState(false);
   const [browserTabOpen, setBrowserTabOpen] = useState(false);
   const [tasksTabOpen, setTasksTabOpen] = useState(false);
+  const [overviewTabOpen, setOverviewTabOpen] = useState(false);
   const [inspectorHidden, setInspectorHidden] = useState(false);
   // The panel's real state: dragging the separator to zero (or End) collapses it while inspectorHidden stays false.
   const [inspectorCollapsed, setInspectorCollapsed] = useState(false);
@@ -290,16 +295,7 @@ export function ChatPage() {
     // 结算广播：pending 已在主进程被结算（用户已答 / run 取消），
     // 渲染端据此立即清卡——这是「僵尸审批卡（点了没反应）」的根治点。
     const offSettled = settings.onPermissionApprovalSettled((settlement) => {
-      setInteractionsBySession((current) => {
-        for (const [sessionId, entry] of Object.entries(current)) {
-          if (entry.interaction.kind === "permission" && entry.interaction.id === settlement.id) {
-            const next = { ...current };
-            delete next[sessionId];
-            return next;
-          }
-        }
-        return current;
-      });
+      setInteractionsBySession((current) => removeInteractionById(current, "permission", settlement.id));
     });
     return () => {
       offRequest();
@@ -331,16 +327,7 @@ export function ChatPage() {
     });
     const offSettled = settings.onPopQuizSettled((settlement) => {
       if (settlement.reason === "submitted") return;
-      setInteractionsBySession((current) => {
-        for (const [sessionId, entry] of Object.entries(current)) {
-          if (entry.interaction.kind === "quiz" && entry.interaction.id === settlement.quizId) {
-            const next = { ...current };
-            delete next[sessionId];
-            return next;
-          }
-        }
-        return current;
-      });
+      setInteractionsBySession((current) => removeInteractionById(current, "quiz", settlement.quizId));
     });
     return () => {
       offRequest();
@@ -384,6 +371,7 @@ export function ChatPage() {
   const activeInteraction = sessionInteraction(interactionsBySession, activeSessionId);
   const composerInteraction = activeInteraction?.interaction;
   const interactionBusy = activeInteraction?.busy ?? false;
+  const interactionPending = sessionInteractionPending(activeInteraction);
   const hasMessages = messages.length > 0;
   const {
     attachments,
@@ -585,11 +573,11 @@ export function ChatPage() {
       if (event.name === "firefly.choice.dismiss") {
         // run 事件闸之外的 dismiss（老版选择卡超时 / run 结束后发出的结算）：
         // 匹配当前 ask 卡时清掉，避免留下点不出结果的僵尸卡。
-        setInteractionsBySession((current) => {
-          const entry = current[activeSessionId];
-          if (!entry || entry.interaction.kind !== "ask" || !shouldDismissAsk(entry.interaction, event.value)) return current;
-          return clearSessionInteraction(current, activeSessionId);
-        });
+        setInteractionsBySession((current) => removeSessionInteractionsWhere(
+          current,
+          activeSessionId,
+          (interaction) => interaction.kind === "ask" && shouldDismissAsk(interaction, event.value),
+        ));
         return;
       }
       if (!event.name.startsWith("firefly.plan.")) return;
@@ -642,8 +630,8 @@ export function ChatPage() {
     setInteractionsBySession((current) => setSessionInteraction(current, sessionId, interaction));
   }
 
-  function clearInteractionForSession(sessionId: string): void {
-    setInteractionsBySession((current) => clearSessionInteraction(current, sessionId));
+  function clearInteractionForSession(sessionId: string, interactionId?: string): void {
+    setInteractionsBySession((current) => clearSessionInteraction(current, sessionId, interactionId));
   }
 
   function setInteractionBusyForSession(sessionId: string, busy: boolean): void {
@@ -819,11 +807,11 @@ export function ChatPage() {
           });
         },
         dismissAskIfMatched: (sessionId, value) => {
-          setInteractionsBySession((current) => {
-            const interaction = sessionInteraction(current, sessionId)?.interaction;
-            if (interaction?.kind !== "ask" || !shouldDismissAsk(interaction, value)) return current;
-            return clearSessionInteraction(current, sessionId);
-          });
+          setInteractionsBySession((current) => removeSessionInteractionsWhere(
+            current,
+            sessionId,
+            (interaction) => interaction.kind === "ask" && shouldDismissAsk(interaction, value),
+          ));
         },
         updateTodos: (_sessionId, updater) => setTodoStateBySession((current) => updater(current)),
         updateContextUsage: (sessionId, snapshot) => setSessionContextUsageBySession((current) => ({
@@ -1282,6 +1270,7 @@ export function ChatPage() {
     setResultTabIds([]);
     setFilesTabOpen(false);
     setTasksTabOpen(mode !== "chat");
+    setOverviewTabOpen(false);
     setInspectorHidden(false);
     setActiveTabId(current => current === "browser" ? "browser" : mode !== "chat" ? "tasks" : null);
   }, [activeSessionId, mode]);
@@ -1304,6 +1293,11 @@ export function ChatPage() {
     const output = workspaceOutputs.find(item => item.sessionId === activeSessionId
       && (item.tasks.some(task => task.taskId === taskId) || item.tools.some(tool => tool.taskResult?.sessionId === taskId)));
     if (!output) return;
+    openResultTab(output.id);
+    setFocusTask(current => ({ taskId, seq: (current?.seq ?? 0) + 1 }));
+  };
+  // The overview already knows which run a task belongs to; a resumed agent keeps its taskId across runs.
+  const openTaskInRun = (output: WorkspaceRunOutput, taskId: string) => {
     openResultTab(output.id);
     setFocusTask(current => ({ taskId, seq: (current?.seq ?? 0) + 1 }));
   };
@@ -1369,6 +1363,7 @@ export function ChatPage() {
 
   /** 右侧面板标签的固定顺序：文件树 → 文件预览 → Diff → 计划 */
   const inspectorTabIds = [
+    ...(overviewTabOpen ? ["overview"] : []),
     ...(tasksTabOpen ? ["tasks"] : []),
     ...(filesTabOpen ? ["files"] : []),
     ...fileTabs.map((tab) => tab.id),
@@ -1398,6 +1393,8 @@ export function ChatPage() {
     const remaining = inspectorTabIds.filter((tabId) => tabId !== id);
     if (id === "browser") {
       setBrowserTabOpen(false);
+    } else if (id === "overview") {
+      setOverviewTabOpen(false);
     } else if (id === "tasks") {
       setTasksTabOpen(false);
     } else if (id === "files") {
@@ -1563,6 +1560,11 @@ export function ChatPage() {
               <button type="button" className="ff-inspector-toggle" aria-label={t("fileTree.title")}
                 title={t("fileTree.title")} aria-expanded={filesTabOpen && !inspectorHidden}
                 onClick={openFilesTab}><FolderOpenOutlined aria-hidden="true" /></button>
+              {activeSessionId && <button type="button" className="ff-inspector-toggle"
+                aria-label={t("sessionOverview.open")} title={t("sessionOverview.open")}
+                aria-expanded={overviewTabOpen && !inspectorHidden}
+                onClick={() => { setOverviewTabOpen(true); setInspectorHidden(false); setActiveTabId("overview"); }}>
+                <ProfileOutlined aria-hidden="true" /></button>}
               {(mode !== "chat" || workspaceOutputs.length > 0) && <button type="button" className="ff-inspector-toggle"
                 aria-label={t("workspace.tasks")} title={t("workspace.tasks")}
                 aria-expanded={tasksTabOpen && !inspectorHidden}
@@ -1683,6 +1685,7 @@ export function ChatPage() {
             />}
             interaction={composerInteraction}
             interactionBusy={interactionBusy}
+            interactionPending={interactionPending}
             onAnswer={(id, answer) => {
               if (!activeSessionId) return;
               const choice = choiceApi();
@@ -1694,7 +1697,7 @@ export function ChatPage() {
                 if (result.ok) {
                   runCheckpointBySessionRef.current[activeSessionId]?.("running");
                 }
-                clearInteractionForSession(activeSessionId);
+                clearInteractionForSession(activeSessionId, id);
                 setInteractionBusyForSession(activeSessionId, false);
               }).catch(() => setInteractionBusyForSession(activeSessionId, false));
             }}
@@ -1708,7 +1711,7 @@ export function ChatPage() {
                 if (result.ok) {
                   runCheckpointBySessionRef.current[activeSessionId]?.("running");
                 }
-                clearInteractionForSession(activeSessionId);
+                clearInteractionForSession(activeSessionId, id);
                 setInteractionBusyForSession(activeSessionId, false);
               }).catch(() => setInteractionBusyForSession(activeSessionId, false));
             }}
@@ -1723,7 +1726,7 @@ export function ChatPage() {
                 if (result.ok) {
                   runCheckpointBySessionRef.current[activeSessionId]?.("running");
                 }
-                clearInteractionForSession(activeSessionId);
+                clearInteractionForSession(activeSessionId, id);
                 setInteractionBusyForSession(activeSessionId, false);
               }).catch(() => setInteractionBusyForSession(activeSessionId, false));
             }}
@@ -1731,7 +1734,11 @@ export function ChatPage() {
               const settings = settingsApprovalApi();
               if (!settings) return Promise.resolve({ ok: false, error: "E_QUIZ_NO_BRIDGE" });
               // 展示态切换由卡片组件处理，这里只透传判分结果
-              return settings.resolvePopQuiz(submission);
+              return settings.resolvePopQuiz(submission).then((result) => {
+                // 判分后的抽查卡留在屏上等 run 终态收卡，但不能再挡住之后到达的审批和提问。
+                if (result.ok) setInteractionsBySession((current) => markInteractionResolved(current, "quiz", submission.quizId));
+                return result;
+              });
             }}
             onQuizSkip={(quizId) => {
               const settings = settingsApprovalApi();
@@ -1770,6 +1777,13 @@ export function ChatPage() {
                 filesTabPinned={filesTabPinned}
                 browserTabOpen={browserTabOpen}
                 tasksTabOpen={tasksTabOpen}
+                overviewTabOpen={overviewTabOpen}
+                overview={{
+                  usage: latestContextUsage,
+                  outputs: workspaceOutputs,
+                  onOpenChange: openResultDiff,
+                  onOpenTask: openTaskInRun,
+                }}
                 pendingWorkspaceName={pendingWorkspaceByMode[mode]?.displayName}
                 onChooseWorkspace={mode !== "chat" ? () => void chooseWorkspace() : undefined}
                 taskPanel={<div className="ff-workspace-task-panel">{mode === "work"

@@ -504,6 +504,7 @@
   "interaction": {
     "askingTitle": "流萤正在询问",
     "permissionTitle": "流萤正在获取审批",
+    "pendingMore": "还有 {{count}} 项待处理",
     "pagerAria": "切换问题",
     "prevQuestion": "上一个问题",
     "nextQuestion": "下一个问题",
@@ -512,6 +513,7 @@
     "questionProgressAria": "问题完成情况",
     "submitAll": "提交全部",
     "submit": "提交",
+    "agentLabel": "来自子任务",
     "workspaceLabel": "工作区",
     "targetLabel": "目标",
     "deny": "拒绝",
@@ -971,6 +973,24 @@
       "screenshotSaved": "截图已保存。",
       "printStarted": "已打开打印对话框。"
     }
+  },
+  "sessionOverview": {
+    "title": "会话概览",
+    "tab": "概览",
+    "open": "打开会话概览",
+    "tasks": "后台任务",
+    "tasksRunning": "{{count}} 个运行中",
+    "tasksFinished": "{{count}} 个已结束",
+    "tasksFailed": "{{count}} 个失败",
+    "tasksEmpty": "暂无后台任务",
+    "context": "上下文",
+    "contextUsed": "已用 {{percent}}%",
+    "contextUsedUnknown": "已用",
+    "contextFree": "剩余空间",
+    "contextEmpty": "发送消息后显示上下文占用",
+    "contextEstimate": "按字符估算，不是供应商返回的用量。",
+    "changes": "变更",
+    "changesEmpty": "本会话还没有文件变更"
   },
   "workspace": {
     "resizeSidebar": "调整会话侧栏宽度",

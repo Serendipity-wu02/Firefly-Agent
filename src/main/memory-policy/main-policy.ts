@@ -12,6 +12,7 @@ import type {createMainSourceRegistry} from "../memory-sources/source-registry";
 import {extractPreference} from "./extractor";
 import type {PolicyOutcome,PolicyCandidate,PolicyTransport,PolicyEvent} from "./policy-contracts";
 import type {SupportAudit} from "./fact-supports";
+import {resolveProject} from "./project-scope";
 
 export const POLICY_VERSION="main-preferences-v1";
 const digest=(value:unknown)=>createHash("sha256").update(canonicalJson(value)).digest("hex");
@@ -47,12 +48,12 @@ export function createMainPolicy(options:{registry:ReturnType<typeof createMainS
    return actorAuthority.bindActor(access,adapter,value);
   },
   async integrate(token:object,value:BoundSourceRef,signal?:AbortSignal):Promise<import("./policy-contracts").IntegrationResult> {
-   const actor=actorContext(token),ref=boundSource(actor,value);
+   const actor=actorContext(token),ref=boundSource(actor,value),project=resolveProject(actorAuthority.requireActor(token));
    const cancelled=()=>{if(signal?.aborted)throw new Error("MEMORY_POLICY_CANCELLED")};cancelled();
    const generation=await command<number>(actor,"generation",{});
    const baseline=await command<import("./policy-contracts").PolicyBaseline[]>(actor,"baseline",{});
    cancelled();const extraction=extractMaintenance(await read(actor,ref));cancelled();
-   const intent={sourceRef:ref,generation,extraction,policyVersion:MAINTENANCE_VERSION};
+   const intent={sourceRef:ref,generation,extraction,policyVersion:MAINTENANCE_VERSION,...(project!==undefined?{projectKey:project}:{})};
    return command(actor,"integrate",{...intent,baseline},"policy-integrate-"+digest({scope:actor.scopeKey,actor:actor.actorKey,...intent}),signal);
   },
   async ingest(token:unknown,value:SourceRef):Promise<PolicyOutcome> {

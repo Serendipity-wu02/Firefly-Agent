@@ -13,6 +13,7 @@ import { ReviewDiffContent } from "./ReviewInspector";
 import { RightInspector, type InspectorTab } from "./RightInspector";
 import type { ManualBrowserTabHandle } from "../workspace/ManualBrowserTab";
 import { BrowserWorkspaceTabs } from "../workspace/BrowserWorkspaceTabs";
+import { SessionOverviewPanel, type SessionOverviewPanelProps } from "./SessionOverviewPanel";
 import "./ChatPageInspector.css";
 
 /** Open and close length of the docked pane. ChatPageInspector.css animates the width for the same time. */
@@ -93,6 +94,9 @@ export interface ChatPageInspectorProps {
   filesTabPinned: boolean;
   browserTabOpen?: boolean;
   tasksTabOpen?: boolean;
+  /** 会话概览标签：固定排在最前。 */
+  overviewTabOpen?: boolean;
+  overview?: SessionOverviewPanelProps;
   taskPanel?: ReactNode;
   pendingWorkspaceName?: string;
   onChooseWorkspace?: () => void;
@@ -121,6 +125,8 @@ export function ChatPageInspector({
   filesTabPinned,
   browserTabOpen = false,
   tasksTabOpen = false,
+  overviewTabOpen = false,
+  overview,
   taskPanel,
   pendingWorkspaceName,
   onChooseWorkspace,
@@ -139,6 +145,9 @@ export function ChatPageInspector({
   const moving = useInspectorMotion(visible);
   const tabs: InspectorTab[] = [];
 
+  if (overviewTabOpen && overview) {
+    tabs.push({ id: "overview", kind: "overview", label: t("sessionOverview.tab"), content: <SessionOverviewPanel {...overview} /> });
+  }
   if (tasksTabOpen) {
     tabs.push({ id: "tasks", kind: "tasks", label: t("workspace.tasks"), content: taskPanel });
   }

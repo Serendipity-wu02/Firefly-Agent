@@ -111,6 +111,21 @@ describe("permission cancellation", () => {
   });
 });
 
+it("carries tool call and sub-agent origin on the approval card and its replay", async () => {
+  const send = vi.fn();
+  getAllWindows.mockReturnValue([{ webContents: { send } }]);
+  const pending = requestApproval({
+    ...approval("run-origin"),
+    toolCallId: "call-7",
+    childRunId: "child-run-7",
+    agentId: "reviewer",
+  }).catch(() => undefined);
+  try {
+    const payload = send.mock.calls.find(call => call[0] === IPC.PERMISSION_APPROVAL_REQUEST)?.[1];
+    expect(payload).toMatchObject({ runId: "run-origin", toolCallId: "call-7", childRunId: "child-run-7", agentId: "reviewer" });
+  } finally { cancelPendingApprovalsForRun("run-origin"); await pending; }
+});
+
 it("a child-owned call signal clears only its exact approval card and ignores late approval", async () => {
   const { registerPermissionIpc } = await import("./permission");
   handle.mockClear();

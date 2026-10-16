@@ -15,8 +15,21 @@ export type ToolRiskLevel =
   | "network"
   | "input-control";
 
+/**
+ * 审批归属：并行子 agent 会复用父 run 的 runId，仅靠 runId 无法区分是谁在请求。
+ * 全部可选；只用于展示与关联，决定权限的仍然只有 approval id。
+ */
+export interface ApprovalOrigin {
+  /** 触发审批的那次工具调用。 */
+  toolCallId?: string;
+  /** 请求所属的子任务运行；主 agent 的审批不带该字段。 */
+  childRunId?: string;
+  /** 请求所属的子 agent 标识；主 agent 的审批不带该字段。 */
+  agentId?: string;
+}
+
 /** 审批请求：主进程推送、渲染端展示并回传决定。 */
-export interface ApprovalRequest {
+export interface ApprovalRequest extends ApprovalOrigin {
   id: string;
   toolId: string;
   toolName: string;

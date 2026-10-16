@@ -10,6 +10,7 @@
 
 import type { ToolCall } from "../vendors/types";
 import type { ToolDefinition } from "../tools/registry/tool-registry";
+import type { ApprovalOrigin } from "../../../shared/permission-approval";
 import type { ToolCallResult } from "../types";
 import type { AgentState, HarnessEvent, ToolObservation } from "./types";
 import { parseToolCallArgs, toolCallFingerprint, ToolCallArgumentsError, invalidToolCallArguments } from "./types";
@@ -86,7 +87,7 @@ export interface ToolDispatchContext {
   onEvent?: (event: HarnessEvent) => void;
   requestUserClarification?: (card: unknown) => Promise<unknown>;
   includeInteractiveTools?: boolean;
-  checkPermission?: (toolId: string, args: Record<string, unknown>, signal?: AbortSignal) => Promise<boolean>;
+  checkPermission?: (toolId: string, args: Record<string, unknown>, signal?: AbortSignal, origin?: ApprovalOrigin) => Promise<boolean>;
   toolContext?: import("../tools/registry/tool-context").ToolContext;
   truncation?: TruncationConfig;
   /** 完整工具输出持久化；生产 Harness 必须注入。 */

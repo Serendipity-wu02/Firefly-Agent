@@ -17,6 +17,7 @@ import {
 } from "./permission-policy";
 import { toastEvents } from "./toast/toast-events";
 import type {
+  ApprovalOrigin,
   ApprovalRequest,
   ApprovalSettleReason,
   ApprovalSettledPayload,
@@ -243,6 +244,8 @@ export async function checkPermission(input: {
   level?: AgentFileAccessLevel;
   /** 可选 runId，用于 cancel 时按 run 清理 pending 审批。 */
   runId?: string;
+  /** 工具调用与子 agent 归属，随审批卡片下发，供渲染端关联。 */
+  origin?: ApprovalOrigin;
   signal?: AbortSignal;
 }): Promise<{ allowed: boolean; reason?: string }> {
   if (input.signal?.aborted) throw createAbortError();
@@ -268,6 +271,7 @@ export async function checkPermission(input: {
     args: input.args,
     risk: input.risk,
     runId: input.runId,
+    ...input.origin,
   }, input.signal);
   if (input.signal?.aborted) throw createAbortError();
   if (approved) {

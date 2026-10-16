@@ -504,6 +504,7 @@
   "interaction": {
     "askingTitle": "I need to ask you something",
     "permissionTitle": "Waiting for your approval",
+    "pendingMore": "{{count}} more waiting",
     "pagerAria": "Switch question",
     "prevQuestion": "Previous question",
     "nextQuestion": "Next question",
@@ -512,6 +513,7 @@
     "questionProgressAria": "Question progress",
     "submitAll": "Submit all",
     "submit": "Submit",
+    "agentLabel": "From sub-agent",
     "workspaceLabel": "Workspace",
     "targetLabel": "Target",
     "deny": "Deny",
@@ -971,6 +973,24 @@
       "screenshotSaved": "Screenshot saved.",
       "printStarted": "The print dialog is open."
     }
+  },
+  "sessionOverview": {
+    "title": "Session overview",
+    "tab": "Overview",
+    "open": "Open session overview",
+    "tasks": "Background tasks",
+    "tasksRunning": "{{count}} running",
+    "tasksFinished": "{{count}} finished",
+    "tasksFailed": "{{count}} failed",
+    "tasksEmpty": "No background tasks",
+    "context": "Context",
+    "contextUsed": "{{percent}}% used",
+    "contextUsedUnknown": "Used",
+    "contextFree": "Free space",
+    "contextEmpty": "Context usage appears after you send a message",
+    "contextEstimate": "Estimated from text length, not the provider's reported usage.",
+    "changes": "Changes",
+    "changesEmpty": "No file changes in this session yet"
   },
   "workspace": {
     "resizeSidebar": "Resize conversation sidebar",

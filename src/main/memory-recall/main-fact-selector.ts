@@ -6,6 +6,7 @@ import {canonicalJson} from "../memory-core/repository-types";
 import type {createMainSourceRegistry} from "../memory-sources/source-registry";
 import {extractMaintenance,type MaintenanceClaim} from "../memory-policy/maintenance-extractor";
 import {policySubjectKey} from "../memory-policy/policy-repository";
+import {projectForClaim,resolveProject} from "../memory-policy/project-scope";
 import {requireCommittedUserSource} from "../memory-policy/main-user-fact-coordinator";
 import type {createMainPolicy} from "../memory-policy/main-policy";
 import type {createMainRecall} from "./main-recall";
@@ -13,13 +14,21 @@ import type {createMainRecall} from "./main-recall";
 export const FACT_SELECTION_VERSION="main-fact-selector-v1";
 export interface SelectedFactRef {factId:string;revision:number;sourceRefs:BoundSourceRef[]}
 const compare=(a:string,b:string)=>a<b?-1:a>b?1:0;
-/** Attribute/context are recovered only when the canonical subject hash agrees. */
-function claimFor(actorKey:string,fact:FactView):MaintenanceClaim|null {
+type ScopedClaim=MaintenanceClaim&{project:string|undefined};
+/**
+ * Attribute/context are recovered only when the canonical subject hash agrees. A project fact
+ * hashes with its project, so it can only be recovered by a session bound to that same project:
+ * every other project's facts, and every fact whose project this session lacks, fall out here.
+ */
+function claimFor(actorKey:string,fact:FactView,project:string|undefined):ScopedClaim|null {
  const parsed=extractMaintenance(fact.assertion);if(parsed.kind!=="claims")return null;
  for(const claim of parsed.claims){
   for(const context of ["default","work","personal"] as const){
    for(const cardinality of ["one","many"] as const){
-    if(policySubjectKey(actorKey,claim.attribute,context,cardinality,claim.value)===fact.subjectKey)return {...claim,context,cardinality};
+    const scopes=[undefined,projectForClaim({attribute:claim.attribute,context},project)];
+    for(const scope of scopes){
+     if(policySubjectKey(actorKey,claim.attribute,context,cardinality,claim.value,scope)===fact.subjectKey)return {...claim,context,cardinality,project:scope};
+    }
    }
   }
  }
@@ -44,15 +53,20 @@ export function createMainFactSelector(options:{actorAuthority:MainActorAuthorit
   async selectFactRefs(actorToken:object,currentUserSourceRef:BoundSourceRef,limits:{maxFacts:number},signal?:AbortSignal):Promise<SelectedFactRef[]>{
    const cancelled=()=>{if(signal?.aborted)throw new Error("MEMORY_RECALL_CANCELLED")};cancelled();
    const {actor,sourceRef}=requireCommittedUserSource(options.actorAuthority,actorToken,currentUserSourceRef,"MEMORY_RECALL_TEMPORARY_UNSUPPORTED");
+   const project=resolveProject(actor);
    const fields=objectFields(limits,["maxFacts"]);
    if(!Number.isSafeInteger(fields.maxFacts)||(fields.maxFacts as number)<1||(fields.maxFacts as number)>200)throw new Error("MEMORY_RECALL_INPUT_INVALID");
    const query=await options.registry.readEvidence(actor.access,actor.adapter,sourceRef);cancelled();
    try{assertContextSecretFree(query)}catch(error){if(error instanceof Error&&error.message==="MEMORY_CONTEXT_TRANSCRIPT_SECRET")throw new Error("MEMORY_POLICY_SECRET");throw error}
    const rank=await options.recall.rank(actorToken);cancelled();
-   const matches=rank.items.flatMap(item=>{
-    const claim=claimFor(actor.actorKey,item.fact),category=claim?relevance(query,claim):0;
-    return category?[{item,category}]:[];
-   }).sort((a,b)=>b.category-a.category||b.item.score-a.item.score||compare(a.item.fact.factId,b.item.fact.factId));
+   const candidates=rank.items.flatMap(item=>{
+    const claim=claimFor(actor.actorKey,item.fact,project),category=claim?relevance(query,claim):0;
+    return claim&&category?[{item,category,claim}]:[];
+   });
+   // A project's own single-value preference replaces the global one for that attribute while inside the project.
+   const slot=(claim:ScopedClaim)=>canonicalJson([claim.attribute,claim.context]);
+   const overridden=new Set(candidates.filter(c=>c.claim.project!==undefined&&c.claim.cardinality==="one").map(c=>slot(c.claim)));
+   const matches=candidates.filter(c=>c.claim.project!==undefined||c.claim.cardinality!=="one"||!overridden.has(slot(c.claim))).sort((a,b)=>b.category-a.category||b.item.score-a.item.score||compare(a.item.fact.factId,b.item.fact.factId));
    const selected:SelectedFactRef[]=[];
    for(const {item} of matches){
     const audit=await options.policy.audit(actorToken,item.fact.factId);cancelled();

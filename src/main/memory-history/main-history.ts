@@ -11,7 +11,8 @@ import {isLocalEmbeddingProvider,type EmbeddingProvider} from '../rag/embedding'
 import {isLocalRerankerProvider,type RerankerProvider} from '../rag/reranker';
 import type {TranscriptEntry} from '../orchestrator/conversation-transcript-types';
 import {extractMaintenance} from '../memory-policy/maintenance-extractor';
-import {policySubjectKey} from '../memory-policy/policy-repository';
+import {claimSubjectKeys} from '../memory-policy/policy-repository';
+import {resolveProject} from '../memory-policy/project-scope';
 import {historyTranscriptDigest} from './history-transcript-digest';
 import {parseHistoryDocument} from './history-repository';
 import {normalizeVector} from './history-ranking';
@@ -100,7 +101,7 @@ export function createMainHistory(options:Options){
   const sourceDeps:SourceDependency[]=[],seen=new Map<string,{ref:BoundSourceRef;text:string}>(),visiting=new Set<string>();
   async function dependency(r:BoundSourceRef):Promise<string>{if(visiting.has(r.sourceId))fail('MEMORY_HISTORY_SOURCE_MISMATCH');const previous=seen.get(r.sourceId);if(previous){if(canonicalJson(previous.ref)!==canonicalJson(r))fail('MEMORY_HISTORY_SOURCE_MISMATCH');return previous.text}visiting.add(r.sourceId);if(visiting.size+seen.size>128)fail('MEMORY_HISTORY_ACCESS_DENIED');authorizeSourceActor(a,r);
    const text=await options.registry.readEvidence(a.access,a.adapter,r),parsed=extractMaintenance(text),roots=options.resolveDerivedRefs?.(r)??null;if(parsed.kind==='rejected')fail('MEMORY_HISTORY_SECRET');
-   requireSourceActor(a,r);sourceDeps.push({sourceRef:r,subjectKeys:parsed.kind==='claims'?parsed.claims.map(c=>policySubjectKey(a.actorKey,c.attribute,c.context,c.cardinality,c.value)):null,derivedRefs:roots});for(const root of roots??[])await dependency(root);visiting.delete(r.sourceId);seen.set(r.sourceId,{ref:r,text});return text;
+   requireSourceActor(a,r);sourceDeps.push({sourceRef:r,subjectKeys:parsed.kind==='claims'?parsed.claims.flatMap(c=>claimSubjectKeys(a.actorKey,c,resolveProject(a))):null,derivedRefs:roots});for(const root of roots??[])await dependency(root);visiting.delete(r.sourceId);seen.set(r.sourceId,{ref:r,text});return text;
   }
   const text=await dependency(ref),observation=await options.transport.sourceCommand({kind:'validate',scopeKey:a.scopeKey,body:{sourceRef:ref}}) as SourceObservation;
   const doc=parseHistoryDocument({id:parseInternalId(input.documentId),incarnation:parseInternalId(input.incarnation),revision:positiveRevision(input.revision),origin:'canonical',sourceDeps,messages:[{id:ref.binding.messageId,role:observation.role,text,occurredAt:observation.occurredAt??null,timeZone:observation.occurredAt===undefined?null:input.timeZone??null,sourceRef:ref}],vector:await embeddingVector(text)});

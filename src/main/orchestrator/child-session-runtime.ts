@@ -148,7 +148,9 @@ export async function runChildSession(input: {
       onToolsPlanned: events => runStore?.recordTools(session.childRunId, events.map(event => ({ toolCallId: event.toolCallId, toolName: event.toolName, sideEffect: event.toolSideEffect, status: event.status }))),
       onToolLifecycle: event => runStore?.recordTool(session.childRunId, { toolCallId: event.toolCallId, toolName: event.toolName, sideEffect: event.toolSideEffect, status: event.status }),
       onCompactionLifecycle: event => runStore?.recordCompaction(session.childRunId, event),
-      checkPermission: parent.checkPermission, includeInteractiveTools: parent.includeInteractiveTools,
+      checkPermission: parent.checkPermission && ((toolId, args, signal, origin) => parent.checkPermission!(
+        toolId, args, signal, { ...origin, agentId: session.agent.id, childRunId: session.childRunId },
+      )), includeInteractiveTools: parent.includeInteractiveTools,
       allowedBuiltinToolIds: new Set(["update_todo", "read_tool_result"]),
       onEvent: event => {
         const trace = projectTaskTraceEvent(event);

@@ -116,6 +116,18 @@ describe("harness tool runtime", () => {
     expect(getCurrentLevel).toHaveBeenCalledTimes(1);
   });
 
+  it("forwards the tool call and sub-agent origin into the approval request", async () => {
+    getCurrentLevel.mockReturnValue("per-action");
+    const runtime = prepareRuntime();
+    getById.mockReturnValue({ id: "write_file", risk: "fs-write", name: "Write", description: "fixture" });
+
+    await runtime.checkPermission("write_file", {}, undefined, { toolCallId: "call-1", agentId: "reviewer", childRunId: "child-1" });
+
+    expect(checkPermission).toHaveBeenCalledWith(expect.objectContaining({
+      origin: { toolCallId: "call-1", agentId: "reviewer", childRunId: "child-1" },
+    }));
+  });
+
   it("passes the session snapshot into normal permission checks after global permission changes", async () => {
     getCurrentLevel.mockReturnValue("per-action");
     const runtime = prepareRuntime();
