@@ -6,7 +6,7 @@
 
 import type { ReactNode } from "react";
 import { Tabs } from "antd";
-import { File, Files, FolderTree, GitCompareArrows, Globe, ListChecks, SquareTerminal } from "lucide-react";
+import { File, Files, FolderTree, GitCompareArrows, Globe, LayoutList, ListChecks, SquareTerminal } from "lucide-react";
 import { useTranslation } from "../../../i18n";
 import "./RightInspector.css";
 
@@ -15,7 +15,7 @@ export interface InspectorTab {
   label: string;
   /** Full path/context for tabs that share the same visible basename. */
   title?: string;
-  kind?: "files" | "file" | "diff" | "browser" | "tasks" | "plan" | "result";
+  kind?: "overview" | "files" | "file" | "diff" | "browser" | "tasks" | "plan" | "result";
   status?: ReactNode;
   /** 阶段色点 class（如 is-review / is-executing / is-completed），不传则不显示 */
   dotClass?: string;
@@ -24,7 +24,7 @@ export interface InspectorTab {
   content: ReactNode;
 }
 
-const tabIcons = { files: FolderTree, file: File, diff: GitCompareArrows, browser: Globe, tasks: SquareTerminal, plan: ListChecks, result: Files };
+const tabIcons = { overview: LayoutList, files: FolderTree, file: File, diff: GitCompareArrows, browser: Globe, tasks: SquareTerminal, plan: ListChecks, result: Files };
 
 export function RightInspector({
   tabs,
