@@ -26,6 +26,7 @@ import { getStorageContext } from "../storage-context";
 import { createMainUserFactCoordinator } from "../memory-policy/main-user-fact-coordinator";
 import { createMainFactSelector } from "../memory-recall/main-fact-selector";
 import { projectKeyForWorkspaceRoot } from "../memory-policy/project-scope";
+import { resolveProjectNames } from "./project-names";
 import type { ConversationTranscriptStore } from "../orchestrator/conversation-transcript-store";
 import type { FireflyRunOptions } from "../orchestrator/firefly-agent";
 import { createTranscriptSink, readTranscriptSinkBinding } from "../orchestrator/transcript-sink";
@@ -71,6 +72,8 @@ export interface MainDefaultMemoryOptions extends Pick<AuthorityOptions, "getCha
   getSettingsWindow?(): Pick<BrowserWindow, "webContents" | "isDestroyed"> | null;
   getSession(id: string): ChatSession | undefined | null;
   listSessionIds(): string[];
+  /** Workspace info from the session index (no session files read); used to name projects in the settings list. */
+  listProjectBindings?(): ReadonlyArray<{ workspaceRoot?: string; displayName?: string }>;
   store: ConversationTranscriptStore;
   /** Main-owned recovery evidence from this installed storage context only. */
   runReader?: TranscriptRunReader;
@@ -726,15 +729,6 @@ export function createMainDefaultMemory(options: MainDefaultMemoryOptions) {
     }
     return result;
   }
-  /** Display names of the projects Main currently knows, by opaque project key; a project nobody is bound to anymore has no name. */
-  function projectNames(): Map<string, string> {
-    const names = new Map<string, string>();
-    for (const id of options.listSessionIds()) {
-      const binding = options.getSession(id)?.workspaceBinding;
-      if (binding?.workspaceRoot && binding.displayName) names.set(projectKeyForWorkspaceRoot(binding.workspaceRoot), binding.displayName);
-    }
-    return names;
-  }
   async function allCandidates(core: Awaited<ReturnType<typeof initialize>>) {
     const items: Awaited<ReturnType<typeof core.policy.candidates>>["items"] = [];
     let cursor: object | null = null;
@@ -749,7 +743,9 @@ export function createMainDefaultMemory(options: MainDefaultMemoryOptions) {
       try { return await serialized(async () => {
         settingsSource.require(grant); const core = await resources(); settingsSource.require(grant);
         const recalled = await core.policy.recall(core.settingsActor), pending = await allCandidates(core); settingsSource.require(grant);
-        const names = projectNames();
+        const needed = new Set([...recalled, ...pending].flatMap(item => item.projectKey === undefined ? [] : [item.projectKey]));
+        // Names are decoration: resolved only for the projects shown, best effort, never able to fail the panel.
+        const names = resolveProjectNames(needed, { listSessionIds: () => options.listSessionIds(), getSession: id => options.getSession(id), ...(options.listProjectBindings ? { listProjectBindings: () => options.listProjectBindings!() } : {}) });
         const place = <T extends { projectKey?: string }>(item: T): Omit<T, "projectKey"> & { projectName?: string } => {
           const { projectKey, ...rest } = item;
           const projectName = projectKey === undefined ? undefined : names.get(projectKey);
