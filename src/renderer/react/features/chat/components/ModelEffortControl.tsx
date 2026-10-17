@@ -1,6 +1,7 @@
-import { Popover, Slider } from "antd";
+import { Popover } from "antd";
 import { useEffect, useState } from "react";
-import { RotateCcw, Zap } from "lucide-react";
+import { RotateCcw } from "lucide-react";
+import { EffortBar } from "./EffortBar";
 import { useTranslation } from "../../../i18n";
 import { computeReasoningDropdown, type ReasoningDropdownView } from "../../../../lib/reasoning-dropdown";
 import type { ReasoningLevelsConfig, ReasoningPreference } from "../../../../../shared/reasoning";
@@ -134,8 +135,7 @@ export function ModelEffortControl({ sessionId, activeProfileId, onSelectModelPr
   const effortPanel = (
     <div className="ff-model-panel ff-effort">
       <div className="ff-effort__head">
-        {/* Like Codex: a quiet mark on the left, the level in the middle, "back to automatic" on the right. */}
-        <span className="ff-effort__icon" aria-hidden="true"><Zap size={14} strokeWidth={1.7} /></span>
+        {/* Like Codex: the level and model in the middle, "back to automatic" on the right. */}
         {adjustable && activeIndex !== 0 && (
           <button type="button" className="ff-effort__reset" aria-label={t("modelEffort.reset")} title={t("modelEffort.reset")}
             onClick={() => void commit(0)}>
@@ -149,19 +149,13 @@ export function ModelEffortControl({ sessionId, activeProfileId, onSelectModelPr
         </button>
       </div>
       {adjustable ? (
-        <Slider
-          className="ff-effort__slider"
-          min={0}
-          max={items.length - 1}
-          step={1}
-          dots
-          // No text under the stops: the level is named in the title, as in Codex.
-          marks={Object.fromEntries(items.map((_item, index) => [index, { label: null }]))}
-          value={shownIndex}
-          tooltip={{ open: false }}
-          aria-label={t("modelEffort.sliderLabel")}
-          onChange={(value) => { if (!items[value]?.disabled) setPreview(value); }}
-          onChangeComplete={(value) => void commit(value)}
+        <EffortBar
+          count={items.length}
+          value={activeIndex}
+          disabled={items.map((item) => Boolean(item.disabled))}
+          label={t("modelEffort.sliderLabel")}
+          onPreview={setPreview}
+          onCommit={(index) => void commit(index)}
         />
       ) : (
         <p className="ff-effort__note">{t("modelEffort.unsupported")}</p>

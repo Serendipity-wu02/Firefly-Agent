@@ -17,8 +17,7 @@
    then a thick rounded bar filled up to the chosen level with a white knob and a dot at every stop. */
 .ff-effort { display: grid; gap: 14px; padding: 8px 10px 10px; }
 .ff-effort__head { position: relative; display: grid; justify-items: center; gap: 2px; min-height: 40px; }
-.ff-effort__icon, .ff-effort__reset { position: absolute; top: 2px; display: grid; width: 26px; height: 26px; place-items: center; color: var(--ff-text-muted); }
-.ff-effort__icon { left: 0; }
+.ff-effort__reset { position: absolute; top: 2px; display: grid; width: 26px; height: 26px; place-items: center; color: var(--ff-text-muted); }
 .ff-effort__reset { right: 0; padding: 0; border: 0; border-radius: 8px; background: transparent; cursor: pointer; }
 .ff-effort__reset:hover { background: var(--ff-bg-hover); color: var(--ff-text); }
 .ff-effort__value { color: var(--ff-accent); font: 600 15px/1.3 var(--rb-font-sans, sans-serif); }
@@ -29,29 +28,6 @@
 .ff-effort__model:hover { background: var(--ff-bg-hover); color: var(--ff-text); }
 .ff-effort__model svg { width: 12px; height: 12px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
 .ff-effort__note { margin: 0; color: var(--ff-text-muted); font: 400 12px/1.5 var(--rb-font-sans, sans-serif); text-align: center; }
-
-.ff-effort__slider.ant-slider { height: 28px; margin: 0 2px; padding: 0; }
-.ff-effort__slider .ant-slider-rail,
-.ff-effort__slider .ant-slider-track,
-.ff-effort__slider .ant-slider-step { top: 0; height: 28px; border-radius: 999px; }
-.ff-effort__slider .ant-slider-rail { background: var(--ff-bg-active); }
-/* The fill reaches past the knob's centre to its right edge, so the knob sits inside the coloured bar. */
-.ff-effort__slider .ant-slider-track { background: var(--ff-accent); padding-right: 14px; margin-left: -14px; box-sizing: content-box; }
-.ff-effort__slider .ant-slider-step { inset-inline: 14px; }
-.ff-effort__slider .ant-slider-dot { top: 12px; width: 4px; height: 4px; border: 0; background: var(--ff-text-muted); opacity: .45; }
-.ff-effort__slider .ant-slider-dot-active { background: var(--ff-on-accent); opacity: .8; }
-.ff-effort__slider .ant-slider-handle { top: 1px; width: 26px; height: 26px; inset-block-start: 1px; }
-.ff-effort__slider .ant-slider-handle::before { display: none; }
-.ff-effort__slider .ant-slider-handle::after {
-  width: 26px; height: 26px; inset-inline-start: 0; inset-block-start: 0;
-  border: 0; background: #fff;
-  box-shadow: 0 1px 4px rgb(0 0 0 / 22%);
-  transition: transform .15s ease;
-}
-.ff-effort__slider:hover .ant-slider-handle::after,
-.ff-effort__slider .ant-slider-handle:active::after { transform: scale(1.04); }
-.ff-effort__slider .ant-slider-handle:focus-visible::after { box-shadow: 0 1px 4px rgb(0 0 0 / 22%), 0 0 0 3px rgba(var(--ff-accent-rgb), 0.3); }
-.ff-effort__slider .ant-slider-mark { display: none; }
 
 /* Model list. */
 .ff-model-list { display: grid; gap: 2px; max-height: 320px; overflow-y: auto; }
