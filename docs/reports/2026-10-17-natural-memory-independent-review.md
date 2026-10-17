@@ -1,3 +1,5 @@
+> Historical snapshot: this file records its original phase1 baseline and acceptance time. For the user-selected mini target and final post-review source, see [fresh mini validation](../reports/2026-10-17-memory-token-mini-validation.md). Do not substitute its earlier counts or limits for current mini evidence.
+
 # 阶段一自然语言低敏记忆：独立只读审查
 
 审查时间：2026-10-17 07:35 UTC。工作树：`E:\Codex\2026-10-17\task\firefly-memory-phase1`；分支：`codex/natural-memory-phase1-20261017`；基线及未提交改动所在 HEAD：`0539f72a5888d1453227d3f3eabef410e23fbc58`。

@@ -1,3 +1,5 @@
+> Historical snapshot: this file records its original phase1 baseline and acceptance time. For the user-selected mini target and final post-review source, see [fresh mini validation](../reports/2026-10-17-memory-token-mini-validation.md). Do not substitute its earlier counts or limits for current mini evidence.
+
 # Natural low-sensitivity memory: phase 1
 
 ## Scope and verified baseline

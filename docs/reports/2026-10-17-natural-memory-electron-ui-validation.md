@@ -1,3 +1,5 @@
+> Historical snapshot: this file records its original phase1 baseline and acceptance time. For the user-selected mini target and final post-review source, see [fresh mini validation](../reports/2026-10-17-memory-token-mini-validation.md). Do not substitute its earlier counts or limits for current mini evidence.
+
 # Natural memory phase 1 — isolated Electron/UI acceptance
 
 The actual compiled candidate application completed natural-language proposal, explicit confirmation, clean shutdown, reopening, new-session request selection, correction and forgetting. The product implementation was not changed during this follow-up. All conversation data and application storage were synthetic, and model responses were supplied in process without a provider request.

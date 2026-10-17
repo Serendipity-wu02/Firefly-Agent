@@ -1,3 +1,5 @@
+> Historical snapshot: this file records its original phase1 baseline and acceptance time. For the user-selected mini target and final post-review source, see [fresh mini validation](../reports/2026-10-17-memory-token-mini-validation.md). Do not substitute its earlier counts or limits for current mini evidence.
+
 # Phase 1 natural user memory — validation and delivery
 
 **Result:** implementation and locked-environment acceptance passed. The final complete suite finished at 08:31:50 UTC: **10,392 passed, 11 existing platform skips, zero failed/unhandled errors**, exit 0. The real closure checks actual outgoing canonical/provider requests after confirmation and reopening; this is not a database-write-only acceptance. No real provider or Electron/UI run is claimed.

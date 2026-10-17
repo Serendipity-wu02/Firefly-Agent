@@ -41,15 +41,17 @@
 
 ## Task 3: Fresh mini verification and review
 
-- [ ] Build/check Main/preload/CLI/renderer, renderer noEmit, schema/storage, offline eval/native helpers as appropriate. Use private process roots and retain errors/warnings.
-- [ ] Run actual isolated Electron settings/Main/SQLite/model-request closure with mock transport; adapt selectors only when a concrete mini UI difference requires it, not the user's UI.
-- [ ] Dispatch one new gpt-6.1-sol/max whole-branch reviewer with this plan and exact mini range, source-difference boundaries and historical-evidence limits. Fix material findings RED/GREEN and verify.
-- [ ] Run the whole feasible project suite on a frozen clean commit, comparing all tracked file hashes before/after. Do not cite10485 as this run's result.
-- [ ] Write fresh mini report/evidence; ensure outgoing paths/content contain no real data, profile, keys or dependency/build output. Old source reports remain explicitly historical.
+- [x] Build/check Main/preload/CLI/renderer, renderer noEmit, schema/storage, offline eval/native helpers as appropriate. Use private process roots and retain errors/warnings.
+- [x] Run actual isolated Electron settings/Main/SQLite/model-request closure with mock transport; adapt selectors only when a concrete mini UI difference requires it, not the user's UI.
+- [x] Dispatch one new gpt-6.1-sol/max whole-branch reviewer with this plan and exact mini range, source-difference boundaries and historical-evidence limits. Fix material findings RED/GREEN and verify.
+- [x] Run the whole feasible project suite on a frozen clean commit, comparing all tracked file hashes before/after. Do not cite10485 as this run's result.
+- [x] Write fresh mini report/evidence; ensure outgoing paths/content contain no real data, profile, keys or dependency/build output. Old source reports remain explicitly historical.
 
 ## Task 4: Formal PR and CI
 
-- [ ] Recheck current remote target and absence of same-source PR; if target moves, assess only actual new compatibility concerns before publishing.
+- [x] Recheck current remote target and absence of same-source PR; if target moves, assess only actual new compatibility concerns before publishing.
 - [ ] Push this new release branch without force, create a non-Draft PR to mini using the repository template and a body file, then attach it to the task.
 - [ ] Report URL/head/base immediately and follow CI to terminal status; diagnose/fix only task-introduced failures. Never auto-merge.
 - [ ] Preserve this tree for review and resume the separate phase2 tree/design after publication/CI.
+
+Final source3ab888f passed10512/11inherited skips/0fail, build/types/schema/eval/native and actual Electron closure. Mini advanced to931997 during acceptance; nine UI/locale files passed read-only apply-check, with no Main/contracts/dependency changes. Local acceptance and current-target CI are distinguished in the fresh mini report. Publication/CI results are reported by the PR and task checkpoint; phase2 remains outside this PR.
