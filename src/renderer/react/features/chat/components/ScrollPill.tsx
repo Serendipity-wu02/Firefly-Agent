@@ -23,7 +23,11 @@ export function pillGeometry(input: { scrollTop: number; scrollHeight: number; c
   return { top: Math.round(EDGE + ratio * travel), left: Math.round(left), visible: true };
 }
 
-export function ScrollPill({ target, column }: { target: RefObject<HTMLElement | null>; column: string }) {
+export function ScrollPill({ target, column, onUserScroll }: {
+  target: RefObject<HTMLElement | null>; column: string;
+  /** Called as the pill is dragged, so bottom-pinning treats it as the user's own scroll and lets go. */
+  onUserScroll?(): void;
+}) {
   const [geometry, setGeometry] = useState<PillGeometry>({ top: EDGE, left: 0, visible: false });
   const [active, setActive] = useState(false);
   const idle = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
@@ -56,15 +60,23 @@ export function ScrollPill({ target, column }: { target: RefObject<HTMLElement |
     element.addEventListener("pointerenter", onEnter);
     element.addEventListener("pointerleave", onLeave);
     const observer = typeof ResizeObserver === "undefined" ? undefined : new ResizeObserver(measure);
-    observer?.observe(element);
-    const content = element.firstElementChild;
-    if (content) observer?.observe(content);
+    // Watch every child (a channel banner can come before the message column), and keep up as children come and go.
+    const observeChildren = () => {
+      if (!observer) return;
+      observer.disconnect();
+      observer.observe(element);
+      for (const child of Array.from(element.children)) observer.observe(child);
+    };
+    observeChildren();
+    const mutations = typeof MutationObserver === "undefined" ? undefined : new MutationObserver(() => { observeChildren(); measure(); });
+    mutations?.observe(element, { childList: true });
     measure();
     return () => {
       element.removeEventListener("scroll", onScroll);
       element.removeEventListener("pointerenter", onEnter);
       element.removeEventListener("pointerleave", onLeave);
       observer?.disconnect();
+      mutations?.disconnect();
       clearTimeout(idle.current);
     };
   }, [target, measure, wake]);
@@ -80,6 +92,7 @@ export function ScrollPill({ target, column }: { target: RefObject<HTMLElement |
     if (!drag.current || drag.current.pointerId !== event.pointerId || !element) return;
     const travel = Math.max(1, element.clientHeight - PILL_LENGTH - EDGE * 2);
     const range = element.scrollHeight - element.clientHeight;
+    onUserScroll?.();
     element.scrollTop = drag.current.startTop + ((event.clientY - drag.current.startY) / travel) * range;
   };
   const endDrag = (event: ReactPointerEvent<HTMLDivElement>) => {

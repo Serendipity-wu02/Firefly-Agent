@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 import React, { act, createRef } from "react";
 import { createRoot } from "react-dom/client";
-import { afterEach, beforeEach, describe, expect, it } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { PILL_LENGTH, ScrollPill, pillGeometry } from "./ScrollPill";
 
 describe("scroll pill geometry", () => {
@@ -42,5 +42,21 @@ describe("scroll pill", () => {
       pill.dispatchEvent(new PointerEvent("pointermove", { bubbles: true, pointerId: 1, clientY: 100 + (1000 - PILL_LENGTH - 16) / 4 }));
     });
     expect(list.scrollTop).toBe(1000);
+  });
+
+  it("tells bottom-pinning the user is scrolling while the pill is dragged", () => {
+    const list = document.createElement("div");
+    Object.defineProperties(list, { scrollHeight: { value: 3000 }, clientHeight: { value: 1000 } });
+    host.append(list);
+    const ref = createRef<HTMLElement>();
+    (ref as { current: HTMLElement }).current = list;
+    const onUserScroll = vi.fn();
+    act(() => root.render(React.createElement(ScrollPill, { target: ref, column: ".none", onUserScroll })));
+    const pill = host.querySelector<HTMLElement>(".ff-scroll-pill")!;
+    act(() => {
+      pill.dispatchEvent(new PointerEvent("pointerdown", { bubbles: true, pointerId: 2, clientY: 400 }));
+      pill.dispatchEvent(new PointerEvent("pointermove", { bubbles: true, pointerId: 2, clientY: 300 }));
+    });
+    expect(onUserScroll).toHaveBeenCalled();
   });
 });

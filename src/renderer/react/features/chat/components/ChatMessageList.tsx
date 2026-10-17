@@ -1286,7 +1286,7 @@ export function ChatMessageList({
     });
   }, [editDraft, editingMessageId, onEditLastUserMessage, revisionBusy]);
   // 流式输出时钉在底部；用户往上滚即松开，回到底部重新钉住（见 useScrollPinning）。
-  const { containerRef, onScroll: updateScrollState, scrollToBottom } = useScrollPinning(onScrollToBottomVisibilityChange);
+  const { containerRef, onScroll: updateScrollState, scrollToBottom, markUserScroll } = useScrollPinning(onScrollToBottomVisibilityChange);
 
   // 向父组件注册滚动到底部的回调
   useEffect(() => {
@@ -1377,7 +1377,7 @@ export function ChatMessageList({
           )}
           <Bubble.List items={items} role={roles} autoScroll />
         </div>
-        <ScrollPill target={containerRef} column=".ant-bubble-list" />
+        <ScrollPill target={containerRef} column=".ant-bubble-list" onUserScroll={markUserScroll} />
         </div>
       </LastTurnIdsContext.Provider>
     </FileLinkContext.Provider>
