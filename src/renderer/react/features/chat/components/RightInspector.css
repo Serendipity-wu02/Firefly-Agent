@@ -30,8 +30,9 @@
 .ff-inspector-resizer::after { content: ""; position: absolute; inset: 0 3px; border-radius: 2px; background: transparent; transition: background-color 120ms ease; }
 .ff-inspector-resizer:hover::after, .ff-inspector-resizer:focus-visible::after, .ff-right-inspector[data-shielded] .ff-inspector-resizer:active::after { background: var(--ff-accent); }
 
-/* While a panel is lifted or a separator dragged, the browser's native view would swallow the pointer: fold its body (zero size hides the view). */
-.ff-right-inspector[data-shielded] .ff-inspector-pane[data-inspector-kind="browser"] .ff-inspector-pane__body { display: none; }
+/* While a panel is lifted or a separator dragged, a loaded page's native view would swallow the pointer and stay behind:
+   fold only the page area (zero size hides the view). Tabs, address bar and the new-tab page stay, so the panel never goes blank. */
+.ff-right-inspector[data-shielded] .ff-inspector-pane[data-inspector-kind="browser"] .ff-browser-workspace__viewport:not(:has(.ff-browser-newtab, .ff-browser-workspace__empty)) { display: none; }
 .ff-right-inspector[data-moving], .ff-right-inspector[data-moving] .ff-inspector-pane__head { cursor: grabbing; user-select: none; }
 /* The lifted panel floats above the others while it follows the pointer. */
 .ff-inspector-pane[data-lifted] { z-index: 6; box-shadow: 0 16px 40px rgb(0 0 0 / 16%); transition: none; will-change: transform; }

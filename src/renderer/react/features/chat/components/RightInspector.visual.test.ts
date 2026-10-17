@@ -24,4 +24,9 @@ describe("RightInspector surface", () => {
     expect(stylesheet).toMatch(/@keyframes ff-right-inspector-slide-in \{\s*from \{ opacity: 0; \}\s*to \{ opacity: 1; \}\s*\}/);
     expect(rule(".ff-inspector-pane")?.style.animation).toContain("ff-right-inspector-slide-in");
   });
+
+  it("hides only a loaded page while dragging, never the whole browser panel", () => {
+    expect(stylesheet).toContain('[data-shielded] .ff-inspector-pane[data-inspector-kind="browser"] .ff-browser-workspace__viewport:not(:has(.ff-browser-newtab, .ff-browser-workspace__empty)) { display: none; }');
+    expect(stylesheet).not.toMatch(/\[data-shielded\][^{]*\.ff-inspector-pane__body\s*\{\s*display:\s*none/);
+  });
 });
