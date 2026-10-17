@@ -1404,23 +1404,10 @@ export function ChatPage() {
     ...(browserTabOpen ? ["browser"] : []),
   ];
 
-  /**
-   * 文件树标签是否被钉住：面板里还有 diff / 文件预览 / 计划标签时，
-   * 文件树不可关闭（chip 无 ×、右上角关闭按钮对它无效），
-   * 只剩它一个时恢复可关——关掉即收起整个面板。
-   */
-  const filesTabPinned = filesTabOpen
-    && (resultTabs.length > 0 || browserTabOpen || fileTabs.length > 0 || diffTabs.length > 0 || (activePlan !== null && planDrawerOpen));
-
   /** 关闭右侧面板标签：活动标签关闭后回退到相邻标签（优先左侧） */
   const closeInspectorTab = (id: string) => {
     const index = inspectorTabIds.indexOf(id);
     if (index < 0) return;
-    // 钉住的文件树标签：关闭请求降级为激活它
-    if (id === "files" && filesTabPinned) {
-      setActiveTabId("files");
-      return;
-    }
     const remaining = inspectorTabIds.filter((tabId) => tabId !== id);
     if (id === "browser") {
       setBrowserTabOpen(false);
@@ -1818,7 +1805,6 @@ export function ChatPage() {
                 onOpenResultDiff={openResultDiff}
                 workspaceRoot={activeSession?.workspaceBinding?.workspaceRoot}
                 filesTabOpen={filesTabOpen}
-                filesTabPinned={filesTabPinned}
                 browserTabOpen={browserTabOpen}
                 tasksTabOpen={tasksTabOpen}
                 onOpenFilesTab={openFilesTab}

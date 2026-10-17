@@ -92,8 +92,6 @@ export interface ChatPageInspectorProps {
   /** 工作区根路径（未绑定时为空，文件树显示引导态） */
   workspaceRoot?: string;
   filesTabOpen: boolean;
-  /** 文件树标签被钉住（面板里还有其它标签时不可关） */
-  filesTabPinned: boolean;
   browserTabOpen?: boolean;
   tasksTabOpen?: boolean;
   /** 会话概览标签：固定排在最前。 */
@@ -128,7 +126,6 @@ export function ChatPageInspector({
   onOpenResultDiff,
   workspaceRoot,
   filesTabOpen,
-  filesTabPinned,
   browserTabOpen = false,
   tasksTabOpen = false,
   overviewTabOpen = false,
@@ -170,8 +167,6 @@ export function ChatPageInspector({
       id: "files",
       kind: "files",
       label: t("fileTree.title"),
-      // 被钉住的文件树标签隐藏 chip 上的 ×，右上角关闭按钮也对它无效
-      closable: !filesTabPinned,
       content: (
         sessionId && workspaceRoot ? <FileTreePanel
           sessionId={sessionId}

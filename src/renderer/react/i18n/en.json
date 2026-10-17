@@ -987,7 +987,6 @@
     "newTabTools": "Tools",
     "newTabSites": "Recommended",
     "newTabRecent": "Recent",
-    "newTabLocalHint": "Type a local or private-network address such as localhost:5173 or 192.168.1.5:3000; it is confirmed separately before opening.",
     "ready": "Enter a HTTPS page address to browse.",
     "sessionRequired": "Start or select a conversation to browse.",
     "title": "Browser",

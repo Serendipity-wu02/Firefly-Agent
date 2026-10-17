@@ -67,3 +67,14 @@ it("folds a card with the grid animation and keeps its body out of reach while c
   expect(fold.getAttribute("aria-hidden")).toBe("true");
   expect(fold.hasAttribute("inert")).toBe(true);
 });
+
+it("lifts the dragged card so it follows the pointer, and Escape puts it back", () => {
+  pointer(grip("tasks"), "pointerdown", 50);
+  pointer(grip("tasks"), "pointermove", 130);
+  const card = host.querySelector<HTMLElement>('[data-overview-card="tasks"]')!;
+  expect(card.style.getPropertyValue("--ff-drag-y")).toBe("80px");
+  act(() => { grip("tasks").dispatchEvent(new KeyboardEvent("keydown", { key: "Escape", bubbles: true })); });
+  expect(host.querySelector("[data-dragging]")).toBeNull();
+  pointer(grip("tasks"), "pointerup", 130);
+  expect(order()).toEqual(["tasks", "context", "changes"]);
+});

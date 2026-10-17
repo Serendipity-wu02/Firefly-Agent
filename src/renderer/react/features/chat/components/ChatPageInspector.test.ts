@@ -19,7 +19,7 @@ import { ChatPageInspector } from "./ChatPageInspector";
 describe("ChatPageInspector", () => {
   it("keeps the closed browser entry available before the first session", () => {
     const props = {
-      sessionId: "session-a", browserTabOpen: true, filesTabOpen: false, filesTabPinned: false,
+      sessionId: "session-a", browserTabOpen: true, filesTabOpen: false,
       fileTabs: [], diffTabs: [], activePlan: null, planDrawerOpen: false,
       planTabId: "plan:session-a", activeTabId: "browser", onTabChange: () => undefined,
       onCloseTab: () => undefined, onOpenFile: () => undefined,
@@ -35,7 +35,7 @@ describe("ChatPageInspector", () => {
   });
   it("renders a file empty state and workspace selection before a session exists", () => {
     const html = renderToStaticMarkup(createElement(ChatPageInspector, {
-      filesTabOpen: true, filesTabPinned: false, fileTabs: [], diffTabs: [],
+      filesTabOpen: true, fileTabs: [], diffTabs: [],
       activePlan: null, planDrawerOpen: false, planTabId: "plan:session", activeTabId: "files",
       onTabChange: () => undefined, onCloseTab: () => undefined, onOpenFile: () => undefined,
       onChooseWorkspace: () => undefined,
@@ -46,7 +46,7 @@ describe("ChatPageInspector", () => {
   });
   it("interpolates the selected workspace name in the welcome file state", () => {
     const html = renderToStaticMarkup(createElement(ChatPageInspector, {
-      filesTabOpen: true, filesTabPinned: false, fileTabs: [], diffTabs: [],
+      filesTabOpen: true, fileTabs: [], diffTabs: [],
       activePlan: null, planDrawerOpen: false, planTabId: "plan:session", activeTabId: "files",
       onTabChange: () => undefined, onCloseTab: () => undefined, onOpenFile: () => undefined,
       pendingWorkspaceName: "Synthetic selected folder",
@@ -56,7 +56,7 @@ describe("ChatPageInspector", () => {
   });
   it("hosts task content in the right workspace tab", () => {
     const html = renderToStaticMarkup(createElement(ChatPageInspector, {
-      filesTabOpen: false, filesTabPinned: false, fileTabs: [], diffTabs: [],
+      filesTabOpen: false, fileTabs: [], diffTabs: [],
       activePlan: null, planDrawerOpen: false, planTabId: "plan:session", activeTabId: "tasks",
       onTabChange: () => undefined, onCloseTab: () => undefined, onOpenFile: () => undefined,
       tasksTabOpen: true, taskPanel: createElement("div", { "data-task-fixture": true }, "Task fixture"),
@@ -69,7 +69,7 @@ describe("ChatPageInspector", () => {
       sessionId: undefined,
       workspaceRoot: undefined,
       filesTabOpen: false,
-      filesTabPinned: false,
+     
       fileTabs: [],
       diffTabs: [],
       activePlan: null,
@@ -85,7 +85,7 @@ describe("ChatPageInspector", () => {
   });
   it("marks a browser-only pane so its own strip becomes the top row, and only then offers the pane close", () => {
     const props = {
-      sessionId: "session-a", browserTabOpen: true, filesTabOpen: false, filesTabPinned: false,
+      sessionId: "session-a", browserTabOpen: true, filesTabOpen: false,
       fileTabs: [], diffTabs: [], activePlan: null, planDrawerOpen: false, planTabId: "plan:session-a",
       activeTabId: "browser", onTabChange: () => undefined, onCloseTab: () => undefined, onOpenFile: () => undefined,
     };

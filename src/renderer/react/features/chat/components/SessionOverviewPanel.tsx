@@ -4,7 +4,7 @@
 // 交互参照 open-claude-ui：卡片右上角六点抓取柄可上下拖动换顺序（4px 死区，落点显示强调色线，
 // 被拖卡片微倾斜），键盘在抓取柄上按 ↑↓ 也能挪；顺序记在本机。展开收起用 Grid 0fr→1fr 的高度动画。
 
-import { useEffect, useId, useRef, useState, type KeyboardEvent, type PointerEvent as ReactPointerEvent, type ReactNode } from "react";
+import { useEffect, useId, useRef, useState, type CSSProperties, type KeyboardEvent, type PointerEvent as ReactPointerEvent, type ReactNode } from "react";
 import { ChevronRight, GripVertical } from "lucide-react";
 import { useTranslation } from "../../../i18n";
 import type { ContextUsageSnapshot } from "../../../../../shared/context-usage";
@@ -70,6 +70,8 @@ interface CardDrag {
   onGripKeyDown(event: KeyboardEvent<HTMLButtonElement>): void;
   dragging: boolean;
   dropBefore: boolean;
+  /** How far the pointer has travelled since the press, so the lifted card follows it. */
+  offsetY: number;
 }
 
 function OverviewCard({ id, title, summary, defaultOpen = true, drag, children }: {
@@ -86,7 +88,8 @@ function OverviewCard({ id, title, summary, defaultOpen = true, drag, children }
   const bodyId = useId();
   return (
     <section className="ff-overview-card" data-overview-card={id} data-open={open}
-      data-dragging={drag?.dragging || undefined} data-drop-before={drag?.dropBefore || undefined}>
+      data-dragging={drag?.dragging || undefined} data-drop-before={drag?.dropBefore || undefined}
+      style={drag?.dragging ? { "--ff-drag-y": `${drag.offsetY}px` } as CSSProperties : undefined}>
       <div className="ff-overview-card__bar">
         <button
           type="button"
@@ -173,7 +176,7 @@ export function SessionOverviewPanel({ usage, outputs, onOpenChange, onOpenTask 
   const tasks = summarizeTasks(outputs);
   const hasTasks = tasks.running.length > 0 || tasks.finished > 0;
   const [order, setOrder] = useState<string[]>(readOrder);
-  const [drag, setDrag] = useState<{ id: string; startY: number; active: boolean; target: number | null } | null>(null);
+  const [drag, setDrag] = useState<{ id: string; startY: number; offsetY: number; active: boolean; target: number | null } | null>(null);
   const listRef = useRef<HTMLDivElement>(null);
   // Scroll fade: a 28px feathered edge only where cards are hidden past it.
   const updateFade = (element: HTMLElement) => {
@@ -270,15 +273,16 @@ export function SessionOverviewPanel({ usage, outputs, onOpenChange, onOpenTask 
   const dragFor = (id: string): CardDrag => ({
     dragging: Boolean(drag?.active && drag.id === id),
     dropBefore: dropBeforeId === id,
+    offsetY: drag?.id === id ? drag.offsetY : 0,
     onGripPointerDown: (event) => {
       if (event.button !== 0) return;
       event.currentTarget.setPointerCapture?.(event.pointerId);
-      setDrag({ id, startY: event.clientY, active: false, target: null });
+      setDrag({ id, startY: event.clientY, offsetY: 0, active: false, target: null });
     },
     onGripPointerMove: (event) => {
       if (!drag || drag.id !== id) return;
       if (!drag.active && Math.abs(event.clientY - drag.startY) <= DRAG_DEAD_ZONE) return;
-      setDrag({ ...drag, active: true, target: dropIndex(event.clientY, id) });
+      setDrag({ ...drag, active: true, offsetY: event.clientY - drag.startY, target: dropIndex(event.clientY, id) });
     },
     onGripPointerUp: () => {
       if (drag?.active && drag.target !== null) commit(moveId(ordered.map(card => card.id), drag.id, drag.target));
@@ -286,6 +290,8 @@ export function SessionOverviewPanel({ usage, outputs, onOpenChange, onOpenTask 
     },
     onGripPointerCancel: () => setDrag(null),
     onGripKeyDown: (event) => {
+      // Escape puts a lifted card back where it was, like the reference's drag state machine.
+      if (event.key === "Escape" && drag?.active) { event.preventDefault(); setDrag(null); return; }
       if (event.key !== "ArrowUp" && event.key !== "ArrowDown") return;
       event.preventDefault();
       const ids = ordered.map(card => card.id);

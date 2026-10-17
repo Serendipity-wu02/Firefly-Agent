@@ -9,7 +9,7 @@ vi.mock("./PlanReviewPanel", () => ({ PlanContent: () => null, planTabDotClass: 
 vi.mock("./ReviewInspector", () => ({ ReviewDiffContent: () => null }));
 import { ChatPageInspector, type ChatPageInspectorProps } from "./ChatPageInspector";
 let root: ReturnType<typeof createRoot>, host: HTMLDivElement, execute: ReturnType<typeof vi.fn>;
-const props: ChatPageInspectorProps = { sessionId: "s", browserTabOpen: true, filesTabOpen: false, filesTabPinned: false, fileTabs: [], diffTabs: [], activePlan: null, planDrawerOpen: false, planTabId: "plan:s", activeTabId: "browser", onTabChange: vi.fn(), onCloseTab: vi.fn(), onOpenFile: vi.fn() };
+const props: ChatPageInspectorProps = { sessionId: "s", browserTabOpen: true, filesTabOpen: false, fileTabs: [], diffTabs: [], activePlan: null, planDrawerOpen: false, planTabId: "plan:s", activeTabId: "browser", onTabChange: vi.fn(), onCloseTab: vi.fn(), onOpenFile: vi.fn() };
 /** Longer than the 220ms pane motion, so the settled state is observed. */
 const settle = () => act(async () => { await new Promise(resolve => setTimeout(resolve, 260)); });
 beforeEach(() => {

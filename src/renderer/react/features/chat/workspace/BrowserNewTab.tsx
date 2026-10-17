@@ -1,5 +1,8 @@
 import { createContext, useContext, type ReactNode } from "react";
 import { useTranslation } from "../../../i18n";
+import bingIcon from "../../../../assets/site-icons/bing.ico";
+import wikipediaIcon from "../../../../assets/site-icons/wikipedia.png";
+import bilibiliIcon from "../../../../assets/site-icons/bilibili.ico";
 import "./BrowserNewTab.css";
 
 /** A workspace entry point offered on the new-tab page. Only real inspector tabs are listed; nothing is a placeholder. */
@@ -12,13 +15,11 @@ export interface BrowserNewTabTool {
 /** Provided by the inspector that hosts the browser, so the page needs no prop chain through the tab components. */
 export const BrowserNewTabToolsContext = createContext<readonly BrowserNewTabTool[]>([]);
 
-/** Fixed starting points. Brand names are not translated, and no favicon is fetched: letters keep this page offline. */
-export const BROWSER_START_SITES: readonly { title: string; url: string }[] = Object.freeze([
-  { title: "Bing", url: "https://www.bing.com/" },
-  { title: "百度", url: "https://www.baidu.com/" },
-  { title: "GitHub", url: "https://github.com/" },
-  { title: "维基百科", url: "https://zh.wikipedia.org/" },
-  { title: "哔哩哔哩", url: "https://www.bilibili.com/" },
+/** Fixed starting points. Brand names are not translated; each icon is the site's own, shipped with the app so the page stays offline. */
+export const BROWSER_START_SITES: readonly { title: string; url: string; icon: string }[] = Object.freeze([
+  { title: "Bing", url: "https://www.bing.com/", icon: bingIcon },
+  { title: "维基百科", url: "https://zh.wikipedia.org/", icon: wikipediaIcon },
+  { title: "哔哩哔哩", url: "https://www.bilibili.com/", icon: bilibiliIcon },
 ]);
 
 const MAX_RECENT = 8;
@@ -38,10 +39,12 @@ export function recentSites(): { title: string; url: string }[] {
 }
 export function clearRecentSites(): void { recentHosts.clear(); }
 
-function Tile({ title, url, onOpen }: { title: string; url: string; onOpen(url: string): void }) {
+function Tile({ title, url, icon, onOpen }: { title: string; url: string; icon?: string; onOpen(url: string): void }) {
   const letter = [...title.replace(/^www\./, "")][0]?.toUpperCase() ?? "?";
   return <button type="button" className="ff-browser-newtab__tile" data-browser-site={url} title={url} onClick={() => onOpen(url)}>
-    <span className="ff-browser-newtab__icon" aria-hidden="true">{letter}</span>
+    <span className="ff-browser-newtab__icon" data-favicon={icon ? true : undefined} aria-hidden="true">
+      {icon ? <img src={icon} alt="" draggable={false} /> : letter}
+    </span>
     <span className="ff-browser-newtab__name">{title}</span>
   </button>;
 }
@@ -69,6 +72,5 @@ export function BrowserNewTab({ onOpen, available = true }: { onOpen(url: string
       <h3>{t("browserWorkspace.newTabSites")}</h3>
       <div className="ff-browser-newtab__row">{BROWSER_START_SITES.map(site => <Tile key={site.url} {...site} onOpen={onOpen} />)}</div>
     </section>
-    <p className="ff-browser-newtab__hint">{t("browserWorkspace.newTabLocalHint")}</p>
   </div>;
 }

@@ -13,21 +13,22 @@ beforeEach(() => {
 });
 afterEach(() => { act(() => root.unmount()); host.remove(); vi.unstubAllGlobals(); vi.restoreAllMocks(); });
 const tabs: InspectorTab[] = [
-  { id: "files", label: "Files", closable: false, content: React.createElement("p", null, "Tree") },
+  { id: "files", label: "Files", content: React.createElement("p", null, "Tree") },
   { id: "file:a/notes.md", label: "notes.md", title: "a/notes.md", content: React.createElement("textarea", { defaultValue: "saved draft" }) },
   { id: "diff:notes.md", label: "notes.md", title: "Diff · b/notes.md", content: React.createElement("p", null, "Diff") },
 ];
 const header = (id: string) => host.querySelector<HTMLElement>(`[data-inspector-pane="${id}"] .ff-inspector-pane__head`)!;
 const keys = (element: Element, key: string) => act(() => element.dispatchEvent(new KeyboardEvent("keydown", { key, bubbles: true, cancelable: true })));
 
-it("tiles panels two per column, filling a column before starting the next, and keeps the overview column on the right", async () => {
+it("tiles panels two per column, filling a column before starting the next, and keeps the overview column beside the chat", async () => {
   const overview: InspectorTab = { id: "overview", kind: "overview", label: "Overview", content: React.createElement("p", null, "Cards") };
   await act(async () => root.render(React.createElement(RightInspector, { tabs: [overview, ...tabs], activeTabId: "files", onTabChange() {}, onCloseTab() {} })));
   const columns = [...host.querySelectorAll(".ff-inspector-grid__column")].map(column =>
     [...column.querySelectorAll("[data-inspector-pane]")].map(pane => (pane as HTMLElement).dataset.inspectorPane));
   expect(columns).toEqual([["files", "file:a/notes.md"], ["diff:notes.md"]]);
   const aside = host.querySelector(".ff-right-inspector")!;
-  expect(aside.lastElementChild?.classList.contains("ff-inspector-overview")).toBe(true);
+  expect(aside.firstElementChild?.classList.contains("ff-inspector-overview")).toBe(true);
+  expect(aside.lastElementChild?.classList.contains("ff-inspector-grid")).toBe(true);
   // The overview is a column of its own, never a tiled panel with a header.
   expect(host.querySelector('.ff-inspector-grid [data-inspector-pane="overview"]')).toBeNull();
   expect(tileColumns([1, 2, 3, 4, 5])).toEqual([[1, 2], [3, 4], [5]]);
@@ -59,10 +60,9 @@ it("focusing a panel makes it the active one", async () => {
   expect(change).toHaveBeenCalledWith("diff:notes.md");
 });
 
-it("Delete on a header closes only that closable panel and never consumes editor deletion", async () => {
+it("Delete on a header closes that panel and never consumes editor deletion", async () => {
   const close = vi.fn();
   await act(async () => root.render(React.createElement(RightInspector, { tabs, activeTabId: "file:a/notes.md", onTabChange() {}, onCloseTab: close })));
-  keys(header("files"), "Delete"); expect(close).not.toHaveBeenCalled();
   keys(host.querySelector("textarea")!, "Delete"); expect(close).not.toHaveBeenCalled();
   keys(header("file:a/notes.md"), "Delete"); expect(close).toHaveBeenCalledExactlyOnceWith("file:a/notes.md");
 });
@@ -76,12 +76,13 @@ it("ignores Delete on nested browser tab headers", async () => {
   expect(close).toHaveBeenCalledExactlyOnceWith("file:a/notes.md");
 });
 
-it("closes from the panel's close button and offers no close on a pinned panel", async () => {
+it("closes any panel from its close button, the file tree included", async () => {
   const close = vi.fn();
   await act(async () => root.render(React.createElement(RightInspector, { tabs, activeTabId: "files", onTabChange() {}, onCloseTab: close })));
-  expect(host.querySelector('[data-inspector-pane="files"] .ff-right-inspector__close')).toBeNull();
+  await act(async () => host.querySelector<HTMLButtonElement>('[data-inspector-pane="files"] .ff-right-inspector__close')!.click());
+  expect(close).toHaveBeenLastCalledWith("files");
   await act(async () => host.querySelector<HTMLButtonElement>('[data-inspector-pane="diff:notes.md"] .ff-right-inspector__close')!.click());
-  expect(close).toHaveBeenCalledExactlyOnceWith("diff:notes.md");
+  expect(close).toHaveBeenLastCalledWith("diff:notes.md");
 });
 
 it("reorders ids and keeps the saved order for ids still present", () => {

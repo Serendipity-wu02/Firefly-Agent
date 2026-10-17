@@ -1,4 +1,4 @@
-/* RightInspector — big panels tiled two per column, with the overview column on the far right.
+/* RightInspector — big panels tiled two per column, with the overview column on the chat side.
    Width comes from the outer react-resizable-panels Panel; the inspector only fills it. */
 .ff-right-inspector {
   display: flex;

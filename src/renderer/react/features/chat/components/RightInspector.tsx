@@ -1,6 +1,6 @@
 // RightInspector — 右侧面板，参照 Claude 桌面版的结构：
-// - 概览（overview）是最右边的一条窄列，里面是可拖动排序的小卡片（卡片本身由 SessionOverviewPanel 渲染）；
-// - 其余打开的项（浏览器、文件、文件预览、改动、任务……）是大面板，在概览列左侧铺成网格：每列上下两块，满了再开一列。
+// - 概览（overview）是紧挨对话框外侧的一条窄列，里面是可拖动排序的小卡片（卡片本身由 SessionOverviewPanel 渲染）；
+// - 其余打开的项（浏览器、文件、文件预览、改动、任务……）是大面板，在概览列右侧铺成网格：每列上下两块，满了再开一列。
 // 打开/关闭由主区标题行的图标开关负责，这里没有标签条。大面板标题行：图标、名称、状态 ··· 放大、关闭。
 // 放大时其余大面板隐藏（保持挂载，浏览器等状态不丢）；关闭后的焦点回退仍由上层 ChatPage 决定。
 
@@ -53,6 +53,13 @@ export function RightInspector({
   return (
     <aside className="ff-right-inspector" hidden={!visible} inert={!visible} aria-label={t("rightInspector.panelAria")}
       data-has-overview={overview ? true : undefined} data-has-panels={panels.length > 0 || undefined}>
+      {overview && (
+        <div className="ff-inspector-overview" data-inspector-pane={overview.id} data-inspector-kind="overview"
+          data-active={overview.id === active.id || undefined} role="region" aria-label={overview.label}
+          onFocusCapture={() => focus(overview.id)} onPointerDownCapture={() => focus(overview.id)}>
+          {overview.content}
+        </div>
+      )}
       {panels.length > 0 && (
         <div className="ff-inspector-grid">
           {tileColumns(panels).map((column, columnIndex) => (
@@ -103,13 +110,6 @@ export function RightInspector({
               })}
             </div>
           ))}
-        </div>
-      )}
-      {overview && (
-        <div className="ff-inspector-overview" data-inspector-pane={overview.id} data-inspector-kind="overview"
-          data-active={overview.id === active.id || undefined} role="region" aria-label={overview.label}
-          onFocusCapture={() => focus(overview.id)} onPointerDownCapture={() => focus(overview.id)}>
-          {overview.content}
         </div>
       )}
     </aside>

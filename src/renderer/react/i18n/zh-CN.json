@@ -988,7 +988,6 @@
     "newTabTools": "工具",
     "newTabSites": "推荐",
     "newTabRecent": "最近",
-    "newTabLocalHint": "本机或内网地址（如 localhost:5173、192.168.1.5:3000）直接输入即可，打开前会单独确认。",
     "sessionRequired": "开始或选择一个会话后即可浏览。",
     "title": "浏览器",
     "open": "打开浏览器",
