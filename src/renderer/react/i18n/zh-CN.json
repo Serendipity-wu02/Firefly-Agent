@@ -67,7 +67,16 @@
     "workspaceEnter": "进入项目工作",
     "workspaceChoose": "选择工作文件夹",
     "obsidianLibrary": "Obsidian 项目库",
-    "obsidianChoose": "选择 Obsidian 项目库"
+    "obsidianChoose": "选择 Obsidian 项目库",
+    "suggestSlashTitle": "技能与插件",
+    "suggestMentionTitle": "引用文件",
+    "suggestSkill": "技能",
+    "suggestPlugin": "插件",
+    "suggestFolder": "文件夹",
+    "suggestEmpty": "没有匹配项",
+    "suggestFailed": "读取失败",
+    "suggestNeedProject": "先选择项目目录，才能引用文件",
+    "suggestHint": "↑↓ 选择 · Enter 确认 · Esc 关闭"
   },
   "chatPage": {
     "scrollToBottom": "滚动到底部",

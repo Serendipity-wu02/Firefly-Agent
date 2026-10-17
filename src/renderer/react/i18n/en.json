@@ -67,7 +67,16 @@
     "workspaceEnter": "Open project workspace",
     "workspaceChoose": "Choose project folder",
     "obsidianLibrary": "Obsidian vault",
-    "obsidianChoose": "Choose Obsidian vault"
+    "obsidianChoose": "Choose Obsidian vault",
+    "suggestSlashTitle": "Skills and plugins",
+    "suggestMentionTitle": "Reference a file",
+    "suggestSkill": "Skill",
+    "suggestPlugin": "Plugin",
+    "suggestFolder": "Folder",
+    "suggestEmpty": "No matches",
+    "suggestFailed": "Could not load",
+    "suggestNeedProject": "Choose a project folder to reference files",
+    "suggestHint": "↑↓ to move · Enter to pick · Esc to close"
   },
   "chatPage": {
     "scrollToBottom": "Scroll to bottom",

@@ -1,0 +1,310 @@
+/* ==========================================================================
+   Reference UI — a review build after open-claude-ui (Claude Desktop 2.0 / CDS 2.0).
+   Loaded last, so it restyles the app in one place: tokens, the one-row top bar,
+   the flat 28px sidebar, the canvas, messages, the composer chin and motion.
+   ========================================================================== */
+
+/* ---------- 1. Tokens (CDS 2.0: cool alabaster canvas, clay accent, hairlines) ---------- */
+:root {
+  --cds-surface-0: #f9f9f7;          /* sidebar / under-canvas */
+  --cds-surface-1: #fcfcfb;          /* chat canvas */
+  --cds-surface-2: #ffffff;          /* cards */
+  --cds-surface-popover: #ffffff;
+  --cds-alpha-1: hsla(0, 0%, 8%, 0.05);
+  --cds-alpha-2: hsla(0, 0%, 8%, 0.10);
+  --cds-alpha-3: hsla(0, 0%, 8%, 0.20);
+  --cds-brand: #c6613f;
+  --cds-clay: #d97757;
+  --cds-clay-hover: #cc5a36;
+  --cds-clay-subtle: #fbf3ef;
+  --cds-text-primary: #151515;
+  --cds-text-secondary: #525252;
+  --cds-text-muted: #8a8a8a;
+  --cds-bg-user-message: #f0efec;
+  --cds-hairline: 1px;
+  --cds-shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05), 0 2px 8px 0 rgba(0, 0, 0, 0.08);
+  --cds-shadow-md: 0 2px 4px 0 rgba(0, 0, 0, 0.05), 0 6px 16px 0 rgba(0, 0, 0, 0.08);
+  --cds-shadow-popover: 0 0 0 1px var(--cds-alpha-2), 0 8px 24px rgba(0, 0, 0, 0.12), 0 2px 6px rgba(0, 0, 0, 0.08);
+  --cds-shadow-composer: 0 4px 20px rgba(0, 0, 0, 0.035), inset 0 0 0 1px var(--cds-alpha-2);
+  --cds-shadow-composer-hover: 0 4px 24px rgba(0, 0, 0, 0.06), inset 0 0 0 1px var(--cds-alpha-3);
+  --cds-shadow-composer-focus: 0 4px 24px rgba(0, 0, 0, 0.08), inset 0 0 0 1px var(--cds-alpha-3), 0 0 0 1px var(--cds-alpha-3);
+  --cds-focus-shadow: 0 0 0 1.5px var(--cds-clay), 0 0 6px 1px rgba(217, 119, 87, 0.25);
+  /* Density (compact): 6px controls, 12px composer, 28px rows, 16px icons. */
+  --cds-radius: 6px;
+  --cds-radius-composer: 12px;
+  --cds-panel-radius: 10px;
+  --cds-row-h: 28px;
+  /* Motion: five durations, the three production curves plus the expand/enter curves. */
+  --cds-dur-fast: 60ms;
+  --cds-dur-snap: 120ms;
+  --cds-dur-base: 200ms;
+  --cds-dur-sheet: 300ms;
+  --cds-dur-slow: 450ms;
+  --cds-ease-out: cubic-bezier(0.165, 0.84, 0.44, 1);
+  --cds-ease-snap: cubic-bezier(0.32, 0.72, 0, 1);
+  --cds-ease-overshoot: cubic-bezier(0.34, 1.3, 0.64, 1);
+  --cds-ease-expand: cubic-bezier(0.19, 1, 0.22, 1);
+  --cds-ease-enter: cubic-bezier(0.22, 1, 0.36, 1);
+  --cds-scroll-fade-size: 28px;
+
+  /* Firefly tokens re-pointed at CDS. */
+  --ff-bg-page: var(--cds-surface-0);
+  --ff-bg-workspace: var(--cds-surface-1);
+  --ff-surface: var(--cds-surface-2);
+  --ff-popover: var(--cds-surface-popover);
+  --ff-bg-hover: var(--cds-alpha-1);
+  --ff-bg-active: var(--cds-alpha-2);
+  --ff-bg-subtle: #f3f3f0;
+  --ff-rail: var(--cds-surface-0);
+  --ff-border: var(--cds-alpha-2);
+  --ff-text: var(--cds-text-primary);
+  --ff-text-secondary: var(--cds-text-secondary);
+  --ff-text-muted: var(--cds-text-muted);
+  --ff-accent: var(--cds-clay);
+  --ff-accent-solid: var(--cds-brand);
+  --ff-accent-rgb: 217, 119, 87;
+  --ff-on-accent: #ffffff;
+  --ff-primary-bg: var(--cds-brand);
+  --ff-focus-ring-color: var(--cds-clay);
+  --ff-pill-bg: var(--cds-alpha-1);
+  --ff-pill-border: var(--cds-clay);
+  --ff-pill-status: var(--cds-text-primary);
+  --ff-shadow-workspace: none;
+  --ff-shadow-popover: var(--cds-shadow-popover);
+  --ff-shadow-bubble-neutral: var(--cds-shadow-sm);
+  --ff-shadow-bubble-accent: var(--cds-shadow-sm);
+  --ff-shadow-control-hover: var(--cds-shadow-md);
+  --ff-shadow-control-focus: var(--cds-focus-shadow);
+  --ff-warning: #b45309;
+  --rb-font-sans: system-ui, "Segoe UI", "Microsoft YaHei UI", "PingFang SC", Roboto, Helvetica, Arial, sans-serif;
+  --ff-app-titlebar-height: 45px;
+  --ff-workspace-header-height: 45px;
+  --ff-workspace-gutter: 0px;
+}
+@media (min-resolution: 2dppx) { :root { --cds-hairline: 0.5px; } }
+
+:root[data-ui-theme="firefly-dark"] {
+  --cds-surface-0: #0b0b0b;
+  --cds-surface-1: #151515;
+  --cds-surface-2: #1a1a19;
+  --cds-surface-popover: #2c2c2a;
+  --cds-alpha-1: hsla(0, 0%, 100%, 0.05);
+  --cds-alpha-2: hsla(0, 0%, 100%, 0.09);
+  --cds-alpha-3: hsla(0, 0%, 100%, 0.18);
+  --cds-clay-hover: #e08264;
+  --cds-clay-subtle: rgba(217, 119, 87, 0.15);
+  --cds-text-primary: #f5f5f5;
+  --cds-text-secondary: #a3a3a3;
+  --cds-text-muted: #737373;
+  --cds-bg-user-message: rgba(255, 255, 255, 0.06);
+  --cds-shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.4), 0 2px 8px 0 rgba(0, 0, 0, 0.4);
+  --cds-shadow-md: 0 2px 4px 0 rgba(0, 0, 0, 0.4), 0 6px 16px 0 rgba(0, 0, 0, 0.4);
+  --cds-shadow-popover: inset 0 0 0 1px rgba(255, 255, 255, 0.10), 0 8px 28px rgba(0, 0, 0, 0.65), 0 2px 8px rgba(0, 0, 0, 0.45);
+  --cds-shadow-composer: 0 4px 20px rgba(0, 0, 0, 0.4), inset 0 0 0 1px var(--cds-alpha-2);
+  --cds-shadow-composer-hover: 0 4px 24px rgba(0, 0, 0, 0.55), inset 0 0 0 1px var(--cds-alpha-3);
+  --cds-shadow-composer-focus: 0 4px 24px rgba(0, 0, 0, 0.65), inset 0 0 0 1px rgba(255, 255, 255, 0.22), 0 0 0 1px rgba(255, 255, 255, 0.22);
+  --cds-focus-shadow: 0 0 0 1.5px var(--cds-clay), 0 0 8px 2px rgba(217, 119, 87, 0.35);
+  --ff-bg-page: var(--cds-surface-0);
+  --ff-bg-workspace: var(--cds-surface-1);
+  --ff-surface: var(--cds-surface-2);
+  --ff-popover: var(--cds-surface-popover);
+  --ff-bg-hover: var(--cds-alpha-1);
+  --ff-bg-active: var(--cds-alpha-2);
+  --ff-bg-subtle: #20201f;
+  --ff-rail: var(--cds-surface-0);
+  --ff-border: var(--cds-alpha-2);
+  --ff-text: var(--cds-text-primary);
+  --ff-text-secondary: var(--cds-text-secondary);
+  --ff-text-muted: var(--cds-text-muted);
+  --ff-accent: var(--cds-clay);
+  --ff-accent-solid: var(--cds-brand);
+  --ff-primary-bg: var(--cds-brand);
+  --ff-accent-rgb: 217, 119, 87;
+  --ff-pill-bg: var(--cds-alpha-1);
+  --ff-pill-border: var(--cds-clay);
+  --ff-pill-status: var(--cds-text-primary);
+  --ff-shadow-workspace: none;
+  --ff-shadow-popover: var(--cds-shadow-popover);
+  --ff-shadow-bubble-neutral: var(--cds-shadow-sm);
+  --ff-shadow-bubble-accent: var(--cds-shadow-sm);
+  --ff-shadow-control-hover: var(--cds-shadow-md);
+  --ff-shadow-control-focus: var(--cds-focus-shadow);
+  --ff-warning: #e8c36a;
+}
+
+/* ---------- 2. Window: one 45px top row across sidebar, canvas and panels ---------- */
+:root .ff-page {
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: var(--ff-bg-page);
+}
+:root .ff-page-toggle { top: 6px; left: 10px; gap: 4px; }
+:root .ff-page-windows { top: 6px; right: 6px; }
+:root .ff-winbtn { height: 32px; border-radius: var(--cds-radius); }
+/* The sidebar's own first 45px hold the toggle row; the canvas header and panel bars sit on the same line. */
+:root .ff-page-sidebar {
+  box-sizing: border-box;
+  padding: var(--ff-app-titlebar-height) 8px 8px;
+  border-right: var(--cds-hairline) solid var(--ff-border);
+  background: var(--ff-bg-page);
+}
+:root .ff-page.is-collapsed .ff-workspace-header { padding-left: 96px; }
+/* The right-most header leaves room for the window buttons. */
+:root .ff-page-dock:not(.has-inspector) .ff-workspace-header,
+:root .ff-right-inspector__bar { padding-right: 150px; }
+
+/* ---------- 3. Canvas and panels: flat surfaces split by hairlines ---------- */
+:root .ff-workspace {
+  border-radius: 0;
+  background: var(--ff-bg-workspace);
+  box-shadow: none;
+}
+:root .ff-workspace-header {
+  height: var(--ff-workspace-header-height);
+  flex-basis: var(--ff-workspace-header-height);
+  padding-left: 16px;
+  border-bottom: var(--cds-hairline) solid var(--ff-border);
+  background: var(--ff-bg-workspace);
+}
+:root .ff-workspace-header__title { color: var(--ff-text-secondary); font: 500 13px/1.3 var(--rb-font-sans); }
+:root .ff-dock-separator::after { width: var(--cds-hairline); background: var(--ff-border); }
+:root .ff-right-inspector { background: var(--ff-bg-workspace); }
+:root .ff-right-inspector__bar { height: 45px; border-bottom: var(--cds-hairline) solid var(--ff-border); background: var(--ff-bg-workspace); }
+
+/* ---------- 4. Sidebar: compact 28px rows ---------- */
+:root .ff-page-mode { margin-bottom: 6px; }
+:root .ff-page-mode .ff-sliding-tabs { --ff-tabs-height: 28px; }
+:root .ff-side-action {
+  height: var(--cds-row-h);
+  min-height: var(--cds-row-h);
+  padding: 0 8px;
+  gap: 8px;
+  border-radius: var(--cds-radius);
+  color: var(--ff-text-secondary);
+  font: 500 13px/1 var(--rb-font-sans);
+  transition: background-color var(--cds-dur-snap) var(--cds-ease-out), color var(--cds-dur-snap) var(--cds-ease-out);
+}
+:root .ff-side-action svg { width: 16px; height: 16px; }
+:root .ff-page-newtask { gap: 1px; }
+:root .ff-conversation-list .ant-conversations-item {
+  min-height: var(--cds-row-h);
+  padding: 4px 8px;
+  border-radius: var(--cds-radius);
+  font-size: 13px;
+  line-height: 20px;
+}
+:root .ff-conversation-list .ant-conversations-group-title {
+  padding: 4px 8px;
+  border-radius: var(--cds-radius);
+  color: var(--ff-text-muted);
+  font-size: 12px;
+}
+:root .ff-conversation-list .ant-conversations-group-collapsible-list .ant-conversations-item { padding-inline-start: 28px; }
+:root .ff-conversation-sidebar__title,
+:root .ff-sidebar-layout__head { color: var(--ff-text-muted); font-size: 12px; }
+
+/* ---------- 5. Messages: a quiet neutral user bubble, assistant text straight on the canvas ---------- */
+:root .ff-message--user .ant-bubble-content {
+  max-width: 85%;
+  padding: 10px 14px;
+  border-radius: 12px;
+  background: var(--cds-bg-user-message);
+  color: var(--ff-text);
+  box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.04);
+  font-size: 14.5px;
+  line-height: 1.6;
+}
+:root[data-ui-theme="firefly-dark"] .ff-message--user .ant-bubble-content { color: var(--ff-text); }
+:root .ff-message--user .ff-message-markdown a { color: var(--cds-clay); }
+:root .ff-message--assistant .ff-message-markdown { font-size: 15px; line-height: 1.65; }
+/* Each new turn rises in with a light overshoot. */
+:root .ff-message-list .ant-bubble { animation: cds-message-fade-up 400ms var(--cds-ease-overshoot) both; }
+@keyframes cds-message-fade-up {
+  from { opacity: 0; transform: translateY(12px); }
+  to { opacity: 1; transform: none; }
+}
+/* Reasoning: a clay rule down the left of the thought text. */
+:root .ff-message-reasoning .ant-think-content { margin-top: 4px; padding-inline-start: 14px; border-left: 2px solid rgba(217, 119, 87, 0.4); }
+
+/* ---------- 6. Scroll fade: a 28px feathered edge that appears only once content is hidden there ---------- */
+.ff-message-list {
+  --fade-top: 0px;
+  --fade-bottom: 0px;
+  -webkit-mask-image: linear-gradient(to bottom,
+    transparent 0, rgba(0, 0, 0, 0.15) calc(var(--fade-top) * 0.15), rgba(0, 0, 0, 0.45) calc(var(--fade-top) * 0.45),
+    rgba(0, 0, 0, 0.75) calc(var(--fade-top) * 0.75), #000 var(--fade-top),
+    #000 calc(100% - var(--fade-bottom)),
+    rgba(0, 0, 0, 0.75) calc(100% - var(--fade-bottom) * 0.75), rgba(0, 0, 0, 0.45) calc(100% - var(--fade-bottom) * 0.45),
+    rgba(0, 0, 0, 0.15) calc(100% - var(--fade-bottom) * 0.15), transparent 100%);
+  mask-image: linear-gradient(to bottom,
+    transparent 0, rgba(0, 0, 0, 0.15) calc(var(--fade-top) * 0.15), rgba(0, 0, 0, 0.45) calc(var(--fade-top) * 0.45),
+    rgba(0, 0, 0, 0.75) calc(var(--fade-top) * 0.75), #000 var(--fade-top),
+    #000 calc(100% - var(--fade-bottom)),
+    rgba(0, 0, 0, 0.75) calc(100% - var(--fade-bottom) * 0.75), rgba(0, 0, 0, 0.45) calc(100% - var(--fade-bottom) * 0.45),
+    rgba(0, 0, 0, 0.15) calc(100% - var(--fade-bottom) * 0.15), transparent 100%);
+}
+.ff-message-list[data-fade-top] { --fade-top: var(--cds-scroll-fade-size); }
+.ff-message-list[data-fade-bottom] { --fade-bottom: var(--cds-scroll-fade-size); }
+
+/* ---------- 7. Composer: 12px card with the chin row beneath the text ---------- */
+:root .ff-composer-shell {
+  border: 0;
+  border-radius: var(--cds-radius-composer);
+  background: var(--ff-surface);
+  box-shadow: var(--cds-shadow-composer);
+  transition: box-shadow var(--cds-dur-base) var(--cds-ease-out);
+}
+:root .ff-composer-shell:hover { box-shadow: var(--cds-shadow-composer-hover); }
+:root .ff-composer-shell:focus-within { box-shadow: var(--cds-shadow-composer-focus); }
+:root .ff-composer .ant-sender-content { padding: 12px 14px 6px; }
+:root .ff-composer .ant-sender-input { min-height: 44px; padding-inline: 2px; font: 400 14.5px/1.5 var(--rb-font-sans); }
+:root .ff-composer .ant-sender-footer { padding: 6px 10px; border-top: var(--cds-hairline) solid var(--ff-border); }
+:root .ff-composer__toolbar { min-height: 28px; }
+:root .ff-composer__add-button { width: 28px; height: 28px; border-radius: var(--cds-radius); }
+:root .ff-composer__add-button svg { width: 16px; }
+:root .ff-composer__toolbar .ff-model-effort {
+  height: 26px;
+  padding: 0 10px;
+  border: var(--cds-hairline) solid var(--ff-border);
+  border-radius: 999px;
+  background: var(--ff-bg-hover);
+  font-size: 12px;
+}
+:root .ff-composer__toolbar .ff-model-effort::before {
+  width: 6px;
+  height: 6px;
+  background: var(--cds-clay);
+  animation: cds-dot-pulse 1.8s infinite;
+}
+@keyframes cds-dot-pulse {
+  0%, 5% { opacity: 0.2857; animation-timing-function: var(--cds-ease-out); }
+  15%, 25% { opacity: 1; animation-timing-function: var(--cds-ease-out); }
+  65%, 100% { opacity: 0.2857; }
+}
+/* Send: a round 28px dark button that gives under the press. */
+:root .ff-composer .ant-sender-actions-btn {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background: var(--cds-text-primary);
+  color: var(--cds-surface-1);
+  transition: transform var(--cds-dur-snap) var(--cds-ease-snap), background-color var(--cds-dur-snap) var(--cds-ease-out);
+}
+:root .ff-composer .ant-sender-actions-btn:disabled { background: var(--cds-alpha-2); color: var(--ff-text-muted); }
+:root .ff-composer .ant-sender-actions-btn:active:not(:disabled) { transform: scale(0.95); }
+:root .ff-composer__project-strip { border-radius: var(--cds-radius-composer) var(--cds-radius-composer) 0 0; background: var(--ff-bg-hover); }
+
+/* ---------- 8. Popovers, focus and capsules ---------- */
+:root .ant-popover-inner,
+:root .ant-dropdown-menu { border-radius: var(--cds-radius-composer) !important; box-shadow: var(--cds-shadow-popover) !important; }
+:root .ff-page button:focus-visible { outline: none; box-shadow: var(--cds-focus-shadow); }
+:root .ff-sliding-tabs__thumb { box-shadow: 0 0 0 var(--cds-hairline) var(--ff-border), var(--cds-shadow-sm); }
+:root .ff-sliding-tabs[data-settled] .ff-sliding-tabs__thumb {
+  transition: transform var(--cds-dur-base) var(--cds-ease-snap), width var(--cds-dur-base) var(--cds-ease-snap);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  :root .ff-message-list .ant-bubble,
+  :root .ff-composer__toolbar .ff-model-effort::before { animation: none; }
+}

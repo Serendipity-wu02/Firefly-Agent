@@ -13,6 +13,7 @@ import { PlanModeToggle } from "./PlanModeToggle";
 import { ModelEffortControl } from "./ModelEffortControl";
 import { PendingQueueDock, type PendingQueueDockItem } from "./PendingQueueDock";
 import { StepProgressPill } from "./StepProgressPill";
+import { useComposerSuggestions } from "./ComposerSuggestions";
 import type { StepProgressSummary } from "./step-progress";
 
 interface ChatComposerProps {
@@ -271,6 +272,7 @@ export function ChatComposer({
   const { t } = useTranslation();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const compositionActiveRef = useRef(false);
+  const stackRef = useRef<HTMLDivElement>(null);
   const [enabledStickers, setEnabledStickers] = useState<EnabledSticker[]>([]);
   const supportsWorkFiles = ["work", "code"].includes(mode);
   const supportsPermission = supportsWorkFiles;
@@ -328,8 +330,30 @@ export function ChatComposer({
 
   const hasComposerHeader = attachments.length > 0 || selectedStickers.length > 0;
 
+  // "/" 技能与插件、"@" 工作区文件：选中后替换触发词，并把光标放回插入点之后。
+  const suggestions = useComposerSuggestions({
+    sessionId: conversationId,
+    onApply: (text, caret) => {
+      onChange(withStickerMarkers(text));
+      requestAnimationFrame(() => {
+        const input = stackRef.current?.querySelector("textarea");
+        if (!input) return;
+        input.focus();
+        input.setSelectionRange(caret, caret);
+      });
+    },
+  });
+  const caretOf = (fallback: number) => {
+    const input = stackRef.current?.querySelector("textarea");
+    return input && document.activeElement === input ? input.selectionStart ?? fallback : fallback;
+  };
+
   // Sender 的 onKeyDown 声明在 Element 层级；函数体只用基类属性，参数随组件声明放宽
   const handleSenderKeyDown = (event: KeyboardEvent<Element>) => {
+    const composingNow = compositionActiveRef.current || (event.nativeEvent as globalThis.KeyboardEvent).isComposing
+      || (event.nativeEvent as globalThis.KeyboardEvent).keyCode === 229;
+    // 选择列表打开时，方向键、回车、Tab、Esc 先交给它；返回 false 阻止 Sender 的内建提交。
+    if (suggestions.handleKeyDown(event, composingNow)) return false;
     if (!modelBusy || event.key !== "Enter" || event.shiftKey || event.ctrlKey || event.altKey || event.metaKey) return;
     const nativeEvent = event.nativeEvent as globalThis.KeyboardEvent;
     if (compositionActiveRef.current || nativeEvent.isComposing || nativeEvent.keyCode === 229) return;
@@ -357,10 +381,15 @@ export function ChatComposer({
 
   return (
     <div
+      ref={stackRef}
       className={`ff-composer-stack ${docked ? "is-docked" : "is-centered"}`}
+      onBlurCapture={(event) => {
+        if (!stackRef.current?.contains(event.relatedTarget as Node | null)) suggestions.close();
+      }}
       onCompositionStartCapture={() => { compositionActiveRef.current = true; }}
       onCompositionEndCapture={() => { compositionActiveRef.current = false; }}
     >
+      {suggestions.view}
       {stepProgress && <StepProgressPill {...stepProgress} />}
       <PendingQueueDock
         items={pendingQueue}
@@ -399,7 +428,10 @@ export function ChatComposer({
         loading={modelBusy}
         disabled={!modelBusy && requiresWorkspace && !workspaceName}
         autoSize={{ minRows: 2, maxRows: 16 }}
-        onChange={(next) => onChange(withStickerMarkers(next))}
+        onChange={(next) => {
+          onChange(withStickerMarkers(next));
+          suggestions.update(next, caretOf(next.length));
+        }}
         onCancel={onCancel}
         onPaste={handlePaste}
         onKeyDown={handleSenderKeyDown}

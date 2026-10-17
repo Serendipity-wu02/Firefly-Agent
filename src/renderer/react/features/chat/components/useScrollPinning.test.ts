@@ -102,3 +102,19 @@ describe("useScrollPinning", () => {
     expect(list().scrollTop).toBe(bottom());
   });
 });
+
+describe("scroll fade", () => {
+  it("feathers only the edges that hide content", () => {
+    // At the bottom: content is hidden above, nothing below.
+    expect(list().hasAttribute("data-fade-top")).toBe(true);
+    expect(list().hasAttribute("data-fade-bottom")).toBe(false);
+    userScrollTo(800);
+    expect(list().hasAttribute("data-fade-top")).toBe(true);
+    expect(list().hasAttribute("data-fade-bottom")).toBe(true);
+    userScrollTo(0);
+    expect(list().hasAttribute("data-fade-top")).toBe(false);
+    act(() => pinning.scrollToBottom("auto"));
+    streamMore(10);
+    expect(list().hasAttribute("data-fade-bottom")).toBe(false);
+  });
+});

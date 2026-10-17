@@ -31,6 +31,12 @@ export function useScrollPinning(onAwayChange?: (away: boolean) => void): Scroll
   const onAwayChangeRef = useRef(onAwayChange);
   onAwayChangeRef.current = onAwayChange;
 
+  // Scroll fade: a feathered edge shows only where content is hidden past it (styled by the data attributes).
+  const updateFade = useCallback((element: HTMLElement) => {
+    element.toggleAttribute("data-fade-top", element.scrollTop > 2);
+    element.toggleAttribute("data-fade-bottom", distanceFromBottom(element) > 2);
+  }, []);
+
   const reportAway = useCallback((away: boolean) => {
     if (awayRef.current === away) return;
     awayRef.current = away;
@@ -44,18 +50,20 @@ export function useScrollPinning(onAwayChange?: (away: boolean) => void): Scroll
     if (!element) return;
     pinnedRef.current = true;
     element.scrollTo({ top: element.scrollHeight, behavior });
+    updateFade(element);
     reportAway(false);
-  }, [reportAway]);
+  }, [reportAway, updateFade]);
 
   const onScroll = useCallback(() => {
     const element = containerRef.current;
     if (!element) return;
     const distance = distanceFromBottom(element);
+    updateFade(element);
     if (distance <= PIN_TOLERANCE) pinnedRef.current = true;
     // Only a scroll the user caused can unpin; intermediate frames of our own smooth scroll leave the pin alone.
     else if (performance.now() - lastUserInputRef.current < 1000) pinnedRef.current = false;
     reportAway(distance > JUMP_THRESHOLD);
-  }, [reportAway]);
+  }, [reportAway, updateFade]);
 
   useEffect(() => {
     const element = containerRef.current;
@@ -75,9 +83,11 @@ export function useScrollPinning(onAwayChange?: (away: boolean) => void): Scroll
     const onPointerDown = (event: PointerEvent) => { if (event.target === element) markUserInput(); };
 
     const reanchor = () => {
+      updateFade(element);
       const distance = distanceFromBottom(element);
       if (pinnedRef.current && performance.now() - lastUserInputRef.current > USER_INPUT_COOLDOWN_MS && distance > 0) {
         element.scrollTop = element.scrollHeight;
+        updateFade(element);
         reportAway(false);
         return;
       }
@@ -107,7 +117,7 @@ export function useScrollPinning(onAwayChange?: (away: boolean) => void): Scroll
       element.removeEventListener("keydown", onKeyDown);
       element.removeEventListener("pointerdown", onPointerDown);
     };
-  }, [reportAway]);
+  }, [reportAway, updateFade]);
 
   return { containerRef, onScroll, scrollToBottom };
 }

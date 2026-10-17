@@ -2,6 +2,8 @@ import React from "react";
 import { createRoot } from "react-dom/client";
 import "../ui/theme";
 import { App } from "./App";
+// Loaded after every component stylesheet so the reference restyle wins.
+import "./styles/reference-ui.css";
 import { AppProviders } from "./app/providers/AppProviders";
 import { initUiLocale } from "./i18n";
 
