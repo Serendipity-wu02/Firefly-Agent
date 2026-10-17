@@ -26,7 +26,6 @@ import { ChatMessageList } from "../components/ChatMessageList";
 import { ChatPageNavigation, type ChatPagePanel } from "../components/ChatPageNavigation";
 import { useNavigationHistory } from "./useNavigationHistory";
 import { CodeRain } from "../components/CodeRain";
-import { PixelFirefly } from "../components/PixelFirefly";
 import { ProjectChooserCard, recentProjects } from "../components/ProjectChooserCard";
 import { sessionsNeedingInput } from "./sidebar-status";
 import {
@@ -1771,7 +1770,6 @@ export function ChatPage() {
             value={draft}
             mode={mode}
             docked={hasMessages}
-            mascot={hasMessages ? undefined : <PixelFirefly className="ff-composer-mascot" />}
             conversationId={activeSessionId ?? undefined}
             workspaceName={workspaceNames[mode]}
             workspaceRoot={activeSession?.workspaceBinding?.workspaceRoot}

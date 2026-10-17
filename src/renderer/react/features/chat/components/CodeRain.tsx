@@ -1,20 +1,42 @@
-// 新会话页背后的字符雨：一列列很淡的等宽字母数字往下落，尾巴渐隐，像参考视频里那样只在部分列出现。
-// - 颜色取主题的次要文字色，透明度很低，不抢内容；
-// - 约 20 帧每秒，窗口不可见时暂停；系统"减少动态效果"时只画一帧静止的；
-// - 纯装饰：aria-hidden、不接收指针。
+// 新会话页背后的字符波纹：铺满一层很淡的等宽字母数字，鼠标移过时从指针处荡开一圈圈波纹，
+// 波峰经过的字符变亮并换字，然后慢慢平息；鼠标不动时只剩底层几不可见的微光。
+// - 颜色取主题的次要文字色，透明度很低，不抢内容；只在新会话页挂载，开始对话后就是默认背景；
+// - 约 30 帧每秒，没有波纹时停止重绘，窗口不可见时暂停；系统"减少动态效果"时只画静止的底层；
+// - 纯装饰：aria-hidden、不接收指针（指针位置从 window 上读）。
 import { useEffect, useRef } from "react";
 import "./CodeRain.css";
 
 const GLYPHS = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
 const CELL = 14;
-const FRAME_MS = 50;
-/** Share of columns raining at any moment; the rest stay empty so the rain comes in patches. */
-const ACTIVE_SHARE = 0.32;
+const FRAME_MS = 33;
+/** Ripple speed (px per ms), lifetime, ring thickness, and how often moving the pointer starts a new one. */
+const RIPPLE_SPEED = 0.32;
+const RIPPLE_LIFE_MS = 1700;
+const RING_WIDTH = 26;
+const SPAWN_EVERY_MS = 90;
+const MAX_RIPPLES = 12;
+/** Opacity of the resting glyphs and of a glyph on a ripple's crest. */
+const REST_ALPHA = 0.05;
+const CREST_ALPHA = 0.9;
 
-interface Drop { y: number; speed: number; active: boolean }
+export interface Ripple { x: number; y: number; born: number }
 
 export function randomGlyph(random: () => number = Math.random): string {
   return GLYPHS[Math.floor(random() * GLYPHS.length)] ?? "a";
+}
+
+/** How strongly the ripples light a cell at (x, y) at time now: 0 at rest, up to 1 on a fresh crest. */
+export function rippleIntensity(x: number, y: number, ripples: readonly Ripple[], now: number): number {
+  let intensity = 0;
+  for (const ripple of ripples) {
+    const age = now - ripple.born;
+    if (age < 0 || age > RIPPLE_LIFE_MS) continue;
+    const radius = age * RIPPLE_SPEED;
+    const offset = Math.hypot(x - ripple.x, y - ripple.y) - radius;
+    const ring = Math.exp(-(offset * offset) / (2 * RING_WIDTH * RING_WIDTH));
+    intensity = Math.max(intensity, ring * (1 - age / RIPPLE_LIFE_MS));
+  }
+  return intensity;
 }
 
 export function CodeRain({ className }: { className?: string }) {
@@ -25,14 +47,17 @@ export function CodeRain({ className }: { className?: string }) {
     const context = canvas?.getContext("2d");
     if (!canvas || !context) return;
     const reduced = window.matchMedia?.("(prefers-reduced-motion: reduce)").matches ?? false;
-    let drops: Drop[] = [];
+    let glyphs: string[] = [];
+    let columns = 0;
+    let rows = 0;
     let width = 0;
     let height = 0;
     let color = "rgb(128,128,140)";
+    const ripples: Ripple[] = [];
+    let lastSpawn = 0;
+    let dirty = true;
 
-    const readColor = () => {
-      color = getComputedStyle(canvas).color || color;
-    };
+    const readColor = () => { color = getComputedStyle(canvas).color || color; dirty = true; };
     const resize = () => {
       const ratio = window.devicePixelRatio || 1;
       width = canvas.clientWidth;
@@ -41,54 +66,69 @@ export function CodeRain({ className }: { className?: string }) {
       canvas.height = Math.max(1, Math.floor(height * ratio));
       context.setTransform(ratio, 0, 0, ratio, 0, 0);
       context.font = `12px ui-monospace, "Cascadia Mono", Consolas, monospace`;
-      const columns = Math.ceil(width / CELL);
-      drops = Array.from({ length: columns }, () => ({
-        y: Math.random() * height, speed: 0.6 + Math.random() * 0.9, active: Math.random() < ACTIVE_SHARE,
-      }));
+      context.textBaseline = "top";
+      columns = Math.ceil(width / CELL);
+      rows = Math.ceil(height / CELL);
+      glyphs = Array.from({ length: columns * rows }, () => randomGlyph());
       readColor();
     };
-    const step = () => {
-      // Fade what is already there instead of clearing, which leaves each column a tail.
-      context.globalCompositeOperation = "destination-out";
-      context.fillStyle = "rgba(0,0,0,0.12)";
-      context.fillRect(0, 0, width, height);
-      context.globalCompositeOperation = "source-over";
+    const draw = (now: number) => {
+      context.clearRect(0, 0, width, height);
       context.fillStyle = color;
-      drops.forEach((drop, column) => {
-        if (!drop.active) {
-          if (Math.random() < 0.004) { drop.active = true; drop.y = -CELL * Math.random() * 10; }
-          return;
+      ripples.splice(0, ripples.length, ...ripples.filter(ripple => now - ripple.born <= RIPPLE_LIFE_MS));
+      for (let row = 0; row < rows; row += 1) {
+        for (let column = 0; column < columns; column += 1) {
+          const x = column * CELL;
+          const y = row * CELL;
+          const lit = ripples.length ? rippleIntensity(x + CELL / 2, y + CELL / 2, ripples, now) : 0;
+          const index = row * columns + column;
+          // A crest passing over a glyph flips it, which is what makes the ring read as moving text.
+          if (lit > 0.55 && Math.random() < 0.25) glyphs[index] = randomGlyph();
+          context.globalAlpha = REST_ALPHA + (CREST_ALPHA - REST_ALPHA) * lit;
+          context.fillText(glyphs[index]!, x, y);
         }
-        context.fillText(randomGlyph(), column * CELL, drop.y);
-        drop.y += CELL * drop.speed;
-        if (drop.y > height + CELL * 4) {
-          drop.y = -CELL * Math.random() * 20;
-          drop.active = Math.random() < ACTIVE_SHARE;
-          drop.speed = 0.6 + Math.random() * 0.9;
-        }
-      });
+      }
+      context.globalAlpha = 1;
+      dirty = false;
+    };
+
+    const onPointerMove = (event: PointerEvent) => {
+      if (reduced) return;
+      const box = canvas.getBoundingClientRect();
+      const x = event.clientX - box.left;
+      const y = event.clientY - box.top;
+      if (x < 0 || y < 0 || x > box.width || y > box.height) return;
+      const now = performance.now();
+      if (now - lastSpawn < SPAWN_EVERY_MS) return;
+      lastSpawn = now;
+      ripples.push({ x, y, born: now });
+      if (ripples.length > MAX_RIPPLES) ripples.shift();
+      dirty = true;
     };
 
     resize();
-    const observer = typeof ResizeObserver === "undefined" ? undefined : new ResizeObserver(resize);
+    draw(performance.now());
+    const observer = typeof ResizeObserver === "undefined" ? undefined : new ResizeObserver(() => { resize(); draw(performance.now()); });
     observer?.observe(canvas);
-    if (reduced) {
-      for (let index = 0; index < 40; index += 1) step();
-      return () => observer?.disconnect();
-    }
+    const themeObserver = new MutationObserver(() => { readColor(); draw(performance.now()); });
+    themeObserver.observe(document.documentElement, { attributes: true, attributeFilter: ["data-ui-theme", "data-theme", "class"] });
+    if (reduced) return () => { observer?.disconnect(); themeObserver.disconnect(); };
+
+    window.addEventListener("pointermove", onPointerMove, { passive: true });
     let frame = 0;
     let last = 0;
     const loop = (now: number) => {
       frame = requestAnimationFrame(loop);
-      if (document.hidden || now - last < FRAME_MS) return;
+      // Nothing moving: leave the resting layer as it is instead of redrawing it every frame.
+      if (document.hidden || now - last < FRAME_MS || (!dirty && ripples.length === 0)) return;
       last = now;
-      step();
+      draw(now);
+      if (ripples.length) dirty = true;
     };
     frame = requestAnimationFrame(loop);
-    const themeObserver = new MutationObserver(readColor);
-    themeObserver.observe(document.documentElement, { attributes: true, attributeFilter: ["data-ui-theme", "data-theme", "class"] });
     return () => {
       cancelAnimationFrame(frame);
+      window.removeEventListener("pointermove", onPointerMove);
       observer?.disconnect();
       themeObserver.disconnect();
     };
