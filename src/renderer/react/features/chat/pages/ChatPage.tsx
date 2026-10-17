@@ -3,7 +3,7 @@ import { useTranslation } from "../../../i18n";
 import { MessageSquareDashed } from "lucide-react";
 import { DownOutlined, GlobalOutlined, FolderOpenOutlined, ProfileOutlined, UnorderedListOutlined } from "@ant-design/icons";
 import { Group, Panel, Separator, useDefaultLayout, type GroupImperativeHandle } from "react-resizable-panels";
-import { useCompactDock } from "./useCompactDock";
+import { useCompactDock, useElementWidth } from "./useCompactDock";
 import { useInspectorPanelVisibility } from "./useInspectorPanelVisibility";
 import { collectWorkspaceOutputs, createWorkspaceResultRevealer, workspaceFileRevision, type WorkspaceChangedFile, type WorkspaceRunOutput } from "../workspace/workspace-artifacts";
 import { WorkspaceResultsIndex } from "../workspace/WorkspaceRunResults";
@@ -157,6 +157,13 @@ interface NavActions {
   openProject: (workspaceRoot: string) => void;
 }
 
+/** The narrowest the conversation (messages + composer) may get from dragging the dock separator, in px. */
+const CHAT_MIN_WIDTH = 480;
+/** The overview card column inside the conversation panel, with its inset. */
+const CHAT_CARDS_WIDTH = 280;
+/** The right panel's own minimum width, in px (the inspector Panel's minSize). */
+const INSPECTOR_MIN_WIDTH = 280;
+
 export function ChatPage() {
   const { t } = useTranslation();
   // 统一反馈入口：错误轻提示 / 需阅读的错误弹窗 / 危险确认
@@ -165,6 +172,7 @@ export function ChatPage() {
   const [collapsed, setCollapsed] = useState(false);
   const dockRef = useRef<HTMLDivElement>(null);
   const compactDock = useCompactDock(dockRef);
+  const dockWidth = useElementWidth(dockRef);
   const [activePanel, setActivePanel] = useState<ChatPagePanel | null>(null);
   /** 右侧面板已打开的 diff 标签，ID 规范 diff:<runId>:<文件路径>，同 ID 只激活不重开 */
   const [diffTabs, setDiffTabs] = useState<ChatPageInspectorDiffTab[]>([]);
@@ -1432,9 +1440,23 @@ export function ChatPage() {
   const inspectorVisible = !activePanel && !inspectorHidden;
   const { panelRef: inspectorPanelRef, onLayoutChange: onInspectorLayoutChange } = useInspectorPanelVisibility(inspectorVisible, dockGroupRef, `${inspectorTabIds.length}:${compactDock}`);
 
-  // Panels sit side by side, so the right dock widens (never narrows) to give each opened panel room, up to 70% of the page.
-  // The resize is programmatic, so it is not saved as the user's own drag width.
+  // The conversation keeps a readable width: the dock separator cannot squeeze it below this, and it grows by the
+  // overview card column (272px + its 8px inset) while that column is shown.
+  const chatCardsShown = overviewTabOpen && Boolean(activeSessionId) && !activePanel;
+  // On a narrow page the right panel keeps its own 280px minimum, so the conversation yields first.
+  const chatMinWidth = Math.min(CHAT_MIN_WIDTH + (chatCardsShown ? CHAT_CARDS_WIDTH : 0),
+    dockWidth > 0 ? Math.max(300, dockWidth - INSPECTOR_MIN_WIDTH - 12) : Number.POSITIVE_INFINITY);
+
+  // Opening a right-hand panel folds the overview cards away, so the dialog keeps its room; the header switch brings them back.
   const inspectorPanelCount = inspectorTabIds.length;
+  const previousPanelCount = useRef(inspectorPanelCount);
+  useEffect(() => {
+    if (inspectorPanelCount > previousPanelCount.current) setOverviewTabOpen(false);
+    previousPanelCount.current = inspectorPanelCount;
+  }, [inspectorPanelCount]);
+
+  // Panels sit side by side, so the right dock widens (never narrows) to give each opened panel room, up to 70% of the page
+  // and never into the conversation's minimum width. The resize is programmatic, so it is not saved as the user's own drag width.
   useEffect(() => {
     if (compactDock || !inspectorVisible || inspectorPanelCount === 0) return;
     const frame = requestAnimationFrame(() => {
@@ -1442,11 +1464,11 @@ export function ChatPage() {
       const dockWidth = dockRef.current?.offsetWidth ?? 0;
       // A panel the user collapsed with the separator stays collapsed.
       if (!panel || dockWidth === 0 || panel.isCollapsed()) return;
-      const wanted = Math.min(inspectorPanelCount * 360, dockWidth * 0.7);
+      const wanted = Math.min(inspectorPanelCount * 360, dockWidth * 0.7, dockWidth - chatMinWidth - 12);
       if (panel.getSize().inPixels < wanted - 1) panel.resize(Math.round(wanted));
     });
     return () => cancelAnimationFrame(frame);
-  }, [inspectorPanelCount, inspectorVisible, compactDock, inspectorPanelRef]);
+  }, [inspectorPanelCount, inspectorVisible, compactDock, inspectorPanelRef, chatMinWidth]);
 
   // ── 阶段 1A：导航 props 引用稳定化 ──
   // 下方 6 个动作函数读取大量页面状态、内部调用链每次渲染都产生新引用，
@@ -1570,7 +1592,7 @@ export function ChatPage() {
         // 拖动条命中区外溢到两侧（视觉条只有 12px，命中区鼠标 24px / 触屏 33px）
         resizeTargetMinimumSize={{ coarse: 33, fine: 24 }}
       >
-        <Panel id="chat" minSize={compactDock ? "60%" : 300} className="ff-dock-body">
+        <Panel id="chat" minSize={compactDock ? "60%" : chatMinWidth} className="ff-dock-body">
       <main
         className={`ff-page-main ff-workspace ${hasMessages ? "has-messages" : "is-empty"} ${isDraggingFiles ? "is-dragging-files" : ""}`}
         onDragEnter={dragHandlers.onDragEnter}
@@ -1821,7 +1843,7 @@ export function ChatPage() {
               const layout = dockGroupRef.current?.getLayout();
               if (layout && Object.hasOwn(layout, "inspector")) onLayoutChanged(layout, { isUserInteraction: true });
             }} />}
-            <Panel id="inspector" panelRef={inspectorPanelRef} collapsible collapsedSize={0} defaultSize={compactDock ? "30%" : "40%"} minSize={compactDock ? "15%" : 280} maxSize={compactDock ? "40%" : "70%"} className="ff-dock-body">
+            <Panel id="inspector" panelRef={inspectorPanelRef} collapsible collapsedSize={0} defaultSize={compactDock ? "30%" : "40%"} minSize={compactDock ? "15%" : INSPECTOR_MIN_WIDTH} maxSize={compactDock ? "40%" : "70%"} className="ff-dock-body">
               <ChatPageInspector
                 sessionId={activeSessionId}
                 visible={inspectorVisible}

@@ -239,3 +239,23 @@ it("persists a keyboard inspector resize immediately after a sidebar pointercanc
   expect(panelWidth()).toBeCloseTo(width);
   expect(JSON.parse(localStorage.getItem(key)!).inspector).toBeCloseTo(width);
 });
+
+it("folds the overview cards when a right panel opens and keeps the conversation readable when the separator is dragged", async () => {
+  await click(button("打开会话概览"));
+  expect(host.querySelector(".ff-chat-cards")).not.toBeNull();
+  await click(button("文件"));
+  expect(host.querySelector(".ff-chat-cards")).toBeNull();
+  // The header switch still brings them back while the panel stays open.
+  await click(button("打开会话概览"));
+  expect(host.querySelector(".ff-chat-cards")).not.toBeNull();
+  expect(inspector()?.hidden).toBe(false);
+  const separator = host.querySelector<HTMLElement>(".ff-dock-separator")!;
+  for (let step = 0; step < 40; step++) await act(async () => separator.dispatchEvent(new KeyboardEvent("keydown", { key: "ArrowLeft", bubbles: true })));
+  const chat = host.querySelector<HTMLElement>('[data-panel][id="chat"]')!;
+  // The 1000px dock cannot hold the 480px dialog + 280px cards and the panel's own 280px, so the conversation keeps all but those.
+  expect(size(chat, "width")).toBeGreaterThanOrEqual(1000 - 280 - 12 - 1);
+  await click(button("打开会话概览"));
+  expect(host.querySelector(".ff-chat-cards")).toBeNull();
+  for (let step = 0; step < 40; step++) await act(async () => separator.dispatchEvent(new KeyboardEvent("keydown", { key: "ArrowLeft", bubbles: true })));
+  expect(size(chat, "width")).toBeGreaterThanOrEqual(479);
+});
