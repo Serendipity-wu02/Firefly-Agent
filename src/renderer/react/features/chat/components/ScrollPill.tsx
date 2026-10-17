@@ -1,34 +1,35 @@
 // 对话区的滚动指示：一根固定长度的小圆条，代替会随内容变长的原生滚动条。
-// 它跟着阅读列的右边走，而不是贴着窗口右边、右侧卡片的左边，这样不会把对话和卡片隔开。
-// 平时隐藏，指针在对话区上或刚滚动过时出现；可以拖动。
+// 它贴在整个对话面板的最右边（右侧概览卡片的外侧），像 Claude 桌面版那样，不夹在对话和卡片之间把两者隔开。
+// 平时隐藏，指针在对话区上或刚滚动过时出现；可以拖动。用 fixed 定位，不会被中间容器裁掉。
 import { useCallback, useEffect, useRef, useState, type PointerEvent as ReactPointerEvent, type RefObject } from "react";
 import "./ScrollPill.css";
 
 /** Pill length and the margin kept from the top and bottom of the conversation. */
 export const PILL_LENGTH = 36;
 const EDGE = 8;
-/** Space between the reading column and the pill. */
-const GAP = 14;
+/** Distance from the pill's left side to the right edge of the panel it hugs. */
+const INSET = 8;
 const IDLE_MS = 900;
 
 export interface PillGeometry { top: number; left: number; visible: boolean }
 
-/** Where the pill sits for a given scroll position; pure so it can be tested without layout. */
-export function pillGeometry(input: { scrollTop: number; scrollHeight: number; clientHeight: number; columnRight: number; width: number }): PillGeometry {
+/** Where the pill sits, in viewport coordinates, for a given scroll position; pure so it can be tested without layout. */
+export function pillGeometry(input: { scrollTop: number; scrollHeight: number; clientHeight: number; listTop: number; panelRight: number }): PillGeometry {
   const range = input.scrollHeight - input.clientHeight;
-  if (range <= 1) return { top: EDGE, left: 0, visible: false };
+  if (range <= 1) return { top: 0, left: 0, visible: false };
   const ratio = Math.min(1, Math.max(0, input.scrollTop / range));
   const travel = Math.max(0, input.clientHeight - PILL_LENGTH - EDGE * 2);
-  const left = Math.min(input.width - 10, Math.max(0, input.columnRight + GAP));
-  return { top: Math.round(EDGE + ratio * travel), left: Math.round(left), visible: true };
+  return { top: Math.round(input.listTop + EDGE + ratio * travel), left: Math.round(input.panelRight - INSET), visible: true };
 }
 
-export function ScrollPill({ target, column, onUserScroll }: {
-  target: RefObject<HTMLElement | null>; column: string;
+export function ScrollPill({ target, panel, onUserScroll }: {
+  target: RefObject<HTMLElement | null>;
+  /** Selector of the panel whose right edge the pill hugs (the conversation plus its overview cards). */
+  panel: string;
   /** Called as the pill is dragged, so bottom-pinning treats it as the user's own scroll and lets go. */
   onUserScroll?(): void;
 }) {
-  const [geometry, setGeometry] = useState<PillGeometry>({ top: EDGE, left: 0, visible: false });
+  const [geometry, setGeometry] = useState<PillGeometry>({ top: 0, left: 0, visible: false });
   const [active, setActive] = useState(false);
   const idle = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
   const drag = useRef<{ pointerId: number; startY: number; startTop: number } | null>(null);
@@ -37,12 +38,12 @@ export function ScrollPill({ target, column, onUserScroll }: {
     const element = target.current;
     if (!element) return;
     const box = element.getBoundingClientRect();
-    const columnBox = element.querySelector(column)?.getBoundingClientRect();
+    const frame = (element.closest(panel) ?? element).getBoundingClientRect();
     setGeometry(pillGeometry({
       scrollTop: element.scrollTop, scrollHeight: element.scrollHeight, clientHeight: element.clientHeight,
-      columnRight: columnBox ? columnBox.right - box.left : box.width - 20, width: box.width,
+      listTop: box.top, panelRight: frame.right,
     }));
-  }, [target, column]);
+  }, [target, panel]);
 
   const wake = useCallback(() => {
     setActive(true);
@@ -68,6 +69,10 @@ export function ScrollPill({ target, column, onUserScroll }: {
       for (const child of Array.from(element.children)) observer.observe(child);
     };
     observeChildren();
+    // The panel can change width (window resize, cards opening) without the list itself resizing.
+    const frame = element.closest(panel);
+    if (frame) observer?.observe(frame);
+    window.addEventListener("resize", measure);
     const mutations = typeof MutationObserver === "undefined" ? undefined : new MutationObserver(() => { observeChildren(); measure(); });
     mutations?.observe(element, { childList: true });
     measure();
@@ -77,9 +82,10 @@ export function ScrollPill({ target, column, onUserScroll }: {
       element.removeEventListener("pointerleave", onLeave);
       observer?.disconnect();
       mutations?.disconnect();
+      window.removeEventListener("resize", measure);
       clearTimeout(idle.current);
     };
-  }, [target, measure, wake]);
+  }, [target, panel, measure, wake]);
 
   const onPointerDown = (event: ReactPointerEvent<HTMLDivElement>) => {
     event.preventDefault();
