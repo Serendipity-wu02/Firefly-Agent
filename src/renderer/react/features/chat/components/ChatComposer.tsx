@@ -1,3 +1,4 @@
+import { useSlashCommands } from "./SlashCommandMenu";
 import { DesktopAsrButton } from "./DesktopAsrButton";
 import { Sender } from "@ant-design/x";
 import { Popover } from "antd";
@@ -5,11 +6,8 @@ import { useEffect, useRef, useState, type ClipboardEvent, type KeyboardEvent } 
 import { useTranslation } from "../../../i18n";
 import { resolveAsset } from "../../../../../shared/renderer-base";
 import type { ContextUsageSnapshot } from "../../../../../shared/context-usage";
-import { ContextUsageRing } from "./ContextUsageRing";
-import { TokenUsageBar } from "./TokenUsageBar";
 import "./ModelEffortControl.css";
 import { PermissionControl } from "./PermissionControl";
-import { PlanModeToggle } from "./PlanModeToggle";
 import { ModelEffortControl } from "./ModelEffortControl";
 import { PendingQueueDock, type PendingQueueDockItem } from "./PendingQueueDock";
 import { StepProgressPill } from "./StepProgressPill";
@@ -19,6 +17,10 @@ interface ChatComposerProps {
   value: string;
   mode: string;
   docked: boolean;
+  /** "/new" in the slash menu starts a new task. */
+  onNewTask?: () => void;
+  /** Short result messages from slash commands (e.g. "/compact"). */
+  onNotice?: (message: string, tone: "success" | "error") => void;
   /** 当前会话 ID：用于上下文用量与计划模式状态。 */
   conversationId?: string;
   workspaceName?: string;
@@ -241,6 +243,8 @@ export function ChatComposer({
   value,
   mode,
   docked,
+  onNewTask,
+  onNotice,
   conversationId,
   workspaceName,
   workspaceRoot,
@@ -329,7 +333,14 @@ export function ChatComposer({
   const hasComposerHeader = attachments.length > 0 || selectedStickers.length > 0;
 
   // Sender 的 onKeyDown 声明在 Element 层级；函数体只用基类属性，参数随组件声明放宽
+  const slash = useSlashCommands({
+    value: visibleValue, mode, conversationId, busy: modelBusy,
+    onChange: (next) => onChange(withStickerMarkers(next)), onNewTask, onNotice,
+  });
+
   const handleSenderKeyDown = (event: KeyboardEvent<Element>) => {
+    // The slash menu takes ↑ ↓ Enter Tab Esc while it is open.
+    if (slash.onKeyDown(event)) return false;
     if (!modelBusy || event.key !== "Enter" || event.shiftKey || event.ctrlKey || event.altKey || event.metaKey) return;
     const nativeEvent = event.nativeEvent as globalThis.KeyboardEvent;
     if (compositionActiveRef.current || nativeEvent.isComposing || nativeEvent.keyCode === 229) return;
@@ -378,6 +389,7 @@ export function ChatComposer({
           </button>
         </div>
       )}
+      {slash.menu}
       <div className="ff-composer-shell">
         <input
           ref={fileInputRef}
@@ -398,7 +410,7 @@ export function ChatComposer({
         // 忙态使用 Sender 自带的停止按钮；Enter 入队由 onKeyDown 在内建提交前处理。
         loading={modelBusy}
         disabled={!modelBusy && requiresWorkspace && !workspaceName}
-        autoSize={{ minRows: 2, maxRows: 16 }}
+        autoSize={{ minRows: 3, maxRows: 7 }}
         onChange={(next) => onChange(withStickerMarkers(next))}
         onCancel={onCancel}
         onPaste={handlePaste}
@@ -408,9 +420,7 @@ export function ChatComposer({
           if (!full.trim()) return;
           onSubmit(full);
         }}
-        // 参照 open-claude-ui 的输入框：输入区在上，所有控件收进下方一条工具栏——左侧是添加与模式、模型，右侧是用量、语音与发送。
-        suffix={false}
-        footer={(actionNode, { components }) => {
+        suffix={(actionNode, { components }) => {
           const send = modelBusy ? (
             <components.LoadingButton
               title={t("composer.stopRun")}
@@ -421,28 +431,12 @@ export function ChatComposer({
             <span className="ff-composer__send-sticker"><components.SendButton disabled={false} /></span>
           ) : actionNode;
           return (
-            <div className="ff-composer__toolbar">
-              <div className="ff-composer__toolbar-start">
-                <ComposerAddMenu
-                  supportsStickers={supportsStickers}
-                  attachmentBusy={attachmentBusy}
-                  onUpload={() => fileInputRef.current?.click()}
-                  onScreenshot={onScreenshot}
-                  onChooseSticker={onChooseSticker}
-                />
-                {supportsPermission && <PermissionControl />}
-                {supportsPlanToggle && conversationId && (
-                  <PlanModeToggle conversationId={conversationId} workspaceRoot={workspaceRoot} />
-                )}
-                {onSelectModelProfile && (
-                  <ModelEffortControl sessionId={conversationId} activeProfileId={activeModelProfileId} onSelectModelProfile={onSelectModelProfile} />
-                )}
-              </div>
-              <div className="ff-composer__toolbar-end">
-                <ContextUsageRing usage={contextUsage} sessionId={conversationId} busy={modelBusy} />
-                <DesktopAsrButton key={`${mode}:${conversationId ?? "new"}:${workspaceRoot ?? ""}`} onText={text => onChange(`${value}${value && !/\s$/.test(value) ? " " : ""}${text}`)} />
-                {send}
-              </div>
+            <div className="ff-composer__suffix">
+              {onSelectModelProfile && (
+                <ModelEffortControl sessionId={conversationId} activeProfileId={activeModelProfileId} onSelectModelProfile={onSelectModelProfile} />
+              )}
+              <DesktopAsrButton key={`${mode}:${conversationId ?? "new"}:${workspaceRoot ?? ""}`} onText={text => onChange(`${value}${value && !/\s$/.test(value) ? " " : ""}${text}`)} />
+              {send}
             </div>
           );
         }}
@@ -466,6 +460,18 @@ export function ChatComposer({
             ))}
           </div>
         ) : undefined}
+        prefix={
+          <div className="ff-composer__prefix-actions">
+            <ComposerAddMenu
+              supportsStickers={supportsStickers}
+              attachmentBusy={attachmentBusy}
+              onUpload={() => fileInputRef.current?.click()}
+              onScreenshot={onScreenshot}
+              onChooseSticker={onChooseSticker}
+            />
+            {supportsPermission && <PermissionControl />}
+          </div>
+        }
         />
         {mode === "work" && attachments.some((attachment) => attachment.kind === "document") && (
           <div className="ff-composer__footer">
@@ -476,7 +482,6 @@ export function ChatComposer({
           </div>
         )}
       </div>
-      <TokenUsageBar busy={modelBusy} />
     </div>
   );
 }

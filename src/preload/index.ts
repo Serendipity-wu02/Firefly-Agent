@@ -322,6 +322,8 @@ const settingsApi = {
   // 三模适配层：skill-模式覆盖层（UI 设置面板用）
   getSkillCatalog: () => ipcRenderer.invoke(IPC.SKILL_GET_CATALOG),
   rescanSkills: () => ipcRenderer.invoke(IPC.SKILL_RESCAN),
+  /** Translates skill descriptions that have no Chinese yet with the default model; resolves to id → Chinese for every known one. */
+  translateSkillDescriptions: () => ipcRenderer.invoke(IPC.SKILL_TRANSLATE_DESCRIPTIONS),
   getSkillModeOverrides: () => ipcRenderer.invoke(IPC.SKILL_GET_MODE_OVERRIDES),
   setSkillModeOverride: (skillId: string, mode: string, enabled: boolean) =>
     ipcRenderer.invoke(IPC.SKILL_SET_MODE_OVERRIDE, { skillId, mode, enabled }),
@@ -725,6 +727,10 @@ contextBridge.exposeInMainWorld("codeGit", codeGitApi);
 const tokenUsageApi = {
   get: (days: number) => ipcRenderer.invoke(IPC.TOKEN_USAGE_GET, days),
   clear: () => ipcRenderer.invoke(IPC.TOKEN_USAGE_CLEAR) as Promise<void>,
+  /** Usage history for the settings page: stacked daily data by model and feature, chat ranking, message / skill / plugin counts. */
+  history: (days: number) => ipcRenderer.invoke(IPC.TOKEN_USAGE_HISTORY, days),
+  /** Running totals for one conversation (rounds, steps, model / tool time, TTFT, speed), shown under the composer. */
+  sessionStats: (sessionId: string) => ipcRenderer.invoke(IPC.TOKEN_USAGE_SESSION_STATS, sessionId),
 };
 contextBridge.exposeInMainWorld("tokenUsage", tokenUsageApi);
 

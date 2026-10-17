@@ -193,9 +193,6 @@
   box-shadow: var(--ff-shadow-bubble-neutral, 0 8px 24px rgb(0 0 0 / 8%));
 }
 
-/* A pending approval is marked with an amber edge so it reads as "waiting on you" at a glance. */
-.ff-interaction-panel[data-kind="permission"] { border-left: 3px solid var(--ff-warning); }
-
 .ff-interaction-panel__heading {
   display: flex;
   min-height: 20px;

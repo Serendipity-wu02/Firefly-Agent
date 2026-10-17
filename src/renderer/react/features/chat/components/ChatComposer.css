@@ -30,7 +30,7 @@
   width: 100%;
   flex-direction: column;
   overflow: hidden;
-  border-radius: 18px;
+  border-radius: 12px;
   background: var(--ff-bg-subtle);
   box-shadow: var(--ff-shadow-bubble-neutral);
 }
@@ -39,14 +39,13 @@
   transform: translateY(-15px);
 }
 
-/* The composer floats above the thread as one rounded card. */
 .ff-composer.ant-sender {
   position: relative;
   z-index: 1;
   border: 1px solid var(--ff-border);
-  border-radius: 18px;
+  border-radius: 12px;
   background: var(--ff-surface);
-  box-shadow: var(--ff-shadow-popover);
+  box-shadow: var(--ff-shadow-bubble-neutral);
   transition:
     border-color 160ms ease,
     box-shadow 160ms ease;
@@ -270,6 +269,12 @@
 
 .ff-composer__file-input {
   display: none;
+}
+
+.ff-composer__prefix-actions {
+  display: flex;
+  align-items: center;
+  gap: 3px;
 }
 
 .ff-composer__icon-button:disabled {
@@ -564,6 +569,7 @@
 /* Text first, full width; attach/screenshot/sticker and send share the row beneath it. */
 .ff-composer .ant-sender-content { flex-wrap: wrap; align-items: center; min-height: 84px; padding: 16px 18px 4px; row-gap: 2px; }
 .ff-composer .ant-sender-input { order: 0; flex: 1 0 100%; width: 100%; min-height: 56px; padding-inline: 0; font-size: 15px; }
+.ff-composer .ant-sender-prefix { order: 1; margin-right: auto; }
 .ff-composer .ant-sender-actions-list { order: 2; align-self: center; }
 .ff-composer__footer { min-height: 0; margin-top: 0; padding: 2px 14px 10px; gap: 4px 6px; }
 .ff-composer__footer-button,
@@ -581,6 +587,11 @@
 .ff-composer__dictation-status { font-size: 11px; opacity: .7; max-width: 230px; }
 .ff-composer__dictation [aria-pressed="true"] { color: var(--color-danger, #bf3d3d); }
 
+/* ===== One-row composer: [+] [permission] .... [context] [model · effort] [mic] [send] ===== */
+.ff-composer__prefix-actions { flex-wrap: nowrap; gap: 2px; min-width: 0; }
+.ff-composer__prefix-actions .ff-composer__footer-button,
+.ff-composer__prefix-actions .ff-composer__agent-button { min-height: 30px; padding: 0 8px; }
+.ff-composer__suffix { display: flex; align-items: center; gap: 4px; min-width: 0; }
 .ff-composer__add-button { width: 32px; height: 32px; border-radius: 8px; color: var(--ff-text-secondary); }
 .ff-composer__add-button:hover:not(:disabled) { background: var(--ff-bg-hover); color: var(--ff-text); }
 .ff-composer__add-button svg { width: 18px; stroke-width: 2; }
@@ -639,47 +650,49 @@
 .ff-composer .ant-sender-input { min-height: 40px; }
 .ff-composer__footer { padding: 0 12px 8px; }
 
-/* ===== Reference composer (open-claude-ui ChatComposer): one 20px card with a three-state shadow — text on top,
-   every control in a single toolbar beneath it: add / mode / model on the left, usage / voice / send on the right. ===== */
-.ff-composer-shell {
+/* ===== Composer, after the Codex window: every control in the row is plain text with an icon, no fills and no outlines;
+   they only gain a soft hover. One height (30px), one radius (8px), one gap. ===== */
+.ff-composer-shell { border-radius: 20px; }
+.ff-composer .ant-sender-content { min-height: 76px; padding: 14px 16px 4px; }
+.ff-composer .ant-sender-input { font-size: 14.5px; line-height: 1.55; }
+.ff-composer__footer { padding: 0 12px 10px; }
+.ff-composer__prefix-actions,
+.ff-composer__suffix { gap: 4px; }
+
+.ff-composer__add-button,
+.ff-composer__mic { width: 30px; height: 30px; border-radius: 8px; }
+.ff-composer__prefix-actions .ff-composer__footer-button,
+.ff-composer__prefix-actions .ff-composer__agent-button,
+.ff-composer__suffix .ff-composer__agent-button {
+  min-height: 30px;
+  height: 30px;
+  padding: 0 8px;
   border: 0;
-  border-radius: 20px;
-  box-shadow: 0 4px 20px rgba(31, 35, 48, 0.035), inset 0 0 0 1px var(--ff-border);
-}
-.ff-composer-shell:hover { box-shadow: 0 4px 24px rgba(31, 35, 48, 0.06), inset 0 0 0 1px var(--ff-text-muted); }
-.ff-composer-shell:focus-within {
-  box-shadow: 0 4px 24px rgba(31, 35, 48, 0.08), inset 0 0 0 1px var(--ff-text-secondary), 0 0 0 1px var(--ff-text-secondary);
-}
-:root[data-ui-theme="firefly-dark"] .ff-composer-shell { box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4), inset 0 0 0 1px var(--ff-border); }
-:root[data-ui-theme="firefly-dark"] .ff-composer-shell:hover { box-shadow: 0 4px 24px rgba(0, 0, 0, 0.55), inset 0 0 0 1px var(--ff-text-muted); }
-:root[data-ui-theme="firefly-dark"] .ff-composer-shell:focus-within {
-  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.65), inset 0 0 0 1px rgba(255, 255, 255, 0.22), 0 0 0 1px rgba(255, 255, 255, 0.22);
-}
-.ff-composer .ant-sender-content { min-height: 0; padding: 18px 20px 0; }
-.ff-composer .ant-sender-input { min-height: 56px; max-height: 384px; padding-inline: 4px; font: 400 15px/1.5 var(--rb-font-sans, sans-serif); }
-.ff-composer .ant-sender-footer { padding: 8px 16px 14px; }
-.ff-composer__toolbar { display: flex; min-width: 0; align-items: center; justify-content: space-between; gap: 12px; }
-.ff-composer__toolbar-start,
-.ff-composer__toolbar-end { display: flex; min-width: 0; align-items: center; gap: 10px; }
-.ff-composer__toolbar-start { flex-wrap: wrap; }
-.ff-composer__toolbar-end { flex: none; }
-/* Send: a 32px rounded square that gives a little under the press. */
-.ff-composer .ant-sender-actions-btn { width: 32px; height: 32px; border-radius: 8px; transition: transform 150ms ease, opacity 150ms ease; }
-.ff-composer .ant-sender-actions-btn:active:not(:disabled) { transform: scale(0.95); }
-@media (prefers-reduced-motion: reduce) { .ff-composer .ant-sender-actions-btn { transition: none; } }
-/* Model pill: an outlined chip led by an accent dot, like the reference model switcher. */
-.ff-composer__toolbar .ff-model-effort {
-  height: 32px;
-  margin-left: 0;
-  padding: 0 10px;
-  border: 1px solid var(--ff-border);
   border-radius: 8px;
+  background: transparent;
+  color: var(--ff-text-secondary);
+  font: 500 13px/1 var(--rb-font-sans, sans-serif);
+  transition: background-color 120ms ease, color 120ms ease;
 }
-.ff-composer__toolbar .ff-model-effort::before {
-  content: "";
-  flex: none;
-  width: 8px;
-  height: 8px;
-  border-radius: 50%;
-  background: var(--ff-accent);
+.ff-composer__prefix-actions .ff-composer__footer-button:hover:not(:disabled),
+.ff-composer__prefix-actions .ff-composer__agent-button:hover,
+.ff-composer__suffix .ff-composer__agent-button:hover { background: var(--ff-bg-hover); color: var(--ff-text); }
+/* Full access: no warm block or ring, just the label; the shield icon alone keeps the warm hint. */
+.ff-composer .ff-permission-control.is-full { background: transparent; color: var(--ff-text-secondary); box-shadow: none; }
+.ff-composer .ff-permission-control.is-full:hover:not(:disabled) { background: var(--ff-bg-hover); color: var(--ff-text); }
+.ff-composer .ff-permission-control.is-full > svg:first-child { color: #d9652b; }
+/* The model button: plain text like the rest, the effort a shade lighter. */
+.ff-composer__suffix .ff-model-effort { border: 0; background: transparent; }
+.ff-composer .ant-sender-actions-btn { width: 32px; height: 32px; border-radius: 50%; }
+
+/* The project tab: same inset as the card's corner radius, a lighter grey, and a hairline that matches the card. */
+.ff-composer__project-strip {
+  margin: 0 20px -14px;
+  padding: 4px 8px 18px;
+  border-color: var(--ff-border);
+  border-radius: 14px 14px 0 0;
+  background: color-mix(in srgb, var(--ff-bg-hover) 70%, var(--ff-surface));
 }
+.ff-composer__project-strip .ff-composer__footer-button { min-height: 26px; border-radius: 8px; font-size: 12.5px; }
+/* The permission chip's dropdown arrow: small and muted like the model button's, not a bold dark caret. */
+.ff-composer .ff-permission-control > svg:last-child:not(:first-child) { width: 12px; height: 12px; color: var(--ff-text-muted); stroke-width: 2; }

@@ -37,7 +37,7 @@ async function mount(
 const toggle = () => element.querySelector<HTMLButtonElement>('[role="switch"]')!;
 const status = () => element.querySelector('[role="status"]')?.textContent ?? "";
 async function click(node: HTMLElement) { await act(async () => { node.dispatchEvent(new MouseEvent("click", { bubbles: true })); }); }
-async function mode(name: string) { await click([...element.querySelectorAll<HTMLButtonElement>(".skill-panel__tab")].find(button => button.textContent === name)!); }
+async function mode(name: string) { await click([...element.querySelectorAll<HTMLButtonElement>(".ff-panel-sidebar__item")].find(button => button.textContent === name)!); }
 afterEach(async () => {
   if (root) await act(async () => { root!.unmount(); });
   root = undefined; element?.remove(); window.settings = originalSettings;
@@ -69,7 +69,7 @@ it("admits only one pending save per Skill and mode even for same-tick clicks", 
   const { rescan } = await mount(save); const button = toggle();
   await act(async () => { button.dispatchEvent(new MouseEvent("click", { bubbles: true })); button.dispatchEvent(new MouseEvent("click", { bubbles: true })); });
   expect(save).toHaveBeenCalledTimes(1); expect(toggle().disabled).toBe(true);
-  const refresh = element.querySelector<HTMLButtonElement>(".skill-panel__icon-btn")!;
+  const refresh = element.querySelector<HTMLButtonElement>(".ff-panel-iconbtn")!;
   expect(refresh.disabled).toBe(true); await click(refresh); expect(rescan).not.toHaveBeenCalled();
   await act(async () => { pending.resolve({ ok: false }); });
   expect(toggle().getAttribute("aria-checked")).toBe("true"); expect(toggle().disabled).toBe(false);
@@ -103,7 +103,7 @@ it.each(["save", "rescan"])("ignores an obsolete StrictMode load after a newer %
   } });
   expect(reads).toBe(2); expect(toggle().getAttribute("aria-checked")).toBe("true");
   if (operation === "save") await click(toggle());
-  else await click(element.querySelector<HTMLButtonElement>(".skill-panel__icon-btn")!);
+  else await click(element.querySelector<HTMLButtonElement>(".ff-panel-iconbtn")!);
   expect(toggle().getAttribute("aria-checked")).toBe("false");
   await act(async () => { obsolete.resolve({}); });
   expect(toggle().getAttribute("aria-checked")).toBe("false");
@@ -153,4 +153,36 @@ it.each([true, false])("locked enable keeps focus and Tab in the dialog until it
   expect(element.querySelector('[role="dialog"]')).toBeNull(); expect(document.activeElement).toBe(accepted ? toggle() : opener);
   expect(toggle().disabled).toBe(!accepted); expect(enable).toHaveBeenCalledExactlyOnceWith("fixture-skill", true);
   if (accepted) expect(element.textContent).not.toContain("Disabled"); else expect(status()).toContain("Could not enable");
+});
+
+it("translates descriptions that have no Chinese once on opening, then shows the Chinese text", async () => {
+  (globalThis as any).IS_REACT_ACT_ENVIRONMENT = true;
+  const translateSkillDescriptions = vi.fn(async () => ({ ok: true, translated: { "fixture-skill": "合成的测试技能" } }));
+  window.settings = {
+    getSkillCatalog: async () => [
+      { id: "fixture-skill", name: "Fixture", description: "Synthetic Skill", enabled: true, source: "builtin", modes: ["work", "code"], references: [] },
+      { id: "known", name: "Known", description: "Already done", descriptionZh: "已经翻译过", enabled: true, source: "user", modes: null, references: [] },
+    ],
+    getSkillModeOverrides: async () => ({}), translateSkillDescriptions,
+  } as any;
+  element = document.createElement("div"); document.body.append(element);
+  root = createRoot(element);
+  await act(async () => { root!.render(React.createElement(SkillModePanel)); });
+  await act(async () => { await Promise.resolve(); });
+  expect(translateSkillDescriptions).toHaveBeenCalledOnce();
+  const descriptions = [...element.querySelectorAll(".skill-card__desc")].map(node => node.textContent);
+  expect(descriptions).toEqual(["合成的测试技能", "已经翻译过"]);
+});
+
+it("does not ask for a translation when every description already has Chinese", async () => {
+  (globalThis as any).IS_REACT_ACT_ENVIRONMENT = true;
+  const translateSkillDescriptions = vi.fn(async () => ({ ok: true, translated: {} }));
+  window.settings = {
+    getSkillCatalog: async () => [{ id: "known", name: "Known", description: "Done", descriptionZh: "完成", enabled: true, source: "user", modes: null, references: [] }],
+    getSkillModeOverrides: async () => ({}), translateSkillDescriptions,
+  } as any;
+  element = document.createElement("div"); document.body.append(element);
+  root = createRoot(element);
+  await act(async () => { root!.render(React.createElement(SkillModePanel)); });
+  expect(translateSkillDescriptions).not.toHaveBeenCalled();
 });

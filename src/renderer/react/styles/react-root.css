@@ -261,11 +261,20 @@ body {
   transition: opacity 0.2s ease;
 }
 
+/* The list reads as its own panel: a hairline on its left edge, curving at both ends, separates it from the activity rail
+   (and the workspace card's own edge closes it on the right) so the rail, the list and the conversation are three layers. */
+.ff-page-sidebar:not(.is-floating) {
+  box-sizing: border-box;
+  border-left: 1px solid var(--ff-border);
+  border-radius: 12px 0 0 12px;
+  padding-left: 8px;
+}
+
 .ff-page-sidebar.is-floating {
   position: absolute;
   top: var(--ff-app-titlebar-height);
   bottom: 8px;
-  left: 8px;
+  left: calc(var(--ff-workspace-gutter) + 48px);
   z-index: 40;
   padding: 8px;
   box-sizing: border-box;
@@ -398,14 +407,32 @@ body {
   background: var(--ff-accent);
 }
 
+/* "新对话" is a soft filled pill (Codex's primary row); the temporary chat sits at its right end. */
 .ff-page-newtask {
   display: flex;
-  flex-direction: column;
-  gap: 2px;
+  align-items: center;
+  gap: 4px;
   margin-top: 2px;
   padding: 0 2px;
   flex-shrink: 0;
 }
+.ff-page-newtask > .ff-side-action { flex: 1 1 auto; min-width: 0; height: 34px; gap: 10px; border-radius: 10px; background: var(--ff-bg-hover); }
+.ff-page-newtask > .ff-side-action:hover { background: var(--ff-bg-active); }
+.ff-page-newtask__temporary {
+  display: grid;
+  width: 34px;
+  height: 34px;
+  flex: none;
+  place-items: center;
+  padding: 0;
+  border: 0;
+  border-radius: 10px;
+  background: transparent;
+  color: var(--ff-text-muted);
+  cursor: pointer;
+  transition: background-color 150ms ease, color 150ms ease;
+}
+.ff-page-newtask__temporary:hover { background: var(--ff-bg-hover); color: var(--ff-text); }
 
 .ff-page-conversations {
   flex: 1;
@@ -495,6 +522,9 @@ body {
 
 /* Empty conversation: the greeting is centred in the free space above the docked composer. */
 .ff-workspace-greeting { display: none; }
+/* The code rain paints behind the new-session page; the greeting and composer stay above it. */
+.ff-workspace.is-empty .ff-workspace-greeting { position: relative; z-index: 1; }
+.ff-workspace.is-empty .ff-workspace-composer { z-index: 1; }
 .ff-workspace.is-empty .ff-workspace-greeting {
   display: flex;
   flex: 1 1 auto;
@@ -585,7 +615,8 @@ body {
   border-radius: 50%;
   background: #8a8f98;
 }
-.ff-model-connection[data-state="connected"] .ff-model-connection__dot { background: #238636; }
+.ff-model-connection[data-state="connected"] .ff-model-connection__dot,
+.ff-model-connection[data-state="configured"] .ff-model-connection__dot { background: #238636; }
 .ff-model-connection[data-state="failed"] .ff-model-connection__dot { background: var(--ff-danger); }
 /* The 24px hit area is almost empty: the visible part is the 14px status dot on the portrait's corner. Drawing the ring on the whole button
    put a large circle off-centre over the portrait, so the ring goes on the dot instead. */
@@ -601,7 +632,8 @@ body {
   white-space: nowrap;
 }
 /* Hover strip that unfolds the hidden sidebar. */
-.ff-page-edge { position: absolute; top: var(--ff-app-titlebar-height); bottom: 0; left: 0; z-index: 39; width: 10px; app-region: no-drag; }
+/* The activity rail stays put, so the strip that unfolds the hidden sidebar runs along the rail's right edge. */
+.ff-page-edge { position: absolute; top: var(--ff-app-titlebar-height); bottom: 0; left: calc(var(--ff-workspace-gutter) + 48px); z-index: 39; width: 10px; app-region: no-drag; }
 
 .ff-side-action--search kbd {
   margin-left: auto;
@@ -628,11 +660,12 @@ body {
 .ff-dock-separator:focus-visible::after { background: var(--ff-accent); }
 
 @media (max-width: 900px) {
+  /* The narrow overlay opens right of the activity rail, never over it: the rail holds the only panel entries. */
   .ff-page-sidebar {
     position: absolute;
     top: var(--ff-app-titlebar-height);
     bottom: 8px;
-    left: 8px;
+    left: calc(var(--ff-workspace-gutter) + 48px);
     z-index: 40;
     box-sizing: border-box;
     padding: 8px;
@@ -659,8 +692,10 @@ body {
 .ff-sidebar-resizer::after { content: ""; position: absolute; inset: 0 auto 0 50%; width: 1px; background: var(--ff-border); }
 .ff-sidebar-resizer:hover::after, .ff-sidebar-resizer.is-resizing::after { background: var(--ff-text-muted); }
 .ff-sidebar-resizer:focus-visible { outline: 2px solid var(--ff-accent); outline-offset: 2px; }
-.ff-workspace-empty { padding: 24px; color: var(--ff-text-muted); line-height: 1.6; }
-.ff-workspace-empty button { padding: 8px 12px; border: 1px solid var(--ff-border); border-radius: 12px; background: var(--ff-surface); color: var(--ff-text); cursor: pointer; }
+/* Same scale as the run results below it: 13px text, a compact button, and the panel's 16px side padding. */
+.ff-workspace-empty { padding: 12px 16px 4px; color: var(--ff-text-muted); font: 400 13px/1.6 var(--rb-font-sans, sans-serif); }
+.ff-workspace-empty p { margin: 0 0 8px; }
+.ff-workspace-empty button { padding: 5px 10px; border: 1px solid var(--ff-border); border-radius: 8px; background: var(--ff-surface); color: var(--ff-text); cursor: pointer; font: 500 12.5px/1.4 var(--rb-font-sans, sans-serif); }
 :root[data-ui-colors] .ff-compressing-context,
 :root[data-ui-colors] .ff-workspace-empty button {
   background: var(--ff-bg-workspace);

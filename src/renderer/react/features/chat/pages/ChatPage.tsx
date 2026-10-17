@@ -3,7 +3,7 @@ import { useTranslation } from "../../../i18n";
 import { MessageSquareDashed } from "lucide-react";
 import { DownOutlined, GlobalOutlined, FolderOpenOutlined, ProfileOutlined, UnorderedListOutlined } from "@ant-design/icons";
 import { Group, Panel, Separator, useDefaultLayout, type GroupImperativeHandle } from "react-resizable-panels";
-import { useCompactDock } from "./useCompactDock";
+import { useCompactDock, useElementWidth } from "./useCompactDock";
 import { useInspectorPanelVisibility } from "./useInspectorPanelVisibility";
 import { collectWorkspaceOutputs, createWorkspaceResultRevealer, workspaceFileRevision, type WorkspaceChangedFile, type WorkspaceRunOutput } from "../workspace/workspace-artifacts";
 import { WorkspaceResultsIndex } from "../workspace/WorkspaceRunResults";
@@ -14,6 +14,7 @@ import { buildStepProgressSummary } from "../components/step-progress";
 import { CodeGitPanel } from "../components/CodeGitPanel";
 import type { PlanReviewPhase } from "../components/PlanReviewPanel";
 import { ChatPageInspector, type ChatPageInspectorDiffTab } from "../components/ChatPageInspector";
+import { SessionOverviewPanel } from "../components/SessionOverviewPanel";
 import { ChatInspectorActionsContext, type ChatInspectorActions } from "../components/inspector-actions";
 import {
   normalizeDeferredPlanChoice,
@@ -23,6 +24,9 @@ import {
 } from "../components/run-presentation";
 import { ChatMessageList } from "../components/ChatMessageList";
 import { ChatPageNavigation, type ChatPagePanel } from "../components/ChatPageNavigation";
+import { useNavigationHistory } from "./useNavigationHistory";
+import { CodeRain } from "../components/CodeRain";
+import { sessionsNeedingInput } from "./sidebar-status";
 import {
   ContextCompressionNotice,
   FileDropOverlay,
@@ -38,6 +42,7 @@ import type {
 } from "../../../../../shared/chat-types";
 import { type ContextUsageSnapshot } from "../../../../../shared/context-usage";
 import { ChatPagePanelHost } from "../components/ChatPagePanelHost";
+import { PanelSidebarSlotContext } from "../components/PanelShell";
 import { useUserCallPreference } from "../../../hooks/useUserNickname";
 import { resolveRevisableLastTurn } from "../components/last-turn-actions";
 import { shouldListenForDeferredPlanEvents } from "./conversation-run-policy";
@@ -156,6 +161,15 @@ interface NavActions {
   openProject: (workspaceRoot: string) => void;
 }
 
+/** Whether the overview card column is open, kept on this computer. */
+const OVERVIEW_OPEN_KEY = "ff.chat.overviewOpen";
+/** The narrowest the conversation (messages + composer) may get from dragging the dock separator, in px. */
+const CHAT_MIN_WIDTH = 480;
+/** The overview card column inside the conversation panel, with its inset. */
+const CHAT_CARDS_WIDTH = 280;
+/** The right panel's own minimum width, in px (the inspector Panel's minSize). */
+const INSPECTOR_MIN_WIDTH = 280;
+
 export function ChatPage() {
   const { t } = useTranslation();
   // 统一反馈入口：错误轻提示 / 需阅读的错误弹窗 / 危险确认
@@ -164,7 +178,10 @@ export function ChatPage() {
   const [collapsed, setCollapsed] = useState(false);
   const dockRef = useRef<HTMLDivElement>(null);
   const compactDock = useCompactDock(dockRef);
+  const dockWidth = useElementWidth(dockRef);
   const [activePanel, setActivePanel] = useState<ChatPagePanel | null>(null);
+  // Where the open feature page portals its own sidebar (inside the navigation, in place of the conversations).
+  const [panelSlot, setPanelSlot] = useState<HTMLElement | null>(null);
   /** 右侧面板已打开的 diff 标签，ID 规范 diff:<runId>:<文件路径>，同 ID 只激活不重开 */
   const [diffTabs, setDiffTabs] = useState<ChatPageInspectorDiffTab[]>([]);
   /** 右侧面板已打开的文件预览标签，ID 规范 file:<相对路径> */
@@ -173,7 +190,13 @@ export function ChatPage() {
   const [filesTabOpen, setFilesTabOpen] = useState(false);
   const [browserTabOpen, setBrowserTabOpen] = useState(false);
   const [tasksTabOpen, setTasksTabOpen] = useState(false);
-  const [overviewTabOpen, setOverviewTabOpen] = useState(false);
+  // The overview cards stay where the user left them, across modes, conversations and restarts.
+  const [overviewTabOpen, setOverviewTabOpen] = useState(() => {
+    try { return window.localStorage.getItem(OVERVIEW_OPEN_KEY) === "1"; } catch { return false; }
+  });
+  useEffect(() => {
+    try { window.localStorage.setItem(OVERVIEW_OPEN_KEY, overviewTabOpen ? "1" : "0"); } catch { /* remembered for this window only */ }
+  }, [overviewTabOpen]);
   const [inspectorHidden, setInspectorHidden] = useState(false);
   // The panel's real state: dragging the separator to zero (or End) collapses it while inspectorHidden stays false.
   const [inspectorCollapsed, setInspectorCollapsed] = useState(false);
@@ -1021,7 +1044,13 @@ export function ChatPage() {
     const picked = await store.pickWorkspaceFolder();
     if (!picked.ok || !picked.path) return;
 
-    const workspace = { path: picked.path, displayName: picked.displayName ?? t("chatPage.defaultWorkspaceName") };
+    await applyWorkspace(targetMode, { path: picked.path, displayName: picked.displayName ?? t("chatPage.defaultWorkspaceName") });
+  }
+
+  /** Puts the current (or the next new) task of this mode into a workspace folder. */
+  async function applyWorkspace(targetMode: ConversationMode, workspace: { path: string; displayName: string }) {
+    const store = chatStore();
+    if (!store) return;
     setWorkspaceNames((current) => ({ ...current, [targetMode]: workspace.displayName }));
 
     const activeId = activeSessionIdsRef.current[targetMode];
@@ -1295,7 +1324,6 @@ export function ChatPage() {
     setResultTabIds([]);
     setFilesTabOpen(false);
     setTasksTabOpen(mode !== "chat");
-    setOverviewTabOpen(false);
     setInspectorHidden(false);
     setActiveTabId(current => current === "browser" ? "browser" : mode !== "chat" ? "tasks" : null);
   }, [activeSessionId, mode]);
@@ -1355,6 +1383,16 @@ export function ChatPage() {
     setActiveTabId("files");
   };
 
+  /** 标题行的面板开关：已打开且可见时关掉它，否则打开。 */
+  // The browser closes through the inspector's own path, which revokes its grant and closes the native page first.
+  const [browserCloseRequest, setBrowserCloseRequest] = useState(0);
+  const togglePanel = (id: string, open: boolean, openIt: () => void) => {
+    if (open && !inspectorHidden) {
+      if (id === "browser") setBrowserCloseRequest(count => count + 1);
+      else closeInspectorTab(id);
+    } else openIt();
+  };
+
   /** 收起右侧面板并保留标签；再次点击恢复原标签 */
   const collapseInspector = () => setInspectorHidden(true);
 
@@ -1388,7 +1426,6 @@ export function ChatPage() {
 
   /** 右侧面板标签的固定顺序：文件树 → 文件预览 → Diff → 计划 */
   const inspectorTabIds = [
-    ...(overviewTabOpen ? ["overview"] : []),
     ...(tasksTabOpen ? ["tasks"] : []),
     ...(filesTabOpen ? ["files"] : []),
     ...fileTabs.map((tab) => tab.id),
@@ -1398,28 +1435,13 @@ export function ChatPage() {
     ...(browserTabOpen ? ["browser"] : []),
   ];
 
-  /**
-   * 文件树标签是否被钉住：面板里还有 diff / 文件预览 / 计划标签时，
-   * 文件树不可关闭（chip 无 ×、右上角关闭按钮对它无效），
-   * 只剩它一个时恢复可关——关掉即收起整个面板。
-   */
-  const filesTabPinned = filesTabOpen
-    && (resultTabs.length > 0 || browserTabOpen || fileTabs.length > 0 || diffTabs.length > 0 || (activePlan !== null && planDrawerOpen));
-
   /** 关闭右侧面板标签：活动标签关闭后回退到相邻标签（优先左侧） */
   const closeInspectorTab = (id: string) => {
     const index = inspectorTabIds.indexOf(id);
     if (index < 0) return;
-    // 钉住的文件树标签：关闭请求降级为激活它
-    if (id === "files" && filesTabPinned) {
-      setActiveTabId("files");
-      return;
-    }
     const remaining = inspectorTabIds.filter((tabId) => tabId !== id);
     if (id === "browser") {
       setBrowserTabOpen(false);
-    } else if (id === "overview") {
-      setOverviewTabOpen(false);
     } else if (id === "tasks") {
       setTasksTabOpen(false);
     } else if (id === "files") {
@@ -1440,6 +1462,41 @@ export function ChatPage() {
 
   const inspectorVisible = !activePanel && !inspectorHidden;
   const { panelRef: inspectorPanelRef, onLayoutChange: onInspectorLayoutChange } = useInspectorPanelVisibility(inspectorVisible, dockGroupRef, `${inspectorTabIds.length}:${compactDock}`);
+
+  // The conversation keeps a readable width: the dock separator cannot squeeze it below this, and it grows by the
+  // overview card column (272px + its 8px inset) while that column is shown.
+  const chatCardsShown = overviewTabOpen && !activePanel;
+  // On a narrow page the right panel keeps its own 280px minimum, so the conversation yields first.
+  const chatMinWidth = Math.min(CHAT_MIN_WIDTH + (chatCardsShown ? CHAT_CARDS_WIDTH : 0),
+    dockWidth > 0 ? Math.max(300, dockWidth - INSPECTOR_MIN_WIDTH - 12) : Number.POSITIVE_INFINITY);
+
+  // Opening a right-hand panel folds the overview cards away, so the dialog keeps its room; the header switch brings them back.
+  const inspectorPanelCount = inspectorTabIds.length;
+  const previousPanelCount = useRef(inspectorPanelCount);
+  useEffect(() => {
+    if (inspectorPanelCount > previousPanelCount.current) setOverviewTabOpen(false);
+    previousPanelCount.current = inspectorPanelCount;
+  }, [inspectorPanelCount]);
+
+  // Panels sit side by side, so the right dock widens (never narrows) to give each opened panel room, up to 70% of the page
+  // and never into the conversation's minimum width. The resize is programmatic, so it is not saved as the user's own drag width.
+  useEffect(() => {
+    if (compactDock || !inspectorVisible || inspectorPanelCount === 0) return;
+    const frame = requestAnimationFrame(() => {
+      const panel = inspectorPanelRef.current;
+      const dockWidth = dockRef.current?.offsetWidth ?? 0;
+      // A panel the user collapsed with the separator stays collapsed.
+      if (!panel || dockWidth === 0 || panel.isCollapsed()) return;
+      const wanted = Math.min(inspectorPanelCount * 360, dockWidth * 0.7, dockWidth - chatMinWidth - 12);
+      if (panel.getSize().inPixels < wanted - 1) panel.resize(Math.round(wanted));
+    });
+    return () => cancelAnimationFrame(frame);
+  }, [inspectorPanelCount, inspectorVisible, compactDock, inspectorPanelRef, chatMinWidth]);
+
+  // Sessions with a run in flight, for the sidebar spinner. The registry is a ref: a run starting flips the busy state,
+  // a run finishing bumps the registry version, and either recomputes the list.
+  const needsInputSessionIds = useMemo(() => sessionsNeedingInput(interactionsBySession, planReviewBySession), [interactionsBySession, planReviewBySession]);
+  const runningSessionIds = useMemo(() => Object.keys(activeRunsBySession.current), [runRegistryVersion, modelBusyByMode]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // ── 阶段 1A：导航 props 引用稳定化 ──
   // 下方 6 个动作函数读取大量页面状态、内部调用链每次渲染都产生新引用，
@@ -1511,6 +1568,25 @@ export function ChatPage() {
       }
     });
   }, [feedback, t]);
+  // Back / forward through the conversations and panels already visited.
+  const navHistory = useNavigationHistory({
+    current: { mode, sessionId: activeSessionId, panel: activePanel },
+    go: (location) => {
+      setActivePanel((location.panel as ChatPagePanel | null) ?? null);
+      // The place may be in another mode: show that mode first, then (for a conversation) open it there.
+      if (location.mode !== mode) navModeChange(location.mode);
+      if (location.panel === null && location.sessionId) {
+        setPendingTemporary(false);
+        void navActionsRef.current.selectSession(location.sessionId, location.mode as ConversationMode);
+      }
+    },
+    isAvailable: (location) => location.panel !== null || (sessionsByMode[location.mode as ConversationMode] ?? []).some(session => session.id === location.sessionId),
+  });
+  // One stable object: the navigation is memoised, so a fresh one per render would re-render it on every streamed token.
+  const navHistoryProp = useMemo(
+    () => ({ canBack: navHistory.canBack, canForward: navHistory.canForward, onBack: navHistory.back, onForward: navHistory.forward }),
+    [navHistory.canBack, navHistory.canForward, navHistory.back, navHistory.forward],
+  );
   const navMinimize = useCallback(() => window.chat?.minimize(), []);
   useMaximizedWindowDrag();
   const navMaximize = useCallback(() => window.chat?.toggleMaximize(), []);
@@ -1527,13 +1603,16 @@ export function ChatPage() {
     <div className={`ff-page ${collapsed ? "is-collapsed" : ""}`}>
       <ChatPageNavigation
         collapsed={collapsed}
+        runningSessionIds={runningSessionIds}
+        needsInputSessionIds={needsInputSessionIds}
         activePanel={activePanel}
+        onPanelSlot={setPanelSlot}
+        navHistory={navHistoryProp}
         mode={mode}
         sessions={sessions}
         sessionListStatus={sessionListErrors[mode] ? "error" : sessionsByMode[mode] === undefined ? "loading" : "ready"}
         activeSessionId={activeSessionId}
         activeModelProfileId={selectedModelProfileId}
-        todoState={activeSessionId ? todoStateBySession[activeSessionId] : null}
         onToggleCollapsed={navToggleCollapsed}
         onModeChange={navModeChange}
         onNewTask={navNewTask}
@@ -1563,7 +1642,7 @@ export function ChatPage() {
         // 拖动条命中区外溢到两侧（视觉条只有 12px，命中区鼠标 24px / 触屏 33px）
         resizeTargetMinimumSize={{ coarse: 33, fine: 24 }}
       >
-        <Panel id="chat" minSize={compactDock ? "60%" : 300} className="ff-dock-body">
+        <Panel id="chat" minSize={compactDock ? "60%" : chatMinWidth} className="ff-dock-body">
       <main
         className={`ff-page-main ff-workspace ${hasMessages ? "has-messages" : "is-empty"} ${isDraggingFiles ? "is-dragging-files" : ""}`}
         onDragEnter={dragHandlers.onDragEnter}
@@ -1583,23 +1662,24 @@ export function ChatPage() {
                   <span className="ff-inspector-toggle-divider" aria-hidden="true" />
                 </>
               )}
+              {/* 面板开关：打开时按下高亮，再点一次关掉对应面板（面板本身在右侧一列里上下叠放）。 */}
               <button type="button" className="ff-inspector-toggle" aria-label={t("browserWorkspace.open")}
-                title={t("browserWorkspace.open")} aria-expanded={browserTabOpen && !inspectorHidden}
-                onClick={() => { setBrowserTabOpen(true); setInspectorHidden(false); setActiveTabId("browser"); }}>
+                title={t("browserWorkspace.open")} aria-expanded={browserTabOpen && !inspectorHidden} aria-pressed={browserTabOpen && !inspectorHidden}
+                onClick={() => togglePanel("browser", browserTabOpen, () => { setBrowserTabOpen(true); setInspectorHidden(false); setActiveTabId("browser"); })}>
                 <GlobalOutlined aria-hidden="true" />
               </button>
               <button type="button" className="ff-inspector-toggle" aria-label={t("fileTree.title")}
-                title={t("fileTree.title")} aria-expanded={filesTabOpen && !inspectorHidden}
-                onClick={openFilesTab}><FolderOpenOutlined aria-hidden="true" /></button>
-              {activeSessionId && <button type="button" className="ff-inspector-toggle"
+                title={t("fileTree.title")} aria-expanded={filesTabOpen && !inspectorHidden} aria-pressed={filesTabOpen && !inspectorHidden}
+                onClick={() => togglePanel("files", filesTabOpen, openFilesTab)}><FolderOpenOutlined aria-hidden="true" /></button>
+              <button type="button" className="ff-inspector-toggle"
                 aria-label={t("sessionOverview.open")} title={t("sessionOverview.open")}
-                aria-expanded={overviewTabOpen && !inspectorHidden}
-                onClick={() => { setOverviewTabOpen(true); setInspectorHidden(false); setActiveTabId("overview"); }}>
-                <ProfileOutlined aria-hidden="true" /></button>}
+                aria-expanded={overviewTabOpen} aria-pressed={overviewTabOpen}
+                onClick={() => setOverviewTabOpen(open => !open)}>
+                <ProfileOutlined aria-hidden="true" /></button>
               {(mode !== "chat" || workspaceOutputs.length > 0) && <button type="button" className="ff-inspector-toggle"
                 aria-label={t("workspace.tasks")} title={t("workspace.tasks")}
-                aria-expanded={tasksTabOpen && !inspectorHidden}
-                onClick={() => { setTasksTabOpen(true); setInspectorHidden(false); setActiveTabId("tasks"); }}>
+                aria-expanded={tasksTabOpen && !inspectorHidden} aria-pressed={tasksTabOpen && !inspectorHidden}
+                onClick={() => togglePanel("tasks", tasksTabOpen, () => { setTasksTabOpen(true); setInspectorHidden(false); setActiveTabId("tasks"); })}>
                 <UnorderedListOutlined aria-hidden="true" /></button>}
               <InspectorToggle
                 open={inspectorTabIds.length > 0 && !inspectorHidden}
@@ -1613,9 +1693,10 @@ export function ChatPage() {
           </header>
         )}
         {activePanel ? (
-          <ChatPagePanelHost panel={activePanel} />
+          <PanelSidebarSlotContext.Provider value={panelSlot}><ChatPagePanelHost panel={activePanel} /></PanelSidebarSlotContext.Provider>
         ) : (
-        <>
+        <div className="ff-workspace-body">
+        <div className="ff-workspace-content">
         <RunRecoveryNotices
           interruptedRun={interruptedRun}
           sessionTakeover={sessionTakeover}
@@ -1650,6 +1731,7 @@ export function ChatPage() {
           </ChatInspectorActionsContext.Provider>
         )}
         <ContextCompressionNotice visible={isCompressingContext} />
+        {!hasMessages && <CodeRain />}
         {!hasMessages && <div className="ff-workspace-greeting">
           <h2 className="ff-workspace-greeting__title">{t(mode === "chat" ? "chatPage.emptyGreeting" : "chatPage.emptyGreetingTask")}</h2>
           <p className="ff-workspace-greeting__hint">{t(`chatPage.emptyHint.${mode}`)}</p>
@@ -1677,6 +1759,8 @@ export function ChatPage() {
             value={draft}
             mode={mode}
             docked={hasMessages}
+            onNewTask={navNewTask}
+            onNotice={(message, tone) => feedback.notice({ tone, message })}
             conversationId={activeSessionId ?? undefined}
             workspaceName={workspaceNames[mode]}
             workspaceRoot={activeSession?.workspaceBinding?.workspaceRoot}
@@ -1784,7 +1868,19 @@ export function ChatPage() {
             }}
           />
         </div>
-        </>
+        </div>
+        {/* The overview cards live in the conversation panel, on the outer side of the dialog. */}
+        {overviewTabOpen && (
+          <aside className="ff-chat-cards" aria-label={t("sessionOverview.title")}>
+            <SessionOverviewPanel usage={latestContextUsage} outputs={workspaceOutputs} onOpenChange={openResultDiff} onOpenTask={openTaskInRun}
+              environment={{ mode, workspaceName: activeSession?.workspaceBinding?.displayName, temporary: activeSession?.temporary }}
+              onOpenEnvironment={activeSession?.workspaceBinding ? openFilesTab : mode !== "chat" ? () => void chooseWorkspace() : undefined}
+              onOpenConnectors={() => sidebarApi()?.openSettings("mcp")}
+              onOpenOutput={output => openResultTab(output.id)}
+              sessionId={activeSessionId} busy={isCurrentScopeRunning} />
+          </aside>
+        )}
+        </div>
         )}
       </main>
         </Panel>
@@ -1801,7 +1897,7 @@ export function ChatPage() {
               const layout = dockGroupRef.current?.getLayout();
               if (layout && Object.hasOwn(layout, "inspector")) onLayoutChanged(layout, { isUserInteraction: true });
             }} />}
-            <Panel id="inspector" panelRef={inspectorPanelRef} collapsible collapsedSize={0} defaultSize={compactDock ? "30%" : "40%"} minSize={compactDock ? "15%" : 280} maxSize={compactDock ? "40%" : "70%"} className="ff-dock-body">
+            <Panel id="inspector" panelRef={inspectorPanelRef} collapsible collapsedSize={0} defaultSize={compactDock ? "30%" : "40%"} minSize={compactDock ? "15%" : INSPECTOR_MIN_WIDTH} maxSize={compactDock ? "40%" : "70%"} className="ff-dock-body">
               <ChatPageInspector
                 sessionId={activeSessionId}
                 visible={inspectorVisible}
@@ -1811,21 +1907,13 @@ export function ChatPage() {
                 onOpenResultDiff={openResultDiff}
                 workspaceRoot={activeSession?.workspaceBinding?.workspaceRoot}
                 filesTabOpen={filesTabOpen}
-                filesTabPinned={filesTabPinned}
+                browserCloseRequest={browserCloseRequest}
                 browserTabOpen={browserTabOpen}
                 tasksTabOpen={tasksTabOpen}
                 onOpenFilesTab={openFilesTab}
                 onOpenTasksTab={mode !== "chat" || workspaceOutputs.length > 0
                   ? () => { setTasksTabOpen(true); setInspectorHidden(false); setActiveTabId("tasks"); } : undefined}
-                onOpenOverviewTab={activeSessionId
-                  ? () => { setOverviewTabOpen(true); setInspectorHidden(false); setActiveTabId("overview"); } : undefined}
-                overviewTabOpen={overviewTabOpen}
-                overview={{
-                  usage: latestContextUsage,
-                  outputs: workspaceOutputs,
-                  onOpenChange: openResultDiff,
-                  onOpenTask: openTaskInRun,
-                }}
+                onOpenOverviewTab={() => setOverviewTabOpen(true)}
                 pendingWorkspaceName={pendingWorkspaceByMode[mode]?.displayName}
                 onChooseWorkspace={mode !== "chat" ? () => void chooseWorkspace() : undefined}
                 taskPanel={<div className="ff-workspace-task-panel">{mode === "work"

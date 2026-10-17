@@ -1,5 +1,7 @@
-import { Popover, Slider } from "antd";
+import { Popover } from "antd";
 import { useEffect, useState } from "react";
+import { RotateCcw } from "lucide-react";
+import { EffortBar } from "./EffortBar";
 import { useTranslation } from "../../../i18n";
 import { computeReasoningDropdown, type ReasoningDropdownView } from "../../../../lib/reasoning-dropdown";
 import type { ReasoningLevelsConfig, ReasoningPreference } from "../../../../../shared/reasoning";
@@ -131,8 +133,15 @@ export function ModelEffortControl({ sessionId, activeProfileId, onSelectModelPr
   }
 
   const effortPanel = (
-    <div className="ff-model-panel ff-effort">
+    <div key="effort" className="ff-model-panel ff-effort ff-model-panel--back">
       <div className="ff-effort__head">
+        {/* Like Codex: the level and model in the middle, "back to automatic" on the right. */}
+        {adjustable && activeIndex !== 0 && (
+          <button type="button" className="ff-effort__reset" aria-label={t("modelEffort.reset")} title={t("modelEffort.reset")}
+            onClick={() => void commit(0)}>
+            <RotateCcw size={14} strokeWidth={1.7} aria-hidden="true" />
+          </button>
+        )}
         {shownLabel && <span className="ff-effort__value">{shownLabel}</span>}
         <button type="button" className="ff-effort__model" title={t("modelSelector.switchTitle")} onClick={() => setPanel("models")}>
           <span>{modelName}</span>
@@ -140,20 +149,13 @@ export function ModelEffortControl({ sessionId, activeProfileId, onSelectModelPr
         </button>
       </div>
       {adjustable ? (
-        <Slider
-          className="ff-effort__slider"
-          min={0}
-          max={items.length - 1}
-          step={1}
-          dots
-          marks={Object.fromEntries(items.map((item, index) => [index, {
-            label: <span className={`ff-effort__mark${index === shownIndex ? " is-current" : ""}${item.disabled ? " is-disabled" : ""}`}>{shortEffortLabel(item.label)}</span>,
-          }]))}
-          value={shownIndex}
-          tooltip={{ open: false }}
-          aria-label={t("modelEffort.sliderLabel")}
-          onChange={(value) => { if (!items[value]?.disabled) setPreview(value); }}
-          onChangeComplete={(value) => void commit(value)}
+        <EffortBar
+          count={items.length}
+          value={activeIndex}
+          disabled={items.map((item) => Boolean(item.disabled))}
+          label={t("modelEffort.sliderLabel")}
+          onPreview={setPreview}
+          onCommit={(index) => void commit(index)}
         />
       ) : (
         <p className="ff-effort__note">{t("modelEffort.unsupported")}</p>
@@ -162,7 +164,7 @@ export function ModelEffortControl({ sessionId, activeProfileId, onSelectModelPr
   );
 
   const modelsPanel = (
-    <div className="ff-model-panel ff-model-list">
+    <div key="models" className="ff-model-panel ff-model-list ff-model-panel--forward">
       <button type="button" className="ff-model-list__back" onClick={() => setPanel("effort")}>
         <ChevronIcon direction="left" />
         <span>{t("modelSelector.chooseModel")}</span>
@@ -191,8 +193,8 @@ export function ModelEffortControl({ sessionId, activeProfileId, onSelectModelPr
         if (next) { setPanel("effort"); void loadProfiles(); void refreshReasoning(); }
       }}
     >
-      <button type="button" className="ff-composer__agent-button ff-model-effort" title={t("modelSelector.switchTitle")}>
-        <span className="ff-model-effort__model">{modelName}</span>
+      <button type="button" className={`ff-composer__agent-button ff-model-effort${open ? " is-open" : ""}`} title={t("modelSelector.switchTitle")}>
+        <span key={modelName} className="ff-model-effort__model">{modelName}</span>
         {view && (adjustable ? items[activeIndex]?.label : view.statusText) && (
           <span className="ff-model-effort__effort">{adjustable ? items[activeIndex]?.label : view.statusText}</span>
         )}

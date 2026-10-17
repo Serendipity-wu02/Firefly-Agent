@@ -63,5 +63,5 @@ describe("settings category navigation", () => {
 
 it("retains every first-level settings destination, with MCP servers and the sub-agents as their own entries", () => {
   document.body.innerHTML = html;
-  expect([...document.querySelectorAll<HTMLButtonElement>('.nav-item')].map(button => button.dataset.section)).toEqual(["general", "appearance", "preferences", "api", "api-advanced", "user", "plugins", "subagents", "mcp", "memory", "firefly", "channels", "asr", "disclaimer"]);
+  expect([...document.querySelectorAll<HTMLButtonElement>('.nav-item')].map(button => button.dataset.section)).toEqual(["general", "appearance", "preferences", "api", "api-advanced", "user", "plugins", "subagents", "mcp", "memory", "firefly", "usage", "channels", "asr", "disclaimer"]);
 });

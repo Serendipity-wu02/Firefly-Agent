@@ -33,8 +33,9 @@ describe("docked pane motion", () => {
   it("moves the pane by its width, never by transform, so native bounds are not chased mid-animation", () => {
     expect(css).not.toMatch(/translate|transform/);
   });
-  it("hides the inspector's tab bar only when the browser is the single tab", () => {
-    expect(css).toMatch(/\.ff-chat-inspector\.is-browser-only \.ff-right-inspector__bar \{\s*display: none;\s*\}/);
+  it("drops the panel header and frame only when the browser is the single panel", () => {
+    expect(css).toMatch(/\.ff-chat-inspector\.is-browser-only \.ff-inspector-pane__head \{ display: none; \}/);
+    expect(css).toMatch(/\.ff-chat-inspector\.is-browser-only \.ff-inspector-pane \{ border: 0; border-radius: 0; \}/);
     expect(source).toContain("const browserOnly = tabs.length === 1 && tabs[0].id === \"browser\";");
   });
 });

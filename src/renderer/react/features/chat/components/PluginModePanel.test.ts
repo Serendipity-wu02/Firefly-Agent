@@ -162,9 +162,11 @@ describe("PluginModePanel", () => {
   }
 
   async function clickMarketToggle(): Promise<void> {
-    const toggle = container.querySelector<HTMLButtonElement>(".plugin-panel__header-actions button");
-    expect(toggle).toBeDefined();
-    await act(async () => toggle?.click());
+    // The market switch lives in the sidebar now; from the market view the same call goes back to the installed list.
+    const item = (label: string) => [...container.querySelectorAll<HTMLButtonElement>(".ff-panel-sidebar__item")].find(button => button.textContent?.includes(label));
+    const market = item("插件市场");
+    expect(market).toBeDefined();
+    await act(async () => (market?.getAttribute("aria-pressed") === "true" ? item("已安装") : market)?.click());
   }
 
   it("shows icon, plugin metadata, developer, and the three requested actions", async () => {
@@ -237,9 +239,9 @@ describe("PluginModePanel", () => {
     const api = apiFor([]); vi.mocked(api.marketList).mockResolvedValue({ ok: true, plugins: [marketEntry()] });
     await renderPanel(api); await clickMarketToggle();
     await act(async () => container.querySelector<HTMLButtonElement>(".plugin-card-ui__actions button")!.click());
-    const buttons = container.querySelectorAll<HTMLButtonElement>(".plugin-panel__header-actions button");
-    expect(buttons[1].disabled).toBe(true); expect(buttons[2].disabled).toBe(true);
-    await act(async () => { buttons[1].click(); buttons[2].click(); });
+    const buttons = [null, container.querySelector<HTMLButtonElement>('button[aria-label="刷新插件"]')!, container.querySelector<HTMLButtonElement>(".ff-panel-sidebar__new")!];
+    expect(buttons[1]!.disabled).toBe(true); expect(buttons[2]!.disabled).toBe(true);
+    await act(async () => { buttons[1]!.click(); buttons[2]!.click(); });
     expect(api.importZip).not.toHaveBeenCalled(); expect(api.marketList).toHaveBeenCalledTimes(1);
     await act(async () => gate.resolve(false));
   });

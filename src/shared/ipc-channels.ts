@@ -263,6 +263,7 @@ export const IPC = {
   SKILL_GET_CATALOG: "skill:get-catalog",
   // 重新扫描 user skills 目录，安装/删除 skill 后无需重启即可刷新 UI
   SKILL_RESCAN: "skill:rescan",
+  SKILL_TRANSLATE_DESCRIPTIONS: "skill:translate-descriptions",
 
   // scheduled tasks
   SCHEDULER_LIST: "scheduler:list",
@@ -277,6 +278,8 @@ export const IPC = {
   // token usage statistics
   TOKEN_USAGE_GET: "token-usage:get",
   TOKEN_USAGE_CLEAR: "token-usage:clear",
+  TOKEN_USAGE_HISTORY: "token-usage:history",
+  TOKEN_USAGE_SESSION_STATS: "token-usage:session-stats",
                // main → 渲染端：推一段音频 base64
                  // main → 渲染端：流式结束（含 cacheKey）
              // main → 渲染端：流式错误

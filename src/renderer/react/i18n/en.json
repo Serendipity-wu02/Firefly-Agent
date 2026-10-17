@@ -186,12 +186,39 @@
     "title": "Context: {{summary}}",
     "footnote": "Estimated value; refreshes after each message"
   },
+  "slash": {
+    "label": "Commands",
+    "compact": "Compact the context by summarising earlier turns",
+    "new": "Start a new task",
+    "clear": "Clear the input",
+    "skill": "Skill",
+    "compactDone": "Context compacted",
+    "compactFailed": "Could not compact the context"
+  },
   "tokenUsageBar": {
     "ariaLabel": "Token usage, last {{days}} days",
     "requests": "{{count}} requests",
     "total": "Last {{days}} days {{value}} tok",
     "cacheHit": "Cache hit {{rate}}",
-    "tooltip": "Last {{days}} days: input {{input}} tok · output {{output}} tok"
+    "empty": "No usage recorded yet",
+    "sessionTitle": "Conversation stats",
+    "roundsSteps": "{{rounds}} turns {{steps}} steps",
+    "speed": "{{value}} tok/s",
+    "modelTime": "Model time",
+    "toolTime": "Tool time",
+    "ttft": "Avg. first token (TTFT)",
+    "tps": "Output speed (TPS)",
+    "durationMinutes": "{{minutes}}m {{seconds}}s",
+    "durationSeconds": "{{seconds}}s",
+    "seconds": "{{value}}s",
+    "tokenTitle": "Token usage",
+    "tokens": "{{value}} tok",
+    "cacheHitRow": "Cache hit",
+    "uncachedInput": "Uncached input",
+    "cacheRead": "Cache read",
+    "outputRow": "Output",
+    "requestsRow": "Requests",
+    "rangeNote": "Last {{days}} days, all conversations combined"
   },
   "agentRounds": {
     "liveListDir": "listing directory",
@@ -275,7 +302,13 @@
     "failed": "This round didn't quite go through — check my reply for details, then try again."
   },
   "rightInspector": {
-    "closeTab": "Close {{name}} (Delete on the tab)",
+    "reorder": "Move “{{name}}”",
+    "reorderHint": "Drag to move, or press ↑ ↓",
+    "expand": "Enlarge",
+    "restore": "Restore",
+    "closeTab": "Close {{name}} (Delete on its header)",
+    "resize": "Resize panels (Left/Right arrow keys)",
+    "resizeRows": "Resize stacked panels (Up/Down arrow keys)",
     "panelAria": "Inspector panel",
     "toggle": "Toggle right panel"
   },
@@ -327,6 +360,9 @@
     "refreshPreview": "Reload file"
   },
   "modelPanel": {
+    "allProviders": "All models",
+    "providerSection": "Providers",
+    "emptyTitle": "No models yet",
     "title": "Model",
     "subtitle": "The default model is used for new chats; you can switch the current chat from the input box.",
     "searchPlaceholder": "Search models…",
@@ -341,6 +377,14 @@
     "delete": "Delete"
   },
   "scheduledPanel": {
+    "suggestions": {
+      "daily": { "title": "Daily wrap-up", "description": "Summarise the day's progress every day at 6 pm.", "prompt": "Summarise today's progress: what got done, what blocked me, and what to pick up tomorrow." },
+      "weekly": { "title": "Weekly planning", "description": "Lay out the week's priorities every Monday at 9 am.", "prompt": "From my recent conversations and tasks, list this week's priorities in order of importance." },
+      "todos": { "title": "Check my to-dos", "description": "Remind me of anything still unfinished every day at 9 am.", "prompt": "Check my unfinished to-dos and name the three to do first." }
+    },
+    "filterAll": "All tasks",
+    "listSection": "Tasks",
+    "emptyTitle": "No scheduled tasks yet",
     "title": "Scheduled tasks",
     "subtitle": "Agent tasks that run automatically. When due, they call the tools currently allowed, guided by the prompt.",
     "listHint": "Changes save immediately; there is no separate save step.",
@@ -450,6 +494,12 @@
     }
   },
   "pluginPanel": {
+    "navInstalled": "Installed",
+    "emptyTitle": "No plugins yet",
+    "suggestMarket": "Browse the marketplace",
+    "suggestMarketDesc": "Install from the curated catalog; new installs start disabled.",
+    "suggestImport": "Import a ZIP package",
+    "suggestImportDesc": "Pick a local package and enable it once you trust the source.",
     "versions": "Installed {{installed}} · Running {{active}} · Pending {{pending}}",
     "restartRequired": "A full application restart is required. The running version remains unchanged.",
     "restartAfterFailure": "This plugin is not running in the current process. Restart the application to retry the saved version selection.",
@@ -463,7 +513,7 @@
     "searchPlaceholder": "Search by plugin name, description, or developer…",
     "refresh": "Refresh plugins",
     "add": "Add plugin",
-    "emptyHint": "No plugins yet — use the add button in the top-right to import a ZIP.",
+    "emptyHint": "Plugins give Firefly new abilities. Install one from the marketplace or import a local ZIP package.",
     "noMatch": "No matching plugin",
     "developer": "Developer: {{author}}",
     "unknownDeveloper": "Unknown developer",
@@ -539,6 +589,7 @@
     }
   },
   "toolPanel": {
+    "modeSection": "Mode",
     "title": "Tools",
     "subtitle": "Choose which tools are visible in {{mode}} mode",
     "chatEnhanceTitle": "Chat mode tool enhancements",
@@ -549,6 +600,8 @@
     "noMatch": "No matching tool"
   },
   "skillPanel": {
+    "modeSection": "Mode",
+    "sourceSection": "Source",
     "title": "Skills",
     "subtitle": "Choose which skills are visible in {{mode}} mode",
     "rescan": "Rescan user skills",
@@ -557,6 +610,7 @@
     "sourceBuiltin": "Built-in",
     "sourceUser": "User",
     "disabledBadge": "Disabled",
+    "translating": "Translating skill descriptions…",
     "noDescription": "No description",
     "noMatch": "No matching skill",
     "saveFailed": "Could not save {{skill}} ({{mode}}). The previous setting was restored. Please try again.",
@@ -758,6 +812,7 @@
     "followModel": "Follow model"
   },
   "modelEffort": {
+    "reset": "Back to automatic",
     "sliderLabel": "Thinking effort",
     "unsupported": "This model does not support adjusting thinking effort"
   },
@@ -845,6 +900,7 @@
     "windDirNNW": "NNW"
   },
   "sidebar": {
+    "sessionRunning": "Running",
     "viewMode": "View",
     "projectView": "By project",
     "mergedView": "All conversations",
@@ -900,6 +956,8 @@
     "recentSessions": "Recent tasks",
     "noSearchResults": "No matching tasks",
     "viewProjectsShort": "Projects",
+    "viewStatusShort": "Status",
+    "status": {"needs-input": "Needs input", "working": "Working", "done": "Completed", "needsInputLabel": "Waiting for you"},
     "viewMergedShort": "Merged",
     "dragToReorder": "Drag to reorder",
     "reorderHint": "Drag, or press Alt+Up or Alt+Down, to reorder",
@@ -930,11 +988,18 @@
     "noReadableContent": "This message has nothing to read aloud"
   },
   "ui": {
+    "pinToRail": "Pin {{name}} to the bar",
+    "unpinFromRail": "Unpin {{name}} from the bar",
+    "conversationsHome": "Conversations",
+    "activityRail": "Activity bar",
     "modeSelector": "Switch mode, current: {{mode}}",
     "modeMenu": "Conversation mode",
     "modeChatDescription": "Everyday conversation and companionship",
     "modeWorkDescription": "Organize documents and drive project tasks",
     "modeCodeDescription": "Write, edit and debug code",
+    "navHistory": "Back and forward",
+    "navBack": "Back",
+    "navForward": "Forward",
     "toggleSidebar": "Toggle sidebar",
     "minimize": "Minimize",
     "maximizeOrRestore": "Maximize or restore",
@@ -955,6 +1020,7 @@
     "more": "More",
     "navigation": "Main navigation",
     "connectionStatus": "API: {{state}}",
+    "connectionConfigured": "API configured",
     "connectionUnverified": "Not verified",
     "connectionChecking": "Checking",
     "connectionConnected": "Last test passed",
@@ -986,7 +1052,6 @@
     "newTabTools": "Tools",
     "newTabSites": "Recommended",
     "newTabRecent": "Recent",
-    "newTabLocalHint": "Type a local or private-network address such as localhost:5173 or 192.168.1.5:3000; it is confirmed separately before opening.",
     "ready": "Enter a HTTPS page address to browse.",
     "sessionRequired": "Start or select a conversation to browse.",
     "title": "Browser",
@@ -1111,6 +1176,8 @@
     }
   },
   "sessionOverview": {
+    "reorder": "Move the “{{name}}” card",
+    "reorderHint": "Drag to reorder, or press ↑ ↓",
     "title": "Session overview",
     "tab": "Overview",
     "open": "Open session overview",
@@ -1126,7 +1193,17 @@
     "contextEmpty": "Context usage appears after you send a message",
     "contextEstimate": "Estimated from text length, not the provider's reported usage.",
     "changes": "Changes",
-    "changesEmpty": "No file changes in this session yet"
+    "changesEmpty": "No file changes in this session yet",
+    "environment": "Environment",
+    "environmentLocal": "This computer · Chat",
+    "environmentTemporary": "Temporary chat",
+    "environmentNoProject": "No project chosen",
+    "connectors": "Connectors",
+    "connectorsManage": "Manage in settings",
+    "usage": "Usage",
+    "outputs": "Outputs",
+    "outputsEmpty": "No outputs in this session yet",
+    "outputCounts": "{{files}} files · {{tools}} tools"
   },
   "workspace": {
     "resizeSidebar": "Resize conversation sidebar",

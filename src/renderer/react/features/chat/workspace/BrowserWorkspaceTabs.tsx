@@ -2,14 +2,11 @@ import { useEffect, useImperativeHandle, useRef, useState, type Ref } from "reac
 import type { BrowserReply, BrowserWorkspaceStateDto } from "../../../../../shared/manual-browser";
 import { Globe, Plus, X } from "lucide-react";
 import { useTranslation } from "../../../i18n";
-import { SlidingTabs, type SlidingTabItem } from "../../../components/ui/SlidingTabs";
 import { ManualBrowserTab, type ManualBrowserTabHandle } from "./ManualBrowserTab";
 import "./BrowserWorkspaceTabs.css";
 
 /** A closed tab collapses for this long before Main is asked to remove it. Matches the CSS exit time. */
 const TAB_EXIT_MS = 150;
-/** The Agent page is a tab of its own at the end of the strip. */
-const AGENT_TAB = "__agent__";
 
 /** Window tabs stay mounted when conversation or inspector selection changes.
  * Main supplies every workspace/tab ID and owns the cap and native attachment.
@@ -107,30 +104,18 @@ export function BrowserWorkspaceTabs({ sessionId, active = true, onClose, paneCl
   </div>;
   return <div className="ff-browser-window">
     <div className="ff-browser-window__strip">
-      <SlidingTabs
-        className="ff-browser-window__tabs"
-        size="sm"
-        ariaLabel={t("browserWorkspace.tabs")}
-        activeId={agent ? AGENT_TAB : state?.activeTabId ?? null}
-        onChange={id => { if (id === AGENT_TAB) setAgent(true); else if (api) void mutate(() => api.selectTab(id)); }}
-        onClose={closeTab}
-        tabs={[
-          ...(state?.tabs.map<SlidingTabItem>((tab, index) => ({
-            id: tab.tabId,
-            className: "ff-browser-window__tab",
-            closing: exiting === tab.tabId,
-            closable: true,
-            closeLabel: t("browserWorkspace.closeTab"),
-            disabled: pending,
-            title: tab.page?.url || undefined,
-            icon: <Globe size={14} aria-hidden="true" />,
-            label: tab.page?.url ? new URL(tab.page.url).hostname : index === 0 && state.tabs.length === 1 ? t("browserWorkspace.newTabTitle") : `${t("browserWorkspace.newTabTitle")} ${index + 1}`,
-            tabData: { "data-browser-select-tab": tab.tabId },
-            closeData: { "data-browser-close-tab": tab.tabId },
-          })) ?? []),
-          ...(sessionId ? [{ id: AGENT_TAB, className: "ff-browser-window__agent", label: t("browserWorkspace.agentMode"), disabled: pending }] : []),
-        ]}
-      />
+      <div className="ff-browser-window__tabs" role="tablist" aria-label={t("browserWorkspace.tabs")}>
+        {state?.tabs.map((tab, index) => <div className={`ff-browser-window__tab${exiting === tab.tabId ? " is-closing" : ""}`} key={tab.tabId}>
+          <button type="button" role="tab" aria-selected={!agent && state.activeTabId === tab.tabId} disabled={pending} data-browser-select-tab={tab.tabId}
+            title={tab.page?.url || undefined} onClick={() => api && void mutate(() => api.selectTab(tab.tabId))}>
+            <Globe size={14} aria-hidden="true" />
+            <span className="ff-browser-window__tab-title">{tab.page?.url ? new URL(tab.page.url).hostname : index === 0 && state.tabs.length === 1 ? t("browserWorkspace.newTabTitle") : `${t("browserWorkspace.newTabTitle")} ${index + 1}`}</span>
+          </button>
+          <button type="button" aria-label={t("browserWorkspace.closeTab")} disabled={pending || exiting !== null} data-browser-close-tab={tab.tabId}
+            onClick={() => closeTab(tab.tabId)}><X size={13} aria-hidden="true" /></button>
+        </div>)}
+        {sessionId && <button type="button" role="tab" className="ff-browser-window__agent" aria-selected={agent} disabled={pending} onClick={() => setAgent(true)}>{t("browserWorkspace.agentMode")}</button>}
+      </div>
       <button type="button" aria-label={t("browserWorkspace.newTab")} title={t("browserWorkspace.newTab")} data-browser-new-tab disabled={pending || !api || !state || state.tabs.length >= 8}
         onClick={() => api && void mutate(() => api.newTab())}><Plus size={15} aria-hidden="true" /></button>
       {paneClose && <button type="button" aria-label={t("browserWorkspace.closePanel")} title={t("browserWorkspace.closePanel")} data-browser-close-pane disabled={pending}

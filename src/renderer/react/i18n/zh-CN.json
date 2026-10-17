@@ -186,12 +186,39 @@
     "title": "上下文 {{summary}}",
     "footnote": "估算值（按字符折算），对话后自动刷新"
   },
+  "slash": {
+    "label": "指令",
+    "compact": "压缩上下文，整理较早的对话",
+    "new": "新建任务",
+    "clear": "清空输入框",
+    "skill": "技能",
+    "compactDone": "已压缩上下文",
+    "compactFailed": "压缩上下文失败"
+  },
   "tokenUsageBar": {
     "ariaLabel": "近 {{days}} 天 token 用量",
     "requests": "{{count}} 次请求",
     "total": "近 {{days}} 天 {{value}} tok",
     "cacheHit": "缓存命中 {{rate}}",
-    "tooltip": "近 {{days}} 天累计：输入 {{input}} tok · 输出 {{output}} tok"
+    "empty": "还没有用量记录",
+    "sessionTitle": "会话统计",
+    "roundsSteps": "{{rounds}} 轮 {{steps}} 步",
+    "speed": "{{value}} tok/s",
+    "modelTime": "模型用时",
+    "toolTime": "工具调用用时",
+    "ttft": "首 token 平均 (TTFT)",
+    "tps": "输出速度 (TPS)",
+    "durationMinutes": "{{minutes}}分{{seconds}}秒",
+    "durationSeconds": "{{seconds}}秒",
+    "seconds": "{{value}}秒",
+    "tokenTitle": "Token 用量",
+    "tokens": "{{value}} tok",
+    "cacheHitRow": "缓存命中",
+    "uncachedInput": "未缓存输入",
+    "cacheRead": "缓存读取",
+    "outputRow": "输出",
+    "requestsRow": "请求数",
+    "rangeNote": "近 {{days}} 天累计，所有对话合计"
   },
   "agentRounds": {
     "liveListDir": "列出目录",
@@ -275,7 +302,13 @@
     "failed": "这一轮没有顺利完成，请查看回复中的说明后再试一次。"
   },
   "rightInspector": {
-    "closeTab": "关闭 {{name}}（在标签上按 Delete）",
+    "reorder": "调整“{{name}}”的位置",
+    "reorderHint": "拖动调整位置，或按 ↑ ↓",
+    "expand": "放大",
+    "restore": "还原",
+    "closeTab": "关闭 {{name}}（在面板标题上按 Delete）",
+    "resize": "调整面板宽度（左右方向键）",
+    "resizeRows": "调整上下面板高度（上下方向键）",
     "panelAria": "右侧检查面板",
     "toggle": "展开/收起右侧面板"
   },
@@ -327,6 +360,9 @@
     "refreshPreview": "重新读取文件"
   },
   "modelPanel": {
+    "allProviders": "全部模型",
+    "providerSection": "厂商",
+    "emptyTitle": "还没有模型",
     "title": "模型",
     "subtitle": "默认模型用于新对话；当前对话可在输入框中单独切换。",
     "searchPlaceholder": "搜索模型…",
@@ -341,6 +377,14 @@
     "delete": "删除"
   },
   "scheduledPanel": {
+    "suggestions": {
+      "daily": { "title": "每日工作回顾", "description": "每天傍晚 6 点总结当天的进展。", "prompt": "总结我今天的工作进展：做了什么、遇到什么问题、明天要继续什么。" },
+      "weekly": { "title": "每周计划整理", "description": "每周一早上 9 点整理本周要做的事。", "prompt": "根据我最近的对话和任务，整理出本周需要优先处理的事项，并按重要程度排序。" },
+      "todos": { "title": "定时检查待办", "description": "每天早上 9 点提醒还没完成的事项。", "prompt": "检查我还没完成的待办事项，列出最该先做的三件。" }
+    },
+    "filterAll": "全部任务",
+    "listSection": "任务",
+    "emptyTitle": "还没有定时任务",
     "title": "定时任务",
     "subtitle": "管理自动触发的 agent 任务。到点后会根据提示词调用当前允许的工具。",
     "listHint": "修改会立即保存，无需单独保存。",
@@ -450,6 +494,12 @@
     }
   },
   "pluginPanel": {
+    "navInstalled": "已安装",
+    "emptyTitle": "还没有插件",
+    "suggestMarket": "浏览插件市场",
+    "suggestMarketDesc": "从精选目录安装插件，首次安装后默认停用。",
+    "suggestImport": "导入 ZIP 插件包",
+    "suggestImportDesc": "选择本地的插件包，确认来源可信后再启用。",
     "versions": "已安装 {{installed}} · 运行中 {{active}} · 待生效 {{pending}}",
     "restartRequired": "需要完整重启应用后生效；当前运行版本不会被替换。",
     "restartAfterFailure": "当前进程未运行此插件。请完整重启应用后，按已保存的版本选择重新尝试。",
@@ -463,7 +513,7 @@
     "searchPlaceholder": "搜索插件名称、描述或开发者…",
     "refresh": "刷新插件",
     "add": "添加插件",
-    "emptyHint": "暂无插件，点击右上角添加按钮导入 ZIP 插件包。",
+    "emptyHint": "插件让 Firefly 获得新的能力。可以从市场安装，也可以导入本地的 ZIP 插件包。",
     "noMatch": "无匹配插件",
     "developer": "开发者：{{author}}",
     "unknownDeveloper": "未知开发者",
@@ -539,6 +589,7 @@
     }
   },
   "toolPanel": {
+    "modeSection": "适用模式",
     "title": "工具",
     "subtitle": "管理工具在 {{mode}} 模式下的可见性",
     "chatEnhanceTitle": "Chat 模式工具增强",
@@ -549,6 +600,8 @@
     "noMatch": "无匹配工具"
   },
   "skillPanel": {
+    "modeSection": "适用模式",
+    "sourceSection": "来源",
     "title": "技能",
     "subtitle": "管理 skill 在 {{mode}} 模式下的可见性",
     "rescan": "重新扫描 user skills",
@@ -557,6 +610,7 @@
     "sourceBuiltin": "内置",
     "sourceUser": "用户",
     "disabledBadge": "已禁用",
+    "translating": "正在把技能说明翻译成中文…",
     "noDescription": "暂无描述",
     "noMatch": "无匹配 skill",
     "saveFailed": "未能保存 {{skill}}（{{mode}}）设置，已恢复原状态，请重试。",
@@ -758,6 +812,7 @@
     "followModel": "跟随模型"
   },
   "modelEffort": {
+    "reset": "恢复自动",
     "sliderLabel": "思考强度",
     "unsupported": "当前模型不支持调节思考强度"
   },
@@ -845,6 +900,7 @@
     "windDirNNW": "西北偏北风"
   },
   "sidebar": {
+    "sessionRunning": "正在运行",
     "viewMode": "视图",
     "projectView": "按项目",
     "mergedView": "合并会话",
@@ -900,6 +956,8 @@
     "recentSessions": "最近任务",
     "noSearchResults": "没有匹配的任务",
     "viewProjectsShort": "项目",
+    "viewStatusShort": "按状态",
+    "status": {"needs-input": "需要你处理", "working": "进行中", "done": "已完成", "needsInputLabel": "等待你处理"},
     "viewMergedShort": "合并",
     "dragToReorder": "拖动排序",
     "reorderHint": "拖动或按 Alt+↑ / Alt+↓ 调整顺序",
@@ -930,11 +988,18 @@
     "noReadableContent": "这条消息没有可朗读的内容"
   },
   "ui": {
+    "pinToRail": "把“{{name}}”钉在左侧",
+    "unpinFromRail": "取消把“{{name}}”钉在左侧",
+    "conversationsHome": "会话",
+    "activityRail": "功能导航",
     "modeSelector": "切换模式，当前：{{mode}}",
     "modeMenu": "会话模式",
     "modeChatDescription": "日常交流与陪伴",
     "modeWorkDescription": "整理文档、推进项目任务",
     "modeCodeDescription": "编写、修改与调试代码",
+    "navHistory": "前进与后退",
+    "navBack": "后退",
+    "navForward": "前进",
     "toggleSidebar": "切换侧栏",
     "minimize": "最小化",
     "maximizeOrRestore": "最大化或还原",
@@ -955,6 +1020,7 @@
     "more": "更多",
     "navigation": "主导航",
     "connectionStatus": "API：{{state}}",
+    "connectionConfigured": "已配置 API",
     "connectionUnverified": "未验证",
     "connectionChecking": "正在检查",
     "connectionConnected": "最近测试通过",
@@ -987,7 +1053,6 @@
     "newTabTools": "工具",
     "newTabSites": "推荐",
     "newTabRecent": "最近",
-    "newTabLocalHint": "本机或内网地址（如 localhost:5173、192.168.1.5:3000）直接输入即可，打开前会单独确认。",
     "sessionRequired": "开始或选择一个会话后即可浏览。",
     "title": "浏览器",
     "open": "打开浏览器",
@@ -1111,6 +1176,8 @@
     }
   },
   "sessionOverview": {
+    "reorder": "调整“{{name}}”卡片的位置",
+    "reorderHint": "拖动调整顺序，或按 ↑ ↓",
     "title": "会话概览",
     "tab": "概览",
     "open": "打开会话概览",
@@ -1126,7 +1193,17 @@
     "contextEmpty": "发送消息后显示上下文占用",
     "contextEstimate": "按字符估算，不是供应商返回的用量。",
     "changes": "变更",
-    "changesEmpty": "本会话还没有文件变更"
+    "changesEmpty": "本会话还没有文件变更",
+    "environment": "环境",
+    "environmentLocal": "本机 · 聊天",
+    "environmentTemporary": "临时对话",
+    "environmentNoProject": "未选择项目",
+    "connectors": "连接器",
+    "connectorsManage": "在设置中管理",
+    "usage": "用量",
+    "outputs": "产出",
+    "outputsEmpty": "本会话还没有产出",
+    "outputCounts": "{{files}} 个文件 · {{tools}} 项工具"
   },
   "workspace": {
     "resizeSidebar": "调整会话侧栏宽度",

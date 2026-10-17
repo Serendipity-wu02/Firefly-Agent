@@ -14,17 +14,17 @@ beforeEach(() => { document.body.innerHTML = html; });
 afterEach(() => { vi.restoreAllMocks(); });
 
 describe("settings navigation groups", () => {
-  it("keeps all 14 pages, starting with General, in five labelled groups", () => {
+  it("keeps all 15 pages, starting with General, in five labelled groups", () => {
     const layout = Array.from(document.querySelectorAll(".settings-nav__list > .settings-nav__group, .settings-nav__list > .nav-item"), node =>
       node.classList.contains("nav-item") ? (node as HTMLElement).dataset.section : `# ${node.getAttribute("data-i18n")}`);
     expect(layout).toEqual([
       "# settings.layout.basic", "general", "appearance", "preferences", "api", "api-advanced", "user",
-      "# settings.layout.agent", "plugins", "subagents", "mcp", "memory", "firefly",
+      "# settings.layout.agent", "plugins", "subagents", "mcp", "memory", "firefly", "usage",
       "# settings.layout.channels", "channels",
       "# settings.layout.voice", "asr",
       "# settings.layout.notice", "disclaimer",
     ]);
-    expect(buttons()).toHaveLength(14);
+    expect(buttons()).toHaveLength(15);
     expect(buttons()[0].classList.contains("is-active")).toBe(true);
     expect(buttons().filter(button => button.classList.contains("is-active"))).toHaveLength(1);
   });
@@ -53,7 +53,7 @@ describe("navigation without avatars", () => {
 describe("collecting searchable settings", () => {
   it("lists every page, and the rows and group titles inside them with their page", () => {
     const entries = collectSettingsEntries(document, buttons());
-    expect(entries.filter(item => item.page)).toHaveLength(14);
+    expect(entries.filter(item => item.page)).toHaveLength(15);
     const language = entries.find(item => item.title === "语言" && !item.page);
     expect(language).toMatchObject({ section: "general", pageTitle: "常规" });
     expect(entries.some(item => item.title === "本地文件" && item.section === "general")).toBe(true);

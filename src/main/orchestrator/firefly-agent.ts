@@ -77,6 +77,8 @@ import type { ConversationMode } from "../../shared/chat-types";
 import type { FireflyRunTerminalResult } from "../../shared/run-terminal";
 import { executeToolDefinition } from "./tools/registry/tool-executor";
 import { createLive2dWorkRunTracker } from "./live2d-work-signal";
+import { recordMessage, recordPluginCall } from "../token-usage-store";
+import { runWithUsageAttribution, usageFeatureForMode } from "../usage-attribution";
 
 const executionLedgers = new ExecutionLedgerStore();
 
@@ -436,7 +438,15 @@ export class FireflyAgent extends AbstractAgent {
         runOptions.signal?.addEventListener("abort", onExternalAbort, { once: true });
       }
 
-      (async () => {
+      // Every model request on this run's async chain is billed to this conversation and its mode.
+      const pluginId = conversationId.startsWith("plugin:") ? conversationId.slice("plugin:".length) : undefined;
+      if (pluginId) recordPluginCall(pluginId);
+      void runWithUsageAttribution(pluginId
+        ? { feature: "plugin", pluginId }
+        : { feature: usageFeatureForMode(runOptions.conversationMode ?? options.executionMode), sessionId: runOptions.conversationId },
+      async () => {
+        // Inside the scope, so the round lands on this conversation's stats.
+        if (!pluginId) recordMessage();
         let ownedMemoryRun: MainMemoryRun | undefined;
         let terminalEvent: BaseEvent | undefined;
         let terminalError: Error | undefined;
@@ -611,7 +621,7 @@ export class FireflyAgent extends AbstractAgent {
             }
           }
         }
-      })();
+      });
 
       return () => {
         cancelled = true;

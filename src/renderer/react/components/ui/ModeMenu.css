@@ -82,9 +82,22 @@
 }
 .ff-mode-menu__item.is-active .ff-mode-menu__check { opacity: 1; }
 
-/* 侧栏顶部的触发器行：左缘与下面的 .ff-side-action 行对齐。 */
-.ff-page-mode { flex-shrink: 0; padding: 0 2px 2px; }
-
-/* 侧栏顶部的模式胶囊：整行宽度，三个模式按文字长度分配。 */
-.ff-mode-switch { display: flex; width: 100%; padding: 2px 2px 0; }
-.ff-mode-switch .ff-sliding-tabs { width: 100%; }
+/* 侧栏顶部一行：左边是模式切换（对应 Codex 的工作区切换），右边是搜索。左缘与下面的行对齐。 */
+.ff-page-mode { display: flex; flex-shrink: 0; align-items: center; gap: 4px; padding: 0 2px 4px; }
+.ff-page-mode > :first-child:not(.ff-page-mode__search) { min-width: 0; margin-right: auto; }
+.ff-page-mode__search {
+  display: grid;
+  width: 30px;
+  height: 30px;
+  flex: none;
+  place-items: center;
+  margin-left: auto;
+  padding: 0;
+  border: 0;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--ff-text-muted);
+  cursor: pointer;
+  transition: background-color 150ms ease, color 150ms ease;
+}
+.ff-page-mode__search:hover { background: var(--ff-bg-hover); color: var(--ff-text); }

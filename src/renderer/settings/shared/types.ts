@@ -218,6 +218,8 @@ export interface SettingsApi {
     id: string;
     name: string;
     description: string;
+    /** Chinese description saved for this exact English text, if any. */
+    descriptionZh?: string;
     enabled: boolean;
     source: string;
     modes: ("work" | "code")[] | null;
@@ -225,6 +227,8 @@ export interface SettingsApi {
     references: string[];
   }>>;
   rescanSkills?: () => Promise<{ ok: boolean; count: number; error?: string }>;
+  /** Translates skill descriptions with no Chinese yet using the default model; id → Chinese for every known one. */
+  translateSkillDescriptions?: () => Promise<{ ok: boolean; translated?: Record<string, string>; error?: string }>;
   getSkillModeOverrides?: () => Promise<Record<string, Partial<Record<"work" | "code", boolean>>>>;
   setSkillModeOverride?: (skillId: string, mode: "work" | "code", enabled: boolean) => Promise<{ ok: boolean; error?: string }>;
   addMcpServer?: (config: unknown) => Promise<{ ok: boolean; toolIds?: string[]; error?: string; reason?: string }>;
