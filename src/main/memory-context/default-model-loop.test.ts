@@ -234,7 +234,8 @@ describe("default memory model rounds", () => {
     } else {
       const result = await runFireflyHarness({ systemPrompt: "角色", messages, tools: [], vendorConfig, memoryRun: model.run, config: { contextWindowTokens: 1000 } });
       expect(result.terminateReason).toBe("error"); expect(result.finalAnswer).toContain("MEMORY_CONTEXT_BUDGET_EXCEEDED");
-      expect(errorLog).toHaveBeenCalledWith(expect.stringContaining("LLM call failed"), expect.anything(), expect.anything(), expect.stringContaining("MEMORY_CONTEXT_BUDGET_EXCEEDED"), expect.any(Error));
+      expect(result.failure).toEqual({code:"MEMORY_CONTEXT_BUDGET_EXCEEDED",source:"context"});
+      expect(errorLog).toHaveBeenCalledWith(expect.stringContaining("run failed"), expect.objectContaining({code:"MEMORY_CONTEXT_BUDGET_EXCEEDED",source:"context"}));
     }
     expect(model.requests).toHaveLength(1);
     expect(model.requests[0].request.messages.filter(message => message.role !== "system")).toHaveLength(mode === "chat" ? 61 : 60);

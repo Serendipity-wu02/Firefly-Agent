@@ -1,3 +1,4 @@
+import { publicRunFailure } from "../../../../../../shared/run-failure";
 import type {
   AgentRoundRecord,
   ChatMessage,
@@ -422,7 +423,9 @@ export class AgentRunController {
         await this.checkpointRun("terminal", true);
         return;
       }
-      const visibleError = t("chatPage.errorModelRequestFailedWith", { message: errorMessage });
+      const failure = publicRunFailure(error);
+      const failureLabels = {context:"chatPage.errorContextFailedWith",model:"chatPage.errorModelRequestFailedWith",tool:"chatPage.errorToolFailedWith",runtime:"chatPage.errorRuntimeFailedWith"} as const;
+      const visibleError = t(failureLabels[failure.source], {message:failure.code});
       this.moveCandidateToInterruptedProcess();
       this.processMessages = [...this.processMessages, createRoundProcessMessage(
         `process-${this.processMessageSequence++}`,
@@ -1152,7 +1155,8 @@ export class AgentRunController {
       if (shouldClearComposerInteractionForTerminal(activeRunId, event.runId)) {
         this.deps.host.clearInteraction(this.input.sessionId);
       }
-      this.resolveTerminal(new Error(event.message ?? event.error ?? event.content ?? t("chatPage.errorModelRequestFailed")));
+      const failure = publicRunFailure({code:event.code,message:event.message});
+      this.resolveTerminal(Object.assign(new Error(failure.code), failure));
     }
   }
 }

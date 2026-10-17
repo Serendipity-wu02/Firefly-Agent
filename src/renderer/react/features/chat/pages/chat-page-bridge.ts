@@ -86,6 +86,9 @@ export interface SidebarApi {
 }
 
 export interface AguiEvent {
+  /** Machine-readable, allowlisted failure metadata. Raw error text is not rendered. */
+  code?: string;
+  errorSource?: import("../../../../../shared/run-failure").RunFailureSource;
   type?: string;
   threadId?: string;
   runId?: string;

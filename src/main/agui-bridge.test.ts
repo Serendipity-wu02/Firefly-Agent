@@ -20,6 +20,7 @@ const mocks = vi.hoisted(() => ({
   runFinishedResult: undefined as unknown,
   emitDuplicateRunFinished: false,
   errorAfterRunFinished: null as string | null,
+  immediateError: null as Error | null,
   skipDefaultRunFinished: false,
   // 模拟正在运行的 Observable（不自动 complete）
   neverComplete: false,
@@ -73,6 +74,7 @@ vi.mock("./orchestrator/firefly-agent", () => ({
         this.lastResult = { reply: "抱抱你", toolResults: [] };
         subscriber.next({ type: "RUN_STARTED", runId });
         for (const event of mocks.agentEvents) subscriber.next(event);
+        if (mocks.immediateError) { subscriber.error(mocks.immediateError); return; }
         if (!mocks.skipDefaultRunFinished) {
           const finishedEvent: { type: string; runId?: string; result?: unknown } = { type: "RUN_FINISHED", runId };
           if (mocks.runFinishedResult !== undefined) {
@@ -187,6 +189,7 @@ describe("agui-bridge sticker event ordering", () => {
     mocks.runFinishedResult = undefined;
     mocks.emitDuplicateRunFinished = false;
     mocks.errorAfterRunFinished = null;
+    mocks.immediateError = null;
     mocks.skipDefaultRunFinished = false;
     mocks.neverComplete = false;
     mocks.completeOnAbort = false;
@@ -1091,13 +1094,22 @@ describe("agui-bridge sticker event ordering", () => {
 
   // ── harness 返回 terminateReason="error" → runtime_error → RUN_ERROR ──
 
-  it("routes harness runtime_error terminal to RUN_ERROR and skips success side effects", async () => {
+  it.each([
+    ["E_HARNESS_FAILURE", "E_HARNESS_FAILURE", "runtime"],
+    ["MEMORY_CONTEXT_TRANSCRIPT_SECRET", "MEMORY_CONTEXT_TRANSCRIPT_SECRET", "context"],
+    ["E_MODEL_REQUEST_FAILED", "E_MODEL_REQUEST_FAILED", "model"],
+    ["SYNTHETIC_SECRET_MUST_NOT_ESCAPE", "E_HARNESS_FAILURE", "runtime"],
+    ["E_MODEL_HTTP_ERROR", "E_MODEL_HTTP_ERROR", "model", true],
+    ["MEMORY_CONTEXT_TRANSCRIPT_SECRET", "MEMORY_CONTEXT_TRANSCRIPT_SECRET", "context", true],
+    ["SYNTHETIC_SECRET_MUST_NOT_ESCAPE", "E_HARNESS_FAILURE", "runtime", true],
+  ])("routes harness runtime_error %s to safe RUN_ERROR and skips success side effects", async (reason, code, source, observableError) => {
     vi.resetModules();
     mocks.handlers.clear();
     mocks.runFireflyAgent.mockClear();
     mocks.getSession.mockReturnValue({ id: "chat-runtime-error", mode: "chat" });
     // upstream 发 RUN_FINISHED 但 result.status = "runtime_error"
-    mocks.runFinishedResult = { status: "runtime_error", reason: "E_HARNESS_FAILURE", externalEffectsMayContinue: true };
+    mocks.runFinishedResult = { status: "runtime_error", reason, externalEffectsMayContinue: true };
+    if (observableError) mocks.immediateError=Object.assign(new Error("SYNTHETIC_SECRET_MUST_NOT_ESCAPE"),{code:reason});
     const { registerAgUiIpc } = await import("./agui-bridge");
     const sent: Array<{ type?: string; name?: string }> = [];
     const sender = {
@@ -1132,6 +1144,8 @@ describe("agui-bridge sticker event ordering", () => {
 
     // runtime_error 必须走 RUN_ERROR，绝不走 RUN_FINISHED
     expect(sent.some((event) => event.type === "RUN_ERROR")).toBe(true);
+    expect(sent.find((event) => event.type === "RUN_ERROR")).toMatchObject({message:code,code,errorSource:source});
+    expect(JSON.stringify(sent)).not.toContain("SYNTHETIC_SECRET_MUST_NOT_ESCAPE");
     expect(sent.some((event) => event.type === "RUN_FINISHED")).toBe(false);
     // 不能触发成功收尾副作用
     expect(onFinished).not.toHaveBeenCalled();

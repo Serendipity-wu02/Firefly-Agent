@@ -233,6 +233,7 @@ export function createPluginAgentRunner(deps: PluginAgentRunnerDeps): NonNullabl
       : result.terminal ?? mapTerminateReasonToTerminal(
         result.terminateReason,
         result.finalState.uncertainEffects.length > 0,
+        result.failure,
       );
     console.info("[plugin-agent] 无头任务结束", { label, runId, status: terminal.status });
     return { text: result.finalAnswer, terminal, rounds: result.rounds } as PluginAgentRunResult;

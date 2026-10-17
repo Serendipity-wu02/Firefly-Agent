@@ -152,6 +152,7 @@ export async function runHarnessWithAdapter(
   let terminal = result.terminal ?? mapTerminateReasonToTerminal(
     result.terminateReason,
     hasUncertainEffects,
+    result.failure,
   );
   let terminalRunStatus: "completed" | "cancelled" | "failed" = terminal.status === "success"
     ? "completed"

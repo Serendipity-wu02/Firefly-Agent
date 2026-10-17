@@ -753,7 +753,7 @@ describe("AgentRunController", () => {
       responseStarted: false,
       processMessages: expect.arrayContaining([
         expect.objectContaining({ content: "正在处理到这里", interrupted: true }),
-        expect.objectContaining({ content: expect.stringContaining("连接中断") }),
+        expect.objectContaining({ content: expect.stringContaining("任务执行失败：E_HARNESS_FAILURE") }),
       ]),
     }));
     expect(store.upsert.mock.calls.at(-1)?.[1].content).toBe("");
@@ -869,6 +869,22 @@ describe("AgentRunController", () => {
     expect(api.reportRunPersisted).toHaveBeenCalledWith({ runId: "run-1", finalMessageId: "assistant-1" });
     expect(host.setModeBusy).toHaveBeenCalledWith("chat", false);
     expect(host.onRunFinished).toHaveBeenCalled();
+  });
+
+  it("shows a safe context failure instead of a model error or raw event text", async () => {
+    const api=createFakeApi({success:true,runId:"run-1"});
+    const store=createFakeStore();
+    const {host}=createRecordingHost();
+    const {promise}=launch(createInput(),{api,store,host,registries:createRegistries()});
+    await flush();
+    api.emit(RUN_STARTED_EVENT);
+    api.emit({type:"RUN_ERROR",runId:"run-1",code:"MEMORY_CONTEXT_TRANSCRIPT_SECRET",errorSource:"context",message:"SYNTHETIC_SECRET_MUST_NOT_ESCAPE"});
+    await promise;
+    const saved=JSON.stringify(store.upsert.mock.calls.at(-1));
+    expect(saved).toContain("上下文处理失败");
+    expect(saved).toContain("MEMORY_CONTEXT_TRANSCRIPT_SECRET");
+    expect(saved).not.toContain("模型请求失败");
+    expect(saved).not.toContain("SYNTHETIC_SECRET_MUST_NOT_ESCAPE");
   });
 
   it("会话守卫冲突：挂起接管操作卡，重试时带 takeoverFromRunId 复用派发入口", async () => {

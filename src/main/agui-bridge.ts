@@ -1,3 +1,4 @@
+import { publicRunFailure } from "../shared/run-failure";
 import {readMainAttachmentGrant,type MainAttachmentGrant} from "./memory-context/main-attachment-projection";
 import type {MainDesktopMemory} from "./memory-context/main-desktop-memory";
 // AG-UI IPC 桥：按会话模式选择执行链并把事件透传给渲染进程。
@@ -812,8 +813,8 @@ export function registerAgUiIpc(
           // runtime_error 必须走 RUN_ERROR，不缓存为 RUN_FINISHED。
           // complete 回调据此跳过成功收尾副作用；渲染端只收到 RUN_ERROR 作为终态。
           if (terminal.status === "runtime_error") {
-            const reason = terminal.reason ?? "E_RUN_FAILURE";
-            send({ type: "RUN_ERROR", message: reason, code: reason, threadId, runId });
+            const failure = publicRunFailure({code:terminal.reason});
+            send({ type: "RUN_ERROR", message: failure.code, code: failure.code, errorSource:failure.source, threadId, runId });
             pendingRunFinishedEvent = null;
             return;
           }
@@ -880,14 +881,10 @@ export function registerAgUiIpc(
         thinkFilter = null; // 错误时丢弃残留 filter 状态
         pendingTextStart = null;
         textStartForwarded = false;
-        let message = err instanceof Error ? err.message : String(err);
-        // 安全兜底：确保不泄漏原始 DOMException / AbortError 文本
-        if (!message || message.includes("This operation was aborted") || message.includes("AbortError")) {
-          message = "操作已中断，请重试。";
-        }
-        console.error("[AgUiBridge] run 失败:", message);
+        const failure = publicRunFailure(err);
+        const {code,source} = failure;
+        console.error("[AgUiBridge] run failed:", {runId,...failure});
         trace.dump();
-        const code = err instanceof AgentRuntimeError ? err.code : undefined;
         // runtime error 必须经过同一个 settlement gate。
         // 如果 upstream 已经发过 RUN_FINISHED（gate 已结算为 success / cancelled / timeout），
         // 这里直接丢弃 RUN_ERROR，避免渲染端收到第二终态。
@@ -895,7 +892,8 @@ export function registerAgUiIpc(
         // 若 complete 不会被调用（error 后 RxJS 不再调 complete），则下面兜底直接发 RUN_FINISHED。
         const errorTerminal: FireflyRunTerminalResult = {
           status: "runtime_error",
-          reason: code ?? "E_RUN_FAILURE",
+          reason: code,
+          errorSource: source,
           externalEffectsMayContinue: true,
         };
         if (!settlementGate.trySettle(errorTerminal)) {
@@ -923,7 +921,7 @@ export function registerAgUiIpc(
           durationMs: Date.now() - turnStartedAt,
         });
         // 补发 RUN_ERROR 事件，渲染端据此收尾（invoke 早已 resolve，靠事件驱动）
-        send({ type: "RUN_ERROR", message, code, threadId, runId });
+        send({ type: "RUN_ERROR", message: code, code, errorSource: source, threadId, runId });
         cleanupRunState();
         endLifecycle();
       },
