@@ -10,6 +10,54 @@ import { TaskDelegationRow } from "../components/TaskDelegationRow";
 import { workspaceRelativePath, type WorkspaceChangedFile, type WorkspaceRunOutput } from "./workspace-artifacts";
 import "./WorkspaceRunResults.css";
 
+type ToolRecord = WorkspaceRunOutput["tools"][number];
+type ToolGroup = { kind: "plain"; key: string; name: string; items: ToolRecord[] } | { kind: "delegate"; tool: ToolRecord };
+
+/** Delegations keep their full cards; consecutive calls of the same ordinary tool fold into one group so a long run reads as a short list. */
+export function groupTools(tools: readonly ToolRecord[]): ToolGroup[] {
+  const groups: ToolGroup[] = [];
+  for (const tool of tools) {
+    if (tool.name === "delegate_agent") { groups.push({ kind: "delegate", tool }); continue; }
+    const name = tool.displayName ?? tool.name;
+    const last = groups[groups.length - 1];
+    if (last?.kind === "plain" && last.name === name) last.items.push(tool);
+    else groups.push({ kind: "plain", key: tool.id, name, items: [tool] });
+  }
+  return groups;
+}
+
+/** Groups of this many calls or more start folded; shorter ones start open. */
+const FOLD_GROUP_AT = 3;
+
+const oneLine = (text: string, limit = 90) => {
+  const flat = text.replace(/\s+/g, " ").trim();
+  return flat.length > limit ? `${flat.slice(0, limit)}…` : flat;
+};
+
+function ToolFold({ name, items }: { name: string; items: ToolRecord[] }) {
+  const { t } = useTranslation();
+  const failed = items.filter(item => item.status === "failed" || item.status === "error").length;
+  const row = (tool: ToolRecord) => <details key={tool.id} className="ff-run-fold ff-run-fold--item" open={tool.status === "failed" || tool.status === "error" ? true : undefined}>
+    <summary>
+      <span className="ff-run-fold__preview">{oneLine(tool.result || "") || t("workspace.emptyResult")}</span>
+      <span data-tool-status={tool.status}>{t(`workspace.toolStatus.${tool.status}`)}</span>
+    </summary>
+    <pre>{tool.result || t("workspace.emptyResult")}</pre>
+  </details>;
+  if (items.length === 1) {
+    const [tool] = items as [ToolRecord];
+    return <div className="ff-run-fold-single"><strong>{name}</strong>{row(tool)}</div>;
+  }
+  return <details className="ff-run-fold ff-run-fold--group" open={items.length < FOLD_GROUP_AT ? true : undefined}>
+    <summary>
+      <strong>{name}</strong>
+      <span className="ff-run-fold__count">{t("workspace.toolGroupCount", { count: items.length })}</span>
+      {failed > 0 && <span className="ff-run-fold__failed" data-tool-status="failed">{t("workspace.toolGroupFailed", { count: failed })}</span>}
+    </summary>
+    <div className="ff-run-fold__items">{items.map(row)}</div>
+  </details>;
+}
+
 export function WorkspaceResultsIndex({ outputs, onOpenResult }: { outputs: WorkspaceRunOutput[]; onOpenResult(id: string): void }) {
   const { t } = useTranslation();
   return <section className="ff-workspace-results-index" aria-label={t("workspace.results")}>
@@ -35,6 +83,8 @@ export function WorkspaceRunResults({ output, workspaceRoot, focusTask, onOpenFi
     const target = [...(root.current?.querySelectorAll<HTMLElement>("[data-task-id]") ?? [])].find(node => node.dataset.taskId === focusTask.taskId);
     target?.scrollIntoView?.({ block: "start", behavior: "smooth" });
   }, [focusTask?.taskId, focusTask?.seq]);
+  const groups = groupTools(output.tools);
+  const setAllFolds = (open: boolean) => root.current?.querySelectorAll<HTMLDetailsElement>("details.ff-run-fold").forEach(fold => { fold.open = open; });
   return <section ref={root} className="ff-workspace-run-results" aria-label={t("workspace.results")} data-source-session={output.sessionId} data-source-run={output.runId}>
     {/* Inside the panel the rows stay informational: they unfold in place instead of reopening this panel. */}
     <ChatInspectorActionsContext.Provider value={{}}>
@@ -52,7 +102,13 @@ export function WorkspaceRunResults({ output, workspaceRoot, focusTask, onOpenFi
         </div>;
       })}
     </div>}
-    {output.tools.map(tool => {
+    {groups.some(group => group.kind === "plain") && <div className="ff-run-fold-bar">
+      <button type="button" data-fold-all="open" onClick={() => setAllFolds(true)}>{t("workspace.expandAll")}</button>
+      <button type="button" data-fold-all="closed" onClick={() => setAllFolds(false)}>{t("workspace.collapseAll")}</button>
+    </div>}
+    {groups.map(group => {
+      if (group.kind === "plain") return <ToolFold key={group.key} name={group.name} items={group.items} />;
+      const tool = group.tool;
       const taskResult = tool.name === "delegate_agent" ? normalizeToolTaskResult(tool.taskResult, output.runId) : undefined;
       const task = taskResult && output.tasks.find(item => item.taskId === taskResult.sessionId);
       const portrait = task ? getCharacterPortraitByAssetFileName(task.assetFileName) : undefined;
