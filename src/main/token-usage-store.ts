@@ -8,7 +8,7 @@
 
 import { getStorageContext } from "./storage-context";
 import { AtomicJsonStore } from "./atomic-json-store";
-import type { UsageHistory, UsageHistoryDay } from "../shared/usage-history";
+import type { SessionStats, UsageHistory, UsageHistoryDay } from "../shared/usage-history";
 import { currentUsageAttribution, USAGE_FEATURES, type UsageAttribution, type UsageFeature } from "./usage-attribution";
 
 
@@ -41,6 +41,21 @@ export interface TokenUsageSession {
   output: number;
   requests: number;
   feature: string;
+  /** 运行统计（轮数、步数、耗时）；记录这项之前的会话没有。 */
+  stats?: TokenUsageSessionStats;
+}
+
+export interface TokenUsageSessionStats {
+  rounds: number;
+  steps: number;
+  modelMs: number;
+  toolMs: number;
+  /** 首 token 耗时的总和与样本数，平均值在读取时算。 */
+  ttftMs: number;
+  ttftCount: number;
+  /** 流式输出阶段的耗时与 token 数，用来算输出速度。 */
+  genMs: number;
+  genTokens: number;
 }
 
 export interface TokenUsageActivity {
@@ -86,7 +101,13 @@ function usageStore(): AtomicJsonStore<Partial<TokenUsageStore>> {
     };
     const validRecord = (record: unknown, entry: (value: unknown) => boolean): boolean =>
       record === undefined || (!!record && typeof record === "object" && !Array.isArray(record) && Object.values(record).every(entry));
-    const validSession = (value: unknown): boolean => validCounters(value) && typeof (value as Record<string, unknown>).feature === "string";
+    const validStats = (value: unknown): boolean => {
+      if (value === undefined) return true;
+      if (!value || typeof value !== "object" || Array.isArray(value)) return false;
+      const stats = value as Record<string, unknown>;
+      return ["rounds", "steps", "modelMs", "toolMs", "ttftMs", "ttftCount", "genMs", "genTokens"].every((key) => typeof stats[key] === "number" && Number.isFinite(stats[key]) && (stats[key] as number) >= 0);
+    };
+    const validSession = (value: unknown): boolean => validCounters(value) && typeof (value as Record<string, unknown>).feature === "string" && validStats((value as Record<string, unknown>).stats);
     const validCounts = (value: unknown): boolean => typeof value === "number" && Number.isFinite(value) && value >= 0;
     const validActivity = (value: unknown): boolean => {
       if (value === undefined) return true;
@@ -230,19 +251,97 @@ function applyAttribution(day: TokenUsageDay, attribution: UsageAttribution, inp
 
   const sessionId = attribution.sessionId?.trim();
   if (!sessionId || UNSAFE_KEYS.has(sessionId)) return;
-  const sessions = day.sessions ?? {};
-  const session = sessions[sessionId] ?? { input: 0, output: 0, requests: 0, feature };
+  const session = touchSession(day, sessionId, feature);
   session.input += normalizedInput;
   session.output += Math.max(0, Math.round(output || 0));
   session.requests += Math.max(0, requests);
+  trimSessions(day);
+}
+
+/** 取（必要时新建）当天某个会话的明细；改完数字后要调用 trimSessions。 */
+function touchSession(day: TokenUsageDay, sessionId: string, feature: string): TokenUsageSession {
+  const sessions = day.sessions ?? {};
+  const session = sessions[sessionId] ?? { input: 0, output: 0, requests: 0, feature };
   sessions[sessionId] = session;
-  const ids = Object.keys(sessions);
-  if (ids.length > MAX_SESSIONS_PER_DAY) {
-    const weight = (id: string) => sessions[id]!.input + sessions[id]!.output;
-    const smallest = ids.sort((left, right) => weight(left) - weight(right))[0];
-    if (smallest) delete sessions[smallest];
-  }
   day.sessions = sessions;
+  return session;
+}
+
+/** 超过上限时丢掉用量最小的会话，包括刚碰过的这个。 */
+function trimSessions(day: TokenUsageDay): void {
+  const sessions = day.sessions;
+  if (!sessions) return;
+  const ids = Object.keys(sessions);
+  if (ids.length <= MAX_SESSIONS_PER_DAY) return;
+  const weight = (id: string) => sessions[id]!.input + sessions[id]!.output;
+  const smallest = ids.sort((left, right) => weight(left) - weight(right))[0];
+  if (smallest) delete sessions[smallest];
+}
+
+function emptyStats(): TokenUsageSessionStats {
+  return { rounds: 0, steps: 0, modelMs: 0, toolMs: 0, ttftMs: 0, ttftCount: 0, genMs: 0, genTokens: 0 };
+}
+
+const wholeMs = (value: number | undefined): number => (typeof value === "number" && Number.isFinite(value) ? Math.max(0, Math.round(value)) : 0);
+
+/** 把一次更新记到当前运行所属会话的统计上；不在会话里的调用（记忆、主动聊天）不计。 */
+function updateSessionStats(update: (stats: TokenUsageSessionStats) => void): void {
+  bestEffort("session stats", () => {
+    const attribution = currentUsageAttribution();
+    const sessionId = attribution?.sessionId?.trim();
+    if (!attribution || !sessionId || UNSAFE_KEYS.has(sessionId)) return;
+    const day = dayFor(ensureLoaded());
+    const session = touchSession(day, sessionId, attribution.feature);
+    session.stats = session.stats ?? emptyStats();
+    update(session.stats);
+    trimSessions(day);
+    scheduleFlush();
+  });
+}
+
+/** 记录一次模型请求的耗时；流式请求另带首 token 耗时和输出阶段的耗时与 token 数。 */
+export function recordModelCall(call: { durationMs: number; ttftMs?: number; generationMs?: number; outputTokens?: number }): void {
+  updateSessionStats(stats => {
+    stats.steps += 1;
+    stats.modelMs += wholeMs(call.durationMs);
+    if (call.ttftMs !== undefined) { stats.ttftMs += wholeMs(call.ttftMs); stats.ttftCount += 1; }
+    const generationMs = wholeMs(call.generationMs);
+    const outputTokens = typeof call.outputTokens === "number" && Number.isFinite(call.outputTokens) ? Math.max(0, Math.round(call.outputTokens)) : 0;
+    if (generationMs > 0 && outputTokens > 0) { stats.genMs += generationMs; stats.genTokens += outputTokens; }
+  });
+}
+
+/** 记录一次工具调用的耗时；代为运行子代理的工具传 0，它的时间已记在子代理自己的请求里。 */
+export function recordToolCall(durationMs: number): void {
+  updateSessionStats(stats => {
+    stats.steps += 1;
+    stats.toolMs += wholeMs(durationMs);
+  });
+}
+
+/** 一个会话累计的运行统计；从没记录过时返回 null。 */
+export function getSessionStats(sessionId: string): SessionStats | null {
+  const id = sessionId.trim();
+  if (!id || UNSAFE_KEYS.has(id)) return null;
+  let days: Record<string, TokenUsageDay>;
+  try { days = ensureLoaded().days; } catch { return null; }
+  const total = emptyStats();
+  let seen = false;
+  for (const day of Object.values(days)) {
+    const stats = day.sessions?.[id]?.stats;
+    if (!stats) continue;
+    seen = true;
+    for (const key of Object.keys(total) as Array<keyof TokenUsageSessionStats>) total[key] += stats[key];
+  }
+  if (!seen) return null;
+  return {
+    rounds: total.rounds,
+    steps: total.steps,
+    modelMs: total.modelMs,
+    toolMs: total.toolMs,
+    avgTtftMs: total.ttftCount > 0 ? Math.round(total.ttftMs / total.ttftCount) : null,
+    tokensPerSecond: total.genMs > 0 ? Math.round((total.genTokens / total.genMs) * 1000) : null,
+  };
 }
 
 function dayFor(store: TokenUsageStore): TokenUsageDay {
@@ -274,6 +373,7 @@ export function recordMessage(): void {
     activityFor(dayFor(ensureLoaded())).messages += 1;
     scheduleFlush();
   });
+  updateSessionStats(stats => { stats.rounds += 1; });
 }
 
 /** 记录一次技能调用（invoke_skill）。 */

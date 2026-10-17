@@ -26,6 +26,20 @@ export interface UsageHistory {
   plugins: Array<{ id: string; count: number }>;
 }
 
+/** 一个会话累计的运行统计，显示在输入框下方的"会话统计"里。 */
+export interface SessionStats {
+  /** 用户消息触发的运行次数。 */
+  rounds: number;
+  /** 模型请求 + 工具调用的总步数。 */
+  steps: number;
+  modelMs: number;
+  toolMs: number;
+  /** 首 token 平均耗时；没有流式请求时为 null。 */
+  avgTtftMs: number | null;
+  /** 输出速度（tok/s）；没有流式输出时为 null。 */
+  tokensPerSecond: number | null;
+}
+
 /** IPC 返回给界面的形状：会话排行带上标题，已删除或临时的会话为 null。 */
 export type UsageHistoryView = Omit<UsageHistory, "sessions"> & {
   sessions: Array<UsageHistory["sessions"][number] & { title: string | null }>;

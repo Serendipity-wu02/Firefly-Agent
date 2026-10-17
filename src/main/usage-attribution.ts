@@ -16,6 +16,8 @@ export interface UsageAttribution {
   sessionId?: string;
   /** 插件 id；仅 feature 为 "plugin" 时有值。 */
   pluginId?: string;
+  /** 本次运行已派出的子代理数；工具执行前后对比它，就知道这个工具是不是在代为运行子代理（其耗时已记在子代理的请求里）。 */
+  delegations?: number;
 }
 
 const storage = new AsyncLocalStorage<UsageAttribution>();
@@ -32,6 +34,7 @@ export function currentUsageAttribution(): UsageAttribution | undefined {
 /** 子代理沿用父运行的会话，只把功能改成 subagent。 */
 export function runAsSubagent<T>(fn: () => T): T {
   const parent = storage.getStore();
+  if (parent) parent.delegations = (parent.delegations ?? 0) + 1;
   return storage.run({ feature: "subagent", sessionId: parent?.sessionId }, fn);
 }
 

@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from "vitest";
 
-const store = vi.hoisted(() => ({ recordSkillUse: vi.fn() }));
+const store = vi.hoisted(() => ({ recordSkillUse: vi.fn(), recordToolCall: vi.fn() }));
 vi.mock("../../../token-usage-store", () => store);
 
 import { executeToolDefinition } from "./tool-executor";
@@ -21,5 +21,24 @@ describe("skill use counting", () => {
     await executeToolDefinition(tool("invoke_skill"), {});
     await executeToolDefinition(tool("invoke_skill"), { skill_id: 3 });
     expect(store.recordSkillUse).not.toHaveBeenCalled();
+  });
+});
+
+describe("tool timing", () => {
+  it("records every call's duration, including one that fails or is aborted", async () => {
+    store.recordToolCall.mockClear();
+    await executeToolDefinition(tool("read_file"), {});
+    await executeToolDefinition({ ...tool("bash"), execute: async () => { throw new Error("boom"); } }, {});
+    await expect(executeToolDefinition({ ...tool("bash"), execute: async () => { throw Object.assign(new Error("aborted"), { name: "AbortError" }); } }, {})).rejects.toThrow();
+    expect(store.recordToolCall).toHaveBeenCalledTimes(3);
+    for (const [duration] of store.recordToolCall.mock.calls) expect(duration).toBeGreaterThanOrEqual(0);
+  });
+
+  it("counts the step but not the time of a tool that ran a sub-agent, whose time is in the agent's own requests", async () => {
+    const { runWithUsageAttribution, runAsSubagent } = await import("../../../usage-attribution");
+    store.recordToolCall.mockClear();
+    const delegating: ToolDefinition = { ...tool("delegate"), execute: async () => { await new Promise(resolve => setTimeout(resolve, 20)); await runAsSubagent(async () => "done"); return "ok"; } };
+    await runWithUsageAttribution({ feature: "work", sessionId: "session-a" }, () => executeToolDefinition(delegating, {}));
+    expect(store.recordToolCall).toHaveBeenCalledExactlyOnceWith(0);
   });
 });
