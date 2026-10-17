@@ -261,6 +261,15 @@ body {
   transition: opacity 0.2s ease;
 }
 
+/* The list reads as its own panel: a hairline on its left edge, curving at both ends, separates it from the activity rail
+   (and the workspace card's own edge closes it on the right) so the rail, the list and the conversation are three layers. */
+.ff-page-sidebar:not(.is-floating) {
+  box-sizing: border-box;
+  border-left: 1px solid var(--ff-border);
+  border-radius: 12px 0 0 12px;
+  padding-left: 8px;
+}
+
 .ff-page-sidebar.is-floating {
   position: absolute;
   top: var(--ff-app-titlebar-height);

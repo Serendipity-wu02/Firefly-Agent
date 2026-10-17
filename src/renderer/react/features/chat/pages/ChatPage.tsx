@@ -24,6 +24,7 @@ import {
 } from "../components/run-presentation";
 import { ChatMessageList } from "../components/ChatMessageList";
 import { ChatPageNavigation, type ChatPagePanel } from "../components/ChatPageNavigation";
+import { useNavigationHistory } from "./useNavigationHistory";
 import {
   ContextCompressionNotice,
   FileDropOverlay,
@@ -1558,6 +1559,20 @@ export function ChatPage() {
       }
     });
   }, [feedback, t]);
+  // Back / forward through the conversations and panels already visited.
+  const navHistory = useNavigationHistory({
+    current: { mode, sessionId: activeSessionId, panel: activePanel },
+    go: (location) => {
+      setActivePanel((location.panel as ChatPagePanel | null) ?? null);
+      if (location.panel === null && location.sessionId) {
+        setPendingTemporary(false);
+        void navActionsRef.current.selectSession(location.sessionId, location.mode as ConversationMode);
+      } else if (location.mode !== mode && isConversationMode(location.mode)) {
+        setMode(location.mode);
+      }
+    },
+    isAvailable: (location) => location.panel !== null || (sessionsByMode[location.mode as ConversationMode] ?? []).some(session => session.id === location.sessionId),
+  });
   const navMinimize = useCallback(() => window.chat?.minimize(), []);
   useMaximizedWindowDrag();
   const navMaximize = useCallback(() => window.chat?.toggleMaximize(), []);
@@ -1577,6 +1592,7 @@ export function ChatPage() {
         runningSessionIds={runningSessionIds}
         activePanel={activePanel}
         onPanelSlot={setPanelSlot}
+        navHistory={{ canBack: navHistory.canBack, canForward: navHistory.canForward, onBack: navHistory.back, onForward: navHistory.forward }}
         mode={mode}
         sessions={sessions}
         sessionListStatus={sessionListErrors[mode] ? "error" : sessionsByMode[mode] === undefined ? "loading" : "ready"}

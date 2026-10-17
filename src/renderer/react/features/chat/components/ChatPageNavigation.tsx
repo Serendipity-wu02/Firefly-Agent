@@ -5,6 +5,7 @@ import type { ChatSessionMeta, ConversationMode } from "../../../../../shared/ch
 import { ModeMenu } from "../../../components/ui/ModeMenu";
 import { NewTaskButton } from "../../../components/ui/NewTaskButton";
 import { resolveAsset } from "../../../../../shared/renderer-base";
+import { NavigationArrows } from "../../../components/ui/NavigationArrows";
 import { SidebarToggle } from "../../../components/ui/SidebarToggle";
 import { WindowControls } from "../../../components/ui/WindowControls";
 import { AppUpdateEntry } from "./AppUpdateEntry";
@@ -46,6 +47,8 @@ export interface ChatPageNavigationProps {
   onOpenApiSettings?: () => void;
   /** Receives the element a full-page feature portals its own sidebar into (shown instead of the conversations while a panel is open). */
   onPanelSlot?: (element: HTMLElement | null) => void;
+  /** Back / forward through visited conversations and panels; the arrows are left out when absent. */
+  navHistory?: { canBack: boolean; canForward: boolean; onBack: () => void; onForward: () => void };
 }
 
 // 阶段 1A：memo 隔离——ChatPage 流式重渲染时，只要 props 引用稳定（sessions/回调由父级保证），
@@ -76,6 +79,7 @@ export const ChatPageNavigation = React.memo(function ChatPageNavigation({
   onOpenSettings,
   onOpenApiSettings,
   onPanelSlot,
+  navHistory,
 }: ChatPageNavigationProps) {
   // 性能探针：perf harness 注册后统计导航子树执行次数（阶段 1A 验收：流式期间应为 0）
   reportChatPerfRender("navigationRenders");
@@ -154,6 +158,7 @@ export const ChatPageNavigation = React.memo(function ChatPageNavigation({
     <>
       <header className="ff-page-titlebar">
         <div className="ff-page-toggle">
+          {navHistory && <NavigationArrows canBack={navHistory.canBack} canForward={navHistory.canForward} onBack={navHistory.onBack} onForward={navHistory.onForward} />}
           <SidebarToggle collapsed={collapsed} onToggle={onToggleCollapsed} />
           <div className="ff-page-role">
             <img className="ff-page-role-avatar" src={resolveAsset("avatars/firefly-avatar.png")} alt="Firefly" draggable={false} />
