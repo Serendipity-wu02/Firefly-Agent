@@ -1,3 +1,4 @@
+import { useSlashCommands } from "./SlashCommandMenu";
 import { DesktopAsrButton } from "./DesktopAsrButton";
 import { Sender } from "@ant-design/x";
 import { Popover } from "antd";
@@ -19,6 +20,10 @@ interface ChatComposerProps {
   value: string;
   mode: string;
   docked: boolean;
+  /** "/new" in the slash menu starts a new task. */
+  onNewTask?: () => void;
+  /** Short result messages from slash commands (e.g. "/compact"). */
+  onNotice?: (message: string, tone: "success" | "error") => void;
   /** 当前会话 ID：用于上下文用量与计划模式状态。 */
   conversationId?: string;
   workspaceName?: string;
@@ -241,6 +246,8 @@ export function ChatComposer({
   value,
   mode,
   docked,
+  onNewTask,
+  onNotice,
   conversationId,
   workspaceName,
   workspaceRoot,
@@ -329,7 +336,14 @@ export function ChatComposer({
   const hasComposerHeader = attachments.length > 0 || selectedStickers.length > 0;
 
   // Sender 的 onKeyDown 声明在 Element 层级；函数体只用基类属性，参数随组件声明放宽
+  const slash = useSlashCommands({
+    value: visibleValue, mode, conversationId,
+    onChange: (next) => onChange(withStickerMarkers(next)), onNewTask, onNotice,
+  });
+
   const handleSenderKeyDown = (event: KeyboardEvent<Element>) => {
+    // The slash menu takes ↑ ↓ Enter Tab Esc while it is open.
+    if (slash.onKeyDown(event)) return false;
     if (!modelBusy || event.key !== "Enter" || event.shiftKey || event.ctrlKey || event.altKey || event.metaKey) return;
     const nativeEvent = event.nativeEvent as globalThis.KeyboardEvent;
     if (compositionActiveRef.current || nativeEvent.isComposing || nativeEvent.keyCode === 229) return;
@@ -378,6 +392,7 @@ export function ChatComposer({
           </button>
         </div>
       )}
+      {slash.menu}
       <div className="ff-composer-shell">
         <input
           ref={fileInputRef}

@@ -183,6 +183,15 @@
     "title": "Context: {{summary}}",
     "footnote": "Estimated value; refreshes after each message"
   },
+  "slash": {
+    "label": "Commands",
+    "compact": "Compact the context by summarising earlier turns",
+    "new": "Start a new task",
+    "clear": "Clear the input",
+    "skill": "Skill",
+    "compactDone": "Context compacted",
+    "compactFailed": "Could not compact the context"
+  },
   "tokenUsageBar": {
     "ariaLabel": "Token usage, last {{days}} days",
     "requests": "{{count}} requests",

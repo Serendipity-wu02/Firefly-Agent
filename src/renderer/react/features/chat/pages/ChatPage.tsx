@@ -1759,6 +1759,8 @@ export function ChatPage() {
             value={draft}
             mode={mode}
             docked={hasMessages}
+            onNewTask={navNewTask}
+            onNotice={(message, tone) => feedback.notice({ tone, message })}
             conversationId={activeSessionId ?? undefined}
             workspaceName={workspaceNames[mode]}
             workspaceRoot={activeSession?.workspaceBinding?.workspaceRoot}

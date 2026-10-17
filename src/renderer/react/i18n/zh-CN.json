@@ -183,6 +183,15 @@
     "title": "上下文 {{summary}}",
     "footnote": "估算值（按字符折算），对话后自动刷新"
   },
+  "slash": {
+    "label": "指令",
+    "compact": "压缩上下文，整理较早的对话",
+    "new": "新建任务",
+    "clear": "清空输入框",
+    "skill": "技能",
+    "compactDone": "已压缩上下文",
+    "compactFailed": "压缩上下文失败"
+  },
   "tokenUsageBar": {
     "ariaLabel": "近 {{days}} 天 token 用量",
     "requests": "{{count}} 次请求",
