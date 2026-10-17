@@ -474,7 +474,7 @@ export function ChatComposer({
           </div>
         )}
       </div>
-      <TokenUsageBar busy={modelBusy} />
+      <TokenUsageBar busy={modelBusy} sessionId={conversationId} />
     </div>
   );
 }

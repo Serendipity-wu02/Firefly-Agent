@@ -440,11 +440,13 @@ export class FireflyAgent extends AbstractAgent {
 
       // Every model request on this run's async chain is billed to this conversation and its mode.
       const pluginId = conversationId.startsWith("plugin:") ? conversationId.slice("plugin:".length) : undefined;
-      if (pluginId) recordPluginCall(pluginId); else recordMessage();
+      if (pluginId) recordPluginCall(pluginId);
       void runWithUsageAttribution(pluginId
         ? { feature: "plugin", pluginId }
         : { feature: usageFeatureForMode(runOptions.conversationMode ?? options.executionMode), sessionId: runOptions.conversationId },
       async () => {
+        // Inside the scope, so the round lands on this conversation's stats.
+        if (!pluginId) recordMessage();
         let ownedMemoryRun: MainMemoryRun | undefined;
         let terminalEvent: BaseEvent | undefined;
         let terminalError: Error | undefined;

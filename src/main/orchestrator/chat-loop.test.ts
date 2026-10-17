@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
-vi.mock("../token-usage-store", () => ({
+vi.mock("../token-usage-store", () => ({ recordModelCall: () => undefined, recordToolCall: () => undefined,
   recordUsage: vi.fn(),
   recordRequest: vi.fn(),
 }));

@@ -19,7 +19,7 @@ vi.mock("../orchestrator/vendors", async (original) => ({
   resolveTransport: () => "anthropic",
   streamChatWithSdk: legacyStream,
 }));
-vi.mock("../token-usage-store", () => ({ recordUsage: vi.fn(), recordRequest: vi.fn() }));
+vi.mock("../token-usage-store", () => ({ recordModelCall: () => undefined, recordToolCall: () => undefined, recordUsage: vi.fn(), recordRequest: vi.fn() }));
 vi.mock("../timeout-manager", () => ({ getTimeoutSettings: () => ({ chatRequestTimeout: 60000 }) }));
 
 import { runChatLoop } from "../orchestrator/chat-loop";
