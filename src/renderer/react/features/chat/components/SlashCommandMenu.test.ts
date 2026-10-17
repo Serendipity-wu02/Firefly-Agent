@@ -49,7 +49,9 @@ describe("slash menu", () => {
       { id: "code-review", name: "Review", description: "Reviews", descriptionZh: "审查代码", enabled: true, modes: null },
       { id: "off-skill", name: "Off", description: "Off", enabled: false, modes: null },
       { id: "work-only", name: "W", description: "W", enabled: true, modes: ["work"] },
-    ] };
+      { id: "turned-on", name: "On", description: "On", enabled: true, modes: ["work"] },
+      { id: "turned-off", name: "Off2", description: "Off2", enabled: true, modes: null },
+    ], getSkillModeOverrides: async () => ({ "turned-on": { code: true }, "turned-off": { code: false } }) };
     (window as never as { chatStore: unknown }).chatStore = { compactConversation };
   });
   afterEach(() => { act(() => root.unmount()); host.remove(); });
@@ -57,7 +59,7 @@ describe("slash menu", () => {
   it("lists commands and the enabled skills of this mode, with Chinese descriptions", async () => {
     await show("/");
     const names = [...host.querySelectorAll(".ff-slash-menu__name")].map(node => node.textContent);
-    expect(names).toEqual(["/clear", "/compact", "/new", "/code-review"]);
+    expect(names).toEqual(["/clear", "/compact", "/new", "/code-review", "/turned-on"]);
     expect(host.textContent).toContain("审查代码");
   });
 
@@ -74,7 +76,7 @@ describe("slash menu", () => {
     await show("/");
     key("ArrowUp");
     expect(key("Tab")).toBe(true);
-    expect(onChange).toHaveBeenCalledWith("/code-review ");
+    expect(onChange).toHaveBeenCalledWith("/turned-on ");
   });
 
   it("starts a new task with /new and closes on Escape without running anything", async () => {
@@ -92,5 +94,15 @@ describe("slash menu", () => {
     await show("hello");
     expect(host.querySelector(".ff-slash-menu")).toBeNull();
     expect(key("Enter")).toBe(false);
+  });
+
+  it("withholds /compact while a run is in flight", async () => {
+    function Busy({ value }: { value: string }) {
+      api = useSlashCommands({ value, mode: "code", conversationId: "s1", busy: true, onChange, onNewTask, onNotice });
+      return api.menu;
+    }
+    await act(async () => { root.render(React.createElement(Busy, { value: "/comp" })); });
+    expect(host.textContent).not.toContain("/compact");
+    expect(compactConversation).not.toHaveBeenCalled();
   });
 });

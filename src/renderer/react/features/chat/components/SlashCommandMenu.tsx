@@ -31,12 +31,20 @@ function useSkillItems(mode: string): SlashItem[] {
   const [skills, setSkills] = useState<SlashItem[]>([]);
   useEffect(() => {
     if (mode !== "work" && mode !== "code") { setSkills([]); return; }
-    const api = (window as typeof window & { settings?: { getSkillCatalog?: () => Promise<CatalogSkill[]> } }).settings;
+    const api = (window as typeof window & { settings?: {
+      getSkillCatalog?: () => Promise<CatalogSkill[]>;
+      getSkillModeOverrides?: () => Promise<Record<string, Partial<Record<string, boolean>>>>;
+    } }).settings;
     let active = true;
-    void api?.getSkillCatalog?.().then(catalog => {
+    // Same precedence as Main's activation: a per-mode override beats the skill's declared modes.
+    void Promise.all([api?.getSkillCatalog?.() ?? Promise.resolve([]), api?.getSkillModeOverrides?.().catch(() => ({})) ?? Promise.resolve({})]).then(([catalog, overrides]) => {
       if (!active) return;
+      const visible = (skill: CatalogSkill) => {
+        const override = (overrides as Record<string, Partial<Record<string, boolean>>>)[skill.id]?.[mode];
+        return override ?? (!skill.modes || skill.modes.includes(mode));
+      };
       setSkills(catalog
-        .filter(skill => skill.enabled && (!skill.modes || skill.modes.includes(mode)))
+        .filter(skill => skill.enabled && visible(skill))
         .map(skill => ({ name: skill.id, description: (skill.descriptionZh ?? skill.description).split("\n")[0] ?? "", kind: "skill" as const })));
     }).catch(() => undefined);
     return () => { active = false; };
@@ -44,8 +52,10 @@ function useSkillItems(mode: string): SlashItem[] {
   return skills;
 }
 
-export function useSlashCommands({ value, mode, conversationId, onChange, onNewTask, onNotice }: {
+export function useSlashCommands({ value, mode, conversationId, busy = false, onChange, onNewTask, onNotice }: {
   value: string;
+  /** A run is in flight: /compact is withheld, since compaction rewrites the transcript the run is still writing to. */
+  busy?: boolean;
   mode: string;
   conversationId?: string;
   onChange(value: string): void;
@@ -58,10 +68,10 @@ export function useSlashCommands({ value, mode, conversationId, onChange, onNewT
   const [dismissed, setDismissed] = useState<string | null>(null);
   const query = slashQuery(value);
   const commands = useMemo<SlashItem[]>(() => [
-    ...(conversationId ? [{ name: "compact", description: t("slash.compact"), kind: "command" as const }] : []),
+    ...(conversationId && !busy ? [{ name: "compact", description: t("slash.compact"), kind: "command" as const }] : []),
     ...(onNewTask ? [{ name: "new", description: t("slash.new"), kind: "command" as const }] : []),
     { name: "clear", description: t("slash.clear"), kind: "command" as const },
-  ], [conversationId, onNewTask, t]);
+  ], [conversationId, busy, onNewTask, t]);
   const items = useMemo(() => (query === null ? [] : filterSlashItems([...commands, ...skills], query)), [query, commands, skills]);
   const open = query !== null && items.length > 0 && dismissed !== value;
   useEffect(() => { setActive(0); }, [query]);
@@ -71,7 +81,7 @@ export function useSlashCommands({ value, mode, conversationId, onChange, onNewT
     onChange("");
     if (item.name === "clear") return;
     if (item.name === "new") { onNewTask?.(); return; }
-    if (item.name === "compact" && conversationId) {
+    if (item.name === "compact" && conversationId && !busy) {
       const store = (window as typeof window & { chatStore?: { compactConversation?: (id: string) => Promise<{ ok?: boolean; error?: string } | undefined> } }).chatStore;
       void store?.compactConversation?.(conversationId)
         .then(result => onNotice?.(t(result?.ok === false ? "slash.compactFailed" : "slash.compactDone"), result?.ok === false ? "error" : "success"))
