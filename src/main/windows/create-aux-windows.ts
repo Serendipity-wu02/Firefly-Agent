@@ -2,7 +2,8 @@ import { app, BrowserWindow, screen } from "electron";
 import * as path from "path";
 import { IPC } from "../../shared/ipc-channels";
 import { isDev } from "../env";
-import { computeLayout } from "../window-layout";
+import { resolveInitialChatWindow, trackChatWindowState } from "./chat-window-placement";
+import { CHAT_MIN_HEIGHT, CHAT_MIN_WIDTH } from "./chat-window-state";
 import { MARK_GLASS_SCRIPT, resolveGlassWindowOptions } from "./glass-material";
 import {
   getCurrentAppIconPath,
@@ -40,14 +41,11 @@ export function createReactChatWindowShell(): BrowserWindow {
   // 新建窗口：dispatcher 重置；pending 仅服务于"未 ready 期间又收到请求"
   reactChatSession.reset();
 
-  const layout = computeLayout();
+  const initial = resolveInitialChatWindow();
   const window = new BrowserWindow({
-    x: layout.chat.x,
-    y: layout.chat.y,
-    width: 1280,
-    height: 760,
-    minWidth: 960,
-    minHeight: 540,
+    ...initial.bounds,
+    minWidth: CHAT_MIN_WIDTH,
+    minHeight: CHAT_MIN_HEIGHT,
     title: "流萤 · 聊天",
     icon: getCurrentAppIconPath(),
     backgroundColor: "#00000000",
@@ -64,6 +62,8 @@ export function createReactChatWindowShell(): BrowserWindow {
     },
   });
   setReactChatWindow(window);
+  if (initial.maximized) window.maximize();
+  trackChatWindowState(window);
 
   // Same-document navigation keeps the mounted renderer and its ready listener.
   // https://www.electronjs.org/docs/latest/api/web-contents#event-did-start-navigation
