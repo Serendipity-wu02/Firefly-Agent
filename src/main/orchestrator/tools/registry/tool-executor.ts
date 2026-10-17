@@ -1,5 +1,6 @@
 import { getToolWriteEvidence } from "./file-write-evidence";
 import { isAbortError } from "../../../abort-utils";
+import { recordSkillUse } from "../../../token-usage-store";
 import type { ToolContext } from "./tool-context";
 import type { ToolDefinition } from "./tool-registry";
 import { normalizeToolExecutionOutcome } from "./tool-outcome-normalizer";
@@ -90,6 +91,7 @@ export async function executeToolDefinition(
     const writes = getToolWriteEvidence(context);
     return normalizeToolExecutionOutcome({ ...outcome, ...(writes.length ? { writes } : {}) });
   };
+  if (tool.id === "invoke_skill" && typeof args.skill_id === "string") recordSkillUse(args.skill_id);
   try {
     const output = await tool.execute(args, context);
     const legacy = legacyFailure(output);

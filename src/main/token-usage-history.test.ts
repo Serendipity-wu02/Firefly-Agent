@@ -65,6 +65,28 @@ describe("usage attribution", () => {
     expect(history.days[0]!.tokens).toBe(10 * (70 * 71) / 2);
   });
 
+  it("evicts the true smallest session when a day is full, even if it is the one just seen", async () => {
+    const storage = await setup();
+    const token = await import("./token-usage-store");
+    const { runWithUsageAttribution } = await import("./usage-attribution");
+    const retained = () => {
+      token.flush();
+      const day = Object.values(JSON.parse(fs.readFileSync(storage.files.tokenUsage, "utf8")).days)[0] as { sessions: Record<string, unknown> };
+      return Object.keys(day.sessions);
+    };
+    for (let index = 1; index <= 60; index += 1) runWithUsageAttribution({ feature: "chat", sessionId: `big-${index}` }, () => token.recordUsage(1000 + index, 0));
+    // A 61st, tiny conversation must not displace any of the 60 substantial ones.
+    runWithUsageAttribution({ feature: "chat", sessionId: "tiny" }, () => token.recordUsage(1, 0));
+    expect(retained()).toHaveLength(60);
+    expect(retained()).not.toContain("tiny");
+    expect(retained()).toContain("big-1");
+    // Whereas a substantial newcomer pushes out the smallest existing one.
+    runWithUsageAttribution({ feature: "chat", sessionId: "huge" }, () => token.recordUsage(50_000, 0));
+    expect(retained()).toContain("huge");
+    expect(retained()).not.toContain("big-1");
+    expect(retained()).toHaveLength(60);
+  });
+
   it("reloads the new fields from disk and still reads older files that lack them", async () => {
     const root = temporary();
     const storage = await setup(root);

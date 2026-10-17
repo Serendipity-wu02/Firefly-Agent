@@ -56,6 +56,7 @@ import { approvePlan, getPlanPath, moveToReview, supplementPlan } from "./orches
 import { buildPlanReviewCard, buildPlanSupplementCard } from "./orchestrator/harness/plan-tools";
 import type { AskUserAnswer } from "../shared/ask-clarification";
 import type { PluginPromptMode, PluginTurnCompletedEvent } from "../plugins/types";
+import { runWithUsageAttribution } from "./usage-attribution";
 /**
  * 从 RUN_FINISHED 事件中提取规范的终态结果（terminal）。
  *
@@ -970,7 +971,8 @@ export function registerAgUiIpc(
               runId,
               modelProfileId: input.modelProfileId,
             }));
-            void memory?.onTurnSucceeded?.({ sessionId, runId }).catch(() => undefined);
+            // Runs after this turn's attribution would still be active; bill the extraction to memory instead.
+            void runWithUsageAttribution({ feature: "memory" }, async () => memory?.onTurnSucceeded?.({ sessionId, runId })).catch(() => undefined);
             if (mode !== "code" && effects?.sticker !== undefined) {
               send({
                 type: "CUSTOM",

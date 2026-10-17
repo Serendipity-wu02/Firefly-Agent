@@ -239,7 +239,7 @@ function applyAttribution(day: TokenUsageDay, attribution: UsageAttribution, inp
   const ids = Object.keys(sessions);
   if (ids.length > MAX_SESSIONS_PER_DAY) {
     const weight = (id: string) => sessions[id]!.input + sessions[id]!.output;
-    const smallest = ids.filter(id => id !== sessionId).sort((left, right) => weight(left) - weight(right))[0];
+    const smallest = ids.sort((left, right) => weight(left) - weight(right))[0];
     if (smallest) delete sessions[smallest];
   }
   day.sessions = sessions;
