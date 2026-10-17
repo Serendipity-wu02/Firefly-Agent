@@ -848,6 +848,7 @@
     "windDirNNW": "NNW"
   },
   "sidebar": {
+    "sessionRunning": "Running",
     "viewMode": "View",
     "projectView": "By project",
     "mergedView": "All conversations",
@@ -933,6 +934,10 @@
     "noReadableContent": "This message has nothing to read aloud"
   },
   "ui": {
+    "pinToRail": "Pin {{name}} to the bar",
+    "unpinFromRail": "Unpin {{name}} from the bar",
+    "conversationsHome": "Conversations",
+    "activityRail": "Activity bar",
     "modeSelector": "Switch mode, current: {{mode}}",
     "modeMenu": "Conversation mode",
     "modeChatDescription": "Everyday conversation and companionship",

@@ -210,8 +210,8 @@ it("mounts an initially hidden browser inspector collapsed and reveals the same 
   expect(hidden).not.toBeNull(); expect(hidden?.hidden).toBe(true); expect(panelWidth()).toBe(0);
   const address = hidden!.querySelector<HTMLInputElement>("input")!;
   expect(address.value).toBe(browserPage.url);
-  // Toggling the open plugin entry again leaves the panel and returns to the workbench.
-  await click(button("插件"));
+  // "会话" on the activity rail leaves the panel and returns to the workbench.
+  await click(button("会话"));
   expect(inspector()).toBe(hidden); expect(inspector()?.hidden).toBe(false); expect(panelWidth()).toBeGreaterThan(0);
   expect(inspector()?.querySelector("input")).toBe(address);
   expect(commands.some(command => command.kind === "close")).toBe(false);

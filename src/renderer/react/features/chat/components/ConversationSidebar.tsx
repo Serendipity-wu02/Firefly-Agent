@@ -1,9 +1,9 @@
+import { Download, Folder, FolderCode, LoaderCircle, PencilLine, Pin, PinOff, Trash2 } from "lucide-react";
 import { chatStore } from "../pages/chat-page-bridge";
 import { useSidebarLayout } from "../pages/use-sidebar-layout";
 import { projectSidebar } from "../pages/sidebar-projection";
 import { SidebarLayoutControls } from "./SidebarLayoutControls";
 import { Conversations, type ConversationItemType } from "@ant-design/x";
-import { DeleteOutlined, DownloadOutlined, EditOutlined, PushpinOutlined } from "@ant-design/icons";
 import { Input, Menu, Popover } from "antd";
 import type { InputRef } from "antd";
 import { memo, useEffect, useMemo, useRef, useState } from "react";
@@ -17,6 +17,8 @@ interface ConversationSidebarProps {
   sessions: ChatSessionMeta[];
   listStatus: "loading" | "error" | "ready";
   activeSessionId?: string;
+  /** Sessions with a run in flight: a spinner follows their title. */
+  runningSessionIds?: readonly string[];
   onSelect: (sessionId: string) => void;
   onOpenProject: (workspaceRoot: string) => void;
   onRename: (sessionId: string, newTitle: string) => void | Promise<void>;
@@ -33,22 +35,8 @@ interface ProjectSummary {
 }
 
 function ProjectIcon({ mode }: { mode: ConversationMode }) {
-  if (mode === "code") {
-    return (
-      <svg viewBox="0 0 48 48" aria-hidden="true">
-        <path d="M43 23V14C43 12.8954 42.1046 12 41 12H24L19 6H7C5.89543 6 5 6.89543 5 8V40C5 41.1046 5.89543 42 7 42H22" />
-        <path d="M38 29L43 34L38 39" />
-        <path d="M30 29L25 34L30 39" />
-      </svg>
-    );
-  }
-  return (
-    <svg viewBox="0 0 48 48" aria-hidden="true">
-      <path d="M5 8C5 6.89543 5.89543 6 7 6H19L24 12H41C42.1046 12 43 12.8954 43 14V40C43 41.1046 42.1046 42 41 42H7C5.89543 42 5 41.1046 5 40V8Z" />
-      <path d="M14 22L19 27L14 32" />
-      <path d="M26 32H34" />
-    </svg>
-  );
+  const Icon = mode === "code" ? FolderCode : Folder;
+  return <Icon size={16} strokeWidth={1.6} aria-hidden="true" />;
 }
 
 function formatModifiedTime(timestamp: number): string {
@@ -107,6 +95,7 @@ export const ConversationSidebar = memo(function ConversationSidebar({
   sessions,
   listStatus,
   activeSessionId,
+  runningSessionIds,
   onSelect,
   onOpenProject,
   onRename,
@@ -147,6 +136,7 @@ export const ConversationSidebar = memo(function ConversationSidebar({
   // A single, expanded, unnamed group (typical Chat history) needs no heading of its own.
   const soleGroup = projection?.groups.length === 1 ? projection.groups[0] : undefined;
   const flat = !!soleGroup && !soleGroup.projectId && !soleGroup.sectionId && !!persistedExpanded?.includes(soleGroup.groupId);
+  const firstProjectGroup = projection?.groups.find(group => group.projectId)?.groupId;
   const projectKeys = useMemo(() => ["pinned", "recent", ...projects.keys()], [projects]);
   const [expandedKeys, setExpandedKeys] = useState<string[]>(projectKeys);
 
@@ -178,6 +168,8 @@ export const ConversationSidebar = memo(function ConversationSidebar({
     input.focus();
     input.select();
   }, [editing]);
+
+  const running = useMemo(() => new Set(runningSessionIds ?? []), [runningSessionIds]);
 
   const sortedSessions = useMemo(
     () => {
@@ -227,12 +219,14 @@ export const ConversationSidebar = memo(function ConversationSidebar({
           ) : (
             <span className="ff-session-label">
               <span className="ff-session-label__title" title={session.title || t("sidebar.defaultSessionTitle")}>{session.title || t("sidebar.defaultSessionTitle")}</span>
-              {session.pinned && <PushpinOutlined className="ff-session-label__pin" />}
+              {running.has(session.id) && (
+                <LoaderCircle className="ff-session-label__running" size={14} strokeWidth={1.8} role="img" aria-label={t("sidebar.sessionRunning")} />
+              )}
             </span>
           ),
         group: groupBySession.get(session.id) ?? (supportsProjects ? session.workspaceRoot ?? `unbound:${session.id}` : session.pinned ? "pinned" : "recent"),
       })),
-    [sortedSessions, editing, t, supportsProjects, onRename, groupBySession],
+    [sortedSessions, editing, t, supportsProjects, onRename, groupBySession, running],
   );
 
   function openContextMenu(event: React.MouseEvent, sessionId: string) {
@@ -384,7 +378,8 @@ export const ConversationSidebar = memo(function ConversationSidebar({
                         />
                       )}
                     >
-                      <span className="ff-conversation-project">
+                      <span className="ff-conversation-project" data-first-project={firstProjectGroup === group || undefined}>
+                        {firstProjectGroup === group && <span className="ff-conversation-project__caption" aria-hidden="true">{t("sidebar.projectsTitle")}</span>}
                         <ProjectIcon mode={mode} />
                         <span className="ff-conversation-project__name">{project.name}</span>
                         <span className="ff-conversation-project__count">{project.conversationCount}</span>
@@ -413,14 +408,14 @@ export const ConversationSidebar = memo(function ConversationSidebar({
                   ] }, ...(layout.snapshot.layout.modes[mode].sortMode === "manual" ? [
                     { key: "move-up", label: t("sidebar.moveUp") }, { key: "move-down", label: t("sidebar.moveDown") },
                   ] : [])] : []),
-                  { key: "rename", label: t("sidebar.rename"), icon: <EditOutlined /> },
+                  { key: "rename", label: t("sidebar.rename"), icon: <PencilLine size={14} strokeWidth={1.6} aria-hidden="true" /> },
                   {
                     key: "toggle-pin",
                     label: contextMenu.pinned ? t("sidebar.unpin") : t("sidebar.pin"),
-                    icon: <PushpinOutlined />,
+                    icon: contextMenu.pinned ? <PinOff size={14} strokeWidth={1.6} aria-hidden="true" /> : <Pin size={14} strokeWidth={1.6} aria-hidden="true" />,
                   },
-                  ...(mode === "work" ? [{ key: "export-markdown", label: t("sidebar.exportMarkdown"), icon: <DownloadOutlined /> }] : []),
-                  { key: "delete", label: t("sidebar.delete"), icon: <DeleteOutlined />, danger: true },
+                  ...(mode === "work" ? [{ key: "export-markdown", label: t("sidebar.exportMarkdown"), icon: <Download size={14} strokeWidth={1.6} aria-hidden="true" /> }] : []),
+                  { key: "delete", label: t("sidebar.delete"), icon: <Trash2 size={14} strokeWidth={1.6} aria-hidden="true" />, danger: true },
                 ]}
                 onClick={({ key }) => handleMenuClick(key)}
               />
