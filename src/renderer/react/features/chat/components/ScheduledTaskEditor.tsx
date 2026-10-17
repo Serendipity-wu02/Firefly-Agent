@@ -20,7 +20,7 @@ export interface ScheduledTaskEditorProps {
   /** 缺省表示新建。 */
   task?: ScheduledTask;
   /** A new task starts from this title and prompt (the suggestion cards on the empty page). */
-  preset?: { title: string; prompt: string };
+  preset?: { title: string; prompt: string; schedule?: Partial<ScheduleDraft> };
   api: SchedulerApi | undefined;
   tools: SchedulerToolInfo[];
   onCancel: () => void;
@@ -38,7 +38,7 @@ export function ScheduledTaskEditor({ task, preset, api, tools, onCancel, onSave
   const [title, setTitle] = useState(task?.title ?? preset?.title ?? "");
   const [prompt, setPrompt] = useState(task?.prompt ?? preset?.prompt ?? "");
   const [enabled, setEnabled] = useState(task?.enabled ?? true);
-  const [draft, setDraft] = useState<ScheduleDraft>(() => (task ? scheduleDraftFromSchedule(task.schedule) : defaultScheduleDraft()));
+  const [draft, setDraft] = useState<ScheduleDraft>(() => (task ? scheduleDraftFromSchedule(task.schedule) : { ...defaultScheduleDraft(), ...preset?.schedule }));
   const [toolLimit, setToolLimit] = useState(isPlugin || task?.toolMode === "allow-list");
   const [selectedToolIds, setSelectedToolIds] = useState<string[]>(task?.allowedToolIds ?? []);
   const [saving, setSaving] = useState(false);

@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState, type ReactNode } from "react";
 import { Switch } from "antd";
 import { AlarmClock, CalendarCheck, CalendarClock, History, ListChecks, Pencil, Play, Plus, Trash2 } from "lucide-react";
 import { useTranslation } from "../../../i18n";
@@ -9,6 +9,7 @@ import {
   describeTaskTools,
   fireNowErrorMessage,
   formatScheduledTime,
+  type ScheduleDraft,
   type ScheduledTask,
   type ScheduledTaskHistoryEntry,
   type SchedulerApi,
@@ -90,7 +91,7 @@ export function ScheduledTaskPanel() {
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState<string | null>(null);
   /** null 表示列表视图；{} 为新建；{ task } 为编辑。 */
-  const [editor, setEditor] = useState<{ task?: ScheduledTask; preset?: { title: string; prompt: string } } | null>(null);
+  const [editor, setEditor] = useState<{ task?: ScheduledTask; preset?: { title: string; prompt: string; schedule?: Partial<ScheduleDraft> } } | null>(null);
   const [stateFilter, setStateFilter] = useState<"all" | "enabled" | "disabled">("all");
   /** 存在键即表示该任务的历史已展开。 */
   const [histories, setHistories] = useState<Record<string, HistoryState>>({});
@@ -291,7 +292,7 @@ export function ScheduledTaskPanel() {
                 icon: card.icon,
                 title: t(`scheduledPanel.suggestions.${card.key}.title`),
                 description: t(`scheduledPanel.suggestions.${card.key}.description`),
-                onClick: () => setEditor({ preset: { title: t(`scheduledPanel.suggestions.${card.key}.title`), prompt: t(`scheduledPanel.suggestions.${card.key}.prompt`) } }),
+                onClick: () => setEditor({ preset: { title: t(`scheduledPanel.suggestions.${card.key}.title`), prompt: t(`scheduledPanel.suggestions.${card.key}.prompt`), schedule: card.schedule } }),
               }))}
             />
           ) : (
@@ -319,10 +320,10 @@ export function ScheduledTaskPanel() {
 }
 
 /** First-run suggestions: each opens the editor with a starting title and prompt; nothing is saved until the user does. */
-const SUGGESTIONS = [
-  { key: "daily", icon: <CalendarClock size={16} strokeWidth={1.6} /> },
-  { key: "weekly", icon: <CalendarCheck size={16} strokeWidth={1.6} /> },
-  { key: "todos", icon: <ListChecks size={16} strokeWidth={1.6} /> },
+const SUGGESTIONS: Array<{ key: string; icon: ReactNode; schedule: Partial<ScheduleDraft> }> = [
+  { key: "daily", icon: <CalendarClock size={16} strokeWidth={1.6} />, schedule: { kind: "daily", timeOfDay: "18:00" } },
+  { key: "weekly", icon: <CalendarCheck size={16} strokeWidth={1.6} />, schedule: { kind: "weekly", dayOfWeek: 1, timeOfDay: "09:00" } },
+  { key: "todos", icon: <ListChecks size={16} strokeWidth={1.6} />, schedule: { kind: "daily", timeOfDay: "09:00" } },
 ];
 
 function withoutKey<T>(record: Record<string, T>, key: string): Record<string, T> {

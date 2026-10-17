@@ -348,9 +348,9 @@
   },
   "scheduledPanel": {
     "suggestions": {
-      "daily": { "title": "Daily wrap-up", "description": "Summarise the day's progress every weekday evening.", "prompt": "Summarise today's progress: what got done, what blocked me, and what to pick up tomorrow." },
-      "weekly": { "title": "Weekly planning", "description": "Lay out the week's priorities every Monday morning.", "prompt": "From my recent conversations and tasks, list this week's priorities in order of importance." },
-      "todos": { "title": "Check my to-dos", "description": "Remind me of anything still unfinished.", "prompt": "Check my unfinished to-dos and name the three to do first." }
+      "daily": { "title": "Daily wrap-up", "description": "Summarise the day's progress every day at 6 pm.", "prompt": "Summarise today's progress: what got done, what blocked me, and what to pick up tomorrow." },
+      "weekly": { "title": "Weekly planning", "description": "Lay out the week's priorities every Monday at 9 am.", "prompt": "From my recent conversations and tasks, list this week's priorities in order of importance." },
+      "todos": { "title": "Check my to-dos", "description": "Remind me of anything still unfinished every day at 9 am.", "prompt": "Check my unfinished to-dos and name the three to do first." }
     },
     "filterAll": "All tasks",
     "listSection": "Tasks",
