@@ -1,6 +1,6 @@
 import { IPC } from "../../shared/ipc-channels";
 import { createIpcScope, type IpcScope } from "../application/ipc-scope";
-import { clearUsage, getUsageHistory, getUsageReport } from "../token-usage-store";
+import { clearUsage, getSessionStats, getUsageHistory, getUsageReport } from "../token-usage-store";
 import { listSessions } from "../chats/chats-store";
 import {
   sidebarWindow,
@@ -98,5 +98,7 @@ export function registerWindowSystemIpc(deps: WindowSystemIpcDependencies): void
     try { titles = new Map(listSessions().map(session => [session.id, session.title])); } catch { /* the ranking still works by id */ }
     return { ...history, sessions: history.sessions.map(session => ({ ...session, title: titles.get(session.id) ?? null })) };
   });
+  // 会话统计：输入框下方"会话统计"卡片用；没有记录时为 null。
+  ipc.handle(IPC.TOKEN_USAGE_SESSION_STATS, (_event, sessionId: unknown) => (typeof sessionId === "string" ? getSessionStats(sessionId) : null));
 
 }

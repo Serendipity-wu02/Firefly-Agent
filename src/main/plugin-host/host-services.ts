@@ -1,4 +1,5 @@
 import path from "node:path";
+import { recordPluginCall } from "../token-usage-store";
 import type { PluginLlmService } from "../../plugins/api";
 import type { PluginHostServiceFactory } from "../../plugins/context";
 import type { ChatSession, ChatSessionMeta } from "../../shared/chat-types";
@@ -49,6 +50,11 @@ export function createHostServiceFactory(options: PluginHostServicesOptions): Pl
         channels: { has: (channelId) => options.channelManager.has(channelId) },
         llm: {
           ...options.llm,
+          // The shared service does not know which plugin is asking; count the call here, where the id is known.
+          generateText: (messages, generateOptions) => {
+            recordPluginCall(pluginId);
+            return options.llm.generateText(messages, generateOptions);
+          },
           ...(runGoal ? { runGoal } : {}),
         },
         secrets: createPluginSecretsService({

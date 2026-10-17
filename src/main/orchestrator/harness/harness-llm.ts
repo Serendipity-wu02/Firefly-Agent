@@ -10,7 +10,7 @@
  */
 
 import { getAdapterForConfig, streamChatWithSdk, resolveTransport } from "../vendors";
-import { recordUsage, recordRequest } from "../../token-usage-store";
+import { recordUsage, recordRequest, recordModelCall } from "../../token-usage-store";
 import type {
   ChatMessage,
   ChatRequest,
@@ -76,7 +76,16 @@ export async function callLLM(
   const chatRequest = adapter.applyCacheHints?.(baseRequest, vendorConfig) ?? baseRequest;
 
   let receivedStreamDelta = false;
+  // Timing for the session stats: when the request went out, and when the first token came back.
+  let startedAt = performance.now();
+  let firstDeltaAt: number | undefined;
   const recordResponseUsage = (response: ChatResponse): ChatResponse => {
+    const finishedAt = performance.now();
+    recordModelCall({
+      durationMs: finishedAt - startedAt,
+      ...(firstDeltaAt !== undefined ? { ttftMs: firstDeltaAt - startedAt, generationMs: finishedAt - firstDeltaAt } : {}),
+      outputTokens: response.usage?.output,
+    });
     recordRequest(vendorConfig.model);
     if (!response.usage) return response;
     recordUsage(
@@ -99,6 +108,7 @@ export async function callLLM(
       onDelta: (delta) => {
         if (delta.type !== "usage" && (!("delta" in delta) || delta.delta.length > 0)) {
           receivedStreamDelta = true;
+          firstDeltaAt ??= performance.now();
         }
         if (delta.type === "reasoning_delta" && delta.delta) onReasoningDelta?.(delta.delta);
         if (delta.type === "text_delta" && delta.delta) onTextDelta?.(delta.delta);
@@ -109,7 +119,9 @@ export async function callLLM(
       || memoryRun && error instanceof Error && error.message === "MEMORY_CONTEXT_STREAM_UNSUPPORTED")) throw error;
   }
 
-  // 非流式兜底
+  // 非流式兜底：耗时从这次重发开始算，不含失败的流式尝试。
+  startedAt = performance.now();
+  firstDeltaAt = undefined;
   const fallbackRequest: ChatRequest = { ...chatRequest, stream: false };
   if (memoryRun) {
     // A fallback changes the serialized request: never reuse the first call's

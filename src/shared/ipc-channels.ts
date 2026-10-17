@@ -278,6 +278,7 @@ export const IPC = {
   TOKEN_USAGE_GET: "token-usage:get",
   TOKEN_USAGE_CLEAR: "token-usage:clear",
   TOKEN_USAGE_HISTORY: "token-usage:history",
+  TOKEN_USAGE_SESSION_STATS: "token-usage:session-stats",
                // main → 渲染端：推一段音频 base64
                  // main → 渲染端：流式结束（含 cacheKey）
              // main → 渲染端：流式错误

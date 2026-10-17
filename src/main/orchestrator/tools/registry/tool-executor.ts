@@ -1,5 +1,7 @@
 import { getToolWriteEvidence } from "./file-write-evidence";
 import { isAbortError } from "../../../abort-utils";
+import { recordSkillUse, recordToolCall } from "../../../token-usage-store";
+import { currentUsageAttribution, runWithUsageAttribution } from "../../../usage-attribution";
 import type { ToolContext } from "./tool-context";
 import type { ToolDefinition } from "./tool-registry";
 import { normalizeToolExecutionOutcome } from "./tool-outcome-normalizer";
@@ -90,8 +92,13 @@ export async function executeToolDefinition(
     const writes = getToolWriteEvidence(context);
     return normalizeToolExecutionOutcome({ ...outcome, ...(writes.length ? { writes } : {}) });
   };
+  if (tool.id === "invoke_skill" && typeof args.skill_id === "string") recordSkillUse(args.skill_id);
+  // Each invocation runs under its own copy of the attribution, so a sub-agent started by one of several parallel tools is seen only by that tool.
+  const parent = currentUsageAttribution();
+  const attribution = parent ? { ...parent, delegations: 0 } : undefined;
+  const startedAt = performance.now();
   try {
-    const output = await tool.execute(args, context);
+    const output = await (attribution ? runWithUsageAttribution(attribution, () => tool.execute(args, context)) : tool.execute(args, context));
     const legacy = legacyFailure(output);
     return normalize(legacy ?? {
       status: "succeeded",
@@ -121,5 +128,9 @@ export async function executeToolDefinition(
       errorCode: explicitCode ?? "E_TOOL_EXECUTION_FAILED",
       effectState: "not_applied",
     });
+  } finally {
+    // A tool that ran a sub-agent already has its time in that agent's own requests; count the step, not the time.
+    const delegated = (attribution?.delegations ?? 0) > 0;
+    recordToolCall(delegated ? 0 : performance.now() - startedAt);
   }
 }

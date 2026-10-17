@@ -1,6 +1,6 @@
 import { stripLeakedChatTimeContext } from "../chat-time-context";
 import { ChatTimeStreamPrefixFilter } from "../chat-time-stream-filter";
-import { recordUsage, recordRequest } from "../token-usage-store";
+import { recordUsage, recordRequest, recordModelCall } from "../token-usage-store";
 import { AgentRuntimeError } from "./agent-runtime-error";
 import type {
   AgentLoopSettings,
@@ -239,6 +239,9 @@ export async function runChatLoop(options: ChatLoopOptions): Promise<AgentLoopRe
     options.onEvent?.({ type: "text_message_end", messageId });
   };
 
+  // Timing for the session stats; reset at the start of every attempt.
+  let callStartedAt = performance.now();
+  let firstDeltaAt: number | undefined;
   const invokeStreaming = async (messages: ChatMessage[]): Promise<{
     response: ChatResponse;
     needsReveal: boolean;
@@ -258,6 +261,7 @@ export async function runChatLoop(options: ChatLoopOptions): Promise<AgentLoopRe
       // deltas do not make a stream partial; tool/refusal/terminal events do.
       if (delta.type !== "usage" && (!("delta" in delta) || delta.delta.length > 0)) {
         receivedMeaningfulStreamDelta = true;
+        firstDeltaAt ??= performance.now();
       }
       if (delta.type === "reasoning_delta" && delta.delta) {
         startReasoning();
@@ -304,6 +308,8 @@ export async function runChatLoop(options: ChatLoopOptions): Promise<AgentLoopRe
   };
 
   const invokeWithStreamFallback = async (messages: ChatMessage[]) => {
+    callStartedAt = performance.now();
+    firstDeltaAt = undefined;
     try {
       return await invokeStreaming(messages);
     } catch (error) {
@@ -340,6 +346,12 @@ export async function runChatLoop(options: ChatLoopOptions): Promise<AgentLoopRe
       endReasoning();
     }
 
+    const finishedAt = performance.now();
+    recordModelCall({
+      durationMs: finishedAt - callStartedAt,
+      ...(firstDeltaAt !== undefined ? { ttftMs: firstDeltaAt - callStartedAt, generationMs: finishedAt - firstDeltaAt } : {}),
+      outputTokens: response.usage?.output,
+    });
     recordRequest(options.settings.model);
     if (response.usage) {
       usageRecorder(response.usage.input, response.usage.output, 1, response.usage.cachedInput, response.usage.cacheCreation);

@@ -727,6 +727,8 @@ const tokenUsageApi = {
   clear: () => ipcRenderer.invoke(IPC.TOKEN_USAGE_CLEAR) as Promise<void>,
   /** Usage history for the settings page: stacked daily data by model and feature, chat ranking, message / skill / plugin counts. */
   history: (days: number) => ipcRenderer.invoke(IPC.TOKEN_USAGE_HISTORY, days),
+  /** Running totals for one conversation (rounds, steps, model / tool time, TTFT, speed), shown under the composer. */
+  sessionStats: (sessionId: string) => ipcRenderer.invoke(IPC.TOKEN_USAGE_SESSION_STATS, sessionId),
 };
 contextBridge.exposeInMainWorld("tokenUsage", tokenUsageApi);
 

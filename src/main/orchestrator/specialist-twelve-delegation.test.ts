@@ -24,7 +24,7 @@ import { SPECIALIST_AGENTS } from "../../shared/specialist-agents";
 import type { ModelSettings } from "../settings/model-settings";
 
 vi.mock("electron", () => ({ app: { getPath: () => getStorageContext().dataRoot } }));
-vi.mock("../token-usage-store", () => ({ recordRequest: vi.fn(), recordUsage: vi.fn() }));
+vi.mock("../token-usage-store", () => ({ recordModelCall: () => undefined, recordToolCall: () => undefined, recordRequest: vi.fn(), recordUsage: vi.fn() }));
 vi.mock("../timeout-manager", () => ({ getTimeoutSettings: () => ({ chatRequestTimeout: 20000 }) }));
 const isolation = fs.mkdtempSync(path.join(os.tmpdir(), "firefly-twelve-agents-storage-"));
 initializeStorageContext(resolveRuntimeProfile({ argv: ["--firefly-profile=test", "--firefly-isolation-root=" + isolation], env: {}, isPackaged: false, productionAppData: path.join(os.tmpdir(), "synthetic-production-unopened") }));

@@ -77,7 +77,7 @@ import type { ConversationMode } from "../../shared/chat-types";
 import type { FireflyRunTerminalResult } from "../../shared/run-terminal";
 import { executeToolDefinition } from "./tools/registry/tool-executor";
 import { createLive2dWorkRunTracker } from "./live2d-work-signal";
-import { recordMessage, recordPluginCall, recordSkillUse } from "../token-usage-store";
+import { recordMessage, recordPluginCall } from "../token-usage-store";
 import { runWithUsageAttribution, usageFeatureForMode } from "../usage-attribution";
 
 const executionLedgers = new ExecutionLedgerStore();
@@ -380,7 +380,6 @@ async function executeToolCall(
     return failed("E_PERMISSION_DENIED", perm.reason || "权限不足");
   }
 
-  if (tc.name === "invoke_skill" && typeof args.skill_id === "string") recordSkillUse(args.skill_id);
   return executeToolDefinition(tool, args, ctx);
 }
 
@@ -441,11 +440,13 @@ export class FireflyAgent extends AbstractAgent {
 
       // Every model request on this run's async chain is billed to this conversation and its mode.
       const pluginId = conversationId.startsWith("plugin:") ? conversationId.slice("plugin:".length) : undefined;
-      if (pluginId) recordPluginCall(pluginId); else recordMessage();
+      if (pluginId) recordPluginCall(pluginId);
       void runWithUsageAttribution(pluginId
         ? { feature: "plugin", pluginId }
         : { feature: usageFeatureForMode(runOptions.conversationMode ?? options.executionMode), sessionId: runOptions.conversationId },
       async () => {
+        // Inside the scope, so the round lands on this conversation's stats.
+        if (!pluginId) recordMessage();
         let ownedMemoryRun: MainMemoryRun | undefined;
         let terminalEvent: BaseEvent | undefined;
         let terminalError: Error | undefined;
