@@ -259,3 +259,16 @@ it("folds the overview cards when a right panel opens and keeps the conversation
   for (let step = 0; step < 40; step++) await act(async () => separator.dispatchEvent(new KeyboardEvent("keydown", { key: "ArrowLeft", bubbles: true })));
   expect(size(chat, "width")).toBeGreaterThanOrEqual(479);
 });
+
+it("closes the browser from the header switch through its own cleanup", async () => {
+  browserPage = { browserId: "switch-browser-fixture", conversationId: "inspector-fixture", requestId: 1, closed: false, loading: false, url: "https://example.invalid/switch", pendingUrl: null, canGoBack: false, canGoForward: false, error: null };
+  await click(button("打开浏览器"));
+  expect(host.querySelector('[data-inspector-pane="browser"]')).not.toBeNull();
+  const revokedBefore = revoked;
+  await click(button("打开浏览器"));
+  await act(async () => { await new Promise(resolve => setTimeout(resolve, 0)); });
+  await measuredUpdate();
+  // The switch went through the browser's own close: its grant is revoked (Main then closes its pages), not a bare unmount.
+  expect(revoked).toBe(revokedBefore + 1);
+  expect(host.querySelector('[data-inspector-pane="browser"]')).toBeNull();
+});

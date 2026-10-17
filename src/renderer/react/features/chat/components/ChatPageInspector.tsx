@@ -109,6 +109,8 @@ export interface ChatPageInspectorProps {
   activeTabId: string | null;
   onTabChange: (id: string) => void;
   onCloseTab: (id: string) => void;
+  /** Bumped by the page to close the browser through its own cleanup (permission revoke, native page close). */
+  browserCloseRequest?: number;
   /** 文件树里点击文件 → 打开/激活预览标签 */
   onOpenFile: (relPath: string) => void;
 }
@@ -138,10 +140,16 @@ export function ChatPageInspector({
   activeTabId,
   onTabChange,
   onCloseTab,
+  browserCloseRequest = 0,
   onOpenFile,
 }: ChatPageInspectorProps) {
   const { t } = useTranslation();
   const browserRef = useRef<ManualBrowserTabHandle>(null);
+  useEffect(() => {
+    if (browserCloseRequest === 0) return;
+    if (browserRef.current) browserRef.current.close();
+    else onCloseTab("browser");
+  }, [browserCloseRequest]); // eslint-disable-line react-hooks/exhaustive-deps
   const moving = useInspectorMotion(visible);
   const newTabTools = useMemo<BrowserNewTabTool[]>(() => [
     ...(onOpenOverviewTab ? [{ id: "overview", label: t("sessionOverview.tab"), icon: <LayoutList size={16} strokeWidth={1.8} />, onSelect: onOpenOverviewTab }] : []),
@@ -222,7 +230,9 @@ export function ChatPageInspector({
       label: t("browserWorkspace.title"),
       content: <BrowserNewTabToolsContext.Provider value={newTabTools}>
         <BrowserWorkspaceTabs ref={browserRef} sessionId={sessionId} paneClose={soleTab}
-          active={visible && !moving && (activeTabId === "browser" || (!tabs.some(tab => tab.id === activeTabId) && tabs.length === 0))}
+          // Tiled panels are all on screen at once: the page stays attached while the panel is shown, whichever panel has focus.
+          // A panel hidden by another one's enlarge has no size, and the browser detaches its page for that on its own.
+          active={visible && !moving}
           onClose={() => onCloseTab("browser")} />
       </BrowserNewTabToolsContext.Provider>,
     });

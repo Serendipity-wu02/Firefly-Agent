@@ -1365,9 +1365,13 @@ export function ChatPage() {
   };
 
   /** 标题行的面板开关：已打开且可见时关掉它，否则打开。 */
+  // The browser closes through the inspector's own path, which revokes its grant and closes the native page first.
+  const [browserCloseRequest, setBrowserCloseRequest] = useState(0);
   const togglePanel = (id: string, open: boolean, openIt: () => void) => {
-    if (open && !inspectorHidden) closeInspectorTab(id);
-    else openIt();
+    if (open && !inspectorHidden) {
+      if (id === "browser") setBrowserCloseRequest(count => count + 1);
+      else closeInspectorTab(id);
+    } else openIt();
   };
 
   /** 收起右侧面板并保留标签；再次点击恢复原标签 */
@@ -1853,6 +1857,7 @@ export function ChatPage() {
                 onOpenResultDiff={openResultDiff}
                 workspaceRoot={activeSession?.workspaceBinding?.workspaceRoot}
                 filesTabOpen={filesTabOpen}
+                browserCloseRequest={browserCloseRequest}
                 browserTabOpen={browserTabOpen}
                 tasksTabOpen={tasksTabOpen}
                 onOpenFilesTab={openFilesTab}
