@@ -93,6 +93,16 @@ describe("chat window placement", () => {
     expect(resolveInitialChatWindow().bounds.width).toBeGreaterThanOrEqual(960);
   });
 
+  it("sets a corrupt state file aside and saves a fresh one instead of staying broken", () => {
+    fs.writeFileSync(storage.file!, "{ not json");
+    const window = new FakeWindow();
+    trackChatWindowState(asWindow(window));
+    window.emit("close");
+    expect(saved()).toEqual({ x: 120, y: 80, width: 1300, height: 820, maximized: false });
+    expect(fs.readFileSync(`${storage.file}.invalid`, "utf8")).toBe("{ not json");
+    expect(resolveInitialChatWindow().bounds).toEqual({ x: 120, y: 80, width: 1300, height: 820 });
+  });
+
   it("never throws when storage is not ready", () => {
     storage.file = undefined;
     expect(() => resolveInitialChatWindow()).not.toThrow();
