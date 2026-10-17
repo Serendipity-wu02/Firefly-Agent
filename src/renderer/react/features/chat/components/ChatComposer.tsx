@@ -6,7 +6,6 @@ import { useEffect, useRef, useState, type ClipboardEvent, type KeyboardEvent } 
 import { useTranslation } from "../../../i18n";
 import { resolveAsset } from "../../../../../shared/renderer-base";
 import type { ContextUsageSnapshot } from "../../../../../shared/context-usage";
-import { ContextUsageRing } from "./ContextUsageRing";
 import { TokenUsageBar } from "./TokenUsageBar";
 import "./ModelEffortControl.css";
 import { PermissionControl } from "./PermissionControl";
@@ -435,7 +434,6 @@ export function ChatComposer({
           ) : actionNode;
           return (
             <div className="ff-composer__suffix">
-              <ContextUsageRing usage={contextUsage} sessionId={conversationId} busy={modelBusy} />
               {onSelectModelProfile && (
                 <ModelEffortControl sessionId={conversationId} activeProfileId={activeModelProfileId} onSelectModelProfile={onSelectModelProfile} />
               )}

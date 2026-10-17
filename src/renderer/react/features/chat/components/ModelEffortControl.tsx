@@ -133,7 +133,7 @@ export function ModelEffortControl({ sessionId, activeProfileId, onSelectModelPr
   }
 
   const effortPanel = (
-    <div className="ff-model-panel ff-effort">
+    <div key="effort" className="ff-model-panel ff-effort ff-model-panel--back">
       <div className="ff-effort__head">
         {/* Like Codex: the level and model in the middle, "back to automatic" on the right. */}
         {adjustable && activeIndex !== 0 && (
@@ -164,7 +164,7 @@ export function ModelEffortControl({ sessionId, activeProfileId, onSelectModelPr
   );
 
   const modelsPanel = (
-    <div className="ff-model-panel ff-model-list">
+    <div key="models" className="ff-model-panel ff-model-list ff-model-panel--forward">
       <button type="button" className="ff-model-list__back" onClick={() => setPanel("effort")}>
         <ChevronIcon direction="left" />
         <span>{t("modelSelector.chooseModel")}</span>
@@ -193,8 +193,8 @@ export function ModelEffortControl({ sessionId, activeProfileId, onSelectModelPr
         if (next) { setPanel("effort"); void loadProfiles(); void refreshReasoning(); }
       }}
     >
-      <button type="button" className="ff-composer__agent-button ff-model-effort" title={t("modelSelector.switchTitle")}>
-        <span className="ff-model-effort__model">{modelName}</span>
+      <button type="button" className={`ff-composer__agent-button ff-model-effort${open ? " is-open" : ""}`} title={t("modelSelector.switchTitle")}>
+        <span key={modelName} className="ff-model-effort__model">{modelName}</span>
         {view && (adjustable ? items[activeIndex]?.label : view.statusText) && (
           <span className="ff-model-effort__effort">{adjustable ? items[activeIndex]?.label : view.statusText}</span>
         )}
