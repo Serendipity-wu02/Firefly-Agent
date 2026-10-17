@@ -1385,3 +1385,10 @@
 :root[data-ui-colors] .ff-message-markdown input[type="checkbox"]:checked::after {
   border-color: var(--rb-text-on-pink);
 }
+
+/* The conversation's scrollbar sits right beside the overview cards, where an always-on thumb reads as a divider between
+   the two. Like the session list, it only shows while the pointer is over the conversation. */
+.ff-message-list::-webkit-scrollbar-thumb { background-color: transparent; }
+.ff-message-list:hover::-webkit-scrollbar-thumb { background-color: var(--ff-scroll-thumb); }
+.ff-message-list:hover::-webkit-scrollbar-thumb:hover { background-color: var(--ff-scroll-thumb-hover); }
+.ff-message-list:hover::-webkit-scrollbar-thumb:active { background-color: var(--ff-accent); }

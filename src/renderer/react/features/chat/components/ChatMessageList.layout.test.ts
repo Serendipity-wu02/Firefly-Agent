@@ -11,9 +11,10 @@ describe("chat reading width", () => {
     expect(stylesheet).toMatch(/\.ff-message-list \.ant-bubble-list \{[^}]*max-width: var\(--ff-reading-width\);[^}]*margin-inline: auto;/);
     const root = readFileSync(resolve(__dirname, "../../../styles/react-root.css"), "utf8");
     expect(root).toMatch(/--ff-reading-width: clamp\(\d+px, \d+%, \d+px\);/);
-    // 最大化时对话栏和输入框不能被拉得过长：上限固定在 800px 以内
+    // 最大化时对话栏和输入框有上限，但不能小到两侧留出大片空白：上限固定在 1080px 以内
     const cap = Number(/--ff-reading-width: clamp\(\d+px, \d+%, (\d+)px\);/.exec(root)![1]);
-    expect(cap).toBeLessThanOrEqual(800);
+    expect(cap).toBeLessThanOrEqual(1080);
+    expect(cap).toBeGreaterThanOrEqual(960);
     expect(stylesheet).toMatch(/\.ff-message--activity \{[\s\S]*width: var\(--ff-message-reading-width\)/);
   });
 
@@ -49,5 +50,12 @@ describe("chat hierarchy from the UI skeleton preview", () => {
     expect(run).toMatch(/\.ff-interaction-panel\[data-kind="permission"\] \{ border-left: 3px solid var\(--ff-warning\); \}/);
     const panel = readFileSync(resolve(__dirname, "InteractionPanel.tsx"), "utf8");
     expect(panel).toContain('kind="permission"');
+  });
+});
+
+describe("scrollbar beside the overview cards", () => {
+  it("hides the conversation's thumb until the pointer is over it, so it does not read as a divider", () => {
+    expect(stylesheet).toMatch(/\.ff-message-list::-webkit-scrollbar-thumb \{ background-color: transparent; \}/);
+    expect(stylesheet).toMatch(/\.ff-message-list:hover::-webkit-scrollbar-thumb \{ background-color: var\(--ff-scroll-thumb\); \}/);
   });
 });

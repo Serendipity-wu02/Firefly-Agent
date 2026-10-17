@@ -2,7 +2,7 @@
 import React, { act } from "react";
 import { createRoot } from "react-dom/client";
 import { afterEach, beforeEach, expect, it, vi } from "vitest";
-import { WorkspaceRunResults, WorkspaceResultsIndex, WorkspaceChangeDiff } from "./WorkspaceRunResults";
+import { WorkspaceRunResults, WorkspaceResultsIndex, WorkspaceChangeDiff, groupTools } from "./WorkspaceRunResults";
 import type { WorkspaceRunOutput } from "./workspace-artifacts";
 vi.mock("../../../i18n", () => ({ useTranslation: () => ({ t: (key: string) => key }) }));
 const change = { file: "report.md", kind: "added" as const, insertions: 1, deletions: 0, diff: [{ type: "add" as const, text: "changed bytes" }] };
@@ -101,4 +101,70 @@ it("shows the delegated agent and its task above a rendered conclusion, and scro
   expect(scroll).toHaveBeenCalledOnce();
   act(() => root.render(React.createElement(WorkspaceRunResults, { ...props, focusTask: { taskId: "child", seq: 2 } })));
   expect(scroll).toHaveBeenCalledTimes(2);
+});
+
+const call = (id: string, name: string, status: "success" | "error", result = `${name} output ${id}`) => ({ id, name, displayName: name, status, result });
+const manyTools = [
+  call("c1", "run_command", "success"),
+  call("g1", "git_status", "success"),
+  call("c2", "run_command", "success"),
+  call("c3", "run_command", "success"),
+  call("c4", "run_command", "error", "x".repeat(300)),
+];
+const render = (tools: WorkspaceRunOutput["tools"]) => act(() => root.render(React.createElement(WorkspaceRunResults, { output: { ...output, files: [], tools }, workspaceRoot: "/work", onOpenFile: vi.fn(), onOpenDiff: vi.fn() })));
+
+it("folds consecutive calls of the same tool into one group and keeps other calls separate, in order", () => {
+  expect(groupTools(manyTools as never).map(group => group.kind === "plain" ? [group.name, group.items.length] : "delegate")).toEqual([["run_command", 1], ["git_status", 1], ["run_command", 3]]);
+  expect(groupTools([call("a", "delegate_agent", "success"), call("b", "read_file", "success")] as never).map(group => group.kind)).toEqual(["delegate", "plain"]);
+});
+
+it("keeps two different tools apart even when they share a display name", () => {
+  const a = { ...call("a1", "plugin_a_search", "success"), displayName: "Search" };
+  const b = { ...call("b1", "plugin_b_search", "success"), displayName: "Search" };
+  const groups = groupTools([a, b, { ...a, id: "a2" }] as never);
+  expect(groups.map(group => group.kind === "plain" ? [group.toolName, group.name, group.items.length] : "delegate")).toEqual([
+    ["plugin_a_search", "Search", 1], ["plugin_b_search", "Search", 1], ["plugin_a_search", "Search", 1],
+  ]);
+  expect(groupTools([a, { ...a, id: "a2" }] as never)).toHaveLength(1);
+});
+
+it("starts a long run of calls folded, with the count and failures on the group line", () => {
+  render(manyTools as never);
+  const groups = [...host.querySelectorAll<HTMLDetailsElement>("details.ff-run-fold--group")];
+  expect(groups).toHaveLength(1);
+  expect(groups[0]!.open).toBe(false);
+  expect(groups[0]!.querySelector("summary")!.textContent).toContain("run_command");
+  expect(groups[0]!.querySelector("summary")!.textContent).toContain("workspace.toolGroupCount");
+  expect(groups[0]!.querySelector(".ff-run-fold__failed")).not.toBeNull();
+});
+
+it("shows each call as one line, opens failures by default, and keeps the full return one click away", () => {
+  render(manyTools as never);
+  const rows = [...host.querySelectorAll<HTMLDetailsElement>("details.ff-run-fold--item")];
+  expect(rows).toHaveLength(5);
+  const failed = rows.find(row => row.querySelector('[data-tool-status="error"]'))!;
+  expect(failed.open).toBe(true);
+  expect(failed.querySelector(".ff-run-fold__preview")!.textContent!.length).toBeLessThanOrEqual(91);
+  expect(failed.querySelector("pre")!.textContent).toBe("x".repeat(300));
+  expect(rows.filter(row => row.open)).toHaveLength(1);
+});
+
+it("keeps a short group open and a lone call as a single row", () => {
+  render([call("c1", "run_command", "success"), call("c2", "run_command", "success"), call("g1", "git_status", "success")] as never);
+  expect(host.querySelector<HTMLDetailsElement>("details.ff-run-fold--group")!.open).toBe(true);
+  expect(host.querySelectorAll(".ff-run-fold-single")).toHaveLength(1);
+});
+
+it("expands and collapses every fold from the bar", () => {
+  render(manyTools as never);
+  const folds = () => [...host.querySelectorAll<HTMLDetailsElement>("details.ff-run-fold")];
+  act(() => host.querySelector<HTMLButtonElement>('[data-fold-all="open"]')!.click());
+  expect(folds().every(fold => fold.open)).toBe(true);
+  act(() => host.querySelector<HTMLButtonElement>('[data-fold-all="closed"]')!.click());
+  expect(folds().every(fold => !fold.open)).toBe(true);
+});
+
+it("has no fold bar when the run only has delegations", () => {
+  render([call("a", "delegate_agent", "success")] as never);
+  expect(host.querySelector(".ff-run-fold-bar")).toBeNull();
 });

@@ -24,5 +24,28 @@
 .ff-workspace-change-diff .is-remove { background: var(--ff-del-bg); }
 .ff-workspace-change-diff .is-hunk { color: var(--ff-info-fg); background: var(--ff-info-bg); }
 .ff-workspace-change-diff pre span { padding-right: 8px; user-select: none; }
+/* 运行结果里的工具调用：同类连续调用折成一组，每条再折成一行摘要，需要时再展开看完整返回。 */
+.ff-run-fold-bar { display: flex; justify-content: flex-end; gap: 6px; margin-top: 12px; }
+.ff-run-fold-bar button { padding: 3px 10px; border-radius: 999px; font-size: 12px; }
+.ff-run-fold-single { margin-top: 10px; padding-top: 10px; border-top: 1px solid var(--ff-border); }
+.ff-run-fold-single > strong { display: block; margin-bottom: 4px; }
+.ff-run-fold { margin-top: 10px; }
+.ff-run-fold--group { padding-top: 10px; border-top: 1px solid var(--ff-border); }
+.ff-run-fold > summary { display: flex; align-items: center; gap: 8px; min-width: 0; cursor: pointer; list-style: none; }
+.ff-run-fold > summary::-webkit-details-marker { display: none; }
+.ff-run-fold > summary::before { content: ""; flex: none; width: 6px; height: 6px; border-right: 1.5px solid var(--ff-text-muted); border-bottom: 1.5px solid var(--ff-text-muted); transform: rotate(-45deg); transition: transform 120ms ease; }
+.ff-run-fold[open] > summary::before { transform: rotate(45deg); }
+.ff-run-fold--group > summary > strong { flex: none; }
+.ff-run-fold__count, .ff-run-fold__failed { flex: none; font-size: 12px; color: var(--ff-text-muted); }
+.ff-run-fold__failed { color: var(--ff-del-fg, #cf222e); }
+.ff-run-fold__items { display: grid; gap: 2px; margin: 6px 0 0 14px; }
+.ff-run-fold--item { margin-top: 0; padding: 5px 8px; border-radius: 8px; }
+.ff-run-fold--item:hover { background: var(--ff-bg-hover); }
+.ff-run-fold--item > summary { justify-content: space-between; font-size: 12px; }
+.ff-run-fold__preview { min-width: 0; flex: 1; overflow: hidden; color: var(--ff-text-secondary); text-overflow: ellipsis; white-space: nowrap; }
+.ff-run-fold--item > summary > [data-tool-status] { flex: none; font-size: 12px; color: var(--ff-text-muted); }
+.ff-run-fold--item > summary > [data-tool-status="error"] { color: var(--ff-del-fg, #cf222e); }
+.ff-run-fold--item > pre { margin: 6px 0 2px; padding: 8px 10px; border-radius: 8px; background: var(--ff-bg-hover); }
+@media (prefers-reduced-motion: reduce) { .ff-run-fold > summary::before { transition: none; } }
 .ff-workspace-run-results__text :is(h1, h2, h3, h4) { margin: 10px 0 6px; font-size: 14px; line-height: 1.4; }
 .ff-workspace-run-results__text :is(p, ul, ol) { margin: 6px 0; }

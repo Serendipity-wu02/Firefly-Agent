@@ -1,7 +1,7 @@
 /* ===== 设计变量 ===== */
 :root {
-  /* 对话区阅读宽度：窗口窄时占满，宽时占九成，封顶 800px（最大化也不再拉长）；消息列表、输入框、交互面板共用 */
-  --ff-reading-width: clamp(560px, 90%, 800px);
+  /* 对话区阅读宽度：窗口窄时占满，宽时占九成，封顶 1080px；最大化时两侧留白不再大得离谱。消息列表、输入框、交互面板共用 */
+  --ff-reading-width: clamp(560px, 90%, 1080px);
   --ff-app-titlebar-height: 50px;
   --ff-workspace-header-height: 48px;
   --ff-workspace-gutter: 8px;
@@ -360,7 +360,7 @@ body {
 /* 右侧面板打开时，对话栏（消息列表、输入框）用固定宽度并居中：拖动分隔条只改变两侧留白，
    对话栏本身不随之伸缩（和 Codex 一致）；面板收起时仍按上面的响应式阅读宽度。 */
 .ff-page-dock.has-inspector {
-  --ff-reading-width: clamp(480px, 100%, 720px);
+  --ff-reading-width: clamp(480px, 100%, 880px);
 }
 
 /* Panel 内层容器：撑满面板，承载工作区 / 右侧面板 */
