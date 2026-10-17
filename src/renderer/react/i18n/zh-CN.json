@@ -847,6 +847,7 @@
     "windDirNNW": "西北偏北风"
   },
   "sidebar": {
+    "sessionRunning": "正在运行",
     "viewMode": "视图",
     "projectView": "按项目",
     "mergedView": "合并会话",
@@ -932,6 +933,10 @@
     "noReadableContent": "这条消息没有可朗读的内容"
   },
   "ui": {
+    "pinToRail": "把“{{name}}”钉在左侧",
+    "unpinFromRail": "取消把“{{name}}”钉在左侧",
+    "conversationsHome": "会话",
+    "activityRail": "功能导航",
     "modeSelector": "切换模式，当前：{{mode}}",
     "modeMenu": "会话模式",
     "modeChatDescription": "日常交流与陪伴",

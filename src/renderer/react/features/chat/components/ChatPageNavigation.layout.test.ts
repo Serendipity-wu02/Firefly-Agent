@@ -1,6 +1,5 @@
 // @vitest-environment jsdom
 import React, { act } from "react";
-import fs from "node:fs";
 import { createRoot, type Root } from "react-dom/client";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { t } from "../../../i18n";
@@ -55,16 +54,14 @@ describe("workspace navigation layout", () => {
     expect(aside.hasAttribute("inert")).toBe(true);
     expect(props.onToggleCollapsed).not.toHaveBeenCalled();
   });
-  it("keeps the unfolded sidebar in place while the more menu is open", () => {
+  it("keeps the activity rail usable outside the folded sidebar", () => {
     render({ collapsed: true });
-    const edge = host.querySelector<HTMLElement>(".ff-page-edge")!;
+    const rail = host.querySelector<HTMLElement>(".ff-activity-rail")!;
     const aside = host.querySelector<HTMLElement>(".ff-page-sidebar")!;
-    act(() => edge.dispatchEvent(new MouseEvent("pointerover", { bubbles: true, relatedTarget: document.body })));
-    act(() => button(t("ui.more")).click());
-    expect(document.querySelector(".ff-page-more")).toBeTruthy();
-    expect(aside.contains(document.querySelector(".ff-page-more"))).toBe(true);
-    act(() => aside.dispatchEvent(new MouseEvent("pointerout", { bubbles: true, relatedTarget: document.body })));
-    expect(aside.classList.contains("is-peeking")).toBe(true);
+    expect(aside.hasAttribute("inert")).toBe(true);
+    expect(aside.contains(rail)).toBe(false);
+    act(() => rail.querySelector<HTMLButtonElement>('[data-rail-item="skill"]')!.click());
+    expect(props.onTogglePanel).toHaveBeenCalledExactlyOnceWith("skill");
   });
 
   it("keeps the floating sidebar open while crossing its owned hover corridor", () => {
@@ -259,7 +256,7 @@ describe("workspace navigation layout", () => {
   });
   it("marks only the generated portrait as the white U placeholder", () => {
     render();
-    const avatar = host.querySelector(".ff-sidebar-user .ff-user-avatar-circle")!;
+    const avatar = host.querySelector(".ff-activity-rail__user .ff-user-avatar-circle")!;
     expect(avatar.classList.contains("is-placeholder")).toBe(true);
     expect(avatar.textContent).toBe("U");
   });
@@ -269,18 +266,17 @@ describe("workspace navigation layout", () => {
       getProfile: async () => ({ nickname: "Synthetic nickname" }), onProfileChanged: () => () => {},
     } });
     await act(async () => render());
-    expect(host.querySelector(".ff-sidebar-user .is-placeholder")?.textContent).toBe("U");
-    expect(button(t("ui.userMenu")).title).toBe("Synthetic nickname");
+    expect(host.querySelector(".ff-activity-rail__user .is-placeholder")?.textContent).toBe("U");
+    expect(button(t("ui.userMenu")).getAttribute("aria-description")).toBe("Synthetic nickname");
   });
-  it("keeps mounted history inert while collapsed and reaches settings once the sidebar unfolds", () => {
+  it("keeps mounted history inert while collapsed and reaches settings from the rail avatar", () => {
     render({ collapsed: true });
     const aside = host.querySelector<HTMLElement>(".ff-page-sidebar")!;
     expect(aside.hasAttribute("inert")).toBe(true);
     expect(host.textContent).toContain("legacy-session-fixture");
     expect(host.querySelector(".ff-page-titlebar")?.hasAttribute("inert")).toBe(false);
     expect(button(t("ui.toggleSidebar")).getAttribute("aria-expanded")).toBe("false");
-    act(() => host.querySelector(".ff-page-edge")!.dispatchEvent(new MouseEvent("pointerover", { bubbles: true })));
-    act(() => button(t("ui.settings")).click());
+    act(() => button(t("ui.userMenu")).click());
     expect(props.onOpenSettings).toHaveBeenCalledOnce();
   });
   it("keeps the Firefly portrait visible outside the collapsed context", () => {
@@ -302,12 +298,12 @@ describe("workspace navigation layout", () => {
     } });
     await act(async () => render());
     const trigger = button(t("ui.userMenu"));
-    expect(trigger.title).toBe("Existing local nickname");
+    expect(trigger.getAttribute("aria-description")).toBe("Existing local nickname");
     expect(trigger.querySelector("img")?.getAttribute("src")).toBe("data:image/png;base64,fixture-one");
     expect(trigger.querySelector(".is-placeholder")).toBeNull();
     avatar = "data:image/png;base64,fixture-two";
     await act(async () => { changedAvatar!(); changedProfile!({ nickname: "Updated local nickname" }); });
-    expect(document.querySelector(".ff-sidebar-user__name")?.textContent).toBe("Updated local nickname");
+    expect(trigger.getAttribute("aria-description")).toBe("Updated local nickname");
     expect(trigger.querySelector("img")?.getAttribute("src")).toBe("data:image/png;base64,fixture-two");
     act(() => root.unmount());
     expect(changedAvatar).toBeUndefined();
@@ -359,46 +355,22 @@ describe("workspace navigation layout", () => {
     expect(event.defaultPrevented).toBe(true);
     expect(document.querySelector(".ff-sidebar-search")).toBeTruthy();
   });
-  it("shows the task card only for work and code and reflects the todo progress", () => {
-    const todoState = { updatedAt: 1, todos: [
-      { id: "1", content: "Read", status: "completed" }, { id: "2", content: "Write", status: "in_progress" },
-    ] } as ChatPageNavigationProps["todoState"];
-    render({ mode: "chat", todoState });
-    expect(host.querySelector(".ff-task-card")).toBeNull();
-    render({ mode: "work", todoState });
-    expect(host.querySelector(".ff-task-card")).toBeTruthy();
-    expect(host.querySelector(".ff-task-card__sub")?.textContent).toBe(t("todo.progress", { completed: 1, total: 2 }));
-    expect(host.querySelector('.ff-task-card [role="progressbar"]')?.getAttribute("aria-valuenow")).toBe("50");
-    render({ mode: "code", todoState: null });
-    expect(host.querySelector(".ff-task-card__badge")?.textContent).toBe(t("todo.modeCode"));
-  });
-  it("toggles the plugin panel from its entry in the sidebar", () => {
+  it("marks the open panel on the rail and goes back to conversations from home", () => {
     render({ activePanel: "plugin" });
-    const plugin = button(t("ui.plugins"));
-    expect(plugin.getAttribute("aria-pressed")).toBe("true");
-    act(() => plugin.click());
+    const plugin = host.querySelector<HTMLButtonElement>('[data-rail-item="plugin"]')!;
+    expect(plugin.getAttribute("aria-current")).toBe("page");
+    act(() => host.querySelector<HTMLButtonElement>('[data-rail-item="home"]')!.click());
     expect(props.onTogglePanel).toHaveBeenCalledExactlyOnceWith("plugin");
   });
-  it("opens tools through More and returns keyboard focus on Escape", async () => {
+  it("opens a panel through ··· on the rail and returns keyboard focus on Escape", async () => {
     render();
     const more = button(t("ui.more"));
-    act(() => more.click());
-    await act(async () => {});
-    expect(document.querySelector(".ff-page-more")).toBeTruthy();
-    const tool = [...document.querySelectorAll<HTMLButtonElement>(".ff-page-more button")].find(node => node.title === t("ui.tools"));
-    act(() => tool!.click());
+    await act(async () => more.click());
+    const tool = document.querySelector<HTMLButtonElement>('[data-rail-menu-item="tool"]')!;
+    act(() => tool.click());
     expect(props.onTogglePanel).toHaveBeenCalledWith("tool");
-    act(() => more.click());
-    act(() => document.querySelector(".ff-page-more")!.dispatchEvent(new KeyboardEvent("keydown", { key: "Escape", bubbles: true })));
-    expect(document.activeElement).toBe(more);
-  });
-  it("closes More with Escape while keyboard focus is on the trigger", () => {
-    render();
-    const more = button(t("ui.more"));
-    act(() => { more.focus(); more.click(); });
-    expect(more.getAttribute("aria-expanded")).toBe("true");
-    act(() => more.dispatchEvent(new KeyboardEvent("keydown", { key: "Escape", bubbles: true })));
-    expect(more.getAttribute("aria-expanded")).toBe("false");
+    await act(async () => more.click());
+    act(() => document.querySelector(".ff-activity-rail__menu")!.dispatchEvent(new KeyboardEvent("keydown", { key: "Escape", bubbles: true })));
     expect(document.activeElement).toBe(more);
   });
 });
@@ -429,19 +401,4 @@ it("ends an in-flight resize on explicit collapse and ignores its remaining poin
   render();
   expect(host.querySelector('[role="separator"]')?.getAttribute("aria-valuenow")).toBe("280");
   expect(localStorage.getItem("firefly.chat.sidebar-width")).toBe("280");
-});
-
-it("more menu retains visible text and row layout inside its sidebar popup container", async () => {
-  const style = document.createElement("style");
-  style.textContent = fs.readFileSync("src/renderer/react/styles/react-root.css", "utf8"); document.head.append(style);
-  try {
-    render(); await act(async () => button(t("ui.more")).click());
-    const menu = host.querySelector<HTMLElement>(".ff-page-more"); expect(menu).not.toBeNull();
-    for (const label of menu!.querySelectorAll<HTMLElement>(".ff-side-action-label")) {
-      expect(window.getComputedStyle(label).display).not.toBe("none");
-      expect(window.getComputedStyle(label.closest(".ff-side-action")!).display).toBe("flex");
-    }
-    expect(menu!.querySelectorAll(".ff-side-action-label")).toHaveLength(4);
-    expect([...menu!.querySelectorAll(".ff-side-action-label")].at(-1)?.textContent).toBe(t("ui.scheduledTasks"));
-  } finally { style.remove(); }
 });
