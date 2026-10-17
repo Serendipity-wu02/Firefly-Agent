@@ -18,6 +18,7 @@ import {
   type OverviewContext,
 } from "./session-overview-model";
 import { DRAG_DEAD_ZONE, moveId, reconcileOrder } from "./reorder-list";
+import { UsageCardBody, usageCardSummary, useUsageData } from "./TokenUsageBar";
 import "./SessionOverviewPanel.css";
 
 const OPEN_STORAGE_PREFIX = "ff.sessionOverview.open.";
@@ -192,6 +193,10 @@ export interface SessionOverviewPanelProps {
   /** Opens the connector (MCP) settings page. */
   onOpenConnectors?: () => void;
   onOpenOutput?: (output: WorkspaceRunOutput) => void;
+  /** The conversation whose run stats the usage card shows. */
+  sessionId?: string;
+  /** A run is in flight: usage is read again when it ends. */
+  busy?: boolean;
 }
 
 interface CardSlot { id: string; top: number; height: number }
@@ -224,7 +229,8 @@ function outputLabel(output: WorkspaceRunOutput, index: number, t: (key: string,
   return single || t("workspace.runResult", { index: index + 1 });
 }
 
-export function SessionOverviewPanel({ usage, outputs, environment, onOpenChange, onOpenTask, onOpenEnvironment, onOpenConnectors, onOpenOutput }: SessionOverviewPanelProps) {
+export function SessionOverviewPanel({ usage, outputs, environment, onOpenChange, onOpenTask, onOpenEnvironment, onOpenConnectors, onOpenOutput, sessionId, busy }: SessionOverviewPanelProps) {
+  const usageData = useUsageData(busy, sessionId);
   const { t } = useTranslation();
   const context = buildContextOverview(usage);
   const changes = summarizeChanges(outputs);
@@ -347,6 +353,12 @@ export function SessionOverviewPanel({ usage, outputs, environment, onOpenChange
             })}
           </ul>
         ),
+    },
+    {
+      id: "usage",
+      title: t("sessionOverview.usage"),
+      summary: usageCardSummary(usageData),
+      body: <UsageCardBody data={usageData} />,
     },
   ];
   const reconciled = reconcileOrder(order, cards.map(card => card.id));

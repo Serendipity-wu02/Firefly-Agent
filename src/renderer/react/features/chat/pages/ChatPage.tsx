@@ -1838,7 +1838,8 @@ export function ChatPage() {
               environment={{ mode, workspaceName: activeSession?.workspaceBinding?.displayName, temporary: activeSession?.temporary }}
               onOpenEnvironment={activeSession?.workspaceBinding ? openFilesTab : mode !== "chat" ? () => void chooseWorkspace() : undefined}
               onOpenConnectors={() => sidebarApi()?.openSettings("mcp")}
-              onOpenOutput={output => openResultTab(output.id)} />
+              onOpenOutput={output => openResultTab(output.id)}
+              sessionId={activeSessionId} busy={isCurrentScopeRunning} />
           </aside>
         )}
         </div>

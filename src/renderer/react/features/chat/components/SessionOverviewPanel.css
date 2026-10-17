@@ -182,3 +182,13 @@
   .ff-overview-card__chevron { transition: none; }
   .ff-overview-list__pulse { animation: none; }
 }
+
+/* Usage card: this conversation's run stats, then the 90-day token breakdown; same type scale as the context card. */
+.ff-overview-usage { display: grid; gap: 12px; font-variant-numeric: tabular-nums; }
+.ff-overview-usage__head { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; margin-bottom: 6px; }
+.ff-overview-usage__head strong { font-size: 12px; font-weight: 600; }
+.ff-overview-usage__head span { color: var(--ff-text-muted, #828396); }
+.ff-overview-usage__rows { display: grid; gap: 4px; margin: 0; }
+.ff-overview-usage__rows > div { display: flex; justify-content: space-between; gap: 12px; }
+.ff-overview-usage__rows dt { color: var(--ff-text-secondary); }
+.ff-overview-usage__rows dd { margin: 0; text-align: right; }

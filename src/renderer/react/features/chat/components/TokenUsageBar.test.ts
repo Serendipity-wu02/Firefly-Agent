@@ -1,16 +1,18 @@
 // @vitest-environment jsdom
-// TokenUsageBar 单测：格式化与汇总的纯函数口径 + 挂载/run 结束刷新、无数据隐藏的组件行为。
+// 用量卡片单测：格式化与汇总的纯函数口径 + 读取时机（挂载 / 换对话 / run 结束）与卡片内容。
 import React, { act } from "react";
 import { createRoot, type Root } from "react-dom/client";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import {
   TOKEN_USAGE_BAR_DAYS,
-  TokenUsageBar,
+  UsageCardBody,
   formatSeconds,
   formatTokenAmount,
   splitDuration,
   summarizeTokenUsage,
   type TokenUsageBarDay,
+  usageCardSummary,
+  useUsageData,
 } from "./TokenUsageBar";
 
 function day(overrides: Partial<TokenUsageBarDay> = {}): TokenUsageBarDay {
@@ -93,19 +95,25 @@ describe("duration helpers", () => {
   });
 });
 
-describe("TokenUsageBar rendering and refresh", () => {
+describe("usage card", () => {
   let root: Root;
   let host: HTMLDivElement;
   let getUsage: ReturnType<typeof vi.fn>;
   let getSessionStats: ReturnType<typeof vi.fn>;
+  let summary: string | undefined;
+
+  function Probe({ busy, sessionId }: { busy: boolean; sessionId?: string }) {
+    const data = useUsageData(busy, sessionId);
+    summary = usageCardSummary(data);
+    return React.createElement(UsageCardBody, { data });
+  }
 
   beforeEach(() => {
     globalThis.IS_REACT_ACT_ENVIRONMENT = true;
-    // antd Popover positions itself with a ResizeObserver, which jsdom does not implement.
-    vi.stubGlobal("ResizeObserver", class { observe() {} unobserve() {} disconnect() {} });
     host = document.createElement("div");
     document.body.appendChild(host);
     root = createRoot(host);
+    summary = undefined;
     getUsage = vi.fn(async () => ({
       days: [day({ input: 349_000_000, output: 1_000_000, hit: 346_000_000, miss: 3_000_000, requests: 133, attemptedRequests: 133, cacheUsageRequests: 133 })],
     }));
@@ -115,54 +123,35 @@ describe("TokenUsageBar rendering and refresh", () => {
 
   afterEach(() => {
     act(() => root.unmount());
-    vi.unstubAllGlobals();
     host.remove();
     delete (window as unknown as { tokenUsage?: unknown }).tokenUsage;
   });
 
   async function render(busy: boolean, sessionId?: string) {
-    await act(async () => {
-      root.render(React.createElement(TokenUsageBar, { busy, sessionId }));
-    });
+    await act(async () => { root.render(React.createElement(Probe, { busy, sessionId })); });
   }
 
-  /** The detail card opens on hover or keyboard focus; focus is the deterministic one in jsdom. */
-  async function openCard(chip: Element | null | undefined) {
-    await act(async () => { (chip as HTMLElement).focus(); });
-  }
-  const chips = () => [...host.querySelectorAll(".ff-token-usage-bar__item")];
-  const card = () => document.body.querySelector(".ff-usage-card");
-
-  it("fetches the usage window on mount and shows the summary", async () => {
+  it("reads the 90-day window on mount and puts the total in the card header", async () => {
     await render(false);
     expect(getUsage).toHaveBeenCalledWith(TOKEN_USAGE_BAR_DAYS);
-    expect(host.textContent).toContain("近 90 天 350M tok");
-    expect(host.textContent).toContain("缓存命中 99%");
+    expect(summary).toBe("350M tok");
   });
 
-  it("shows the conversation chip with rounds, steps and speed, and fetches by conversation id", async () => {
+  it("lists this conversation's run stats", async () => {
     await render(false, "session-a");
     expect(getSessionStats).toHaveBeenCalledWith("session-a");
-    expect(chips()).toHaveLength(2);
-    expect(chips()[0]!.textContent).toBe("153 轮 1005 步 · 245 tok/s");
-  });
-
-  it("lists the conversation stats in its detail card", async () => {
-    await render(false, "session-a");
-    await openCard(chips()[0]);
-    const text = card()!.textContent!;
-    expect(text).toContain("会话统计");
+    const text = host.textContent!;
+    expect(text).toContain("153 轮 1005 步");
     expect(text).toContain("模型用时162分16秒");
     expect(text).toContain("工具调用用时99分31秒");
     expect(text).toContain("首 token 平均 (TTFT)3.9秒");
     expect(text).toContain("输出速度 (TPS)245 tok/s");
   });
 
-  it("lists the token breakdown with exact numbers in its detail card", async () => {
+  it("lists the token breakdown with exact numbers", async () => {
     await render(false, "session-a");
-    await openCard(chips()[1]);
-    const text = card()!.textContent!;
-    expect(text).toContain("Token 用量350,000,000 tok");
+    const text = host.textContent!;
+    expect(text).toContain("350,000,000 tok");
     expect(text).toContain("缓存命中99%");
     expect(text).toContain("未缓存输入3,000,000 tok");
     expect(text).toContain("缓存读取346,000,000 tok");
@@ -174,60 +163,42 @@ describe("TokenUsageBar rendering and refresh", () => {
   it("shows em dashes where a conversation has no first-token or speed data", async () => {
     getSessionStats.mockResolvedValueOnce({ rounds: 1, steps: 2, modelMs: 800, toolMs: 0, avgTtftMs: null, tokensPerSecond: null });
     await render(false, "session-a");
-    expect(chips()[0]!.textContent).toBe("1 轮 2 步");
-    await openCard(chips()[0]);
-    expect(card()!.textContent).toContain("首 token 平均 (TTFT)—");
-    expect(card()!.textContent).toContain("输出速度 (TPS)—");
+    expect(host.textContent).toContain("首 token 平均 (TTFT)—");
+    expect(host.textContent).toContain("输出速度 (TPS)—");
   });
 
-  it("hides the conversation chip when the conversation has nothing recorded or no id yet", async () => {
+  it("leaves out the conversation section when it has nothing recorded or no id yet", async () => {
     getSessionStats.mockResolvedValueOnce(null);
     await render(false, "session-a");
-    expect(chips()).toHaveLength(1);
-    expect(host.textContent).not.toContain("轮");
+    expect(host.textContent).not.toContain("会话统计");
     await render(false, undefined);
-    expect(chips()).toHaveLength(1);
+    expect(host.textContent).not.toContain("会话统计");
+    expect(host.textContent).toContain("Token 用量");
   });
 
   it("drops the previous conversation's numbers when switching and refetches for the new one", async () => {
     await render(false, "session-a");
-    expect(chips()).toHaveLength(2);
+    expect(host.textContent).toContain("会话统计");
     getSessionStats.mockResolvedValueOnce(null);
     await render(false, "session-b");
     expect(getSessionStats).toHaveBeenLastCalledWith("session-b");
-    expect(chips()).toHaveLength(1);
+    expect(host.textContent).not.toContain("会话统计");
   });
 
-  it("still shows the token chip when the conversation read fails", async () => {
-    getSessionStats.mockRejectedValueOnce(new Error("ipc down"));
-    await render(false, "session-a");
-    expect(chips()).toHaveLength(1);
-  });
-
-  it("does not fetch while a run is in progress", async () => {
+  it("does not read while a run is in progress, and reads once when it ends", async () => {
     await render(true, "session-a");
     expect(getUsage).not.toHaveBeenCalled();
     expect(getSessionStats).not.toHaveBeenCalled();
-    expect(host.innerHTML).toBe("");
-  });
-
-  it("refreshes once the run ends (busy true -> false) and not on every render", async () => {
-    await render(true);
-    await render(false);
+    await render(false, "session-a");
     expect(getUsage).toHaveBeenCalledTimes(1);
-    await render(false);
+    await render(false, "session-a");
     expect(getUsage).toHaveBeenCalledTimes(1);
   });
 
-  it("renders nothing when there is no recorded usage", async () => {
-    getUsage.mockResolvedValueOnce({ days: [] });
-    await render(false);
-    expect(host.innerHTML).toBe("");
-  });
-
-  it("renders nothing and does not throw when the read fails", async () => {
+  it("says there is nothing yet when no usage was recorded or the read fails", async () => {
     getUsage.mockRejectedValueOnce(new Error("ipc down"));
     await render(false);
-    expect(host.innerHTML).toBe("");
+    expect(host.textContent).toContain("还没有用量记录");
+    expect(summary).toBeUndefined();
   });
 });

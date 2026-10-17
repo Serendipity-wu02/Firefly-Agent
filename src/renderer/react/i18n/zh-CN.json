@@ -188,6 +188,7 @@
     "requests": "{{count}} 次请求",
     "total": "近 {{days}} 天 {{value}} tok",
     "cacheHit": "缓存命中 {{rate}}",
+    "empty": "还没有用量记录",
     "sessionTitle": "会话统计",
     "roundsSteps": "{{rounds}} 轮 {{steps}} 步",
     "speed": "{{value}} tok/s",
@@ -1159,6 +1160,7 @@
     "environmentNoProject": "未选择项目",
     "connectors": "连接器",
     "connectorsManage": "在设置中管理",
+    "usage": "用量",
     "outputs": "产出",
     "outputsEmpty": "本会话还没有产出",
     "outputCounts": "{{files}} 个文件 · {{tools}} 项工具"

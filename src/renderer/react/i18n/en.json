@@ -188,6 +188,7 @@
     "requests": "{{count}} requests",
     "total": "Last {{days}} days {{value}} tok",
     "cacheHit": "Cache hit {{rate}}",
+    "empty": "No usage recorded yet",
     "sessionTitle": "Conversation stats",
     "roundsSteps": "{{rounds}} turns {{steps}} steps",
     "speed": "{{value}} tok/s",
@@ -1159,6 +1160,7 @@
     "environmentNoProject": "No project chosen",
     "connectors": "Connectors",
     "connectorsManage": "Manage in settings",
+    "usage": "Usage",
     "outputs": "Outputs",
     "outputsEmpty": "No outputs in this session yet",
     "outputCounts": "{{files}} files · {{tools}} tools"

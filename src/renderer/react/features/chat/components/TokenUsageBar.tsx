@@ -1,16 +1,11 @@
-// 输入框下方的状态条，两枚胶囊，悬停各展开一张明细卡：
-// - 会话统计：当前对话累计的轮数、步数、输出速度；卡里有模型用时、工具调用用时、首 token 平均耗时、输出速度。
-//   数据来自主进程按会话累计的运行统计（tokenUsage.sessionStats），对话没有记录时不显示这枚胶囊。
-// - Token 用量：近 N 天的 token 总量与缓存命中率（tokenUsage.get）；卡里有缓存命中、未缓存输入、缓存读取、输出与请求数。
-//   store 没有按会话拆分的缓存明细，所以这一枚是全局累计窗口，文案写明"近 N 天"。
+// 用量：右侧概览面板里的"用量"卡片（原来在输入框下方的状态条）。
+// - 本次对话：主进程按会话累计的运行统计（tokenUsage.sessionStats）——轮数、步数、模型用时、工具调用用时、
+//   首 token 平均耗时、输出速度；对话还没有记录时这一段不显示。
+// - Token 用量：近 N 天所有对话合计（tokenUsage.get）——总量、缓存命中、未缓存输入、缓存读取、输出、请求数。
 // - 刷新时机：挂载、切换对话时拉一次；run 结束（busy 由 true 落到 false）时再拉一次，不轮询。
-// - 两项都没有数据（或读取失败、尚未返回）时整条不渲染，不留空白占位。
-// - 窄窗口：会话统计胶囊由容器查询隐藏，不换行。
-import { useEffect, useState, type ReactNode } from "react";
-import { Popover } from "antd";
+import { useEffect, useState } from "react";
 import type { SessionStats } from "../../../../../shared/usage-history";
 import { useTranslation } from "../../../i18n";
-import "./TokenUsageBar.css";
 
 /** 统计窗口：与主进程 TOKEN_USAGE_GET 的上限一致（getUsageReport 最多 90 天）。 */
 export const TOKEN_USAGE_BAR_DAYS = 90;
@@ -98,40 +93,13 @@ export function splitDuration(ms: number): { minutes: number; seconds: number } 
   return { minutes: Math.floor(total / 60), seconds: total % 60 };
 }
 
-function SessionIcon() {
-  return <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 14l3.5-4M4.5 18a9 9 0 1 1 15 0" /><circle cx="12" cy="14" r="1.2" /></svg>;
+export interface UsageData {
+  summary: TokenUsageSummary | null;
+  session: SessionStats | null;
 }
 
-function TokenIcon() {
-  return <svg viewBox="0 0 24 24" aria-hidden="true"><ellipse cx="12" cy="6" rx="7" ry="3" /><path d="M5 6v6c0 1.7 3.1 3 7 3s7-1.3 7-3V6M5 12v6c0 1.7 3.1 3 7 3s7-1.3 7-3v-6" /></svg>;
-}
-
-function UsageCard({ icon, title, value, rows, note }: { icon: ReactNode; title: string; value?: string; rows: Array<[string, string]>; note?: string }) {
-  return (
-    <div className="ff-usage-card">
-      <div className="ff-usage-card__header">
-        <span className="ff-usage-card__title">{icon}{title}</span>
-        {value && <strong>{value}</strong>}
-      </div>
-      <dl className="ff-usage-card__rows">
-        {rows.map(([label, text]) => (
-          <div key={label}><dt>{label}</dt><dd>{text}</dd></div>
-        ))}
-      </dl>
-      {note && <div className="ff-usage-card__note">{note}</div>}
-    </div>
-  );
-}
-
-interface TokenUsageBarProps {
-  /** 模型运行中：run 结束（true → false）时重新拉取统计。 */
-  busy?: boolean;
-  /** 当前对话；用它取"会话统计"，没有时只显示 Token 用量。 */
-  sessionId?: string;
-}
-
-export function TokenUsageBar({ busy, sessionId }: TokenUsageBarProps) {
-  const { t } = useTranslation();
+/** Reads the 90-day token totals and this conversation's run stats, again whenever a run ends or the conversation changes. */
+export function useUsageData(busy: boolean | undefined, sessionId: string | undefined): UsageData {
   const [summary, setSummary] = useState<TokenUsageSummary | null>(null);
   const [session, setSession] = useState<SessionStats | null>(null);
 
@@ -141,15 +109,11 @@ export function TokenUsageBar({ busy, sessionId }: TokenUsageBarProps) {
     const load = tokenUsageApi()?.get;
     if (!load) return;
     let active = true;
-    // 读取失败保持上一次结果，不影响输入框本身。
+    // 读取失败保持上一次结果。
     load(TOKEN_USAGE_BAR_DAYS)
-      .then((report) => {
-        if (active) setSummary(summarizeTokenUsage(report?.days ?? []));
-      })
+      .then((report) => { if (active) setSummary(summarizeTokenUsage(report?.days ?? [])); })
       .catch(() => {});
-    return () => {
-      active = false;
-    };
+    return () => { active = false; };
   }, [busy]);
 
   useEffect(() => {
@@ -163,88 +127,68 @@ export function TokenUsageBar({ busy, sessionId }: TokenUsageBarProps) {
     if (!load) return;
     let active = true;
     load(sessionId)
-      .then((stats) => {
-        if (active) setSession(stats && (stats.rounds > 0 || stats.steps > 0) ? stats : null);
-      })
+      .then((stats) => { if (active) setSession(stats && (stats.rounds > 0 || stats.steps > 0) ? stats : null); })
       .catch(() => {});
-    return () => {
-      active = false;
-    };
+    return () => { active = false; };
   }, [busy, sessionId]);
 
-  if (!summary && !session) return null;
+  return { summary, session };
+}
 
+/** One-line summary for the card header: the 90-day total. */
+export function usageCardSummary(data: UsageData): string | undefined {
+  return data.summary ? `${formatTokenAmount(data.summary.total)} tok` : undefined;
+}
+
+/** Body of the overview panel's usage card: this conversation's run stats, then the 90-day token breakdown. */
+export function UsageCardBody({ data }: { data: UsageData }) {
+  const { t } = useTranslation();
+  const { summary, session } = data;
+  if (!summary && !session) return <p className="ff-overview-card__empty">{t("tokenUsageBar.empty")}</p>;
   const duration = (ms: number) => {
     const { minutes, seconds } = splitDuration(ms);
     return minutes > 0 ? t("tokenUsageBar.durationMinutes", { minutes, seconds }) : t("tokenUsageBar.durationSeconds", { seconds });
   };
   const speed = (value: number | null) => (value === null ? "—" : t("tokenUsageBar.speed", { value }));
   const exact = (value: number) => value.toLocaleString("en-US");
-
-  const days = TOKEN_USAGE_BAR_DAYS;
-  const cacheText = summary?.cacheHitRate === undefined
-    ? undefined
-    : `${Math.round(summary.cacheHitRate * 100)}%`;
-
+  const cacheText = summary?.cacheHitRate === undefined ? undefined : `${Math.round(summary.cacheHitRate * 100)}%`;
+  const rows = (items: Array<[string, string]>) => (
+    <dl className="ff-overview-usage__rows">
+      {items.map(([label, value]) => <div key={label}><dt>{label}</dt><dd>{value}</dd></div>)}
+    </dl>
+  );
   return (
-    <div className="ff-token-usage-bar" role="status" aria-label={t("tokenUsageBar.ariaLabel", { days })}>
-      <div className="ff-token-usage-bar__inner">
-        {session && (
-          <Popover
-            trigger={["hover", "focus"]}
-            placement="top"
-            mouseEnterDelay={0.15}
-            rootClassName="ff-usage-popover"
-            content={(
-              <UsageCard
-                icon={<SessionIcon />}
-                title={t("tokenUsageBar.sessionTitle")}
-                rows={[
-                  [t("tokenUsageBar.modelTime"), duration(session.modelMs)],
-                  [t("tokenUsageBar.toolTime"), duration(session.toolMs)],
-                  [t("tokenUsageBar.ttft"), session.avgTtftMs === null ? "—" : t("tokenUsageBar.seconds", { value: formatSeconds(session.avgTtftMs) })],
-                  [t("tokenUsageBar.tps"), speed(session.tokensPerSecond)],
-                ]}
-              />
-            )}
-          >
-            <button type="button" className="ff-token-usage-bar__item ff-token-usage-bar__item--secondary">
-              <SessionIcon />
-              {t("tokenUsageBar.roundsSteps", { rounds: session.rounds, steps: session.steps })}
-              {session.tokensPerSecond !== null && <> · {speed(session.tokensPerSecond)}</>}
-            </button>
-          </Popover>
-        )}
-        {summary && (
-          <Popover
-            trigger={["hover", "focus"]}
-            placement="top"
-            mouseEnterDelay={0.15}
-            rootClassName="ff-usage-popover"
-            content={(
-              <UsageCard
-                icon={<TokenIcon />}
-                title={t("tokenUsageBar.tokenTitle")}
-                value={t("tokenUsageBar.tokens", { value: exact(summary.total) })}
-                rows={[
-                  ...(cacheText !== undefined ? [[t("tokenUsageBar.cacheHitRow"), cacheText] as [string, string]] : []),
-                  [t("tokenUsageBar.uncachedInput"), t("tokenUsageBar.tokens", { value: exact(summary.miss) })],
-                  [t("tokenUsageBar.cacheRead"), t("tokenUsageBar.tokens", { value: exact(summary.hit) })],
-                  [t("tokenUsageBar.outputRow"), t("tokenUsageBar.tokens", { value: exact(summary.output) })],
-                  [t("tokenUsageBar.requestsRow"), t("tokenUsageBar.requests", { count: exact(summary.requests) })],
-                ]}
-                note={t("tokenUsageBar.rangeNote", { days })}
-              />
-            )}
-          >
-            <button type="button" className="ff-token-usage-bar__item">
-              <TokenIcon />
-              {t("tokenUsageBar.total", { days, value: formatTokenAmount(summary.total) })}
-              {cacheText !== undefined && <> · {t("tokenUsageBar.cacheHit", { rate: cacheText })}</>}
-            </button>
-          </Popover>
-        )}
-      </div>
+    <div className="ff-overview-usage">
+      {session && (
+        <section aria-label={t("tokenUsageBar.sessionTitle")}>
+          <div className="ff-overview-usage__head">
+            <strong>{t("tokenUsageBar.sessionTitle")}</strong>
+            <span>{t("tokenUsageBar.roundsSteps", { rounds: session.rounds, steps: session.steps })}</span>
+          </div>
+          {rows([
+            [t("tokenUsageBar.modelTime"), duration(session.modelMs)],
+            [t("tokenUsageBar.toolTime"), duration(session.toolMs)],
+            [t("tokenUsageBar.ttft"), session.avgTtftMs === null ? "—" : t("tokenUsageBar.seconds", { value: formatSeconds(session.avgTtftMs) })],
+            [t("tokenUsageBar.tps"), speed(session.tokensPerSecond)],
+          ])}
+        </section>
+      )}
+      {summary && (
+        <section aria-label={t("tokenUsageBar.tokenTitle")}>
+          <div className="ff-overview-usage__head">
+            <strong>{t("tokenUsageBar.tokenTitle")}</strong>
+            <span>{t("tokenUsageBar.tokens", { value: exact(summary.total) })}</span>
+          </div>
+          {rows([
+            ...(cacheText !== undefined ? [[t("tokenUsageBar.cacheHitRow"), cacheText] as [string, string]] : []),
+            [t("tokenUsageBar.uncachedInput"), t("tokenUsageBar.tokens", { value: exact(summary.miss) })],
+            [t("tokenUsageBar.cacheRead"), t("tokenUsageBar.tokens", { value: exact(summary.hit) })],
+            [t("tokenUsageBar.outputRow"), t("tokenUsageBar.tokens", { value: exact(summary.output) })],
+            [t("tokenUsageBar.requestsRow"), t("tokenUsageBar.requests", { count: exact(summary.requests) })],
+          ])}
+          <p className="ff-overview-card__note">{t("tokenUsageBar.rangeNote", { days: TOKEN_USAGE_BAR_DAYS })}</p>
+        </section>
+      )}
     </div>
   );
 }
