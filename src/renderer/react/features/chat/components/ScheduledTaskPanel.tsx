@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Switch } from "antd";
-import { History, Pencil, Play, Plus, Trash2 } from "lucide-react";
+import { AlarmClock, CalendarCheck, CalendarClock, History, ListChecks, Pencil, Play, Plus, Trash2 } from "lucide-react";
 import { useTranslation } from "../../../i18n";
 import { useFeedback } from "../../../components/feedback/FeedbackProvider";
 import { ScheduledTaskEditor } from "./ScheduledTaskEditor";
@@ -15,6 +15,7 @@ import {
   type SchedulerToolInfo,
   type Translate,
 } from "./scheduled-task-model";
+import { PanelEmpty, PanelPage, PanelPrimaryButton, PanelSidebar, PanelSidebarItem, PanelSidebarSection } from "./PanelShell";
 import "./ScheduledTaskPanel.css";
 
 interface PluginEntryLike {
@@ -89,7 +90,8 @@ export function ScheduledTaskPanel() {
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState<string | null>(null);
   /** null 表示列表视图；{} 为新建；{ task } 为编辑。 */
-  const [editor, setEditor] = useState<{ task?: ScheduledTask } | null>(null);
+  const [editor, setEditor] = useState<{ task?: ScheduledTask; preset?: { title: string; prompt: string } } | null>(null);
+  const [stateFilter, setStateFilter] = useState<"all" | "enabled" | "disabled">("all");
   /** 存在键即表示该任务的历史已展开。 */
   const [histories, setHistories] = useState<Record<string, HistoryState>>({});
   const historiesRef = useRef(histories);
@@ -233,17 +235,38 @@ export function ScheduledTaskPanel() {
     })();
   };
 
+  const shownTasks = tasks.filter(task => stateFilter === "all" || (stateFilter === "enabled") === task.enabled);
+
   return (
     <div className="scheduled-panel">
-      <header className="scheduled-panel__header">
-        <h1 className="scheduled-panel__title">{t("scheduledPanel.title")}</h1>
-        <p className="scheduled-panel__subtitle">{t("scheduledPanel.subtitle")}</p>
-      </header>
+      <PanelSidebar
+        title={t("scheduledPanel.title")}
+        primary={<PanelPrimaryButton icon={<Plus size={15} strokeWidth={1.8} />} label={t("scheduledPanel.newTask")} onClick={() => setEditor({})} />}
+      >
+        <PanelSidebarSection>
+          <PanelSidebarItem icon={<ListChecks size={15} strokeWidth={1.6} />} label={t("scheduledPanel.filterAll")} count={tasks.length}
+            active={stateFilter === "all"} onClick={() => setStateFilter("all")} />
+          <PanelSidebarItem icon={<CalendarCheck size={15} strokeWidth={1.6} />} label={t("scheduledPanel.badgeEnabled")} count={tasks.filter(task => task.enabled).length}
+            active={stateFilter === "enabled"} onClick={() => setStateFilter("enabled")} />
+          <PanelSidebarItem icon={<AlarmClock size={15} strokeWidth={1.6} />} label={t("scheduledPanel.badgeDisabled")} count={tasks.filter(task => !task.enabled).length}
+            active={stateFilter === "disabled"} onClick={() => setStateFilter("disabled")} />
+        </PanelSidebarSection>
+        {shownTasks.length > 0 && (
+          <PanelSidebarSection title={t("scheduledPanel.listSection")}>
+            {shownTasks.map(task => (
+              <PanelSidebarItem key={task.id} label={task.title} dot={task.enabled ? "on" : "off"}
+                onClick={() => { setEditor(null); requestAnimationFrame(() => document.getElementById(`scheduled-task-${task.id}`)?.scrollIntoView({ block: "nearest", behavior: "smooth" })); }} />
+            ))}
+          </PanelSidebarSection>
+        )}
+      </PanelSidebar>
+      <PanelPage className="scheduled-panel__page" title={t("scheduledPanel.title")} subtitle={<span className="scheduled-panel__subtitle">{t("scheduledPanel.subtitle")}</span>}>
 
       {editor ? (
         <ScheduledTaskEditor
-          key={editor.task?.id ?? "new"}
+          key={editor.task?.id ?? (editor.preset?.title ?? "new")}
           task={editor.task}
+          preset={editor.preset}
           api={getSchedulerApi()}
           tools={tools}
           onCancel={() => setEditor(null)}
@@ -254,22 +277,26 @@ export function ScheduledTaskPanel() {
         />
       ) : (
         <>
-          <div className="scheduled-panel__toolbar">
-            <p className="scheduled-panel__hint">{t("scheduledPanel.listHint")}</p>
-            <button type="button" className="scheduled-btn is-primary" onClick={() => setEditor({})}>
-              <Plus size={14} strokeWidth={2} aria-hidden="true" />
-              <span>{t("scheduledPanel.newTask")}</span>
-            </button>
-          </div>
+          {tasks.length > 0 && <p className="scheduled-panel__hint">{t("scheduledPanel.listHint")}</p>}
 
           {loadError && <div role="alert" className="scheduled-state is-error">{loadError}</div>}
           {loading ? (
             <div className="scheduled-state">{t("common.loading")}</div>
           ) : tasks.length === 0 && !loadError ? (
-            <div className="scheduled-state">{t("scheduledPanel.empty")}</div>
+            <PanelEmpty
+              icon={<CalendarClock size={24} strokeWidth={1.5} />}
+              title={t("scheduledPanel.emptyTitle")}
+              hint={t("scheduledPanel.empty")}
+              suggestions={SUGGESTIONS.map(card => ({
+                icon: card.icon,
+                title: t(`scheduledPanel.suggestions.${card.key}.title`),
+                description: t(`scheduledPanel.suggestions.${card.key}.description`),
+                onClick: () => setEditor({ preset: { title: t(`scheduledPanel.suggestions.${card.key}.title`), prompt: t(`scheduledPanel.suggestions.${card.key}.prompt`) } }),
+              }))}
+            />
           ) : (
             <div className="scheduled-list">
-              {tasks.map((task) => (
+              {shownTasks.map((task) => (
                 <ScheduledTaskCard
                   key={task.id}
                   task={task}
@@ -286,9 +313,17 @@ export function ScheduledTaskPanel() {
           )}
         </>
       )}
+      </PanelPage>
     </div>
   );
 }
+
+/** First-run suggestions: each opens the editor with a starting title and prompt; nothing is saved until the user does. */
+const SUGGESTIONS = [
+  { key: "daily", icon: <CalendarClock size={16} strokeWidth={1.6} /> },
+  { key: "weekly", icon: <CalendarCheck size={16} strokeWidth={1.6} /> },
+  { key: "todos", icon: <ListChecks size={16} strokeWidth={1.6} /> },
+];
 
 function withoutKey<T>(record: Record<string, T>, key: string): Record<string, T> {
   const next = { ...record };
@@ -323,7 +358,7 @@ function ScheduledTaskCard({ task, pluginRunning, history, onRun, onEdit, onTogg
   ].filter((item): item is string => Boolean(item));
 
   return (
-    <article className={`scheduled-card ${task.enabled ? "" : "is-disabled"}`}>
+    <article id={`scheduled-task-${task.id}`} className={`scheduled-card ${task.enabled ? "" : "is-disabled"}`}>
       <div className="scheduled-card__head">
         <h2 className="scheduled-card__name">{task.title}</h2>
         <span className={`scheduled-card__badge ${task.enabled ? "is-on" : ""}`}>

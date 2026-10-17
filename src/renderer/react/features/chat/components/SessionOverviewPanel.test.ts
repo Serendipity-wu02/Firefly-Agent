@@ -43,7 +43,7 @@ describe("SessionOverviewPanel", () => {
     const html = render({ usage });
 
     expect(html).toContain("已用 21%");
-    expect(html).toContain("210k / 1000k");
+    expect(html).toContain("210k / 1M");
     expect(html).toContain("161k");
     expect(html).toContain("76%");
     expect(html).toContain("剩余空间");

@@ -69,7 +69,10 @@ export function formatTokenCount(value: number): string {
   if (!Number.isFinite(value) || value <= 0) return "0";
   if (value >= 1000) {
     const k = value / 1000;
-    return `${k >= 100 ? Math.round(k) : Math.round(k * 10) / 10}k`;
+    const rounded = k >= 100 ? Math.round(k) : Math.round(k * 10) / 10;
+    // A thousand thousands reads as 1M, not 1000k.
+    if (rounded >= 1000) return `${Math.round(k / 100) / 10}M`;
+    return `${rounded}k`;
   }
   return String(Math.round(value));
 }

@@ -330,6 +330,9 @@
     "refreshPreview": "重新读取文件"
   },
   "modelPanel": {
+    "allProviders": "全部模型",
+    "providerSection": "厂商",
+    "emptyTitle": "还没有模型",
     "title": "模型",
     "subtitle": "默认模型用于新对话；当前对话可在输入框中单独切换。",
     "searchPlaceholder": "搜索模型…",
@@ -344,6 +347,14 @@
     "delete": "删除"
   },
   "scheduledPanel": {
+    "suggestions": {
+      "daily": { "title": "每日工作回顾", "description": "每个工作日傍晚总结当天的进展。", "prompt": "总结我今天的工作进展：做了什么、遇到什么问题、明天要继续什么。" },
+      "weekly": { "title": "每周计划整理", "description": "每周一早上整理本周要做的事。", "prompt": "根据我最近的对话和任务，整理出本周需要优先处理的事项，并按重要程度排序。" },
+      "todos": { "title": "定时检查待办", "description": "定时提醒还没完成的事项。", "prompt": "检查我还没完成的待办事项，列出最该先做的三件。" }
+    },
+    "filterAll": "全部任务",
+    "listSection": "任务",
+    "emptyTitle": "还没有定时任务",
     "title": "定时任务",
     "subtitle": "管理自动触发的 agent 任务。到点后会根据提示词调用当前允许的工具。",
     "listHint": "修改会立即保存，无需单独保存。",
@@ -453,6 +464,12 @@
     }
   },
   "pluginPanel": {
+    "navInstalled": "已安装",
+    "emptyTitle": "还没有插件",
+    "suggestMarket": "浏览插件市场",
+    "suggestMarketDesc": "从精选目录安装插件，首次安装后默认停用。",
+    "suggestImport": "导入 ZIP 插件包",
+    "suggestImportDesc": "选择本地的插件包，确认来源可信后再启用。",
     "versions": "已安装 {{installed}} · 运行中 {{active}} · 待生效 {{pending}}",
     "restartRequired": "需要完整重启应用后生效；当前运行版本不会被替换。",
     "restartAfterFailure": "当前进程未运行此插件。请完整重启应用后，按已保存的版本选择重新尝试。",
@@ -466,7 +483,7 @@
     "searchPlaceholder": "搜索插件名称、描述或开发者…",
     "refresh": "刷新插件",
     "add": "添加插件",
-    "emptyHint": "暂无插件，点击右上角添加按钮导入 ZIP 插件包。",
+    "emptyHint": "插件让 Firefly 获得新的能力。可以从市场安装，也可以导入本地的 ZIP 插件包。",
     "noMatch": "无匹配插件",
     "developer": "开发者：{{author}}",
     "unknownDeveloper": "未知开发者",
@@ -542,6 +559,7 @@
     }
   },
   "toolPanel": {
+    "modeSection": "适用模式",
     "title": "工具",
     "subtitle": "管理工具在 {{mode}} 模式下的可见性",
     "chatEnhanceTitle": "Chat 模式工具增强",
@@ -552,6 +570,8 @@
     "noMatch": "无匹配工具"
   },
   "skillPanel": {
+    "modeSection": "适用模式",
+    "sourceSection": "来源",
     "title": "技能",
     "subtitle": "管理 skill 在 {{mode}} 模式下的可见性",
     "rescan": "重新扫描 user skills",

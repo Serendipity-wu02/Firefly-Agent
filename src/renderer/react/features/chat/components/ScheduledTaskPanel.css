@@ -12,12 +12,6 @@
   overflow-x: hidden;
 }
 
-.scheduled-panel__header {
-  padding: 22px 28px 4px;
-  min-width: 0;
-  flex-shrink: 0;
-}
-
 .scheduled-panel__title {
   margin: 0;
   font-size: 22px;
@@ -31,16 +25,6 @@
   line-height: 1.5;
   color: var(--ff-text-muted, var(--ff-text-muted));
   overflow-wrap: anywhere;
-}
-
-.scheduled-panel__toolbar {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  justify-content: space-between;
-  gap: 10px 16px;
-  padding: 14px 28px 4px;
-  min-width: 0;
 }
 
 .scheduled-panel__hint {
@@ -61,7 +45,7 @@
 
 .scheduled-state.is-error {
   color: var(--ff-danger, #e5484d);
-  padding: 12px 28px;
+  padding: 12px 0;
   text-align: left;
 }
 
@@ -70,7 +54,7 @@
   flex-direction: column;
   gap: 8px;
   min-width: 0;
-  padding: 14px 28px 24px;
+  padding: 14px 0 24px;
 }
 
 /* ===== 按钮 ===== */
@@ -266,7 +250,7 @@
   gap: 12px;
   min-width: 0;
   box-sizing: border-box;
-  padding: 14px 28px 24px;
+  padding: 14px 0 24px;
 }
 
 .scheduled-editor__header {

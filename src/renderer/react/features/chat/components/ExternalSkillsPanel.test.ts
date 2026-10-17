@@ -39,7 +39,9 @@ async function mount(overrides: Partial<ExternalSkillsApi> = {}, strict = false)
   return { api, getCatalog, enable };
 }
 const buttons = () => [...element.querySelectorAll<HTMLButtonElement>("button")];
-const button = (text: string) => { const found = buttons().find(node => node.textContent === text); expect(found, `Missing accessible button: ${text}`).toBeDefined(); return found!; };
+// A sidebar entry carries a count after its label, so match its label on its own.
+const labelOf = (node: HTMLButtonElement) => node.querySelector(".ff-panel-sidebar__item-label")?.textContent ?? node.textContent;
+const button = (text: string) => { const found = buttons().find(node => labelOf(node) === text); expect(found, `Missing accessible button: ${text}`).toBeDefined(); return found!; };
 async function click(node: HTMLElement) { await act(async () => { node.click(); }); }
 async function market() { await click(button("External marketplace")); }
 async function detail(name = "Fixture A") { await click(button(name)); }

@@ -330,6 +330,9 @@
     "refreshPreview": "Reload file"
   },
   "modelPanel": {
+    "allProviders": "All models",
+    "providerSection": "Providers",
+    "emptyTitle": "No models yet",
     "title": "Model",
     "subtitle": "The default model is used for new chats; you can switch the current chat from the input box.",
     "searchPlaceholder": "Search models…",
@@ -344,6 +347,14 @@
     "delete": "Delete"
   },
   "scheduledPanel": {
+    "suggestions": {
+      "daily": { "title": "Daily wrap-up", "description": "Summarise the day's progress every weekday evening.", "prompt": "Summarise today's progress: what got done, what blocked me, and what to pick up tomorrow." },
+      "weekly": { "title": "Weekly planning", "description": "Lay out the week's priorities every Monday morning.", "prompt": "From my recent conversations and tasks, list this week's priorities in order of importance." },
+      "todos": { "title": "Check my to-dos", "description": "Remind me of anything still unfinished.", "prompt": "Check my unfinished to-dos and name the three to do first." }
+    },
+    "filterAll": "All tasks",
+    "listSection": "Tasks",
+    "emptyTitle": "No scheduled tasks yet",
     "title": "Scheduled tasks",
     "subtitle": "Agent tasks that run automatically. When due, they call the tools currently allowed, guided by the prompt.",
     "listHint": "Changes save immediately; there is no separate save step.",
@@ -453,6 +464,12 @@
     }
   },
   "pluginPanel": {
+    "navInstalled": "Installed",
+    "emptyTitle": "No plugins yet",
+    "suggestMarket": "Browse the marketplace",
+    "suggestMarketDesc": "Install from the curated catalog; new installs start disabled.",
+    "suggestImport": "Import a ZIP package",
+    "suggestImportDesc": "Pick a local package and enable it once you trust the source.",
     "versions": "Installed {{installed}} · Running {{active}} · Pending {{pending}}",
     "restartRequired": "A full application restart is required. The running version remains unchanged.",
     "restartAfterFailure": "This plugin is not running in the current process. Restart the application to retry the saved version selection.",
@@ -466,7 +483,7 @@
     "searchPlaceholder": "Search by plugin name, description, or developer…",
     "refresh": "Refresh plugins",
     "add": "Add plugin",
-    "emptyHint": "No plugins yet — use the add button in the top-right to import a ZIP.",
+    "emptyHint": "Plugins give Firefly new abilities. Install one from the marketplace or import a local ZIP package.",
     "noMatch": "No matching plugin",
     "developer": "Developer: {{author}}",
     "unknownDeveloper": "Unknown developer",
@@ -542,6 +559,7 @@
     }
   },
   "toolPanel": {
+    "modeSection": "Mode",
     "title": "Tools",
     "subtitle": "Choose which tools are visible in {{mode}} mode",
     "chatEnhanceTitle": "Chat mode tool enhancements",
@@ -552,6 +570,8 @@
     "noMatch": "No matching tool"
   },
   "skillPanel": {
+    "modeSection": "Mode",
+    "sourceSection": "Source",
     "title": "Skills",
     "subtitle": "Choose which skills are visible in {{mode}} mode",
     "rescan": "Rescan user skills",

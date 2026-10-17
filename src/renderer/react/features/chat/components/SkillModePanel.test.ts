@@ -37,7 +37,7 @@ async function mount(
 const toggle = () => element.querySelector<HTMLButtonElement>('[role="switch"]')!;
 const status = () => element.querySelector('[role="status"]')?.textContent ?? "";
 async function click(node: HTMLElement) { await act(async () => { node.dispatchEvent(new MouseEvent("click", { bubbles: true })); }); }
-async function mode(name: string) { await click([...element.querySelectorAll<HTMLButtonElement>(".skill-panel__tab")].find(button => button.textContent === name)!); }
+async function mode(name: string) { await click([...element.querySelectorAll<HTMLButtonElement>(".ff-panel-sidebar__item")].find(button => button.textContent === name)!); }
 afterEach(async () => {
   if (root) await act(async () => { root!.unmount(); });
   root = undefined; element?.remove(); window.settings = originalSettings;
@@ -69,7 +69,7 @@ it("admits only one pending save per Skill and mode even for same-tick clicks", 
   const { rescan } = await mount(save); const button = toggle();
   await act(async () => { button.dispatchEvent(new MouseEvent("click", { bubbles: true })); button.dispatchEvent(new MouseEvent("click", { bubbles: true })); });
   expect(save).toHaveBeenCalledTimes(1); expect(toggle().disabled).toBe(true);
-  const refresh = element.querySelector<HTMLButtonElement>(".skill-panel__icon-btn")!;
+  const refresh = element.querySelector<HTMLButtonElement>(".ff-panel-iconbtn")!;
   expect(refresh.disabled).toBe(true); await click(refresh); expect(rescan).not.toHaveBeenCalled();
   await act(async () => { pending.resolve({ ok: false }); });
   expect(toggle().getAttribute("aria-checked")).toBe("true"); expect(toggle().disabled).toBe(false);
@@ -103,7 +103,7 @@ it.each(["save", "rescan"])("ignores an obsolete StrictMode load after a newer %
   } });
   expect(reads).toBe(2); expect(toggle().getAttribute("aria-checked")).toBe("true");
   if (operation === "save") await click(toggle());
-  else await click(element.querySelector<HTMLButtonElement>(".skill-panel__icon-btn")!);
+  else await click(element.querySelector<HTMLButtonElement>(".ff-panel-iconbtn")!);
   expect(toggle().getAttribute("aria-checked")).toBe("false");
   await act(async () => { obsolete.resolve({}); });
   expect(toggle().getAttribute("aria-checked")).toBe("false");
