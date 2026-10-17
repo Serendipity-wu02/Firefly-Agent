@@ -334,7 +334,7 @@ export function ChatComposer({
 
   // Sender 的 onKeyDown 声明在 Element 层级；函数体只用基类属性，参数随组件声明放宽
   const slash = useSlashCommands({
-    value: visibleValue, mode, conversationId,
+    value: visibleValue, mode, conversationId, busy: modelBusy,
     onChange: (next) => onChange(withStickerMarkers(next)), onNewTask, onNotice,
   });
 
