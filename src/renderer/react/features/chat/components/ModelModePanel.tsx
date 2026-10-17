@@ -1,6 +1,8 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useTranslation } from "../../../i18n";
 import { formatContextWindowTokens } from "../../../../../shared/context-window";
+import { Cpu } from "lucide-react";
+import { PanelEmpty, PanelPage, PanelSidebar, PanelSidebarItem, PanelSidebarSection } from "./PanelShell";
 import "./ModelModePanel.css";
 
 interface ModelProfile {
@@ -94,6 +96,8 @@ export function ModelModePanel() {
   const [profiles, setProfiles] = useState<ModelProfile[]>([]);
   const [defaultId, setDefaultId] = useState<string>();
   const [filter, setFilter] = useState("");
+  /** null shows every provider. */
+  const [provider, setProvider] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [loadFailed, setLoadFailed] = useState(false);
 
@@ -118,15 +122,16 @@ export function ModelModePanel() {
 
   const visibleProfiles = useMemo(() => {
     const kw = filter.trim().toLowerCase();
+    const inProvider = provider === null ? profiles : profiles.filter(p => getProviderLabel(p.provider, "") === provider);
     const searched = kw
-      ? profiles.filter(
+      ? inProvider.filter(
           (p) =>
             p.id.toLowerCase().includes(kw) ||
             p.provider.toLowerCase().includes(kw) ||
             p.model.toLowerCase().includes(kw) ||
             (p.displayName && p.displayName.toLowerCase().includes(kw)),
         )
-      : profiles;
+      : inProvider;
     return [...searched].sort((a, b) => {
       // 默认模型置顶
       if (a.id === defaultId) return -1;
@@ -137,7 +142,17 @@ export function ModelModePanel() {
       if (pa !== pb) return pa - pb;
       return a.model.localeCompare(b.model);
     });
-  }, [profiles, defaultId, filter]);
+  }, [profiles, defaultId, filter, provider]);
+
+  /** Providers present in the catalogue, in the usual order, with how many models each has. */
+  const providers = useMemo(() => {
+    const counts = new Map<string, number>();
+    for (const profile of profiles) {
+      const label = getProviderLabel(profile.provider, "");
+      if (label) counts.set(label, (counts.get(label) ?? 0) + 1);
+    }
+    return [...counts.entries()].sort((a, b) => getProviderSortKey(a[0]) - getProviderSortKey(b[0]) || a[0].localeCompare(b[0]));
+  }, [profiles]);
 
   const handleSetDefault = useCallback((id: string) => {
     void api()
@@ -153,19 +168,23 @@ export function ModelModePanel() {
 
   return (
     <div className="model-panel">
-      <header className="model-panel__header">
-        <h1 className="model-panel__title">{t("modelPanel.title")}</h1>
-        <p className="model-panel__subtitle">{t("modelPanel.subtitle")}</p>
-      </header>
-
-      <div className="model-panel__search-row">
-        <input
-          className="model-panel__search"
-          placeholder={t("modelPanel.searchPlaceholder")}
-          value={filter}
-          onChange={(e) => setFilter(e.target.value)}
-        />
-      </div>
+      <PanelSidebar
+        title={t("modelPanel.title")}
+        search={{ value: filter, onChange: setFilter, placeholder: t("modelPanel.searchPlaceholder"), className: "model-panel__search" }}
+      >
+        <PanelSidebarSection>
+          <PanelSidebarItem icon={<Cpu size={15} strokeWidth={1.6} />} label={t("modelPanel.allProviders")} count={profiles.length}
+            active={provider === null} onClick={() => setProvider(null)} />
+        </PanelSidebarSection>
+        {providers.length > 0 && (
+          <PanelSidebarSection title={t("modelPanel.providerSection")}>
+            {providers.map(([label, count]) => (
+              <PanelSidebarItem key={label} label={label} count={count} active={provider === label} onClick={() => setProvider(provider === label ? null : label)} />
+            ))}
+          </PanelSidebarSection>
+        )}
+      </PanelSidebar>
+      <PanelPage className="model-panel__page" title={t("modelPanel.title")} subtitle={<span className="model-panel__subtitle">{t("modelPanel.subtitle")}</span>}>
 
       {loading ? (
         <div className="model-panel__loading">{t("common.loading")}</div>
@@ -174,7 +193,7 @@ export function ModelModePanel() {
       ) : (
         <div className="model-panel__grid">
           {profiles.length === 0 ? (
-            <div className="model-panel__empty">{t("modelPanel.emptyHint")}</div>
+            <PanelEmpty icon={<Cpu size={24} strokeWidth={1.5} />} title={t("modelPanel.emptyTitle")} hint={t("modelPanel.emptyHint")} />
           ) : (
             visibleProfiles.map((profile) => {
               const isDefault = profile.id === defaultId;
@@ -225,6 +244,7 @@ export function ModelModePanel() {
           )}
         </div>
       )}
+      </PanelPage>
     </div>
   );
 }

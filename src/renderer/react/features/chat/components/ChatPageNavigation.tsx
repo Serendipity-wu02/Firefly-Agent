@@ -44,6 +44,8 @@ export interface ChatPageNavigationProps {
   onCloseWindow: () => void;
   onOpenSettings: () => void;
   onOpenApiSettings?: () => void;
+  /** Receives the element a full-page feature portals its own sidebar into (shown instead of the conversations while a panel is open). */
+  onPanelSlot?: (element: HTMLElement | null) => void;
 }
 
 // 阶段 1A：memo 隔离——ChatPage 流式重渲染时，只要 props 引用稳定（sessions/回调由父级保证），
@@ -73,6 +75,7 @@ export const ChatPageNavigation = React.memo(function ChatPageNavigation({
   onCloseWindow,
   onOpenSettings,
   onOpenApiSettings,
+  onPanelSlot,
 }: ChatPageNavigationProps) {
   // 性能探针：perf harness 注册后统计导航子树执行次数（阶段 1A 验收：流式期间应为 0）
   reportChatPerfRender("navigationRenders");
@@ -168,6 +171,9 @@ export const ChatPageNavigation = React.memo(function ChatPageNavigation({
       {collapsed && <nav ref={edgeRef} onPointerEnter={enter} onPointerLeave={leave} className="ff-page-edge" aria-label={t("ui.navigation")} />}
       <aside ref={contextRef} onPointerEnter={enter} onPointerLeave={leave} id="firefly-context-sidebar" className={`ff-page-sidebar ${collapsed ? "is-floating" : ""} ${peeking ? "is-peeking" : ""}`} style={{ width: sidebar.width }} inert={hidden} aria-hidden={hidden} aria-label={t("ui.contextSidebar")}>
         {collapsed && <span className="ff-sidebar-hover-corridor" aria-hidden="true" />}
+        {/* A feature page owns the sidebar while it is open; the conversations stay mounted underneath so coming back is instant. */}
+        <div className="ff-page-panelnav" ref={onPanelSlot} hidden={!activePanel} />
+        <div className="ff-page-conversational" hidden={!!activePanel}>
         {/* Header: the mode switch (like Codex's workspace switch) with search on the right. */}
         <div className="ff-page-mode">
           {!collapsed && <ModeMenu value={mode} onChange={onModeChange} />}
@@ -200,6 +206,7 @@ export const ChatPageNavigation = React.memo(function ChatPageNavigation({
             onTogglePin={onTogglePinSession}
             onExport={onExportSession}
           />
+        </div>
         </div>
         <AppUpdateEntry />
         {sidebar.overlay && !hidden && resizeHandle}

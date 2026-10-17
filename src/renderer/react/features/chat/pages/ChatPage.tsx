@@ -39,6 +39,7 @@ import type {
 } from "../../../../../shared/chat-types";
 import { type ContextUsageSnapshot } from "../../../../../shared/context-usage";
 import { ChatPagePanelHost } from "../components/ChatPagePanelHost";
+import { PanelSidebarSlotContext } from "../components/PanelShell";
 import { useUserCallPreference } from "../../../hooks/useUserNickname";
 import { resolveRevisableLastTurn } from "../components/last-turn-actions";
 import { shouldListenForDeferredPlanEvents } from "./conversation-run-policy";
@@ -176,6 +177,8 @@ export function ChatPage() {
   const compactDock = useCompactDock(dockRef);
   const dockWidth = useElementWidth(dockRef);
   const [activePanel, setActivePanel] = useState<ChatPagePanel | null>(null);
+  // Where the open feature page portals its own sidebar (inside the navigation, in place of the conversations).
+  const [panelSlot, setPanelSlot] = useState<HTMLElement | null>(null);
   /** 右侧面板已打开的 diff 标签，ID 规范 diff:<runId>:<文件路径>，同 ID 只激活不重开 */
   const [diffTabs, setDiffTabs] = useState<ChatPageInspectorDiffTab[]>([]);
   /** 右侧面板已打开的文件预览标签，ID 规范 file:<相对路径> */
@@ -1573,6 +1576,7 @@ export function ChatPage() {
         collapsed={collapsed}
         runningSessionIds={runningSessionIds}
         activePanel={activePanel}
+        onPanelSlot={setPanelSlot}
         mode={mode}
         sessions={sessions}
         sessionListStatus={sessionListErrors[mode] ? "error" : sessionsByMode[mode] === undefined ? "loading" : "ready"}
@@ -1658,7 +1662,7 @@ export function ChatPage() {
           </header>
         )}
         {activePanel ? (
-          <ChatPagePanelHost panel={activePanel} />
+          <PanelSidebarSlotContext.Provider value={panelSlot}><ChatPagePanelHost panel={activePanel} /></PanelSidebarSlotContext.Provider>
         ) : (
         <div className="ff-workspace-body">
         <div className="ff-workspace-content">
