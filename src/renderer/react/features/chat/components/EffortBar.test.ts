@@ -55,4 +55,14 @@ describe("effort bar", () => {
     act(() => root.render(React.createElement(EffortBar, { count: 4, value: 0, label: "effort", onCommit: vi.fn() })));
     expect(host.querySelector<HTMLElement>(".ff-effort-bar__knob")!.style.left).toMatch(/1px \+ 0 \* \(100% - 28px\)/);
   });
+
+  it("puts the level back when the drag is cancelled", () => {
+    const onCommit = vi.fn(), onPreview = vi.fn();
+    act(() => root.render(React.createElement(EffortBar, { count: 4, value: 0, label: "effort", onCommit, onPreview })));
+    bar().getBoundingClientRect = () => ({ left: 0, width: 240, top: 0, height: 28, right: 240, bottom: 28, x: 0, y: 0, toJSON() {} });
+    act(() => { bar().dispatchEvent(new PointerEvent("pointerdown", { bubbles: true, button: 0, clientX: 235, pointerId: 2 })); });
+    act(() => { bar().dispatchEvent(new PointerEvent("pointercancel", { bubbles: true, pointerId: 2 })); });
+    expect(onCommit).not.toHaveBeenCalled();
+    expect(bar().getAttribute("aria-valuenow")).toBe("0");
+  });
 });

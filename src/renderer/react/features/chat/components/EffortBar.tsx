@@ -56,12 +56,13 @@ export function EffortBar({ count, value, disabled = [], label, onPreview, onCom
     const index = stopAt(event.clientX);
     if (index !== dragging) { setDragging(index); onPreview?.(index); }
   };
-  const finish = () => {
+  /** Release commits the stop under the pointer; a cancelled drag (the system took the pointer) puts everything back. */
+  const finish = (commit: boolean) => {
     if (dragging === null) return;
     const index = dragging;
     setDragging(null);
     onPreview?.(null);
-    if (index !== value) onCommit(index);
+    if (commit && index !== value) onCommit(index);
   };
   const step = (from: number, direction: 1 | -1) => {
     for (let index = from + direction; index >= 0 && index < count; index += direction) if (!disabled[index]) return index;
@@ -79,7 +80,7 @@ export function EffortBar({ count, value, disabled = [], label, onPreview, onCom
   return (
     <div ref={barRef} className={`ff-effort-bar${dragging !== null ? " is-dragging" : ""}`}
       role="slider" tabIndex={0} aria-label={label} aria-valuemin={0} aria-valuemax={count - 1} aria-valuenow={shown}
-      onPointerDown={onPointerDown} onPointerMove={onPointerMove} onPointerUp={finish} onPointerCancel={finish} onKeyDown={onKeyDown}>
+      onPointerDown={onPointerDown} onPointerMove={onPointerMove} onPointerUp={() => finish(true)} onPointerCancel={() => finish(false)} onKeyDown={onKeyDown}>
       <span className="ff-effort-bar__fill" style={{ width: `calc(${offset} + ${KNOB}px + ${PAD}px)` }} />
       {Array.from({ length: count }, (_, index) => (
         <span key={index} className={`ff-effort-bar__dot${index <= shown ? " is-filled" : ""}${disabled[index] ? " is-disabled" : ""}`}
