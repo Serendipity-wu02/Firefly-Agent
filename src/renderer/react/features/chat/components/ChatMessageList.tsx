@@ -1,4 +1,5 @@
 import { FIREFLY_STICKERS } from "../../../../../shared/firefly-stickers";
+import { ScrollPill } from "./ScrollPill";
 import { isRetiredStickerId } from "../../../../../shared/retired-stickers";
 import { StickerImage } from "./StickerImage";
 import { Bubble, Think, ThoughtChain, type BubbleItemType } from "@ant-design/x";
@@ -1361,6 +1362,7 @@ export function ChatMessageList({
   return (
     <FileLinkContext.Provider value={fileLinkEnv}>
       <LastTurnIdsContext.Provider value={lastTurnIds}>
+        <div className="ff-message-scroll">
         <div
           ref={containerRef}
           className={`ff-message-list ff-message-list--stickers-${stickerSize}`}
@@ -1374,6 +1376,8 @@ export function ChatMessageList({
             </div>
           )}
           <Bubble.List items={items} role={roles} autoScroll />
+        </div>
+        <ScrollPill target={containerRef} column=".ant-bubble-list" />
         </div>
       </LastTurnIdsContext.Provider>
     </FileLinkContext.Provider>

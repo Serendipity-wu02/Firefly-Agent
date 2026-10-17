@@ -986,6 +986,7 @@
     "more": "更多",
     "navigation": "主导航",
     "connectionStatus": "API：{{state}}",
+    "connectionConfigured": "已配置 API",
     "connectionUnverified": "未验证",
     "connectionChecking": "正在检查",
     "connectionConnected": "最近测试通过",

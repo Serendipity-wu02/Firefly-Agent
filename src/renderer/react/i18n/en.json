@@ -986,6 +986,7 @@
     "more": "More",
     "navigation": "Main navigation",
     "connectionStatus": "API: {{state}}",
+    "connectionConfigured": "API configured",
     "connectionUnverified": "Not verified",
     "connectionChecking": "Checking",
     "connectionConnected": "Last test passed",

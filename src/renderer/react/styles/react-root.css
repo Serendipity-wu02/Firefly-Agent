@@ -612,7 +612,8 @@ body {
   border-radius: 50%;
   background: #8a8f98;
 }
-.ff-model-connection[data-state="connected"] .ff-model-connection__dot { background: #238636; }
+.ff-model-connection[data-state="connected"] .ff-model-connection__dot,
+.ff-model-connection[data-state="configured"] .ff-model-connection__dot { background: #238636; }
 .ff-model-connection[data-state="failed"] .ff-model-connection__dot { background: var(--ff-danger); }
 /* The 24px hit area is almost empty: the visible part is the 14px status dot on the portrait's corner. Drawing the ring on the whole button
    put a large circle off-centre over the portrait, so the ring goes on the dot instead. */

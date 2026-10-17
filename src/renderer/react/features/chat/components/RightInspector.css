@@ -25,10 +25,11 @@
 /* ── the panels: one grid; each panel is placed by inline grid-column / grid-row, so moving one never re-parents it ── */
 .ff-inspector-grid { display: grid; min-width: 0; min-height: 0; flex: 1 1 0; column-gap: 0; row-gap: 8px; }
 
-/* Separator between two columns: 8px of room, a hairline accent on hover or focus. */
+/* Separator between two columns: 8px of room with a short grip, like the one between stacked panels. */
 .ff-inspector-resizer { position: relative; z-index: 2; cursor: col-resize; outline: none; touch-action: none; }
-.ff-inspector-resizer::after { content: ""; position: absolute; inset: 0 3px; border-radius: 2px; background: transparent; transition: background-color 120ms ease; }
-.ff-inspector-resizer:hover::after, .ff-inspector-resizer:focus-visible::after, .ff-right-inspector[data-shielded] .ff-inspector-resizer:active::after { background: var(--ff-accent); }
+/* No full-height line: the short grip below is the only mark, so two panels never look cut apart by a long bar. */
+.ff-inspector-resizer::after { content: none; }
+.ff-right-inspector[data-shielded] .ff-inspector-resizer:active::before { background: var(--ff-accent); }
 
 /* Between two stacked panels: an 8px band in the row gap with a short rounded bar, like Claude desktop. Drag or ↑ ↓ to resize. */
 .ff-inspector-row-resizer {
