@@ -791,6 +791,7 @@
     "followModel": "跟随模型"
   },
   "modelEffort": {
+    "reset": "恢复自动",
     "sliderLabel": "思考强度",
     "unsupported": "当前模型不支持调节思考强度"
   },

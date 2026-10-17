@@ -791,6 +791,7 @@
     "followModel": "Follow model"
   },
   "modelEffort": {
+    "reset": "Back to automatic",
     "sliderLabel": "Thinking effort",
     "unsupported": "This model does not support adjusting thinking effort"
   },

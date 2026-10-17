@@ -1,5 +1,6 @@
 import { Popover, Slider } from "antd";
 import { useEffect, useState } from "react";
+import { RotateCcw, Zap } from "lucide-react";
 import { useTranslation } from "../../../i18n";
 import { computeReasoningDropdown, type ReasoningDropdownView } from "../../../../lib/reasoning-dropdown";
 import type { ReasoningLevelsConfig, ReasoningPreference } from "../../../../../shared/reasoning";
@@ -133,6 +134,14 @@ export function ModelEffortControl({ sessionId, activeProfileId, onSelectModelPr
   const effortPanel = (
     <div className="ff-model-panel ff-effort">
       <div className="ff-effort__head">
+        {/* Like Codex: a quiet mark on the left, the level in the middle, "back to automatic" on the right. */}
+        <span className="ff-effort__icon" aria-hidden="true"><Zap size={14} strokeWidth={1.7} /></span>
+        {adjustable && activeIndex !== 0 && (
+          <button type="button" className="ff-effort__reset" aria-label={t("modelEffort.reset")} title={t("modelEffort.reset")}
+            onClick={() => void commit(0)}>
+            <RotateCcw size={14} strokeWidth={1.7} aria-hidden="true" />
+          </button>
+        )}
         {shownLabel && <span className="ff-effort__value">{shownLabel}</span>}
         <button type="button" className="ff-effort__model" title={t("modelSelector.switchTitle")} onClick={() => setPanel("models")}>
           <span>{modelName}</span>
@@ -146,9 +155,8 @@ export function ModelEffortControl({ sessionId, activeProfileId, onSelectModelPr
           max={items.length - 1}
           step={1}
           dots
-          marks={Object.fromEntries(items.map((item, index) => [index, {
-            label: <span className={`ff-effort__mark${index === shownIndex ? " is-current" : ""}${item.disabled ? " is-disabled" : ""}`}>{shortEffortLabel(item.label)}</span>,
-          }]))}
+          // No text under the stops: the level is named in the title, as in Codex.
+          marks={Object.fromEntries(items.map((_item, index) => [index, { label: null }]))}
           value={shownIndex}
           tooltip={{ open: false }}
           aria-label={t("modelEffort.sliderLabel")}

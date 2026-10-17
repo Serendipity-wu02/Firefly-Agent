@@ -13,9 +13,14 @@
 
 .ff-model-panel { width: 260px; }
 
-/* Effort panel: current level on top, model name under it, slider with one stop per level. */
-.ff-effort { display: grid; gap: 14px; padding: 6px 8px 8px; }
-.ff-effort__head { display: grid; justify-items: center; gap: 2px; }
+/* Effort panel, after Codex: an icon on the left, reset on the right, the level (accent) and model in the middle,
+   then a thick rounded bar filled up to the chosen level with a white knob and a dot at every stop. */
+.ff-effort { display: grid; gap: 14px; padding: 8px 10px 10px; }
+.ff-effort__head { position: relative; display: grid; justify-items: center; gap: 2px; min-height: 40px; }
+.ff-effort__icon, .ff-effort__reset { position: absolute; top: 2px; display: grid; width: 26px; height: 26px; place-items: center; color: var(--ff-text-muted); }
+.ff-effort__icon { left: 0; }
+.ff-effort__reset { right: 0; padding: 0; border: 0; border-radius: 8px; background: transparent; cursor: pointer; }
+.ff-effort__reset:hover { background: var(--ff-bg-hover); color: var(--ff-text); }
 .ff-effort__value { color: var(--ff-accent); font: 600 15px/1.3 var(--rb-font-sans, sans-serif); }
 .ff-effort__model {
   display: inline-flex; align-items: center; gap: 3px; padding: 2px 8px; border: 0; border-radius: 8px;
@@ -25,38 +30,28 @@
 .ff-effort__model svg { width: 12px; height: 12px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
 .ff-effort__note { margin: 0; color: var(--ff-text-muted); font: 400 12px/1.5 var(--rb-font-sans, sans-serif); text-align: center; }
 
-/* Slider: a soft inset rail filled with the accent up to the chosen level, a ringed handle, and a short label under every stop. */
-.ff-effort__slider.ant-slider { margin: 6px 10px 26px; }
-.ff-effort__slider .ant-slider-rail {
-  height: 10px; border-radius: 999px; background: var(--ff-bg-active);
-  box-shadow: inset 0 1px 2px rgba(var(--ff-accent-rgb), 0.16);
-}
-.ff-effort__slider .ant-slider-track {
-  height: 10px; border-radius: 999px;
-  background: linear-gradient(90deg, rgba(var(--ff-accent-rgb), 0.55), var(--ff-accent));
-}
-.ff-effort__slider .ant-slider-step { height: 10px; }
-.ff-effort__slider .ant-slider-dot { width: 4px; height: 4px; top: 3px; border: 0; background: var(--ff-text-muted); opacity: .5; }
-.ff-effort__slider .ant-slider-dot-active { background: var(--ff-on-accent); opacity: .85; }
+.ff-effort__slider.ant-slider { height: 28px; margin: 0 2px; padding: 0; }
+.ff-effort__slider .ant-slider-rail,
+.ff-effort__slider .ant-slider-track,
+.ff-effort__slider .ant-slider-step { top: 0; height: 28px; border-radius: 999px; }
+.ff-effort__slider .ant-slider-rail { background: var(--ff-bg-active); }
+/* The fill reaches past the knob's centre to its right edge, so the knob sits inside the coloured bar. */
+.ff-effort__slider .ant-slider-track { background: var(--ff-accent); padding-right: 14px; margin-left: -14px; box-sizing: content-box; }
+.ff-effort__slider .ant-slider-step { inset-inline: 14px; }
+.ff-effort__slider .ant-slider-dot { top: 12px; width: 4px; height: 4px; border: 0; background: var(--ff-text-muted); opacity: .45; }
+.ff-effort__slider .ant-slider-dot-active { background: var(--ff-on-accent); opacity: .8; }
+.ff-effort__slider .ant-slider-handle { top: 1px; width: 26px; height: 26px; inset-block-start: 1px; }
 .ff-effort__slider .ant-slider-handle::before { display: none; }
 .ff-effort__slider .ant-slider-handle::after {
-  width: 18px; height: 18px; inset-inline-start: -2px; inset-block-start: -2px;
-  border: 0; background: var(--ff-surface);
-  box-shadow: 0 0 0 2px var(--ff-accent), 0 2px 6px rgba(var(--ff-accent-rgb), 0.32);
-  transition: transform .15s ease, box-shadow .15s ease;
+  width: 26px; height: 26px; inset-inline-start: 0; inset-block-start: 0;
+  border: 0; background: #fff;
+  box-shadow: 0 1px 4px rgb(0 0 0 / 22%);
+  transition: transform .15s ease;
 }
 .ff-effort__slider:hover .ant-slider-handle::after,
-.ff-effort__slider .ant-slider-handle:active::after { transform: scale(1.1); }
-.ff-effort__slider .ant-slider-handle:focus-visible::after {
-  box-shadow: 0 0 0 2px var(--ff-accent), 0 0 0 6px rgba(var(--ff-accent-rgb), 0.22);
-}
-
-.ff-effort__slider .ant-slider-mark { top: 20px; }
-.ff-effort__slider .ant-slider-mark-text,
-.ff-effort__slider .ant-slider-mark-text-active { color: var(--ff-text-muted); font: 500 11px/1.2 var(--rb-font-sans, sans-serif); white-space: nowrap; }
-.ff-effort__mark { display: inline-block; padding: 1px 2px; border-radius: 6px; transition: color .15s ease; }
-.ff-effort__mark.is-current { color: var(--ff-accent); font-weight: 700; }
-.ff-effort__mark.is-disabled { opacity: .45; }
+.ff-effort__slider .ant-slider-handle:active::after { transform: scale(1.04); }
+.ff-effort__slider .ant-slider-handle:focus-visible::after { box-shadow: 0 1px 4px rgb(0 0 0 / 22%), 0 0 0 3px rgba(var(--ff-accent-rgb), 0.3); }
+.ff-effort__slider .ant-slider-mark { display: none; }
 
 /* Model list. */
 .ff-model-list { display: grid; gap: 2px; max-height: 320px; overflow-y: auto; }
