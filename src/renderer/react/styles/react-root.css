@@ -647,11 +647,12 @@ body {
 .ff-dock-separator:focus-visible::after { background: var(--ff-accent); }
 
 @media (max-width: 900px) {
+  /* The narrow overlay opens right of the activity rail, never over it: the rail holds the only panel entries. */
   .ff-page-sidebar {
     position: absolute;
     top: var(--ff-app-titlebar-height);
     bottom: 8px;
-    left: 8px;
+    left: calc(var(--ff-workspace-gutter) + 48px);
     z-index: 40;
     box-sizing: border-box;
     padding: 8px;

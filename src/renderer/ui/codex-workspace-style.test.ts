@@ -64,7 +64,8 @@ describe("Codex-reference workbench presentation", () => {
     expect(value("root", ".ff-page-sidebar.is-floating", "top")).toBe("var(--ff-app-titlebar-height)");
     expect(value("root", ".ff-page-sidebar", "position", media)).toBe("absolute");
     expect(value("root", ".ff-page-sidebar", "top", media)).toBe("var(--ff-app-titlebar-height)");
-    expect(value("root", ".ff-page-sidebar", "left", media)).toBe("8px");
+    // Right of the 48px activity rail, which must stay reachable.
+    expect(value("root", ".ff-page-sidebar", "left", media)).toBe("calc(var(--ff-workspace-gutter) + 48px)");
     expect(value("root", ".ff-page-sidebar", "bottom", media)).toBe(value("root", ":root", "--ff-workspace-gutter"));
     expect(value("root", ".ff-page-sidebar", "border-radius", media)).toBe("12px");
     expect(value("root", ".ff-workspace-composer", "padding", media)).toBe("12px");
