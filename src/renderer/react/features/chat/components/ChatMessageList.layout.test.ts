@@ -29,7 +29,7 @@ describe("chat reading width", () => {
       /\.ff-message--assistant \.ant-bubble-content \{[\s\S]*padding: 0[\s\S]*background: transparent[\s\S]*box-shadow: none/,
     );
     expect(stylesheet).toMatch(
-      /\.ff-message--assistant \.ant-bubble-body \{[\s\S]*width: calc\(100% - 54px\)[\s\S]*max-width: calc\(100% - 54px\)/,
+      /\.ff-message--assistant \.ant-bubble-body \{[\s\S]*width: calc\(100% - 38px - var\(--ff-avatar-gap\)\)[\s\S]*max-width: calc\(100% - 38px - var\(--ff-avatar-gap\)\)/,
     );
     // 气泡开关已删除：不再存在按 dataset 切换的样式
     expect(stylesheet).not.toContain("data-assistant-bubble");
