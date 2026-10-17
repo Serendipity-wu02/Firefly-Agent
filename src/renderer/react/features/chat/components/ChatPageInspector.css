@@ -1,6 +1,6 @@
 /* ChatPageInspector: the docked pane's wrapper, its open/close motion and the browser-only chrome.
    react-resizable-panels already writes each panel's flex (the width split) and persists it; these
-   rules only animate that split and hide the inspector's tab bar when the browser is the only tab. */
+   rules only animate that split and drop the panel chrome when the browser is the only panel. */
 
 .ff-chat-inspector {
   display: flex;
@@ -29,10 +29,10 @@
 }
 
 /* Browser-only pane: the browser's own tab strip is the top row (the same 48px as the chat header),
-   so the inspector's tab bar is removed. Mounted tabs stay in place, so the browser is not re-created. */
-.ff-chat-inspector.is-browser-only .ff-right-inspector__tabs > .ant-tabs-nav {
-  display: none;
-}
+   so the lone panel drops its header and frame. The panel stays mounted, so the browser is not re-created. */
+.ff-chat-inspector.is-browser-only .ff-right-inspector { padding: 0; }
+.ff-chat-inspector.is-browser-only .ff-inspector-pane { border: 0; border-radius: 0; }
+.ff-chat-inspector.is-browser-only .ff-inspector-pane__head { display: none; }
 
 /* Width motion for the chat / pane split: 220ms ease-out (ChatPageInspector keeps the matching timing).
    Only while the pane is opening or closing, because data-dock-motion is present only then. Dragging,

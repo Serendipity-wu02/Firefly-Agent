@@ -272,7 +272,11 @@
     "failed": "This round didn't quite go through — check my reply for details, then try again."
   },
   "rightInspector": {
-    "closeTab": "Close {{name}} (Delete on the tab)",
+    "reorder": "Move “{{name}}”",
+    "reorderHint": "Drag to move, or press ↑ ↓",
+    "expand": "Enlarge",
+    "restore": "Restore",
+    "closeTab": "Close {{name}} (Delete on its header)",
     "panelAria": "Inspector panel",
     "toggle": "Toggle right panel"
   },
@@ -1108,6 +1112,8 @@
     }
   },
   "sessionOverview": {
+    "reorder": "Move the “{{name}}” card",
+    "reorderHint": "Drag to reorder, or press ↑ ↓",
     "title": "Session overview",
     "tab": "Overview",
     "open": "Open session overview",

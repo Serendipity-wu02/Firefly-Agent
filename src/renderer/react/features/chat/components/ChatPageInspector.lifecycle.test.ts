@@ -93,7 +93,7 @@ it("keeps a dirty file mounted beside browser/task/diff panes and guards keyboar
   expect(textarea.value).toBe("unsaved notes");
   expect(host.querySelector('[data-task-content]')).not.toBeNull();
   await render(extra);
-  const fileTab = Array.from(host.querySelectorAll<HTMLElement>('[role="tab"]')).find(tab => tab.textContent?.includes("notes.md"))!;
+  const fileTab = Array.from(host.querySelectorAll<HTMLElement>(".ff-inspector-pane__head")).find(head => head.textContent?.includes("notes.md"))!;
   await act(async () => fileTab.dispatchEvent(new KeyboardEvent("keydown", { key: "Delete", bubbles: true, cancelable: true })));
   expect(onCloseTab).not.toHaveBeenCalled();
   expect(host.querySelector(".ff-file-editor__decision")).not.toBeNull();
@@ -132,9 +132,9 @@ it("marks a browser-only pane and closes it from the browser's own strip through
   expect(onCloseTab).toHaveBeenCalledExactlyOnceWith("browser");
 });
 
-it("keeps the inspector's own tab bar when another tab shares the pane", async () => {
+it("keeps panel headers when another panel shares the inspector", async () => {
   await render({ filesTabOpen: true, activeTabId: "browser" });
   expect(host.querySelector(".ff-chat-inspector")!.classList.contains("is-browser-only")).toBe(false);
   expect(host.querySelector("[data-browser-close-pane]")).toBeNull();
-  expect(host.querySelector(".ff-right-inspector__tabs")).not.toBeNull();
+  expect(host.querySelectorAll(".ff-inspector-pane__head")).toHaveLength(2);
 });

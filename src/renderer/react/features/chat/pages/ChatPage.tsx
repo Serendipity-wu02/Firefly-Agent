@@ -1355,6 +1355,12 @@ export function ChatPage() {
     setActiveTabId("files");
   };
 
+  /** 标题行的面板开关：已打开且可见时关掉它，否则打开。 */
+  const togglePanel = (id: string, open: boolean, openIt: () => void) => {
+    if (open && !inspectorHidden) closeInspectorTab(id);
+    else openIt();
+  };
+
   /** 收起右侧面板并保留标签；再次点击恢复原标签 */
   const collapseInspector = () => setInspectorHidden(true);
 
@@ -1583,23 +1589,24 @@ export function ChatPage() {
                   <span className="ff-inspector-toggle-divider" aria-hidden="true" />
                 </>
               )}
+              {/* 面板开关：打开时按下高亮，再点一次关掉对应面板（面板本身在右侧一列里上下叠放）。 */}
               <button type="button" className="ff-inspector-toggle" aria-label={t("browserWorkspace.open")}
-                title={t("browserWorkspace.open")} aria-expanded={browserTabOpen && !inspectorHidden}
-                onClick={() => { setBrowserTabOpen(true); setInspectorHidden(false); setActiveTabId("browser"); }}>
+                title={t("browserWorkspace.open")} aria-expanded={browserTabOpen && !inspectorHidden} aria-pressed={browserTabOpen && !inspectorHidden}
+                onClick={() => togglePanel("browser", browserTabOpen, () => { setBrowserTabOpen(true); setInspectorHidden(false); setActiveTabId("browser"); })}>
                 <GlobalOutlined aria-hidden="true" />
               </button>
               <button type="button" className="ff-inspector-toggle" aria-label={t("fileTree.title")}
-                title={t("fileTree.title")} aria-expanded={filesTabOpen && !inspectorHidden}
-                onClick={openFilesTab}><FolderOpenOutlined aria-hidden="true" /></button>
+                title={t("fileTree.title")} aria-expanded={filesTabOpen && !inspectorHidden} aria-pressed={filesTabOpen && !inspectorHidden}
+                onClick={() => togglePanel("files", filesTabOpen, openFilesTab)}><FolderOpenOutlined aria-hidden="true" /></button>
               {activeSessionId && <button type="button" className="ff-inspector-toggle"
                 aria-label={t("sessionOverview.open")} title={t("sessionOverview.open")}
-                aria-expanded={overviewTabOpen && !inspectorHidden}
-                onClick={() => { setOverviewTabOpen(true); setInspectorHidden(false); setActiveTabId("overview"); }}>
+                aria-expanded={overviewTabOpen && !inspectorHidden} aria-pressed={overviewTabOpen && !inspectorHidden}
+                onClick={() => togglePanel("overview", overviewTabOpen, () => { setOverviewTabOpen(true); setInspectorHidden(false); setActiveTabId("overview"); })}>
                 <ProfileOutlined aria-hidden="true" /></button>}
               {(mode !== "chat" || workspaceOutputs.length > 0) && <button type="button" className="ff-inspector-toggle"
                 aria-label={t("workspace.tasks")} title={t("workspace.tasks")}
-                aria-expanded={tasksTabOpen && !inspectorHidden}
-                onClick={() => { setTasksTabOpen(true); setInspectorHidden(false); setActiveTabId("tasks"); }}>
+                aria-expanded={tasksTabOpen && !inspectorHidden} aria-pressed={tasksTabOpen && !inspectorHidden}
+                onClick={() => togglePanel("tasks", tasksTabOpen, () => { setTasksTabOpen(true); setInspectorHidden(false); setActiveTabId("tasks"); })}>
                 <UnorderedListOutlined aria-hidden="true" /></button>}
               <InspectorToggle
                 open={inspectorTabIds.length > 0 && !inspectorHidden}

@@ -1,129 +1,103 @@
-/* RightInspector — 统一右侧挤出式面板（diff / 计划清单 tab 切换） */
-
-/* 宽度由外层 react-resizable-panels Panel 控制（默认 45%、320px～70% 窗口），这里只撑满 */
+/* RightInspector — big panels tiled two per column, with the overview column on the far right.
+   Width comes from the outer react-resizable-panels Panel; the inspector only fills it. */
 .ff-right-inspector {
+  display: flex;
   width: 100%;
   min-width: 0;
   height: 100%;
-  display: flex;
-  flex-direction: column;
-  background-color: var(--ff-bg-workspace);
-  background-image: none;
-  background-position: center;
-  background-repeat: no-repeat;
-  background-size: cover;
-  border: 0;
-  border-radius: 12px;
+  box-sizing: border-box;
+  gap: 8px;
+  padding: 8px;
   overflow: hidden;
-  box-shadow: none;
+  background: var(--ff-bg-page);
   animation: ff-right-inspector-slide-in 0.28s ease both;
   app-region: no-drag;
 }
-
-:root[data-ui-colors] .ff-right-inspector,
-:root[data-ui-colors] .ff-right-inspector__tabs > .ant-tabs-nav {
-  background: var(--ff-bg-page);
-}
-:root[data-ui-colors] .ff-right-inspector__tabs .ant-tabs-tab.ant-tabs-tab-active {
-  background: var(--ff-bg-active);
-}
+.ff-right-inspector[hidden] { display: none; }
 
 /* 只淡入、不位移：面板里有原生浏览器视图，它的位置按面板的实际矩形计算，进入动画期间不能移动面板。 */
 @keyframes ff-right-inspector-slide-in {
   from { opacity: 0; }
-  to   { opacity: 1; }
+  to { opacity: 1; }
 }
 
-/* ── 顶部：antd Tabs 标签栏（editable-card 样式全部抹平，只留底部强调线） ── */
+/* ── the tiled panels ── */
+.ff-inspector-grid { display: flex; min-width: 0; flex: 1 1 0; gap: 8px; }
+.ff-inspector-grid__column { display: flex; min-width: 0; flex: 1 1 0; flex-direction: column; gap: 8px; }
+.ff-inspector-grid__column[hidden] { display: none; }
 
-.ff-right-inspector__tabs.ant-tabs {
-  flex: 1;
+.ff-inspector-pane {
+  position: relative;
+  display: flex;
+  flex: 1 1 0;
+  min-height: 120px;
+  flex-direction: column;
+  overflow: hidden;
+  border: 1px solid var(--ff-border);
+  border-radius: 12px;
+  background: var(--ff-bg-workspace);
+  /* Fade only: a native browser view is placed by this rectangle, so the panel must not move while entering. */
+  animation: ff-right-inspector-slide-in 0.3s cubic-bezier(.165, .84, .44, 1) both;
+  transition: border-color 120ms ease;
+}
+.ff-inspector-pane[hidden] { display: none; }
+.ff-inspector-pane[data-active] { border-color: color-mix(in srgb, var(--ff-text-muted) 45%, var(--ff-border)); }
+
+/* ── the overview column: narrow beside panels, full width when it is the only thing open ── */
+.ff-inspector-overview {
+  display: flex;
   min-width: 0;
   min-height: 0;
-  height: 100%;
-}
-
-/* 与聊天标题行共用高度；标签与内容分开布局。 */
-.ff-right-inspector__tabs > .ant-tabs-nav {
-  margin: 0;
-  height: var(--ff-workspace-header-height);
-  min-height: var(--ff-workspace-header-height);
-  flex-shrink: 0;
-  border-bottom: 1px solid var(--ff-border, var(--ff-border));
-  background: var(--ff-bg-workspace);
-  padding: 0 2px;
-}
-
-.ff-right-inspector__tabs .ant-tabs-nav-list {
-  min-width: 0;
-}
-
-/* 标签：抹平 antd 卡片边框，hover 变深，活动标签细边框 + 提亮。
-   选择器多带一层 __tabs.ant-tabs 是为了压过 antd 运行时注入的样式（文件名字号默认会被顶回 14px） */
-.ff-right-inspector__tabs.ant-tabs .ant-tabs-tab {
-  border: 1px solid transparent !important;
-  border-radius: 12px;
-  background: transparent;
-  padding: 6px 10px;
-  margin: 4px 2px;
-  font-size: 12px;
-  font-weight: 500;
-  line-height: 1.2;
-  font-family: var(--rb-font-sans, sans-serif);
-  color: var(--ff-text-muted, var(--ff-text-muted));
-  transition: color 0.12s, background 0.12s;
-}
-
-.ff-right-inspector__tabs.ant-tabs .ant-tabs-tab .ant-tabs-tab-btn {
-  font-size: 12px;
-  font-weight: 500;
-  line-height: 1.2;
-}
-
-.ff-right-inspector__tabs .ant-tabs-tab:hover {
-  color: var(--ff-text, var(--ff-text));
-  background: rgb(0 0 0 / 2%);
-}
-
-.ff-right-inspector__tabs .ant-tabs-tab.ant-tabs-tab-active {
-  background: var(--ff-bg-page);
-  color: var(--ff-text, var(--ff-text));
-  border-color: var(--ff-border) !important;
-  box-shadow: none;
-}
-
-/* antd 直接给活动标签的文字上默认蓝色（选择器命中 .ant-tabs-tab-btn），
-   必须以更高优先级把文字颜色覆盖为应用深色，由中性文字与细边框区分活动标签 */
-.ff-right-inspector__tabs.ant-tabs .ant-tabs-tab.ant-tabs-tab-active .ant-tabs-tab-btn {
-  color: var(--ff-text, var(--ff-text));
-}
-
-.ff-right-inspector__tabs .ant-tabs-tab-btn {
-  color: inherit;
-  /* 文件名可能很长：超宽省略 */
-  max-width: 180px;
+  flex: 0 0 260px;
+  flex-direction: column;
   overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
 }
+.ff-right-inspector:not([data-has-panels]) .ff-inspector-overview { flex: 1 1 auto; }
 
-/* 每个标签自带的关闭小按钮（chip 上的 ×） */
-.ff-right-inspector__tabs .ant-tabs-tab-remove {
-  margin-left: 4px;
-  padding: 0 2px;
-  color: var(--ff-text-muted, var(--ff-text-muted));
-  font-size: 10px;
-}
-
-.ff-right-inspector__tabs .ant-tabs-tab-remove:hover {
-  color: var(--ff-accent, var(--ff-accent));
-}
-
-/* 右上角整体关闭按钮（关闭活动标签） */
-.ff-right-inspector__tabs .ant-tabs-extra-content {
+/* ── panel header: icon · name · status ··· enlarge · close ── */
+.ff-inspector-pane__head {
   display: flex;
+  height: 38px;
+  flex: none;
   align-items: center;
+  gap: 6px;
+  padding: 0 6px 0 12px;
+  border-bottom: 1px solid var(--ff-border);
+  color: var(--ff-text);
+  font: 600 12.5px/1 var(--rb-font-sans, sans-serif);
+  outline: none;
 }
+.ff-inspector-pane__head:focus-visible { box-shadow: inset 0 0 0 2px var(--ff-accent); border-radius: 12px 12px 0 0; }
+.ff-inspector-pane__icon { color: var(--ff-text-muted); }
+.ff-inspector-pane__title { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.ff-inspector-pane__spacer { flex: 1; }
+.ff-inspector-pane__action {
+  display: inline-grid;
+  width: 26px;
+  height: 26px;
+  flex: none;
+  place-items: center;
+  padding: 0;
+  border: 0;
+  border-radius: 7px;
+  background: transparent;
+  color: var(--ff-text-muted);
+  cursor: pointer;
+  transition: background-color 0.12s, color 0.12s, opacity 0.12s;
+}
+.ff-inspector-pane__action:hover { background: var(--ff-bg-hover); color: var(--ff-text); }
+.ff-inspector-pane__action[aria-pressed="true"] { background: var(--ff-bg-active); color: var(--ff-text); }
+.ff-inspector-pane__action:focus-visible { outline: 2px solid var(--ff-accent); outline-offset: 1px; }
+
+/* ── panel body: the content scrolls itself ── */
+.ff-inspector-pane__body {
+  display: flex;
+  min-height: 0;
+  flex: 1 1 auto;
+  flex-direction: column;
+  overflow: auto;
+}
+.ff-inspector-pane__body > * { flex: 1 1 auto; min-height: 0; }
 
 /* 阶段色点 */
 .ff-right-inspector__dot {
@@ -136,64 +110,19 @@
 .ff-right-inspector__dot.is-review { background: var(--ff-accent, var(--ff-accent-solid)); }
 .ff-right-inspector__dot.is-executing { background: #d98f2b; animation: ff-right-inspector-dot-pulse 1.4s ease-in-out infinite; }
 .ff-right-inspector__dot.is-completed { background: #3e9c63; }
-
+.ff-right-inspector__dot.is-failed { background: var(--ff-danger); }
+.ff-right-inspector__dot.is-cancelled { background: var(--ff-text-muted); }
 @keyframes ff-right-inspector-dot-pulse {
   0%, 100% { opacity: 1; }
   50% { opacity: 0.35; }
 }
-
-.ff-right-inspector__close {
-  flex-shrink: 0;
-  width: 36px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  border: 0;
-  background: transparent;
-  color: var(--ff-text-muted, var(--ff-text-muted));
-  cursor: pointer;
-  transition: background 0.12s, color 0.12s;
-}
-
-.ff-right-inspector__close:hover {
-  background: var(--ff-bg-hover);
-  color: var(--ff-text, var(--ff-text));
-}
-
-/* ── 主体：antd Tabs 内容区（滚动由各内容组件自理） ──
-   antd v6 的结构是 .ant-tabs-body-holder > .ant-tabs-body > .ant-tabs-content > .ant-tabs-tabpane，
-   旧版类名 .ant-tabs-content-holder 一并保留以防降级 */
-.ff-right-inspector__tabs > .ant-tabs-body-holder,
-.ff-right-inspector__tabs > .ant-tabs-content-holder {
-  flex: 1;
-  min-height: 0;
-  overflow: hidden;
-}
-
-.ff-right-inspector__tabs > .ant-tabs-body-holder > .ant-tabs-body {
-  height: 100%;
-}
-
-.ff-right-inspector__tabs .ant-tabs-content,
-.ff-right-inspector__tabs .ant-tabs-tabpane {
-  height: 100%;
-}
-
-.ff-right-inspector[hidden] { display: none; }
-
-.ff-right-inspector__label { display: inline-flex; align-items: center; gap: 6px; max-width: 180px; vertical-align: middle; }
-.ff-right-inspector__label > svg { flex: 0 0 auto; opacity: .8; }
-.ff-right-inspector__label-text { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .ff-right-inspector__dirty { flex: 0 0 6px; width: 6px; height: 6px; border-radius: 50%; background: var(--ff-accent); }
-.ff-right-inspector__close { min-height: 32px; border-radius: 8px; }
-.ff-right-inspector__close:focus-visible,
-.ff-right-inspector__tabs .ant-tabs-tab-remove:focus-visible,
-.ff-right-inspector__tabs .ant-tabs-tab-btn:focus-visible { outline: 2px solid var(--ff-accent); outline-offset: 2px; }
-:root[data-ui-colors] .ff-right-inspector__tabs .ant-tabs-tab:hover { background: var(--ff-bg-hover); }
+
+:root[data-ui-colors] .ff-right-inspector { background: var(--ff-bg-page); }
+:root[data-ui-colors] .ff-inspector-pane { background: var(--ff-bg-workspace); }
+
 @media (prefers-reduced-motion: reduce) {
   .ff-right-inspector, .ff-right-inspector__dot.is-executing { animation: none; }
-  .ff-right-inspector__tabs.ant-tabs .ant-tabs-tab, .ff-right-inspector__close { transition: none; }
+  .ff-inspector-pane { animation: none; transition: none; }
+  .ff-inspector-pane__action { transition: none; }
 }
-
-.ff-right-inspector__dot.is-failed { background: var(--ff-danger); }
-.ff-right-inspector__dot.is-cancelled { background: var(--ff-text-muted); }

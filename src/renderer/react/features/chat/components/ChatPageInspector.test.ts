@@ -25,7 +25,7 @@ describe("ChatPageInspector", () => {
       onCloseTab: () => undefined, onOpenFile: () => undefined,
     };
     const html = renderToStaticMarkup(createElement(ChatPageInspector, props));
-    expect(html).toContain('role="tab"');
+    expect(html).toContain('class="ff-inspector-pane"');
     expect(html).toContain('inputMode="url"');
     expect(html.match(/<aside/g)).toHaveLength(1);
     expect(html).not.toMatch(/<(iframe|webview)\b/);
@@ -40,7 +40,7 @@ describe("ChatPageInspector", () => {
       onTabChange: () => undefined, onCloseTab: () => undefined, onOpenFile: () => undefined,
       onChooseWorkspace: () => undefined,
     }));
-    expect(html).toContain('role="tab"');
+    expect(html).toContain('class="ff-inspector-pane"');
     expect(html).toContain('class="ff-workspace-empty"');
     expect(html).toContain('data-workspace-choose="true"');
   });

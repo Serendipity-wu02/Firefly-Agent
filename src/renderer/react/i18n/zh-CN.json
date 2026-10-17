@@ -272,7 +272,11 @@
     "failed": "这一轮没有顺利完成，请查看回复中的说明后再试一次。"
   },
   "rightInspector": {
-    "closeTab": "关闭 {{name}}（在标签上按 Delete）",
+    "reorder": "调整“{{name}}”的位置",
+    "reorderHint": "拖动调整位置，或按 ↑ ↓",
+    "expand": "放大",
+    "restore": "还原",
+    "closeTab": "关闭 {{name}}（在面板标题上按 Delete）",
     "panelAria": "右侧检查面板",
     "toggle": "展开/收起右侧面板"
   },
@@ -1108,6 +1112,8 @@
     }
   },
   "sessionOverview": {
+    "reorder": "调整“{{name}}”卡片的位置",
+    "reorderHint": "拖动调整顺序，或按 ↑ ↓",
     "title": "会话概览",
     "tab": "概览",
     "open": "打开会话概览",
