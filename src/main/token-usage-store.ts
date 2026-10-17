@@ -8,6 +8,7 @@
 
 import { getStorageContext } from "./storage-context";
 import { AtomicJsonStore } from "./atomic-json-store";
+import type { UsageHistory, UsageHistoryDay } from "../shared/usage-history";
 import { currentUsageAttribution, USAGE_FEATURES, type UsageAttribution, type UsageFeature } from "./usage-attribution";
 
 
@@ -418,30 +419,6 @@ export function getUsageReport(days: number): TokenUsageReport {
       .filter((item) => item.input > 0 || item.output > 0 || item.requests > 0 || (item.attemptedRequests ?? 0) > 0)
       .sort((left, right) => (right.input + right.output) - (left.input + left.output)),
   };
-}
-
-export interface UsageHistoryDay {
-  date: string;
-  weekday: string;
-  /** 输入 + 输出。 */
-  tokens: number;
-  requests: number;
-  byModel: Record<string, number>;
-  byFeature: Record<string, number>;
-  messages: number;
-  skillCalls: number;
-  pluginCalls: number;
-}
-
-export interface UsageHistory {
-  days: UsageHistoryDay[];
-  /** 区间内按用量降序的模型 / 功能合计。 */
-  models: Array<{ name: string; tokens: number; requests: number }>;
-  features: Array<{ name: string; tokens: number; requests: number }>;
-  /** 区间内用量最大的会话（含所属功能），最多 10 个。 */
-  sessions: Array<{ id: string; feature: string; tokens: number; requests: number }>;
-  skills: Array<{ id: string; count: number }>;
-  plugins: Array<{ id: string; count: number }>;
 }
 
 const WEEKDAYS = ["周日", "周一", "周二", "周三", "周四", "周五", "周六"];

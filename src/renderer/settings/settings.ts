@@ -276,6 +276,7 @@ if (!window.fireflyScheduler) {
 // 当前激活的厂商：每次 applyPreset 后更新；用于"切到下一家厂商前先把当前那家的输入框值缓存住"
 
 const NAV_LABELS: Record<string, { emoji: string; title: string; hint: string }> = {
+  usage: { emoji: "", title: t("settings.usage.title"), hint: t("settings.usage.hint") },
   subagents: { emoji: "", title: t("settings.subagents.title"), hint: t("settings.subagents.hint") },
   asr: { emoji: "🎙", title: t("settings.desktopAsr.title"), hint: t("settings.desktopAsr.hint") },
   memory: { emoji: `<img src="../avatars/firefly-avatar.png" width="24" height="24" alt="" aria-hidden="true" style="vertical-align:-3px" />`, title: t("settings.nav.memory"), hint: t("settings.nav.memoryHint") },
@@ -1496,6 +1497,14 @@ apiForm.addEventListener("submit", async (e) => {
 const navigationButtons = Array.from(document.querySelectorAll<HTMLButtonElement>(".nav-item"));
 const panelSections = Array.from(document.querySelectorAll<HTMLElement>("[data-panel]"), panel => panel.dataset.panel!);
 
+/** Reads the usage history each time the page is opened, so it never shows stale numbers. */
+async function loadUsage(): Promise<void> {
+  const host = document.getElementById("usage-history-panel");
+  if (!host) return;
+  const { loadUsagePanel } = await import("./usage/panel");
+  await loadUsagePanel(host, (window as typeof window & { tokenUsage?: import("./usage/panel").UsageBridge }).tokenUsage ?? {});
+}
+
 /** Reads the 12 sub-agents and their model choice each time the page is opened, so it never shows a stale selection. */
 async function loadSubagents(): Promise<void> {
   const host = document.getElementById("agent-routing-panel");
@@ -1528,6 +1537,7 @@ function switchSection(requestedSection: string): void {
 
   const isMusic = section === "music";
   const isSubagents = section === "subagents";
+  const isUsage = section === "usage";
   apiForm.classList.toggle("is-hidden", !isApi);
   apiRuntimeForm.classList.toggle("is-hidden", !isApiAdvanced);
   appearanceForm.classList.toggle("is-hidden", !isAppearance);
@@ -1556,9 +1566,11 @@ function switchSection(requestedSection: string): void {
   const subagentsPanel = document.getElementById("subagents-panel");
   if (subagentsPanel) subagentsPanel.classList.toggle("is-hidden", !isSubagents);
   if (isSubagents) void loadSubagents();
+  document.getElementById("usage-panel")?.classList.toggle("is-hidden", !isUsage);
+  if (isUsage) void loadUsage();
   placeholderPanel.classList.toggle(
     "is-hidden",
-    isAsr || isApi || isApiAdvanced || isAppearance || isGeneral || isPreferences || isFirefly || isDisclaimer || isMemory || isUser || isTasks || isPlugins || isMcp || isChannels || isMusic || isSubagents,
+    isAsr || isApi || isApiAdvanced || isAppearance || isGeneral || isPreferences || isFirefly || isDisclaimer || isMemory || isUser || isTasks || isPlugins || isMcp || isChannels || isMusic || isSubagents || isUsage,
   );
 
   if (
@@ -1577,7 +1589,8 @@ function switchSection(requestedSection: string): void {
     !isMcp &&
     !isChannels &&
     !isMusic &&
-    !isSubagents
+    !isSubagents &&
+    !isUsage
   ) {
 	    placeholderIcon.innerHTML = label.emoji;
     placeholderTitle.textContent = label.title;
