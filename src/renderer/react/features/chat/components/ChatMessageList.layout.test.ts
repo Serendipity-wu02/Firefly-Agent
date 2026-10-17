@@ -52,3 +52,10 @@ describe("chat hierarchy from the UI skeleton preview", () => {
     expect(panel).toContain('kind="permission"');
   });
 });
+
+describe("scrollbar beside the overview cards", () => {
+  it("hides the conversation's thumb until the pointer is over it, so it does not read as a divider", () => {
+    expect(stylesheet).toMatch(/\.ff-message-list::-webkit-scrollbar-thumb \{ background-color: transparent; \}/);
+    expect(stylesheet).toMatch(/\.ff-message-list:hover::-webkit-scrollbar-thumb \{ background-color: var\(--ff-scroll-thumb\); \}/);
+  });
+});
