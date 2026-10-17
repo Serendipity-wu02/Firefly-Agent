@@ -278,6 +278,7 @@
     "restore": "Restore",
     "closeTab": "Close {{name}} (Delete on its header)",
     "resize": "Resize panels (Left/Right arrow keys)",
+    "resizeRows": "Resize stacked panels (Up/Down arrow keys)",
     "panelAria": "Inspector panel",
     "toggle": "Toggle right panel"
   },
