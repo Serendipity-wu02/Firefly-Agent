@@ -28,7 +28,7 @@
   font: 400 14px/1.3 var(--rb-font-sans, sans-serif);
 }
 
-.ff-project-chooser__item { padding: 9px 10px; border-radius: 8px; }
+.ff-project-chooser__item { padding: 9px 10px; border-radius: 8px; text-align: left; }
 .ff-project-chooser__item > svg:first-child { flex: none; color: var(--ff-text-secondary); }
 .ff-project-chooser__item:hover { background: var(--ff-bg-hover); }
 .ff-project-chooser__item[aria-pressed="true"] { background: var(--ff-bg-active); }
