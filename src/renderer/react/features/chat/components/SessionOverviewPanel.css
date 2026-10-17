@@ -70,6 +70,13 @@
 .ff-overview-card__head:focus-visible { outline: 2px solid var(--ff-accent, #6b9982); outline-offset: -2px; }
 .ff-overview-card__chevron { flex: 0 0 auto; color: var(--ff-text-muted, #828396); transition: transform 150ms ease; }
 .ff-overview-card__head[aria-expanded="true"] .ff-overview-card__chevron { transform: rotate(90deg); }
+/* Entry cards (environment, connectors): one row that opens something; the chevron follows the title, as in Claude desktop. */
+.ff-overview-card[data-entry] .ff-overview-card__title { order: 1; }
+.ff-overview-card[data-entry] .ff-overview-card__chevron { order: 2; }
+.ff-overview-card[data-entry] .ff-overview-card__summary { order: 3; }
+.ff-overview-card[data-entry] .ff-overview-card__head:hover .ff-overview-card__chevron { transform: translateX(2px); }
+.ff-overview-card__head:disabled { cursor: default; }
+.ff-overview-card__head:disabled:hover { background: transparent; }
 
 /* The six-dot grip: quiet until the card is hovered or the grip focused. */
 .ff-overview-card__grip {

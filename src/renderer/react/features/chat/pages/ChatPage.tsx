@@ -1440,7 +1440,8 @@ export function ChatPage() {
     const frame = requestAnimationFrame(() => {
       const panel = inspectorPanelRef.current;
       const dockWidth = dockRef.current?.offsetWidth ?? 0;
-      if (!panel || dockWidth === 0) return;
+      // A panel the user collapsed with the separator stays collapsed.
+      if (!panel || dockWidth === 0 || panel.isCollapsed()) return;
       const wanted = Math.min(inspectorPanelCount * 360, dockWidth * 0.7);
       if (panel.getSize().inPixels < wanted - 1) panel.resize(Math.round(wanted));
     });
@@ -1796,7 +1797,11 @@ export function ChatPage() {
         {/* The overview cards live in the conversation panel, on the outer side of the dialog. */}
         {overviewTabOpen && activeSessionId && (
           <aside className="ff-chat-cards" aria-label={t("sessionOverview.title")}>
-            <SessionOverviewPanel usage={latestContextUsage} outputs={workspaceOutputs} onOpenChange={openResultDiff} onOpenTask={openTaskInRun} />
+            <SessionOverviewPanel usage={latestContextUsage} outputs={workspaceOutputs} onOpenChange={openResultDiff} onOpenTask={openTaskInRun}
+              environment={{ mode, workspaceName: activeSession?.workspaceBinding?.displayName, temporary: activeSession?.temporary }}
+              onOpenEnvironment={activeSession?.workspaceBinding ? openFilesTab : mode !== "chat" ? () => void chooseWorkspace() : undefined}
+              onOpenConnectors={() => sidebarApi()?.openSettings("mcp")}
+              onOpenOutput={output => openResultTab(output.id)} />
           </aside>
         )}
         </div>

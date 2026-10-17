@@ -1,4 +1,5 @@
-// 会话概览：右栏里的一摞可折叠卡片，只展示真实数据。
+// 会话概览：对话面板外侧的一摞卡片，只展示真实数据，参照 Claude 桌面版：环境、连接器、后台任务、上下文、变更、产出。
+// 环境、连接器是单行入口（点开对应面板或设置页）；其余可折叠。
 // 上下文来自主进程的估算快照（不是账单）；变更与后台任务来自本会话各次 run 的工具/委托记录。
 // 卡片没有数据时说明"暂无"，不放示例内容。
 // 交互参照 open-claude-ui：卡片右上角六点抓取柄可上下拖动换顺序（4px 死区，落点显示强调色线，
@@ -74,29 +75,33 @@ interface CardDrag {
   offsetY: number;
 }
 
-function OverviewCard({ id, title, summary, defaultOpen = true, drag, children }: {
+function OverviewCard({ id, title, summary, defaultOpen = true, drag, onActivate, children }: {
   id: string;
   title: string;
+  /** A one-line entry card: the whole bar opens something instead of folding a body. */
+  onActivate?: () => void;
   /** 折叠时也看得到的一行摘要。 */
   summary?: ReactNode;
   defaultOpen?: boolean;
   drag?: CardDrag;
-  children: ReactNode;
+  children?: ReactNode;
 }) {
   const { t } = useTranslation();
   const [open, setOpen] = useState(() => readOpen(id, defaultOpen));
+  const isEntry = children === undefined;
   const bodyId = useId();
   return (
-    <section className="ff-overview-card" data-overview-card={id} data-open={open}
+    <section className="ff-overview-card" data-overview-card={id} data-open={isEntry ? undefined : open} data-entry={isEntry || undefined}
       data-dragging={drag?.dragging || undefined} data-drop-before={drag?.dropBefore || undefined}
       style={drag?.dragging ? { "--ff-drag-y": `${drag.offsetY}px` } as CSSProperties : undefined}>
       <div className="ff-overview-card__bar">
         <button
           type="button"
           className="ff-overview-card__head"
-          aria-expanded={open}
-          aria-controls={bodyId}
-          onClick={() => { setOpen(!open); writeOpen(id, !open); }}
+          aria-expanded={isEntry ? undefined : open}
+          aria-controls={isEntry ? undefined : bodyId}
+          disabled={isEntry && !onActivate}
+          onClick={() => { if (isEntry) { onActivate?.(); return; } setOpen(!open); writeOpen(id, !open); }}
         >
           <ChevronRight className="ff-overview-card__chevron" size={14} aria-hidden="true" />
           <span className="ff-overview-card__title">{title}</span>
@@ -112,9 +117,11 @@ function OverviewCard({ id, title, summary, defaultOpen = true, drag, children }
         )}
       </div>
       {/* Grid 0fr -> 1fr: the body grows and shrinks without measuring its height. */}
-      <div id={bodyId} className="ff-overview-card__fold" aria-hidden={!open} inert={!open}>
-        <div className="ff-overview-card__body">{children}</div>
-      </div>
+      {!isEntry && (
+        <div id={bodyId} className="ff-overview-card__fold" aria-hidden={!open} inert={!open}>
+          <div className="ff-overview-card__body">{children}</div>
+        </div>
+      )}
     </section>
   );
 }
@@ -162,14 +169,35 @@ function ContextCardBody({ overview }: { overview: OverviewContext }) {
   );
 }
 
+export interface OverviewEnvironment {
+  mode: "chat" | "work" | "code";
+  /** The bound project's display name, when the session has one. */
+  workspaceName?: string;
+  temporary?: boolean;
+}
+
 export interface SessionOverviewPanelProps {
   usage?: ContextUsageSnapshot;
   outputs: readonly WorkspaceRunOutput[];
+  environment?: OverviewEnvironment;
   onOpenChange?: (output: WorkspaceRunOutput, file: WorkspaceChangedFile) => void;
   onOpenTask?: (output: WorkspaceRunOutput, taskId: string) => void;
+  /** Opens the project (file panel) or lets the user pick one. */
+  onOpenEnvironment?: () => void;
+  /** Opens the connector (MCP) settings page. */
+  onOpenConnectors?: () => void;
+  onOpenOutput?: (output: WorkspaceRunOutput) => void;
 }
 
-export function SessionOverviewPanel({ usage, outputs, onOpenChange, onOpenTask }: SessionOverviewPanelProps) {
+/** Entry cards that sit on top, as in Claude desktop, even for an order saved before they existed. */
+const LEADING_CARDS = ["environment", "connectors"];
+
+function outputLabel(output: WorkspaceRunOutput, index: number, t: (key: string, options?: Record<string, unknown>) => string): string {
+  const single = output.tasks.length === 1 ? output.tasks[0]!.description.trim() : "";
+  return single || t("workspace.runResult", { index: index + 1 });
+}
+
+export function SessionOverviewPanel({ usage, outputs, environment, onOpenChange, onOpenTask, onOpenEnvironment, onOpenConnectors, onOpenOutput }: SessionOverviewPanelProps) {
   const { t } = useTranslation();
   const context = buildContextOverview(usage);
   const changes = summarizeChanges(outputs);
@@ -191,7 +219,12 @@ export function SessionOverviewPanel({ usage, outputs, onOpenChange, onOpenTask 
     return () => observer.disconnect();
   }, []);
 
-  const cards: Array<{ id: string; title: string; summary?: ReactNode; body: ReactNode }> = [
+  const environmentSummary = !environment ? undefined
+    : environment.temporary ? t("sessionOverview.environmentTemporary")
+    : environment.workspaceName ?? t(environment.mode === "chat" ? "sessionOverview.environmentLocal" : "sessionOverview.environmentNoProject");
+  const cards: Array<{ id: string; title: string; summary?: ReactNode; body?: ReactNode; onActivate?: () => void }> = [
+    { id: "environment", title: t("sessionOverview.environment"), summary: environmentSummary, onActivate: onOpenEnvironment },
+    { id: "connectors", title: t("sessionOverview.connectors"), summary: t("sessionOverview.connectorsManage"), onActivate: onOpenConnectors },
     {
       id: "tasks",
       title: t("sessionOverview.tasks"),
@@ -256,8 +289,32 @@ export function SessionOverviewPanel({ usage, outputs, onOpenChange, onOpenTask 
           </ul>
         ),
     },
+    {
+      id: "outputs",
+      title: t("sessionOverview.outputs"),
+      summary: outputs.length > 0 ? String(outputs.length) : undefined,
+      body: outputs.length === 0
+        ? <p className="ff-overview-card__empty">{t("sessionOverview.outputsEmpty")}</p>
+        : (
+          <ul className="ff-overview-list">
+            {[...outputs].reverse().map((output) => {
+              const index = outputs.indexOf(output);
+              return (
+                <li key={output.id}>
+                  <button type="button" className="ff-overview-list__row" disabled={!onOpenOutput} onClick={() => onOpenOutput?.(output)}>
+                    <span className="ff-overview-list__name">{outputLabel(output, index, t)}</span>
+                    <span className="ff-overview-list__meta">{t("sessionOverview.outputCounts", { files: output.files.length, tools: output.tools.length })}</span>
+                  </button>
+                </li>
+              );
+            })}
+          </ul>
+        ),
+    },
   ];
-  const ordered = reconcileOrder(order, cards.map(card => card.id)).map(id => cards.find(card => card.id === id)!);
+  const reconciled = reconcileOrder(order, cards.map(card => card.id));
+  const leading = LEADING_CARDS.filter(id => !order.includes(id));
+  const ordered = [...leading, ...reconciled.filter(id => !leading.includes(id))].map(id => cards.find(card => card.id === id)!);
   const others = drag?.active ? ordered.filter(card => card.id !== drag.id) : [];
   const dropBeforeId = drag?.active && drag.target !== null ? others[drag.target]?.id ?? null : null;
   const dropAtEnd = Boolean(drag?.active && drag.target !== null && drag.target >= others.length);
@@ -303,7 +360,7 @@ export function SessionOverviewPanel({ usage, outputs, onOpenChange, onOpenTask 
     <div ref={listRef} className="ff-session-overview" aria-label={t("sessionOverview.title")}
       data-dragging={drag?.active || undefined} onScroll={event => updateFade(event.currentTarget)}>
       {ordered.map(card => (
-        <OverviewCard key={card.id} id={card.id} title={card.title} summary={card.summary} drag={dragFor(card.id)}>
+        <OverviewCard key={card.id} id={card.id} title={card.title} summary={card.summary} drag={dragFor(card.id)} onActivate={card.onActivate}>
           {card.body}
         </OverviewCard>
       ))}

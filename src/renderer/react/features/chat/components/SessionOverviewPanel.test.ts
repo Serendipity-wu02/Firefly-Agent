@@ -80,7 +80,8 @@ describe("SessionOverviewPanel", () => {
   it("makes every card a labelled disclosure", () => {
     const html = render({ usage, outputs: [output] });
 
-    expect((html.match(/aria-expanded="true"/g) ?? []).length).toBe(3);
-    expect((html.match(/aria-controls=/g) ?? []).length).toBe(3);
+    // Tasks, context, changes and outputs fold; environment and connectors are one-row entries.
+    expect((html.match(/aria-expanded="true"/g) ?? []).length).toBe(4);
+    expect((html.match(/aria-controls=/g) ?? []).length).toBe(4);
   });
 });

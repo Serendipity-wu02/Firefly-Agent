@@ -1129,7 +1129,16 @@
     "contextEmpty": "Context usage appears after you send a message",
     "contextEstimate": "Estimated from text length, not the provider's reported usage.",
     "changes": "Changes",
-    "changesEmpty": "No file changes in this session yet"
+    "changesEmpty": "No file changes in this session yet",
+    "environment": "Environment",
+    "environmentLocal": "This computer · Chat",
+    "environmentTemporary": "Temporary chat",
+    "environmentNoProject": "No project chosen",
+    "connectors": "Connectors",
+    "connectorsManage": "Manage in settings",
+    "outputs": "Outputs",
+    "outputsEmpty": "No outputs in this session yet",
+    "outputCounts": "{{files}} files · {{tools}} tools"
   },
   "workspace": {
     "resizeSidebar": "Resize conversation sidebar",

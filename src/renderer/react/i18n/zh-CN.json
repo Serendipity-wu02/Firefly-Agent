@@ -1129,7 +1129,16 @@
     "contextEmpty": "发送消息后显示上下文占用",
     "contextEstimate": "按字符估算，不是供应商返回的用量。",
     "changes": "变更",
-    "changesEmpty": "本会话还没有文件变更"
+    "changesEmpty": "本会话还没有文件变更",
+    "environment": "环境",
+    "environmentLocal": "本机 · 聊天",
+    "environmentTemporary": "临时对话",
+    "environmentNoProject": "未选择项目",
+    "connectors": "连接器",
+    "connectorsManage": "在设置中管理",
+    "outputs": "产出",
+    "outputsEmpty": "本会话还没有产出",
+    "outputCounts": "{{files}} 个文件 · {{tools}} 项工具"
   },
   "workspace": {
     "resizeSidebar": "调整会话侧栏宽度",
