@@ -62,3 +62,14 @@
   .ff-model-popover .ant-popover-inner, .ff-model-panel--forward, .ff-model-panel--back, .ff-model-effort__model { animation: none; }
   .ff-model-effort > svg:last-child { transition: none; }
 }
+
+/* The effort panel, tidied: a narrower panel, the level and the model link centred as one block, reset aligned with
+   the level, the model link plain (no grey chip when the panel opens with focus on it) . */
+.ff-model-popover .ant-popover-inner { padding: 6px; border-radius: 16px; }
+.ff-model-panel.ff-effort { width: 240px; gap: 12px; padding: 10px 12px 12px; }
+.ff-effort__head { min-height: 0; gap: 0; }
+.ff-effort__value { font: 600 14px/1.4 var(--rb-font-sans, sans-serif); }
+.ff-effort__model { padding: 1px 6px; font-size: 12px; }
+.ff-effort__model:focus:not(:focus-visible) { background: transparent; }
+.ff-effort__model:hover { background: transparent; color: var(--ff-text); text-decoration: underline; text-underline-offset: 3px; }
+.ff-effort__reset { top: -2px; right: -4px; width: 24px; height: 24px; }

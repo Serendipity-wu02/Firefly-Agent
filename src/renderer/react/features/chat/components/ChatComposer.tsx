@@ -9,7 +9,6 @@ import type { ContextUsageSnapshot } from "../../../../../shared/context-usage";
 import { TokenUsageBar } from "./TokenUsageBar";
 import "./ModelEffortControl.css";
 import { PermissionControl } from "./PermissionControl";
-import { PlanModeToggle } from "./PlanModeToggle";
 import { ModelEffortControl } from "./ModelEffortControl";
 import { PendingQueueDock, type PendingQueueDockItem } from "./PendingQueueDock";
 import { StepProgressPill } from "./StepProgressPill";
@@ -472,9 +471,6 @@ export function ChatComposer({
               onChooseSticker={onChooseSticker}
             />
             {supportsPermission && <PermissionControl />}
-            {supportsPlanToggle && conversationId && (
-              <PlanModeToggle conversationId={conversationId} workspaceRoot={workspaceRoot} />
-            )}
           </div>
         }
         />
