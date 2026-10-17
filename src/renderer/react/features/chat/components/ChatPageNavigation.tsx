@@ -1,23 +1,16 @@
 import React, { useEffect, useRef, useState } from "react";
-import { Popover } from "antd";
-import { CalendarClock, Ellipsis, MessageSquareDashed, Search } from "lucide-react";
+import { MessageCircleDashed, Search } from "lucide-react";
 import { useTranslation } from "../../../i18n";
 import type { ChatSessionMeta, ConversationMode } from "../../../../../shared/chat-types";
-import type { TodoState } from "../../../../../shared/todo-types";
 import { ModeMenu } from "../../../components/ui/ModeMenu";
-import { ModelModeButton } from "../../../components/ui/ModelModeButton";
 import { NewTaskButton } from "../../../components/ui/NewTaskButton";
-import { PluginModeButton } from "../../../components/ui/PluginModeButton";
 import { resolveAsset } from "../../../../../shared/renderer-base";
 import { SidebarToggle } from "../../../components/ui/SidebarToggle";
-import { SkillModeButton } from "../../../components/ui/SkillModeButton";
-import { ToolModeButton } from "../../../components/ui/ToolModeButton";
 import { WindowControls } from "../../../components/ui/WindowControls";
 import { AppUpdateEntry } from "./AppUpdateEntry";
 import { ConversationSidebar } from "./ConversationSidebar";
 import { SidebarSearchDialog } from "./SidebarSearchDialog";
-import { SidebarTaskCard } from "./SidebarTaskCard";
-import { SidebarUserRow } from "./SidebarUserRow";
+import { ActivityRail } from "./ActivityRail";
 import { ModelConnectionIndicator } from "./ModelConnectionIndicator";
 import { useSidebarWidth } from "../pages/useSidebarWidth";
 import { reportChatPerfRender } from "./chat-perf-probe";
@@ -32,13 +25,13 @@ export interface ChatPageNavigationProps {
   sessionListStatus: "loading" | "error" | "ready";
   activeSessionId?: string;
   activeModelProfileId?: string;
-  /** Todo list of the active task, shown in the card at the bottom of the sidebar (work and code only). */
-  todoState?: TodoState | null;
   onToggleCollapsed: () => void;
   onModeChange: (mode: string) => void;
   onNewTask: () => void;
   /** 仅 Chat 模式显示；缺省则不渲染入口。 */
   onNewTemporaryChat?: () => void;
+  /** Sessions with a run in flight, shown with a spinner in the list. */
+  runningSessionIds?: readonly string[];
   onTogglePanel: (panel: ChatPagePanel) => void;
   onSelectSession: (sessionId: string) => void;
   onOpenProject: (workspaceRoot: string) => void;
@@ -63,11 +56,11 @@ export const ChatPageNavigation = React.memo(function ChatPageNavigation({
   sessionListStatus,
   activeSessionId,
   activeModelProfileId,
-  todoState,
   onToggleCollapsed,
   onModeChange,
   onNewTask,
   onNewTemporaryChat,
+  runningSessionIds,
   onTogglePanel,
   onSelectSession,
   onOpenProject,
@@ -85,8 +78,6 @@ export const ChatPageNavigation = React.memo(function ChatPageNavigation({
   reportChatPerfRender("navigationRenders");
   const sidebar = useSidebarWidth(collapsed);
   const { t } = useTranslation();
-  const [moreOpen, setMoreOpen] = useState(false);
-  const moreRef = useRef<HTMLButtonElement>(null);
   // The thin strip along the left window edge is what brings the folded sidebar back on hover.
   const edgeRef = useRef<HTMLElement>(null);
   const contextRef = useRef<HTMLElement>(null);
@@ -98,23 +89,23 @@ export const ChatPageNavigation = React.memo(function ChatPageNavigation({
     Boolean(edgeRef.current?.contains(target) || contextRef.current?.contains(target));
   const holdFocus = () => owns(document.activeElement) &&
     (keyboardInteraction.current || Boolean(document.activeElement?.closest('[role="menu"], .ant-popover')));
-  const enter = () => { pointerWithin.current = true; if (collapsed && !moreOpen) setPeeking(true); };
+  const enter = () => { pointerWithin.current = true; if (collapsed) setPeeking(true); };
   const leave = (event: React.PointerEvent) => {
     if (owns(event.relatedTarget)) return;
     pointerWithin.current = false;
-    if (!sidebar.isResizing && !moreOpen && !holdFocus()) setPeeking(false);
+    if (!sidebar.isResizing && !holdFocus()) setPeeking(false);
   };
   useEffect(() => { setPeeking(false); }, [collapsed]);
   useEffect(() => {
     const focus = (event: FocusEvent) => {
-      if (collapsed && owns(event.target) && !moreOpen) setPeeking(true);
-      else if (!pointerWithin.current && !moreOpen) setPeeking(false);
+      if (collapsed && owns(event.target)) setPeeking(true);
+      else if (!pointerWithin.current) setPeeking(false);
     };
     const pointerDown = () => { keyboardInteraction.current = false; };
     const pointerMove = (event: globalThis.PointerEvent) => {
       if (owns(event.target)) return;
       pointerWithin.current = false;
-      if (!sidebar.isResizing && !moreOpen && !holdFocus()) setPeeking(false);
+      if (!sidebar.isResizing && !holdFocus()) setPeeking(false);
     };
     const shortcut = (event: KeyboardEvent) => {
       keyboardInteraction.current = true;
@@ -137,18 +128,11 @@ export const ChatPageNavigation = React.memo(function ChatPageNavigation({
       window.removeEventListener("keydown", shortcut);
       window.removeEventListener("blur", blur);
     };
-  }, [collapsed, moreOpen, onToggleCollapsed, sidebar.isResizing]);
+  }, [collapsed, onToggleCollapsed, sidebar.isResizing]);
   useEffect(() => {
-    if (!sidebar.isResizing && !moreOpen && !pointerWithin.current && !holdFocus()) setPeeking(false);
-  }, [moreOpen, sidebar.isResizing]);
+    if (!sidebar.isResizing && !pointerWithin.current && !holdFocus()) setPeeking(false);
+  }, [sidebar.isResizing]);
   const hidden = collapsed && !peeking && !sidebar.isResizing;
-  const chooseMorePanel = (panel: ChatPagePanel) => {
-    setMoreOpen(false);
-    onTogglePanel(panel);
-    moreRef.current?.focus();
-  };
-  const chooseScheduledTasks = () => chooseMorePanel("scheduled");
-
   const resizeHandle = <div className={`ff-sidebar-resizer ${sidebar.isResizing ? "is-resizing" : ""}`} role="separator" tabIndex={0}
         aria-label={t("workspace.resizeSidebar")} aria-orientation="vertical"
         aria-controls="firefly-context-sidebar" aria-valuemin={sidebar.min}
@@ -163,7 +147,6 @@ export const ChatPageNavigation = React.memo(function ChatPageNavigation({
           sidebar.resizeBy(delta);
         }} />;
 
-  const morePanelActive = activePanel === "tool" || activePanel === "skill" || activePanel === "model" || activePanel === "scheduled";
   return (
     <>
       <header className="ff-page-titlebar">
@@ -180,51 +163,28 @@ export const ChatPageNavigation = React.memo(function ChatPageNavigation({
           <WindowControls onMinimize={onMinimize} onMaximize={onMaximize} onClose={onCloseWindow} />
         </div>
       </header>
+      {/* Codex-style activity rail: always visible, even when the conversation sidebar is folded away. */}
+      <ActivityRail activePanel={activePanel} onTogglePanel={onTogglePanel} onOpenSettings={onOpenSettings} />
       {collapsed && <nav ref={edgeRef} onPointerEnter={enter} onPointerLeave={leave} className="ff-page-edge" aria-label={t("ui.navigation")} />}
       <aside ref={contextRef} onPointerEnter={enter} onPointerLeave={leave} id="firefly-context-sidebar" className={`ff-page-sidebar ${collapsed ? "is-floating" : ""} ${peeking ? "is-peeking" : ""}`} style={{ width: sidebar.width }} inert={hidden} aria-hidden={hidden} aria-label={t("ui.contextSidebar")}>
         {collapsed && <span className="ff-sidebar-hover-corridor" aria-hidden="true" />}
-        {!collapsed && (
-          <div className="ff-page-mode">
-            <ModeMenu value={mode} onChange={onModeChange} />
-          </div>
-        )}
+        {/* Header: the mode switch (like Codex's workspace switch) with search on the right. */}
+        <div className="ff-page-mode">
+          {!collapsed && <ModeMenu value={mode} onChange={onModeChange} />}
+          <button type="button" className="ff-page-mode__search" onClick={() => setSearchOpen(true)}
+            aria-label={t("sidebar.searchAction")} title={`${t("sidebar.searchAction")} Ctrl+K`} aria-keyshortcuts="Control+K">
+            <Search size={16} strokeWidth={1.6} aria-hidden="true" />
+          </button>
+        </div>
+        {/* New conversation, with the temporary chat on the same row (Chat mode only). */}
         <div className="ff-page-newtask">
           <NewTaskButton label={mode === "chat" ? undefined : t("ui.newTaskButton")} onClick={onNewTask} />
           {mode === "chat" && onNewTemporaryChat && (
-            <button type="button" className="ff-side-action ff-side-action--temporary" onClick={onNewTemporaryChat} title={t("ui.temporaryChatHint")}>
-              <span className="ff-side-action-icon"><MessageSquareDashed size={16} strokeWidth={1.8} aria-hidden="true" /></span>
-              <span className="ff-side-action-label">{t("ui.temporaryChat")}</span>
+            <button type="button" className="ff-page-newtask__temporary" onClick={onNewTemporaryChat}
+              aria-label={t("ui.temporaryChat")} title={`${t("ui.temporaryChat")}：${t("ui.temporaryChatHint")}`}>
+              <MessageCircleDashed size={16} strokeWidth={1.6} aria-hidden="true" />
             </button>
           )}
-          <button type="button" className="ff-side-action ff-side-action--search" onClick={() => setSearchOpen(true)} aria-label={t("sidebar.searchAction")} aria-keyshortcuts="Control+K">
-            <span className="ff-side-action-icon"><Search size={16} strokeWidth={1.8} aria-hidden="true" /></span>
-            <span className="ff-side-action-label">{t("sidebar.searchAction")}</span>
-            <kbd>Ctrl K</kbd>
-          </button>
-          <PluginModeButton active={activePanel === "plugin"} onClick={() => onTogglePanel("plugin")} />
-          <Popover trigger={["hover", "click"]} mouseEnterDelay={0.08} mouseLeaveDelay={0.2} placement="rightTop" open={moreOpen} onOpenChange={setMoreOpen}
-            getPopupContainer={() => contextRef.current!}
-            content={(
-              <div className="ff-page-more" onKeyDown={(event) => {
-                if (event.key === "Escape") {
-                  event.stopPropagation(); setMoreOpen(false); moreRef.current?.focus();
-                }
-              }}>
-                <ToolModeButton active={activePanel === "tool"} onClick={() => chooseMorePanel("tool")} />
-                <SkillModeButton active={activePanel === "skill"} onClick={() => chooseMorePanel("skill")} />
-                <ModelModeButton active={activePanel === "model"} onClick={() => chooseMorePanel("model")} />
-                <button type="button" className={`ff-side-action ${activePanel === "scheduled" ? "is-active" : ""}`} onClick={chooseScheduledTasks} title={t("ui.scheduledTasks")} aria-label={t("ui.scheduledTasks")} aria-pressed={activePanel === "scheduled"}>
-                  <span className="ff-side-action-icon"><CalendarClock size={16} strokeWidth={1.8} aria-hidden="true" /></span>
-                  <span className="ff-side-action-label">{t("ui.scheduledTasks")}</span>
-                </button>
-              </div>
-            )}>
-            <button ref={moreRef} type="button" className={`ff-side-action ${moreOpen || morePanelActive ? "is-active" : ""}`}
-              title={t("ui.more")} aria-label={t("ui.more")} aria-expanded={moreOpen}>
-              <span className="ff-side-action-icon"><Ellipsis size={18} aria-hidden="true" /></span>
-              <span className="ff-side-action-label">{t("ui.more")}</span>
-            </button>
-          </Popover>
         </div>
         <div className="ff-page-conversations">
           <ConversationSidebar
@@ -232,6 +192,7 @@ export const ChatPageNavigation = React.memo(function ChatPageNavigation({
             sessions={sessions}
             listStatus={sessionListStatus}
             activeSessionId={activeSessionId}
+            runningSessionIds={runningSessionIds}
             onSelect={onSelectSession}
             onOpenProject={onOpenProject}
             onRename={onRenameSession}
@@ -240,9 +201,7 @@ export const ChatPageNavigation = React.memo(function ChatPageNavigation({
             onExport={onExportSession}
           />
         </div>
-        {(mode === "work" || mode === "code") && <SidebarTaskCard mode={mode} state={todoState ?? null} />}
         <AppUpdateEntry />
-        <SidebarUserRow onOpenSettings={onOpenSettings} />
         {sidebar.overlay && !hidden && resizeHandle}
       </aside>
       {!sidebar.overlay && resizeHandle}

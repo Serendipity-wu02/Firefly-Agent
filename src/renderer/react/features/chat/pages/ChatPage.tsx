@@ -1470,6 +1470,10 @@ export function ChatPage() {
     return () => cancelAnimationFrame(frame);
   }, [inspectorPanelCount, inspectorVisible, compactDock, inspectorPanelRef, chatMinWidth]);
 
+  // Sessions with a run in flight, for the sidebar spinner. The registry is a ref: a run starting flips the busy state,
+  // a run finishing bumps the registry version, and either recomputes the list.
+  const runningSessionIds = useMemo(() => Object.keys(activeRunsBySession.current), [runRegistryVersion, modelBusyByMode]); // eslint-disable-line react-hooks/exhaustive-deps
+
   // ── 阶段 1A：导航 props 引用稳定化 ──
   // 下方 6 个动作函数读取大量页面状态、内部调用链每次渲染都产生新引用，
   // 属"需读最新状态且引用不能变"的场景：用 ref 转发当次渲染的最新实现，
@@ -1556,13 +1560,13 @@ export function ChatPage() {
     <div className={`ff-page ${collapsed ? "is-collapsed" : ""}`}>
       <ChatPageNavigation
         collapsed={collapsed}
+        runningSessionIds={runningSessionIds}
         activePanel={activePanel}
         mode={mode}
         sessions={sessions}
         sessionListStatus={sessionListErrors[mode] ? "error" : sessionsByMode[mode] === undefined ? "loading" : "ready"}
         activeSessionId={activeSessionId}
         activeModelProfileId={selectedModelProfileId}
-        todoState={activeSessionId ? todoStateBySession[activeSessionId] : null}
         onToggleCollapsed={navToggleCollapsed}
         onModeChange={navModeChange}
         onNewTask={navNewTask}
