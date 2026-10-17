@@ -20,11 +20,6 @@ describe("RightInspector surface", () => {
     expect(pane?.style.backgroundImage).toBe("");
   });
 
-  it("keeps the overview column narrow beside panels and full width on its own", () => {
-    expect(rule(".ff-inspector-overview")?.style.flex).toBe("0 0 260px");
-    expect(rule(".ff-right-inspector:not([data-has-panels]) .ff-inspector-overview")?.style.flex).toBe("1 1 auto");
-  });
-
   it("fades panels in without moving them, so a native browser view keeps its bounds", () => {
     expect(stylesheet).toMatch(/@keyframes ff-right-inspector-slide-in \{\s*from \{ opacity: 0; \}\s*to \{ opacity: 1; \}\s*\}/);
     expect(rule(".ff-inspector-pane")?.style.animation).toContain("ff-right-inspector-slide-in");

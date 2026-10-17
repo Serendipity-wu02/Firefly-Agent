@@ -1,11 +1,10 @@
 // RightInspector — 右侧面板，参照 Claude 桌面版的结构：
-// - 概览（overview）是紧挨对话框外侧的一条窄列，里面是可拖动排序的小卡片（卡片本身由 SessionOverviewPanel 渲染）；
-// - 其余打开的项（浏览器、文件、文件预览、改动、任务……）是大面板，在概览列右侧铺成网格：每列上下两块，满了再开一列。
+// - 打开的项（浏览器、文件、文件预览、改动、任务……）是大面板，铺成网格：每列上下两块，满了再开一列。
 // 打开/关闭由主区标题行的图标开关负责，这里没有标签条。大面板标题行：图标、名称、状态 ··· 放大、关闭。
 // 放大时其余大面板隐藏（保持挂载，浏览器等状态不丢）；关闭后的焦点回退仍由上层 ChatPage 决定。
 
 import { useState, type ReactNode } from "react";
-import { File, Files, FolderTree, GitCompareArrows, Globe, LayoutList, ListChecks, Maximize2, Minimize2, SquareTerminal, X } from "lucide-react";
+import { File, Files, FolderTree, GitCompareArrows, Globe, ListChecks, Maximize2, Minimize2, SquareTerminal, X } from "lucide-react";
 import { useTranslation } from "../../../i18n";
 import { tileColumns } from "./reorder-list";
 import "./RightInspector.css";
@@ -15,7 +14,7 @@ export interface InspectorTab {
   label: string;
   /** Full path/context for tabs that share the same visible basename. */
   title?: string;
-  kind?: "overview" | "files" | "file" | "diff" | "browser" | "tasks" | "plan" | "result";
+  kind?: "files" | "file" | "diff" | "browser" | "tasks" | "plan" | "result";
   status?: ReactNode;
   /** 阶段色点 class（如 is-review / is-executing / is-completed），不传则不显示 */
   dotClass?: string;
@@ -24,7 +23,7 @@ export interface InspectorTab {
   content: ReactNode;
 }
 
-const tabIcons = { overview: LayoutList, files: FolderTree, file: File, diff: GitCompareArrows, browser: Globe, tasks: SquareTerminal, plan: ListChecks, result: Files };
+const tabIcons = { files: FolderTree, file: File, diff: GitCompareArrows, browser: Globe, tasks: SquareTerminal, plan: ListChecks, result: Files };
 
 export function RightInspector({
   tabs,
@@ -45,21 +44,13 @@ export function RightInspector({
   const [expanded, setExpanded] = useState<string | null>(null);
   if (tabs.length === 0) return null;
   const active = tabs.find(tab => tab.id === activeTabId) ?? tabs[0];
-  const overview = tabs.find(tab => tab.kind === "overview");
-  const panels = tabs.filter(tab => tab !== overview);
+  const panels = tabs;
   const expandedId = expanded !== null && panels.length > 1 && panels.some(tab => tab.id === expanded) ? expanded : null;
   const focus = (id: string) => { if (id !== active.id) onTabChange(id); };
 
   return (
     <aside className="ff-right-inspector" hidden={!visible} inert={!visible} aria-label={t("rightInspector.panelAria")}
-      data-has-overview={overview ? true : undefined} data-has-panels={panels.length > 0 || undefined}>
-      {overview && (
-        <div className="ff-inspector-overview" data-inspector-pane={overview.id} data-inspector-kind="overview"
-          data-active={overview.id === active.id || undefined} role="region" aria-label={overview.label}
-          onFocusCapture={() => focus(overview.id)} onPointerDownCapture={() => focus(overview.id)}>
-          {overview.content}
-        </div>
-      )}
+      data-has-panels={panels.length > 0 || undefined}>
       {panels.length > 0 && (
         <div className="ff-inspector-grid">
           {tileColumns(panels).map((column, columnIndex) => (

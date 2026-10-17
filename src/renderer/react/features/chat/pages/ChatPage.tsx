@@ -14,6 +14,7 @@ import { buildStepProgressSummary } from "../components/step-progress";
 import { CodeGitPanel } from "../components/CodeGitPanel";
 import type { PlanReviewPhase } from "../components/PlanReviewPanel";
 import { ChatPageInspector, type ChatPageInspectorDiffTab } from "../components/ChatPageInspector";
+import { SessionOverviewPanel } from "../components/SessionOverviewPanel";
 import { ChatInspectorActionsContext, type ChatInspectorActions } from "../components/inspector-actions";
 import {
   normalizeDeferredPlanChoice,
@@ -1394,7 +1395,6 @@ export function ChatPage() {
 
   /** 右侧面板标签的固定顺序：文件树 → 文件预览 → Diff → 计划 */
   const inspectorTabIds = [
-    ...(overviewTabOpen ? ["overview"] : []),
     ...(tasksTabOpen ? ["tasks"] : []),
     ...(filesTabOpen ? ["files"] : []),
     ...fileTabs.map((tab) => tab.id),
@@ -1411,8 +1411,6 @@ export function ChatPage() {
     const remaining = inspectorTabIds.filter((tabId) => tabId !== id);
     if (id === "browser") {
       setBrowserTabOpen(false);
-    } else if (id === "overview") {
-      setOverviewTabOpen(false);
     } else if (id === "tasks") {
       setTasksTabOpen(false);
     } else if (id === "files") {
@@ -1587,8 +1585,8 @@ export function ChatPage() {
                 onClick={() => togglePanel("files", filesTabOpen, openFilesTab)}><FolderOpenOutlined aria-hidden="true" /></button>
               {activeSessionId && <button type="button" className="ff-inspector-toggle"
                 aria-label={t("sessionOverview.open")} title={t("sessionOverview.open")}
-                aria-expanded={overviewTabOpen && !inspectorHidden} aria-pressed={overviewTabOpen && !inspectorHidden}
-                onClick={() => togglePanel("overview", overviewTabOpen, () => { setOverviewTabOpen(true); setInspectorHidden(false); setActiveTabId("overview"); })}>
+                aria-expanded={overviewTabOpen} aria-pressed={overviewTabOpen}
+                onClick={() => setOverviewTabOpen(open => !open)}>
                 <ProfileOutlined aria-hidden="true" /></button>}
               {(mode !== "chat" || workspaceOutputs.length > 0) && <button type="button" className="ff-inspector-toggle"
                 aria-label={t("workspace.tasks")} title={t("workspace.tasks")}
@@ -1609,7 +1607,8 @@ export function ChatPage() {
         {activePanel ? (
           <ChatPagePanelHost panel={activePanel} />
         ) : (
-        <>
+        <div className="ff-workspace-body">
+        <div className="ff-workspace-content">
         <RunRecoveryNotices
           interruptedRun={interruptedRun}
           sessionTakeover={sessionTakeover}
@@ -1778,7 +1777,14 @@ export function ChatPage() {
             }}
           />
         </div>
-        </>
+        </div>
+        {/* The overview cards live in the conversation panel, on the outer side of the dialog. */}
+        {overviewTabOpen && activeSessionId && (
+          <aside className="ff-chat-cards" aria-label={t("sessionOverview.title")}>
+            <SessionOverviewPanel usage={latestContextUsage} outputs={workspaceOutputs} onOpenChange={openResultDiff} onOpenTask={openTaskInRun} />
+          </aside>
+        )}
+        </div>
         )}
       </main>
         </Panel>
@@ -1810,15 +1816,7 @@ export function ChatPage() {
                 onOpenFilesTab={openFilesTab}
                 onOpenTasksTab={mode !== "chat" || workspaceOutputs.length > 0
                   ? () => { setTasksTabOpen(true); setInspectorHidden(false); setActiveTabId("tasks"); } : undefined}
-                onOpenOverviewTab={activeSessionId
-                  ? () => { setOverviewTabOpen(true); setInspectorHidden(false); setActiveTabId("overview"); } : undefined}
-                overviewTabOpen={overviewTabOpen}
-                overview={{
-                  usage: latestContextUsage,
-                  outputs: workspaceOutputs,
-                  onOpenChange: openResultDiff,
-                  onOpenTask: openTaskInRun,
-                }}
+                onOpenOverviewTab={activeSessionId ? () => setOverviewTabOpen(true) : undefined}
                 pendingWorkspaceName={pendingWorkspaceByMode[mode]?.displayName}
                 onChooseWorkspace={mode !== "chat" ? () => void chooseWorkspace() : undefined}
                 taskPanel={<div className="ff-workspace-task-panel">{mode === "work"

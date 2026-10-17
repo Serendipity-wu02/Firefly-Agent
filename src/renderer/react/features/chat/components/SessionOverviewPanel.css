@@ -1,4 +1,10 @@
-/* Session overview: a stack of quiet, collapsible cards inside the right inspector. */
+/* The conversation panel: the dialog on the left, the overview cards on its outer side. */
+.ff-workspace-body { display: flex; min-width: 0; min-height: 0; flex: 1 1 auto; }
+.ff-workspace-content { position: relative; display: flex; min-width: 0; min-height: 0; flex: 1 1 0; flex-direction: column; }
+.ff-chat-cards { display: flex; min-height: 0; flex: 0 0 272px; flex-direction: column; box-sizing: border-box; padding: 8px 8px 8px 0; }
+@media (max-width: 900px) { .ff-chat-cards { flex-basis: 224px; } }
+
+/* Session overview: a stack of quiet, collapsible cards beside the conversation. */
 .ff-session-overview {
   --fade-top: 0px;
   --fade-bottom: 0px;

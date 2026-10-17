@@ -20,17 +20,13 @@ const tabs: InspectorTab[] = [
 const header = (id: string) => host.querySelector<HTMLElement>(`[data-inspector-pane="${id}"] .ff-inspector-pane__head`)!;
 const keys = (element: Element, key: string) => act(() => element.dispatchEvent(new KeyboardEvent("keydown", { key, bubbles: true, cancelable: true })));
 
-it("tiles panels two per column, filling a column before starting the next, and keeps the overview column beside the chat", async () => {
-  const overview: InspectorTab = { id: "overview", kind: "overview", label: "Overview", content: React.createElement("p", null, "Cards") };
-  await act(async () => root.render(React.createElement(RightInspector, { tabs: [overview, ...tabs], activeTabId: "files", onTabChange() {}, onCloseTab() {} })));
+it("tiles panels two per column, filling a column before starting the next", async () => {
+  await act(async () => root.render(React.createElement(RightInspector, { tabs, activeTabId: "files", onTabChange() {}, onCloseTab() {} })));
+  const many = [...tabs, { id: "browser", label: "Browser", content: React.createElement("p", null, "Web") }, { id: "tasks", label: "Tasks", content: React.createElement("p", null, "Run") }];
+  await act(async () => root.render(React.createElement(RightInspector, { tabs: many, activeTabId: "files", onTabChange() {}, onCloseTab() {} })));
   const columns = [...host.querySelectorAll(".ff-inspector-grid__column")].map(column =>
     [...column.querySelectorAll("[data-inspector-pane]")].map(pane => (pane as HTMLElement).dataset.inspectorPane));
-  expect(columns).toEqual([["files", "file:a/notes.md"], ["diff:notes.md"]]);
-  const aside = host.querySelector(".ff-right-inspector")!;
-  expect(aside.firstElementChild?.classList.contains("ff-inspector-overview")).toBe(true);
-  expect(aside.lastElementChild?.classList.contains("ff-inspector-grid")).toBe(true);
-  // The overview is a column of its own, never a tiled panel with a header.
-  expect(host.querySelector('.ff-inspector-grid [data-inspector-pane="overview"]')).toBeNull();
+  expect(columns).toEqual([["files", "file:a/notes.md"], ["diff:notes.md", "browser"], ["tasks"]]);
   expect(tileColumns([1, 2, 3, 4, 5])).toEqual([[1, 2], [3, 4], [5]]);
 });
 
