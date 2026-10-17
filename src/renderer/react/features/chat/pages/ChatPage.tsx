@@ -26,7 +26,6 @@ import { ChatMessageList } from "../components/ChatMessageList";
 import { ChatPageNavigation, type ChatPagePanel } from "../components/ChatPageNavigation";
 import { useNavigationHistory } from "./useNavigationHistory";
 import { CodeRain } from "../components/CodeRain";
-import { ProjectChooserCard, recentProjects } from "../components/ProjectChooserCard";
 import { sessionsNeedingInput } from "./sidebar-status";
 import {
   ContextCompressionNotice,
@@ -1734,18 +1733,8 @@ export function ChatPage() {
         <ContextCompressionNotice visible={isCompressingContext} />
         {!hasMessages && <CodeRain />}
         {!hasMessages && <div className="ff-workspace-greeting">
-          {mode === "chat" ? <>
-            <h2 className="ff-workspace-greeting__title">{t("chatPage.emptyGreeting")}</h2>
-            <p className="ff-workspace-greeting__hint">{t(`chatPage.emptyHint.${mode}`)}</p>
-          </> : (
-            // Work / Code start by choosing where the task runs, like the reference's environment card.
-            <ProjectChooserCard
-              projects={recentProjects(sessionsByMode[mode] ?? [])}
-              selectedPath={activeSession?.workspaceBinding?.workspaceRoot ?? pendingWorkspaceByMode[mode]?.path}
-              onPick={(project) => void applyWorkspace(mode, { path: project.path, displayName: project.displayName })}
-              onBrowse={() => void chooseWorkspace()}
-            />
-          )}
+          <h2 className="ff-workspace-greeting__title">{t(mode === "chat" ? "chatPage.emptyGreeting" : "chatPage.emptyGreetingTask")}</h2>
+          <p className="ff-workspace-greeting__hint">{t(`chatPage.emptyHint.${mode}`)}</p>
         </div>}
         {mode === "chat" && (pendingTemporary || activeSession?.temporary === true) && (
           <p className="ff-temporary-chat-banner" role="status">

@@ -75,7 +75,6 @@
     "pastedImageAttachmentName": "pasted-image_{{ts}}.png",
     "planApprovedAutoMessage": "Plan approved — go ahead and start.",
     "resumeLastTaskMessage": "Resume last task",
-    "projectChooser": {"label": "Choose a project", "browse": "Choose another folder", "browseFirst": "Choose a project folder"},
     "emptyGreetingTask": "What are we building?",
     "emptyGreeting": "What can I help with?",
     "emptyHint": {
