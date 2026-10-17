@@ -398,7 +398,7 @@ export function ChatComposer({
         // 忙态使用 Sender 自带的停止按钮；Enter 入队由 onKeyDown 在内建提交前处理。
         loading={modelBusy}
         disabled={!modelBusy && requiresWorkspace && !workspaceName}
-        autoSize={{ minRows: 2, maxRows: 16 }}
+        autoSize={{ minRows: 3, maxRows: 7 }}
         onChange={(next) => onChange(withStickerMarkers(next))}
         onCancel={onCancel}
         onPaste={handlePaste}
@@ -408,9 +408,7 @@ export function ChatComposer({
           if (!full.trim()) return;
           onSubmit(full);
         }}
-        // 参照 open-claude-ui 的输入框：输入区在上，所有控件收进下方一条工具栏——左侧是添加与模式、模型，右侧是用量、语音与发送。
-        suffix={false}
-        footer={(actionNode, { components }) => {
+        suffix={(actionNode, { components }) => {
           const send = modelBusy ? (
             <components.LoadingButton
               title={t("composer.stopRun")}
@@ -421,28 +419,13 @@ export function ChatComposer({
             <span className="ff-composer__send-sticker"><components.SendButton disabled={false} /></span>
           ) : actionNode;
           return (
-            <div className="ff-composer__toolbar">
-              <div className="ff-composer__toolbar-start">
-                <ComposerAddMenu
-                  supportsStickers={supportsStickers}
-                  attachmentBusy={attachmentBusy}
-                  onUpload={() => fileInputRef.current?.click()}
-                  onScreenshot={onScreenshot}
-                  onChooseSticker={onChooseSticker}
-                />
-                {supportsPermission && <PermissionControl />}
-                {supportsPlanToggle && conversationId && (
-                  <PlanModeToggle conversationId={conversationId} workspaceRoot={workspaceRoot} />
-                )}
-                {onSelectModelProfile && (
-                  <ModelEffortControl sessionId={conversationId} activeProfileId={activeModelProfileId} onSelectModelProfile={onSelectModelProfile} />
-                )}
-              </div>
-              <div className="ff-composer__toolbar-end">
-                <ContextUsageRing usage={contextUsage} sessionId={conversationId} busy={modelBusy} />
-                <DesktopAsrButton key={`${mode}:${conversationId ?? "new"}:${workspaceRoot ?? ""}`} onText={text => onChange(`${value}${value && !/\s$/.test(value) ? " " : ""}${text}`)} />
-                {send}
-              </div>
+            <div className="ff-composer__suffix">
+              <ContextUsageRing usage={contextUsage} sessionId={conversationId} busy={modelBusy} />
+              {onSelectModelProfile && (
+                <ModelEffortControl sessionId={conversationId} activeProfileId={activeModelProfileId} onSelectModelProfile={onSelectModelProfile} />
+              )}
+              <DesktopAsrButton key={`${mode}:${conversationId ?? "new"}:${workspaceRoot ?? ""}`} onText={text => onChange(`${value}${value && !/\s$/.test(value) ? " " : ""}${text}`)} />
+              {send}
             </div>
           );
         }}
@@ -466,6 +449,21 @@ export function ChatComposer({
             ))}
           </div>
         ) : undefined}
+        prefix={
+          <div className="ff-composer__prefix-actions">
+            <ComposerAddMenu
+              supportsStickers={supportsStickers}
+              attachmentBusy={attachmentBusy}
+              onUpload={() => fileInputRef.current?.click()}
+              onScreenshot={onScreenshot}
+              onChooseSticker={onChooseSticker}
+            />
+            {supportsPermission && <PermissionControl />}
+            {supportsPlanToggle && conversationId && (
+              <PlanModeToggle conversationId={conversationId} workspaceRoot={workspaceRoot} />
+            )}
+          </div>
+        }
         />
         {mode === "work" && attachments.some((attachment) => attachment.kind === "document") && (
           <div className="ff-composer__footer">

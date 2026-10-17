@@ -30,7 +30,7 @@
 
 /* Browser-only pane: the browser's own tab strip is the top row (the same 48px as the chat header),
    so the inspector's tab bar is removed. Mounted tabs stay in place, so the browser is not re-created. */
-.ff-chat-inspector.is-browser-only .ff-right-inspector__bar {
+.ff-chat-inspector.is-browser-only .ff-right-inspector__tabs > .ant-tabs-nav {
   display: none;
 }
 

@@ -73,7 +73,7 @@ describe("chat header structure", () => {
     const sheet = document.createElement("style"); sheet.textContent = root + "\n" + right; document.head.append(sheet);
     const rules = Array.from(sheet.sheet!.cssRules) as CSSStyleRule[];
     const header = rules.find(rule => rule.selectorText === ".ff-workspace-header");
-    const tabs = rules.find(rule => rule.selectorText === ".ff-right-inspector__bar");
+    const tabs = rules.find(rule => rule.selectorText === ".ff-right-inspector__tabs > .ant-tabs-nav");
     expect(header?.style.position).toBe("relative");
     // jsdom drops Electron's nonstandard app-region declaration from CSSOM.
     // These are source contracts only; native hit testing still needs Electron QA.

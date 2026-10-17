@@ -1,4 +1,3 @@
-import { SlidingTabs } from "../../../components/ui/SlidingTabs";
 import { useId, useState } from "react";
 import { Switch } from "antd";
 import { X } from "lucide-react";
@@ -11,7 +10,6 @@ import {
   defaultScheduleDraft,
   scheduleDraftFromSchedule,
   type ScheduleDraft,
-  type ScheduleKind,
   type ScheduledTask,
   type SchedulerApi,
   type SchedulerToolInfo,
@@ -135,14 +133,16 @@ export function ScheduledTaskEditor({ task, api, tools, onCancel, onSaved }: Sch
 
         <fieldset className="scheduled-kind">
           <legend className="scheduled-field__label">{t("scheduledPanel.fieldKind")}</legend>
-          <SlidingTabs
-            stretch
-            size="sm"
-            ariaLabel={t("scheduledPanel.fieldKind")}
-            activeId={draft.kind}
-            onChange={(kind) => updateDraft({ kind: kind as ScheduleKind })}
-            tabs={SCHEDULE_KINDS.map((kind) => ({ id: kind, label: t(`scheduledPanel.kinds.${kind}`), tabData: { "data-kind": kind } }))}
-          />
+          {/* 原生单选组：后续替换为滑动胶囊分段控件时只需替换这一块。 */}
+          <div className="scheduled-kind__options">
+            {SCHEDULE_KINDS.map((kind) => (
+              <label key={kind} className={`scheduled-kind__option ${draft.kind === kind ? "is-selected" : ""}`}>
+                <input type="radio" name={`${formId}-kind`} value={kind} checked={draft.kind === kind}
+                  onChange={() => updateDraft({ kind })} />
+                <span>{t(`scheduledPanel.kinds.${kind}`)}</span>
+              </label>
+            ))}
+          </div>
         </fieldset>
 
         <div className="scheduled-form-grid">

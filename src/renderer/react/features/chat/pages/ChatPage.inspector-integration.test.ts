@@ -164,8 +164,9 @@ it("keeps registration current across compact orientation changes and Work mode 
   await click(button("展开/收起右侧面板")); expect(panelWidth()).toBeGreaterThan(0);
   expect(inspector()).toBe(before);
   await click(inspector()!.querySelector<HTMLElement>(".ff-right-inspector__close")!);
-  await click(host.querySelector<HTMLElement>('.ff-mode-switch [role="tab"][data-mode="work"]')!);
-  expect(host.querySelector('.ff-mode-switch [role="tab"][aria-selected="true"]')?.textContent).toContain("Work");
+  await click(host.querySelector<HTMLElement>(".ff-mode-menu__trigger")!);
+  await click([...document.querySelectorAll<HTMLElement>('[role="menuitemradio"]')].find(node => node.textContent?.includes("Work"))!);
+  expect(host.querySelector(".ff-mode-menu__trigger")?.textContent).toContain("Work");
   expect(inspector()?.hidden).toBe(false); expect(panelWidth()).toBeGreaterThan(0);
   expect(fetch).not.toHaveBeenCalled();
 });

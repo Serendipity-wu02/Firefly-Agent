@@ -124,10 +124,10 @@ async function click(element: HTMLElement) {
   await flush();
 }
 
-function kindRadio(kind: string): HTMLButtonElement {
-  const tab = container.querySelector<HTMLButtonElement>(`[role="tab"][data-kind="${kind}"]`);
-  if (!tab) throw new Error(`kind "${kind}" not found`);
-  return tab;
+function kindRadio(kind: string): HTMLInputElement {
+  const radio = container.querySelector<HTMLInputElement>(`input[type="radio"][value="${kind}"]`);
+  if (!radio) throw new Error(`kind "${kind}" not found`);
+  return radio;
 }
 
 async function openNewEditor() {
@@ -241,7 +241,7 @@ describe("ScheduledTaskPanel — create and edit", () => {
     });
     await renderPanel();
     await click(buttonByText("编辑"));
-    expect(kindRadio("interval").getAttribute("aria-selected")).toBe("true");
+    expect(kindRadio("interval").checked).toBe(true);
     expect(field<HTMLInputElement>("间隔数值").value).toBe("2");
     expect(field<HTMLSelectElement>("间隔单位").value).toBe("hours");
   });

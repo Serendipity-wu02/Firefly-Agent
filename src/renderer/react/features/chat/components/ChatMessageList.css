@@ -93,16 +93,12 @@
   user-select: none;
 }
 
-/* The user's own turn is the one solid accent bubble on the page; the tucked corner points at the speaker. */
 .ff-message--user .ant-bubble-content {
-  border-radius: 16px 16px 4px 16px;
-  background: var(--ff-accent);
-  color: var(--ff-on-accent);
-  box-shadow: var(--ff-shadow-bubble-accent);
+  border-radius: 12px;
+  background: var(--ff-bg-active);
+  color: var(--ff-text);
+  box-shadow: none;
 }
-.ff-message--user .ff-message-markdown a { color: inherit; text-decoration: underline; }
-/* Mint accent on the dark ground needs dark text to stay legible. */
-:root[data-ui-theme="firefly-dark"] .ff-message--user .ant-bubble-content { color: var(--ff-bg-page); }
 
 .ff-message--user:has(.ff-message__sticker:only-child) .ant-bubble-content {
   padding: 0;

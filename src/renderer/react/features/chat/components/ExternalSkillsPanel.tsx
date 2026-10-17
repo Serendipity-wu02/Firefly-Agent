@@ -1,4 +1,3 @@
-import { SlidingTabs } from "../../../components/ui/SlidingTabs";
 import { externalSkillPreviewCopy } from "./ExternalSkillsPanel.copy";
 import React, { createContext, useCallback, useContext, useEffect, useRef, useState } from "react";
 import type { ExternalPrepared, ExternalResult, ExternalSkill, ExternalSkillErrorCode, ExternalSkillSourceId } from "../../../../../shared/external-skills";
@@ -220,13 +219,9 @@ export function ExternalSkillsPanel({ onImported }: { onImported: () => Promise<
     <section className="external-skills" aria-label={t("externalSkills.title")}>
       <p className="external-skills__notice">{t("externalSkills.notice")}</p>
       <div className="external-skills__toolbar">
-        <SlidingTabs
-          className="external-skills__sources"
-          ariaLabel={t("externalSkills.sources")}
-          activeId={source}
-          tabs={(["openai", "anthropic"] as const).map(item => ({ id: item, label: item === "openai" ? "openai/plugins" : "anthropics/skills", disabled: locked || waiting || (phase === "loading" && source === item) }))}
-          onChange={id => void load(id as "openai" | "anthropic", false, true)}
-        />
+        <div className="external-skills__sources" role="group" aria-label={t("externalSkills.sources")}>
+        {(["openai", "anthropic"] as const).map(item => <button key={item} type="button" disabled={locked || waiting || (phase === "loading" && source === item)} aria-pressed={source === item} onClick={() => void load(item, false, true)}>{item === "openai" ? "openai/plugins" : "anthropics/skills"}</button>)}
+        </div>
         {phase === "browse" && <input type="search" aria-label={t("externalSkills.search")} placeholder={t("externalSkills.search")} value={filter} onChange={event => setFilter(event.target.value)} />}
         <button type="button" disabled={locked || waiting || phase === "loading"} onClick={() => void load(source, true, true)}>{t("externalSkills.refresh")}</button>
         {phase !== "browse" && phase !== "loading" && <button type="button" disabled={locked} onClick={() => void load(source, false, true)}>{t("externalSkills.back")}</button>}

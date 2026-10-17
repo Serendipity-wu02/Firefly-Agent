@@ -358,7 +358,7 @@
   overflow-wrap: anywhere;
 }
 
-/* 频率：滑动胶囊分段控件 */
+/* 频率：原生单选组，后续可整体替换为滑动胶囊分段控件 */
 .scheduled-kind {
   margin: 0;
   padding: 0;
@@ -369,6 +369,36 @@
 .scheduled-kind legend {
   padding: 0;
   margin-bottom: 6px;
+}
+
+.scheduled-kind__options {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.scheduled-kind__option {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 12px;
+  font-size: 12px;
+  color: var(--ff-text-muted, var(--ff-text-muted));
+  background: var(--ff-bg-page, var(--ff-bg-subtle));
+  border: 1px solid var(--ff-border, var(--ff-border));
+  border-radius: 12px;
+  cursor: pointer;
+}
+
+.scheduled-kind__option input {
+  margin: 0;
+  accent-color: var(--ff-accent, var(--ff-accent-solid));
+}
+
+.scheduled-kind__option.is-selected {
+  color: var(--ff-accent, var(--ff-accent));
+  border-color: var(--ff-accent, var(--ff-accent));
+  background: var(--ff-bg-active, var(--ff-bg-hover));
 }
 
 .scheduled-form-grid {

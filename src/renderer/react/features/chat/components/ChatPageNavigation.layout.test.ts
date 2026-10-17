@@ -313,15 +313,17 @@ describe("workspace navigation layout", () => {
     expect(changedAvatar).toBeUndefined();
     expect(changedProfile).toBeUndefined();
   });
-  it("puts the mode capsule at the top of the sidebar and keeps it usable while plugins are open", async () => {
+  it("puts the mode menu at the top of the sidebar and keeps it usable while plugins are open", async () => {
     render({ activePanel: "plugin" });
     expect(host.querySelector(".ff-page-titlebar .ff-mode-menu__trigger")).toBeNull();
     expect(host.querySelector(".ff-page-titlebar [role=\"tablist\"]")).toBeNull();
-    expect(host.querySelector(".ff-page-sidebar .ff-page-mode .ff-mode-menu__trigger")).toBeNull();
-    const tabs = [...host.querySelectorAll<HTMLButtonElement>('.ff-page-sidebar .ff-page-mode [role="tab"]')];
-    expect(tabs.map(tab => tab.textContent)).toEqual(["Chat", "Work", "Code"]);
-    expect(tabs.map(tab => tab.getAttribute("aria-selected"))).toEqual(["true", "false", "false"]);
-    await act(async () => tabs[2].click());
+    const trigger = host.querySelector<HTMLButtonElement>(".ff-page-sidebar .ff-page-mode .ff-mode-menu__trigger")!;
+    expect(trigger.textContent).toBe("Chat");
+    await act(async () => trigger.click());
+    await act(async () => { await new Promise(resolve => setTimeout(resolve, 0)); });
+    const options = [...document.querySelectorAll<HTMLButtonElement>('[role="menuitemradio"]')];
+    expect(options.map(option => option.getAttribute("aria-checked"))).toEqual(["false", "true", "false"]);
+    await act(async () => options[2].click());
     expect(props.onModeChange).toHaveBeenCalledExactlyOnceWith("code");
     expect(props.onTogglePanel).not.toHaveBeenCalled();
   });

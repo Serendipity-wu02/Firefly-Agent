@@ -330,8 +330,9 @@
   object-fit: contain;
 }
 
-.skill-panel__views { display: flex; padding: 12px 28px 0; }
-.skill-card__enable, .skill-panel__confirm button { padding: 7px 12px; border: 1px solid var(--ff-border, var(--ff-border)); border-radius: 10px; background: var(--ff-bg-page, var(--ff-bg-subtle)); color: var(--ff-text, var(--ff-text)); font: inherit; font-size: 12px; cursor: pointer; }
+.skill-panel__views { display: flex; gap: 8px; padding: 12px 28px 0; }
+.skill-panel__views button, .skill-card__enable, .skill-panel__confirm button { padding: 7px 12px; border: 1px solid var(--ff-border, var(--ff-border)); border-radius: 10px; background: var(--ff-bg-page, var(--ff-bg-subtle)); color: var(--ff-text, var(--ff-text)); font: inherit; font-size: 12px; cursor: pointer; }
+.skill-panel__views button[aria-pressed="true"] { background: var(--ff-bg-active, var(--ff-bg-hover)); color: var(--ff-accent, var(--ff-accent)); }
 .skill-panel button:disabled { opacity: .55; cursor: not-allowed; }
 .skill-panel button:focus-visible { outline: 2px solid var(--ff-accent, var(--ff-accent)); outline-offset: 3px; }
 .skill-panel__confirm-overlay { position: fixed; inset: 0; z-index: 1000; background: rgba(0, 0, 0, .35); display: flex; align-items: center; justify-content: center; padding: 20px; }
