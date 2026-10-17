@@ -14,7 +14,7 @@
 - User explicitly authorized push/formal PR to mini on2026-10-17 12:11:31. Never force-push, merge, delete branches, deploy or restart an existing instance.
 - No real model API/key/database/profile. Use physically private dependencies/helpers and per-process temp/cache/profile/DB/report roots.
 - Mini's memory-core/context/policy/recall/sources/shadow/shared contracts, package/lock/native sources are byte-identical to b05 base. No prerequisite memory/UI commits are needed. Commit parent ancestry is not used as a substitute for file-level compatibility.
-- Mini has recordUsage/recordRequest totals but no usage-attribution.ts or per-feature history API. Do not import unrelated233-line token-store/history/UI features just for the old target-specific hook. The user has been asked whether this PR should retain mini totals and defer feature attribution, or wait for Usage to land. Pause that dependent choice while porting/testing the independent lifecycle/Token paths.
+- Mini has recordUsage/recordRequest totals but no usage-attribution.ts or per-feature history API. The user explicitly selected: retain mini total usage in this PR and integrate per-feature attribution separately. Do not import unrelated233-line token-store/history/UI features or assert an absent per-feature history API. Existing memory request/usage callbacks remain in mini's aggregate accounting.
 - Preserve pending-only natural extraction, five low-sensitive categories, version/hash/scope confirmation, canonical typed recall, synchronous correction/deletion, temporary zero-persistence and suppression. Phase2 defaults/automatic ADD/jobs are excluded.
 - No weakened tests, skips, thresholds, type/lint suppressions or CI edits. Run fresh mini full/build/types/schema/offline/native/UI checks, then follow PR CI.
 
@@ -30,14 +30,14 @@
 
 - [x] Verify remote mini7cecb375, inspect its merged Claude PRs and actual AGENTS/template/workflows; record no existing same-head PR.
 - [x] Compare all memory/package/native prerequisites with b05; create a new peer worktree, not a merge of inspector-cards.
-- [ ] Complete and verify private physical dependencies/helpers; adapt only the task-owned process launcher and capture protected before-state.
+- [x] Complete and verify private physical dependencies/helpers; adapt only the task-owned process launcher and capture protected before-state.
 
 ## Task 2: Selective port and compatibility
 
 - [x] Cherry-pick c745f2a(memory7d), cae95d1(QA643), cb53604(Tokenb520), with provenance. Expected no source conflict or unrelated ancestry.
-- [ ] Run the four new typed-tool regressions from d41 against the ported old dispatcher; expect the same correct/revise RED failures. Port the exact worker/Main fixes and safe child failure regression, then run complete relevant files GREEN.
-- [ ] Resolve only the explicitly pending usage choice; port mask-history QA without inventing an unavailable history API or changing target token accounting silently.
-- [ ] Record exact commit mappings, necessary adaptations and source-range diff; commit locally.
+- [x] Run the four new typed-tool regressions from d41 against the ported old dispatcher; expect the same correct/revise RED failures. Port the exact worker/Main fixes and safe child failure regression, then run complete relevant files GREEN.
+- [x] Resolve only the explicitly pending usage choice; port mask-history QA without inventing an unavailable history API or changing target token accounting silently.
+- [x] Record exact commit mappings, necessary adaptations and source-range diff; commit locally.
 
 ## Task 3: Fresh mini verification and review
 
