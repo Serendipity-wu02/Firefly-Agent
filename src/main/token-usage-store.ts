@@ -34,6 +34,8 @@ export interface TokenUsageDay {
   sessions?: Record<string, TokenUsageSession>;
   /** 当天的使用次数：消息、技能调用、插件调用。 */
   activity?: TokenUsageActivity;
+  /** 按会话累计的运行统计；与 sessions 分开存放，不受"用量排行"的数量上限影响。 */
+  sessionStats?: Record<string, TokenUsageSessionStats>;
 }
 
 export interface TokenUsageSession {
@@ -41,8 +43,6 @@ export interface TokenUsageSession {
   output: number;
   requests: number;
   feature: string;
-  /** 运行统计（轮数、步数、耗时）；记录这项之前的会话没有。 */
-  stats?: TokenUsageSessionStats;
 }
 
 export interface TokenUsageSessionStats {
@@ -102,12 +102,11 @@ function usageStore(): AtomicJsonStore<Partial<TokenUsageStore>> {
     const validRecord = (record: unknown, entry: (value: unknown) => boolean): boolean =>
       record === undefined || (!!record && typeof record === "object" && !Array.isArray(record) && Object.values(record).every(entry));
     const validStats = (value: unknown): boolean => {
-      if (value === undefined) return true;
       if (!value || typeof value !== "object" || Array.isArray(value)) return false;
       const stats = value as Record<string, unknown>;
       return ["rounds", "steps", "modelMs", "toolMs", "ttftMs", "ttftCount", "genMs", "genTokens"].every((key) => typeof stats[key] === "number" && Number.isFinite(stats[key]) && (stats[key] as number) >= 0);
     };
-    const validSession = (value: unknown): boolean => validCounters(value) && typeof (value as Record<string, unknown>).feature === "string" && validStats((value as Record<string, unknown>).stats);
+    const validSession = (value: unknown): boolean => validCounters(value) && typeof (value as Record<string, unknown>).feature === "string";
     const validCounts = (value: unknown): boolean => typeof value === "number" && Number.isFinite(value) && value >= 0;
     const validActivity = (value: unknown): boolean => {
       if (value === undefined) return true;
@@ -116,7 +115,8 @@ function usageStore(): AtomicJsonStore<Partial<TokenUsageStore>> {
       return validCounts(activity.messages) && validRecord(activity.skills ?? {}, validCounts) && validRecord(activity.plugins ?? {}, validCounts);
     };
     return Object.values(candidate.days).every((day) => validCounters(day) && validRecord(day.models, validCounters)
-      && validRecord(day.features, validCounters) && validRecord(day.sessions, validSession) && validActivity(day.activity));
+      && validRecord(day.features, validCounters) && validRecord(day.sessions, validSession) && validActivity(day.activity)
+      && validRecord(day.sessionStats, validStats));
   });
 }
 
@@ -224,6 +224,8 @@ export function applyUsageToDay(
 const FALLBACK_FEATURE: UsageFeature = "other";
 /** 每天最多保留这么多个会话的明细，超出时丢掉用量最小的。 */
 const MAX_SESSIONS_PER_DAY = 60;
+/** 每天最多保留这么多个会话的运行统计，超出时丢掉步数最少的；只是防止文件无限增长，远大于排行上限。 */
+const MAX_SESSION_STATS_PER_DAY = 500;
 /** 技能 / 插件 id 作记录键，挡掉会污染原型的名字。 */
 const UNSAFE_KEYS = new Set(["__proto__", "constructor", "prototype"]);
 
@@ -267,6 +269,15 @@ function touchSession(day: TokenUsageDay, sessionId: string, feature: string): T
   return session;
 }
 
+function trimSessionStats(day: TokenUsageDay): void {
+  const all = day.sessionStats;
+  if (!all) return;
+  const ids = Object.keys(all);
+  if (ids.length <= MAX_SESSION_STATS_PER_DAY) return;
+  const smallest = ids.sort((left, right) => all[left]!.steps + all[left]!.rounds - all[right]!.steps - all[right]!.rounds)[0];
+  if (smallest) delete all[smallest];
+}
+
 /** 超过上限时丢掉用量最小的会话，包括刚碰过的这个。 */
 function trimSessions(day: TokenUsageDay): void {
   const sessions = day.sessions;
@@ -291,10 +302,12 @@ function updateSessionStats(update: (stats: TokenUsageSessionStats) => void): vo
     const sessionId = attribution?.sessionId?.trim();
     if (!attribution || !sessionId || UNSAFE_KEYS.has(sessionId)) return;
     const day = dayFor(ensureLoaded());
-    const session = touchSession(day, sessionId, attribution.feature);
-    session.stats = session.stats ?? emptyStats();
-    update(session.stats);
-    trimSessions(day);
+    const all = day.sessionStats ?? {};
+    const stats = all[sessionId] ?? emptyStats();
+    all[sessionId] = stats;
+    day.sessionStats = all;
+    update(stats);
+    trimSessionStats(day);
     scheduleFlush();
   });
 }
@@ -328,7 +341,7 @@ export function getSessionStats(sessionId: string): SessionStats | null {
   const total = emptyStats();
   let seen = false;
   for (const day of Object.values(days)) {
-    const stats = day.sessions?.[id]?.stats;
+    const stats = day.sessionStats?.[id];
     if (!stats) continue;
     seen = true;
     for (const key of Object.keys(total) as Array<keyof TokenUsageSessionStats>) total[key] += stats[key];

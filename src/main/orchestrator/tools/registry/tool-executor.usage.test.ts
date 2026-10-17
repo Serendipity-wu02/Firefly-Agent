@@ -41,4 +41,16 @@ describe("tool timing", () => {
     await runWithUsageAttribution({ feature: "work", sessionId: "session-a" }, () => executeToolDefinition(delegating, {}));
     expect(store.recordToolCall).toHaveBeenCalledExactlyOnceWith(0);
   });
+
+  it("does not mistake another parallel tool's sub-agent for its own: only the delegating invocation records zero time", async () => {
+    const { runWithUsageAttribution, runAsSubagent } = await import("../../../usage-attribution");
+    store.recordToolCall.mockClear();
+    const pause = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
+    const reader: ToolDefinition = { ...tool("read_file"), execute: async () => { await pause(60); return "ok"; } };
+    const delegating: ToolDefinition = { ...tool("delegate"), execute: async () => { await pause(10); await runAsSubagent(async () => "done"); return "ok"; } };
+    await runWithUsageAttribution({ feature: "work", sessionId: "session-a" }, () => Promise.all([executeToolDefinition(reader, {}), executeToolDefinition(delegating, {})]));
+    const durations = store.recordToolCall.mock.calls.map(([duration]) => duration as number).sort((left, right) => left - right);
+    expect(durations[0]).toBe(0);
+    expect(durations[1]).toBeGreaterThanOrEqual(50);
+  });
 });

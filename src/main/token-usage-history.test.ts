@@ -149,14 +149,28 @@ describe("session stats", () => {
     runWithUsageAttribution({ feature: "code", sessionId: "session-a" }, () => { token.recordMessage(); token.recordToolCall(1000); });
     token.flush();
     const saved = JSON.parse(fs.readFileSync(storage.files.tokenUsage, "utf8"));
-    const today = Object.values(saved.days)[0] as { sessions: Record<string, unknown> };
-    saved.days["2000-01-01"] = { input: 0, output: 0, hit: 0, miss: 0, cacheCreation: 0, requests: 0, sessions: { "session-a": { ...(today.sessions["session-a"] as object), stats: { rounds: 3, steps: 5, modelMs: 9000, toolMs: 500, ttftMs: 2000, ttftCount: 2, genMs: 4000, genTokens: 800 } } } };
+    saved.days["2000-01-01"] = { input: 0, output: 0, hit: 0, miss: 0, cacheCreation: 0, requests: 0, sessionStats: { "session-a": { rounds: 3, steps: 5, modelMs: 9000, toolMs: 500, ttftMs: 2000, ttftCount: 2, genMs: 4000, genTokens: 800 } } };
     fs.writeFileSync(storage.files.tokenUsage, JSON.stringify(saved));
 
     vi.resetModules();
     await setup(root);
     const reloaded = await import("./token-usage-store");
     expect(reloaded.getSessionStats("session-a")).toEqual({ rounds: 4, steps: 6, modelMs: 9000, toolMs: 1500, avgTtftMs: 1000, tokensPerSecond: 200 });
+  });
+
+  it("keeps a conversation's stats when its day is already full of bigger sessions, and when its first call comes before any tokens", async () => {
+    await setup();
+    const token = await import("./token-usage-store");
+    const { runWithUsageAttribution } = await import("./usage-attribution");
+    for (let index = 1; index <= 60; index += 1) {
+      runWithUsageAttribution({ feature: "chat", sessionId: `big-${index}` }, () => token.recordUsage(1000 + index, 0));
+    }
+    runWithUsageAttribution({ feature: "work", sessionId: "newcomer" }, () => {
+      token.recordMessage();
+      token.recordModelCall({ durationMs: 900, ttftMs: 300, generationMs: 600, outputTokens: 90 });
+      token.recordUsage(10, 90);
+    });
+    expect(token.getSessionStats("newcomer")).toEqual({ rounds: 1, steps: 1, modelMs: 900, toolMs: 0, avgTtftMs: 300, tokensPerSecond: 150 });
   });
 
   it("does not let a sub-agent's tool run count twice: only the step is recorded for a delegating tool", async () => {
