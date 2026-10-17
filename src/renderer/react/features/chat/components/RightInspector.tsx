@@ -9,7 +9,7 @@ import { useEffect, useLayoutEffect, useRef, useState, type KeyboardEvent, type 
 import { File, Files, FolderTree, GitCompareArrows, Globe, ListChecks, Maximize2, Minimize2, SquareTerminal, X } from "lucide-react";
 import { useTranslation } from "../../../i18n";
 import { DRAG_DEAD_ZONE } from "./reorder-list";
-import { dropZoneAt, movePanel, reconcileColumns, gridPlacement, MIN_COLUMN_WIDTH, resizeColumns, shiftPanel, type DropZone, type PanelColumn } from "./panel-layout";
+import { dropZoneAt, movePanel, reconcileColumns, gridPlacement, MIN_COLUMN_WIDTH, resizeColumns, resizeRows, shiftPanel, type DropZone, type PanelColumn } from "./panel-layout";
 import "./RightInspector.css";
 
 export interface InspectorTab {
@@ -131,7 +131,7 @@ export function RightInspector({
   const live = activeDrag?.drop ? movePanel(columns, activeDrag.id, activeDrag.drop.id, activeDrag.drop.zone) : columns;
   // Expanding one panel lays it out alone; the others stay mounted, just hidden.
   const placed = expandedId === null ? live : [{ ids: [expandedId], weight: 1 }];
-  const { rows, byId: placement } = gridPlacement(placed);
+  const { tracks, byId: placement } = gridPlacement(placed);
   currentLayoutRef.current = JSON.stringify([expandedId, [...placement]]);
 
   /** The resting panel under the pointer and which edge of it the pointer is nearest. */
@@ -197,6 +197,25 @@ export function RightInspector({
       cancel: () => setResizing(false),
     });
   };
+  const paneHeights = (column: PanelColumn) => column.ids.map(id => paneRefs.current.get(id)?.getBoundingClientRect().height ?? 0);
+  const startRowResize = (columnIndex: number, index: number, event: ReactPointerEvent<HTMLElement>) => {
+    if (event.button !== 0) return;
+    stopRef.current?.();
+    const heights = paneHeights(columns[columnIndex]!);
+    const startY = event.clientY;
+    setResizing(true);
+    listen({
+      move: next => setSaved(resizeRows(columnsRef.current, columnIndex, index, heights, (heights[index] ?? 0) + next.clientY - startY)),
+      up: () => setResizing(false),
+      cancel: () => setResizing(false),
+    });
+  };
+  const resizeRowByKey = (columnIndex: number, index: number, event: KeyboardEvent<HTMLElement>) => {
+    if (event.key !== "ArrowUp" && event.key !== "ArrowDown") return;
+    event.preventDefault();
+    const heights = paneHeights(columns[columnIndex]!);
+    setSaved(resizeRows(columns, columnIndex, index, heights, (heights[index] ?? 0) + (event.key === "ArrowDown" ? 16 : -16)));
+  };
   const resizeByKey = (index: number, event: KeyboardEvent<HTMLElement>) => {
     if (event.key !== "ArrowLeft" && event.key !== "ArrowRight") return;
     event.preventDefault();
@@ -209,13 +228,21 @@ export function RightInspector({
       data-has-panels={panels.length > 0 || undefined} data-shielded={activeDrag || resizing ? true : undefined} data-moving={activeDrag ? true : undefined}>
       <div className="ff-inspector-grid" style={{
         gridTemplateColumns: placed.flatMap((column, index) => [...(index > 0 ? ["8px"] : []), `minmax(${MIN_COLUMN_WIDTH}px, ${column.weight}fr)`]).join(" "),
-        gridTemplateRows: `repeat(${rows}, minmax(0, 1fr))`,
+        gridTemplateRows: tracks.map(track => `minmax(0, ${track}fr)`).join(" "),
       }}>
         {expandedId === null && live.slice(1).map((column, index) => (
           <div key={`resizer:${column.ids[0]}`} className="ff-inspector-resizer" role="separator" aria-orientation="vertical" tabIndex={0}
             aria-label={t("rightInspector.resize")} style={{ gridColumn: (index + 1) * 2, gridRow: "1 / -1" }}
             onPointerDown={event => startResize(index, event)} onKeyDown={event => resizeByKey(index, event)} />
         ))}
+        {expandedId === null && live.flatMap((column, columnIndex) => column.ids.slice(1).map((id, index) => {
+          const spot = placement.get(id);
+          return spot && (
+            <div key={`row-resizer:${id}`} className="ff-inspector-row-resizer" role="separator" aria-orientation="horizontal" tabIndex={0}
+              aria-label={t("rightInspector.resizeRows")} style={{ gridColumn: spot.column, gridRow: `${spot.row} / span 1` }}
+              onPointerDown={event => startRowResize(columnIndex, index, event)} onKeyDown={event => resizeRowByKey(columnIndex, index, event)} />
+          );
+        }))}
         {panels.map(tab => {
           const Icon = tab.kind ? tabIcons[tab.kind] : undefined;
           const closable = tab.closable !== false;

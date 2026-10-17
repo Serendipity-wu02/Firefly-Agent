@@ -30,6 +30,32 @@
 .ff-inspector-resizer::after { content: ""; position: absolute; inset: 0 3px; border-radius: 2px; background: transparent; transition: background-color 120ms ease; }
 .ff-inspector-resizer:hover::after, .ff-inspector-resizer:focus-visible::after, .ff-right-inspector[data-shielded] .ff-inspector-resizer:active::after { background: var(--ff-accent); }
 
+/* Between two stacked panels: an 8px band in the row gap with a short rounded bar, like Claude desktop. Drag or ↑ ↓ to resize. */
+.ff-inspector-row-resizer {
+  position: relative;
+  z-index: 3;
+  align-self: start;
+  height: 8px;
+  margin-top: -8px;
+  cursor: row-resize;
+  outline: none;
+  touch-action: none;
+}
+.ff-inspector-row-resizer::after,
+.ff-inspector-resizer::before {
+  content: "";
+  position: absolute;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--ff-text-muted) 55%, transparent);
+  transition: background-color 120ms ease, width 120ms ease, height 120ms ease, left 120ms ease, top 120ms ease;
+}
+.ff-inspector-row-resizer::after { top: 2px; left: calc(50% - 18px); width: 36px; height: 4px; }
+.ff-inspector-resizer::before { top: calc(50% - 18px); left: 2px; width: 4px; height: 36px; z-index: 1; }
+.ff-inspector-row-resizer:hover::after, .ff-inspector-row-resizer:focus-visible::after,
+.ff-inspector-resizer:hover::before, .ff-inspector-resizer:focus-visible::before { background: var(--ff-accent); }
+.ff-inspector-row-resizer:hover::after { left: calc(50% - 22px); width: 44px; }
+.ff-inspector-resizer:hover::before { top: calc(50% - 22px); height: 44px; }
+
 /* While a panel is lifted or a separator dragged, a loaded page's native view would swallow the pointer and stay behind:
    fold only the page area (zero size hides the view). Tabs, address bar and the new-tab page stay, so the panel never goes blank. */
 .ff-right-inspector[data-shielded] .ff-inspector-pane[data-inspector-kind="browser"] .ff-browser-workspace__viewport:not(:has(.ff-browser-newtab, .ff-browser-workspace__empty)) { display: none; }
@@ -124,6 +150,6 @@
 
 @media (prefers-reduced-motion: reduce) {
   .ff-right-inspector, .ff-right-inspector__dot.is-executing { animation: none; }
-  .ff-inspector-pane, .ff-inspector-resizer::after { animation: none; transition: none; }
+  .ff-inspector-pane, .ff-inspector-resizer::after, .ff-inspector-resizer::before, .ff-inspector-row-resizer::after { animation: none; transition: none; }
   .ff-inspector-pane__action { transition: none; }
 }

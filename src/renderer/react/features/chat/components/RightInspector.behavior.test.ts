@@ -154,3 +154,22 @@ it("reorders ids and keeps the saved order for ids still present", () => {
   expect(moveId(["a", "b", "c"], "a", 2)).toEqual(["b", "c", "a"]);
   expect(moveId(["a", "b", "c"], "c", -3)).toEqual(["c", "a", "b"]);
 });
+
+it("puts a handle between stacked panels that resizes their heights with the arrow keys", async () => {
+  await render(tabs);
+  const boxes = [rect(0, 0, 100, 200), rect(108, 0, 100, 200), rect(216, 0, 100, 200)];
+  IDS.forEach((id, index) => { (host.querySelector(`[data-inspector-pane="${id}"]`) as HTMLElement).getBoundingClientRect = () => boxes[index]!; });
+  // Stack "files" under the notes panel, then size the pair with the handle between them.
+  mouse(header("files"), "pointerdown", 20, 10);
+  mouse(document.body, "pointermove", 158, 150);
+  mouse(document.body, "pointerup", 158, 150);
+  expect(host.querySelectorAll('[role="separator"][aria-orientation="horizontal"]')).toHaveLength(1);
+  const handle = host.querySelector<HTMLElement>('[role="separator"][aria-orientation="horizontal"]')!;
+  expect(handle).not.toBeNull();
+  (host.querySelector('[data-inspector-pane="file:a/notes.md"]') as HTMLElement).getBoundingClientRect = () => rect(0, 0, 300, 300);
+  (host.querySelector('[data-inspector-pane="files"]') as HTMLElement).getBoundingClientRect = () => rect(0, 308, 300, 300);
+  keys(handle, "ArrowDown");
+  const grid = host.querySelector<HTMLElement>(".ff-inspector-grid")!;
+  // 316px over 284px of the two 300px panels.
+  expect(grid.style.gridTemplateRows).toBe("minmax(0, 0.526667fr) minmax(0, 0.473333fr)");
+});

@@ -1,11 +1,21 @@
 // Layout of the right-hand panels: columns side by side, each column a vertical stack.
 // Pure helpers, so moving and resizing can be tested without a DOM.
 
-export interface PanelColumn { ids: string[]; weight: number }
+/** A column of stacked panels. `heights` holds each panel's share of the column (any unit); a missing one gets the column's average. */
+export interface PanelColumn { ids: string[]; weight: number; heights?: Record<string, number> }
 export type DropZone = "left" | "right" | "top" | "bottom";
 
 /** No column is squeezed below this width (px) by the separators. */
 export const MIN_COLUMN_WIDTH = 160;
+/** No stacked panel is squeezed below this height (px) by the handle between two of them. */
+export const MIN_PANE_HEIGHT = 96;
+
+/** Each panel's share of its column, filling in the average for panels that have none yet. */
+export function rowWeights(column: PanelColumn): number[] {
+  const known = column.ids.map(id => column.heights?.[id]).filter((value): value is number => value !== undefined && value > 0);
+  const fallback = known.length > 0 ? known.reduce((sum, value) => sum + value, 0) / known.length : 1;
+  return column.ids.map(id => column.heights?.[id] && column.heights[id]! > 0 ? column.heights[id]! : fallback);
+}
 
 /** Drops closed panels, removes empty columns, and puts newly opened panels in a column of their own at the end. */
 export function reconcileColumns(columns: readonly PanelColumn[], ids: readonly string[]): PanelColumn[] {
@@ -19,7 +29,11 @@ export function reconcileColumns(columns: readonly PanelColumn[], ids: readonly 
 export function movePanel(columns: readonly PanelColumn[], id: string, targetId: string, zone: DropZone): PanelColumn[] {
   if (id === targetId) return columns.map(column => ({ ...column, ids: [...column.ids] }));
   const weight = columns.find(column => column.ids.includes(targetId))?.weight ?? 1;
-  const next = columns.map(column => ({ ...column, ids: column.ids.filter(item => item !== id) }));
+  const next = columns.map(column => {
+    if (!column.ids.includes(id)) return { ...column, ids: [...column.ids] };
+    const { [id]: _left, ...heights } = column.heights ?? {};
+    return { ...column, ids: column.ids.filter(item => item !== id), heights };
+  });
   const targetIndex = next.findIndex(column => column.ids.includes(targetId));
   if (targetIndex < 0) return columns.map(column => ({ ...column, ids: [...column.ids] }));
   if (zone === "left" || zone === "right") {
@@ -65,16 +79,41 @@ export function dropZoneAt(rect: { left: number; top: number; width: number; hei
   return y < rect.top + rect.height / 2 ? "top" : "bottom";
 }
 
-function gcd(a: number, b: number): number { return b === 0 ? a : gcd(b, a % b); }
-
-/** CSS grid placement for every panel, so a move never re-parents (and so never remounts) a panel. */
-export function gridPlacement(columns: readonly PanelColumn[]): { rows: number; byId: Map<string, { column: number; row: number; span: number }> } {
-  const rows = columns.reduce((lcm, column) => lcm / gcd(lcm, column.ids.length) * column.ids.length, 1);
+/**
+ * CSS grid placement for every panel, so a move never re-parents (and so never remounts) a panel.
+ * Every column's own cut lines are gathered into one set of rows; a panel spans the rows between its cuts,
+ * so each column keeps its own panel heights while all panels share one grid.
+ */
+export function gridPlacement(columns: readonly PanelColumn[]): { rows: number; tracks: number[]; byId: Map<string, { column: number; row: number; span: number }> } {
+  const round = (value: number) => Math.round(value * 1e6) / 1e6;
+  const cutsByColumn = columns.map(column => {
+    const weights = rowWeights(column);
+    const total = weights.reduce((sum, value) => sum + value, 0) || 1;
+    let at = 0;
+    return [0, ...weights.map(value => round((at += value) / total))];
+  });
+  const cuts = [...new Set(cutsByColumn.flat())].sort((x, y) => x - y);
+  const tracks = cuts.slice(1).map((cut, index) => round(cut - cuts[index]!));
   const byId = new Map<string, { column: number; row: number; span: number }>();
   columns.forEach((column, index) => {
-    const span = rows / column.ids.length;
+    const own = cutsByColumn[index]!;
     // Tracks alternate panel column / 8px separator, so panel column n sits on track 2n + 1.
-    column.ids.forEach((id, at) => byId.set(id, { column: index * 2 + 1, row: at * span + 1, span }));
+    column.ids.forEach((id, at) => {
+      const start = cuts.indexOf(own[at]!), end = cuts.indexOf(own[at + 1]!);
+      byId.set(id, { column: index * 2 + 1, row: start + 1, span: end - start });
+    });
   });
-  return { rows, byId };
+  return { rows: tracks.length, tracks, byId };
+}
+
+/** Moves the handle under panel `index` of column `columnIndex` so that panel is `topPx` tall, keeping both at least the minimum. */
+export function resizeRows(columns: readonly PanelColumn[], columnIndex: number, index: number, heightsPx: readonly number[], topPx: number): PanelColumn[] {
+  return columns.map((column, position) => {
+    if (position !== columnIndex) return column;
+    const pair = (heightsPx[index] ?? 0) + (heightsPx[index + 1] ?? 0);
+    const top = Math.max(MIN_PANE_HEIGHT, Math.min(topPx, pair - MIN_PANE_HEIGHT));
+    // Heights become pixels, so the grid splits the column in exactly those proportions.
+    const heights = Object.fromEntries(column.ids.map((id, at) => [id, at === index ? top : at === index + 1 ? pair - top : (heightsPx[at] ?? 1)]));
+    return { ...column, heights };
+  });
 }

@@ -278,6 +278,7 @@
     "restore": "还原",
     "closeTab": "关闭 {{name}}（在面板标题上按 Delete）",
     "resize": "调整面板宽度（左右方向键）",
+    "resizeRows": "调整上下面板高度（上下方向键）",
     "panelAria": "右侧检查面板",
     "toggle": "展开/收起右侧面板"
   },
