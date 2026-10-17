@@ -725,6 +725,8 @@ contextBridge.exposeInMainWorld("codeGit", codeGitApi);
 const tokenUsageApi = {
   get: (days: number) => ipcRenderer.invoke(IPC.TOKEN_USAGE_GET, days),
   clear: () => ipcRenderer.invoke(IPC.TOKEN_USAGE_CLEAR) as Promise<void>,
+  /** Usage history for the settings page: stacked daily data by model and feature, chat ranking, message / skill / plugin counts. */
+  history: (days: number) => ipcRenderer.invoke(IPC.TOKEN_USAGE_HISTORY, days),
 };
 contextBridge.exposeInMainWorld("tokenUsage", tokenUsageApi);
 

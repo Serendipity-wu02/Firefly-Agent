@@ -86,6 +86,45 @@
       "voice": "Voice",
       "notice": "Notices"
     },
+    "usage": {
+      "title": "Usage",
+      "hint": "See where tokens go by model and feature, which conversations cost the most, and how often messages, skills and plugins are used. Data stays on this device.",
+      "rangeLabel": "Time range",
+      "days7": "7 days",
+      "days30": "30 days",
+      "dimensionLabel": "Group by",
+      "byModel": "By model",
+      "byFeature": "By feature",
+      "tokenTitle": "Token usage",
+      "totals": "{{tokens}} total · {{requests}} requests",
+      "chartLabel": "Daily usage chart",
+      "empty": "No usage recorded in this period.",
+      "featureNote": "Usage by feature is recorded from this version on; earlier usage is shown as “Before tracking”.",
+      "other": "Other",
+      "earlier": "Before tracking",
+      "rankTitle": "Conversation usage ranking",
+      "rankEmpty": "No per-conversation usage yet.",
+      "sessionGone": "Deleted or temporary conversation",
+      "messages": "Messages",
+      "skills": "Skill uses",
+      "plugins": "Plugin calls",
+      "clear": "Clear records",
+      "clearTitle": "Clear usage records",
+      "clearMessage": "All usage records on this device will be deleted. This cannot be undone.",
+      "cancel": "Cancel",
+      "unavailable": "Usage data is not available in this window.",
+      "loadFailed": "Could not read usage. Please try again.",
+      "feature": {
+        "chat": "Chat",
+        "work": "Work",
+        "code": "Code",
+        "subagent": "Sub-agents",
+        "plugin": "Plugins",
+        "memory": "Memory",
+        "proactive": "Proactive chat",
+        "other": "Other"
+      }
+    },
     "subagents": {
       "title": "Sub-agents",
       "hint": "All 12 specialist sub-agents, side by side. Each one can inherit the main model or use its own model profile."
@@ -434,6 +473,7 @@
       }
     },
     "nav": {
+      "usage": "Usage",
       "subagents": "Sub-agents",
       "apiAdvanced": "Runtime",
       "api": "Models",

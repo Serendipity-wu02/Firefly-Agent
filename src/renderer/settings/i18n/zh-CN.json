@@ -86,6 +86,45 @@
       "voice": "语音能力",
       "notice": "使用须知"
     },
+    "usage": {
+      "title": "用量",
+      "hint": "看看 Token 花在了哪些模型和功能上，哪些对话最费，以及消息、技能和插件的使用次数。数据只保存在本机。",
+      "rangeLabel": "时间范围",
+      "days7": "7 天",
+      "days30": "30 天",
+      "dimensionLabel": "统计维度",
+      "byModel": "按模型",
+      "byFeature": "按功能",
+      "tokenTitle": "Token 用量",
+      "totals": "共 {{tokens}} · {{requests}} 次请求",
+      "chartLabel": "每日用量图表",
+      "empty": "这段时间还没有用量记录。",
+      "featureNote": "按功能统计从这一版开始记录，之前的用量归入“此前未归类”。",
+      "other": "其他",
+      "earlier": "此前未归类",
+      "rankTitle": "聊天用量排行",
+      "rankEmpty": "还没有按会话统计的用量。",
+      "sessionGone": "已删除或临时的会话",
+      "messages": "消息",
+      "skills": "技能使用",
+      "plugins": "插件调用",
+      "clear": "清空记录",
+      "clearTitle": "清空用量记录",
+      "clearMessage": "本机的全部用量记录会被删除，无法恢复。",
+      "cancel": "取消",
+      "unavailable": "当前窗口读取不到用量数据。",
+      "loadFailed": "读取用量失败，请稍后重试。",
+      "feature": {
+        "chat": "聊天",
+        "work": "工作",
+        "code": "代码",
+        "subagent": "子代理",
+        "plugin": "插件",
+        "memory": "记忆",
+        "proactive": "主动聊天",
+        "other": "其他"
+      }
+    },
     "subagents": {
       "title": "子代理",
       "hint": "12 位专业子代理并列列出。每位可以继承主模型，也可以单独指定一个模型档案。"
@@ -164,6 +203,7 @@
       }
     },
     "nav": {
+      "usage": "用量",
       "subagents": "子代理",
       "ariaLabel": "设置导航",
       "brand": "流萤",

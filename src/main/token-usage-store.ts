@@ -8,6 +8,8 @@
 
 import { getStorageContext } from "./storage-context";
 import { AtomicJsonStore } from "./atomic-json-store";
+import type { UsageHistory, UsageHistoryDay } from "../shared/usage-history";
+import { currentUsageAttribution, USAGE_FEATURES, type UsageAttribution, type UsageFeature } from "./usage-attribution";
 
 
 export interface TokenUsageDay {
@@ -26,6 +28,25 @@ export interface TokenUsageDay {
   attemptedRequests?: number;
   /** 从 v2 起按真实模型名聚合；旧数据不具备此维度。 */
   models?: Record<string, TokenUsageModel>;
+  /** 按功能（聊天、工作、代码、子代理……）聚合；之前的数据不具备此维度。 */
+  features?: Record<string, TokenUsageModel>;
+  /** 按会话聚合，用于"聊天用量排行"；每天只保留用量最大的若干个会话。 */
+  sessions?: Record<string, TokenUsageSession>;
+  /** 当天的使用次数：消息、技能调用、插件调用。 */
+  activity?: TokenUsageActivity;
+}
+
+export interface TokenUsageSession {
+  input: number;
+  output: number;
+  requests: number;
+  feature: string;
+}
+
+export interface TokenUsageActivity {
+  messages: number;
+  skills: Record<string, number>;
+  plugins: Record<string, number>;
 }
 
 export interface TokenUsageModel {
@@ -63,7 +84,18 @@ function usageStore(): AtomicJsonStore<Partial<TokenUsageStore>> {
       return ["input", "output", "requests"].every((key) => typeof record[key] === "number") &&
         ["input", "output", "requests", "hit", "miss", "cacheCreation", "cacheUsageRequests", "attemptedRequests"].every((key) => record[key] === undefined || (typeof record[key] === "number" && Number.isFinite(record[key]) && record[key] >= 0));
     };
-    return Object.values(candidate.days).every((day) => validCounters(day) && (day.models === undefined || (day.models && typeof day.models === "object" && !Array.isArray(day.models) && Object.values(day.models).every(validCounters))));
+    const validRecord = (record: unknown, entry: (value: unknown) => boolean): boolean =>
+      record === undefined || (!!record && typeof record === "object" && !Array.isArray(record) && Object.values(record).every(entry));
+    const validSession = (value: unknown): boolean => validCounters(value) && typeof (value as Record<string, unknown>).feature === "string";
+    const validCounts = (value: unknown): boolean => typeof value === "number" && Number.isFinite(value) && value >= 0;
+    const validActivity = (value: unknown): boolean => {
+      if (value === undefined) return true;
+      if (!value || typeof value !== "object" || Array.isArray(value)) return false;
+      const activity = value as Record<string, unknown>;
+      return validCounts(activity.messages) && validRecord(activity.skills ?? {}, validCounts) && validRecord(activity.plugins ?? {}, validCounts);
+    };
+    return Object.values(candidate.days).every((day) => validCounters(day) && validRecord(day.models, validCounters)
+      && validRecord(day.features, validCounters) && validRecord(day.sessions, validSession) && validActivity(day.activity));
   });
 }
 
@@ -131,6 +163,7 @@ export function applyUsageToDay(
   cachedInput?: number,
   model?: string,
   cacheCreation?: number,
+  attribution?: UsageAttribution,
 ): void {
   day.input += Math.max(0, Math.round(input || 0));
   day.output += Math.max(0, Math.round(output || 0));
@@ -163,20 +196,121 @@ export function applyUsageToDay(
   }
   byModel[modelName] = modelDay;
   day.models = byModel;
+  if (attribution) applyAttribution(day, attribution, input, output, requests, cachedInput, cacheCreation);
+}
+
+/** 无会话或功能归因的请求归入 "other"。 */
+const FALLBACK_FEATURE: UsageFeature = "other";
+/** 每天最多保留这么多个会话的明细，超出时丢掉用量最小的。 */
+const MAX_SESSIONS_PER_DAY = 60;
+/** 技能 / 插件 id 作记录键，挡掉会污染原型的名字。 */
+const UNSAFE_KEYS = new Set(["__proto__", "constructor", "prototype"]);
+
+function emptyCounters(): TokenUsageModel {
+  return { input: 0, output: 0, hit: 0, miss: 0, cacheCreation: 0, requests: 0 };
+}
+
+function applyAttribution(day: TokenUsageDay, attribution: UsageAttribution, input: number, output: number, requests: number, cachedInput?: number, cacheCreation?: number): void {
+  const feature = (USAGE_FEATURES as readonly string[]).includes(attribution.feature) ? attribution.feature : FALLBACK_FEATURE;
+  const features = day.features ?? {};
+  const counters = features[feature] ?? emptyCounters();
+  const normalizedInput = Math.max(0, Math.round(input || 0));
+  counters.input += normalizedInput;
+  counters.output += Math.max(0, Math.round(output || 0));
+  counters.requests += Math.max(0, requests);
+  if (typeof cachedInput === "number" && Number.isFinite(cachedInput)) {
+    const hit = Math.max(0, Math.min(normalizedInput, Math.round(cachedInput)));
+    counters.hit += hit;
+    counters.miss += normalizedInput - hit;
+    counters.cacheUsageRequests = (counters.cacheUsageRequests ?? 0) + Math.max(0, requests);
+  }
+  if (typeof cacheCreation === "number" && Number.isFinite(cacheCreation)) counters.cacheCreation += Math.max(0, Math.round(cacheCreation));
+  features[feature] = counters;
+  day.features = features;
+
+  const sessionId = attribution.sessionId?.trim();
+  if (!sessionId || UNSAFE_KEYS.has(sessionId)) return;
+  const sessions = day.sessions ?? {};
+  const session = sessions[sessionId] ?? { input: 0, output: 0, requests: 0, feature };
+  session.input += normalizedInput;
+  session.output += Math.max(0, Math.round(output || 0));
+  session.requests += Math.max(0, requests);
+  sessions[sessionId] = session;
+  const ids = Object.keys(sessions);
+  if (ids.length > MAX_SESSIONS_PER_DAY) {
+    const weight = (id: string) => sessions[id]!.input + sessions[id]!.output;
+    const smallest = ids.filter(id => id !== sessionId).sort((left, right) => weight(left) - weight(right))[0];
+    if (smallest) delete sessions[smallest];
+  }
+  day.sessions = sessions;
+}
+
+function dayFor(store: TokenUsageStore): TokenUsageDay {
+  const key = todayKey();
+  const day = store.days[key] ?? { input: 0, output: 0, hit: 0, miss: 0, cacheCreation: 0, requests: 0 };
+  store.days[key] = day;
+  return day;
+}
+
+function activityFor(day: TokenUsageDay): TokenUsageActivity {
+  day.activity = day.activity ?? { messages: 0, skills: {}, plugins: {} };
+  day.activity.skills = day.activity.skills ?? {};
+  day.activity.plugins = day.activity.plugins ?? {};
+  return day.activity;
+}
+
+/** 统计只是旁路记录：存储不可用时跳过，不能让一次运行因此失败。 */
+function bestEffort(label: string, record: () => void): void {
+  try {
+    record();
+  } catch (error) {
+    console.warn(`[token-usage] ${label} skipped:`, (error as Error).message);
+  }
+}
+
+/** 记录一条用户消息触发了一次运行。 */
+export function recordMessage(): void {
+  bestEffort("message", () => {
+    activityFor(dayFor(ensureLoaded())).messages += 1;
+    scheduleFlush();
+  });
+}
+
+/** 记录一次技能调用（invoke_skill）。 */
+export function recordSkillUse(skillId: string): void {
+  const id = skillId.trim();
+  if (!id || UNSAFE_KEYS.has(id)) return;
+  bestEffort("skill call", () => {
+    const skills = activityFor(dayFor(ensureLoaded())).skills;
+    skills[id] = (skills[id] ?? 0) + 1;
+    scheduleFlush();
+  });
+}
+
+/** 记录一次插件调用（插件代理运行或插件发起的模型请求）。 */
+export function recordPluginCall(pluginId: string): void {
+  const id = pluginId.trim();
+  if (!id || UNSAFE_KEYS.has(id)) return;
+  bestEffort("plugin call", () => {
+    const plugins = activityFor(dayFor(ensureLoaded())).plugins;
+    plugins[id] = (plugins[id] ?? 0) + 1;
+    scheduleFlush();
+  });
 }
 
 /** 记录一次 API 调用的 token 用量（异步累加到当天）。 */
-export function recordUsage(input: number, output: number, requests = 1, cachedInput?: number, model?: string, cacheCreation?: number): void {
+/** feature names the owner of a background call that runs outside any conversation (memory, proactive chat); otherwise the run's declared attribution applies. */
+export function recordUsage(input: number, output: number, requests = 1, cachedInput?: number, model?: string, cacheCreation?: number, feature?: UsageFeature): void {
   const store = ensureLoaded();
   const key = todayKey();
   const day = store.days[key] ?? { input: 0, output: 0, hit: 0, miss: 0, cacheCreation: 0, requests: 0 };
-  applyUsageToDay(day, input, output, requests, cachedInput, model, cacheCreation);
+  applyUsageToDay(day, input, output, requests, cachedInput, model, cacheCreation, feature ? { feature } : currentUsageAttribution() ?? { feature: FALLBACK_FEATURE });
   store.days[key] = day;
   scheduleFlush();
 }
 
 /** 记录一次模型请求的发生（不依赖厂商是否返回 usage）。用于统计请求覆盖率。 */
-export function recordRequest(model?: string): void {
+export function recordRequest(model?: string, feature?: UsageFeature): void {
   const store = ensureLoaded();
   const key = todayKey();
   const day = store.days[key] ?? { input: 0, output: 0, hit: 0, miss: 0, cacheCreation: 0, requests: 0 };
@@ -187,6 +321,12 @@ export function recordRequest(model?: string): void {
   modelDay.attemptedRequests = (modelDay.attemptedRequests ?? 0) + 1;
   byModel[modelName] = modelDay;
   day.models = byModel;
+  const owner = feature ?? currentUsageAttribution()?.feature ?? FALLBACK_FEATURE;
+  const features = day.features ?? {};
+  const counters = features[owner] ?? emptyCounters();
+  counters.attemptedRequests = (counters.attemptedRequests ?? 0) + 1;
+  features[owner] = counters;
+  day.features = features;
   store.days[key] = day;
   scheduleFlush();
 }
@@ -278,6 +418,91 @@ export function getUsageReport(days: number): TokenUsageReport {
       // attemptedRequests > 0 也保留：端点不回 usage 的模型可见（显示 0 token），而不是从列表消失
       .filter((item) => item.input > 0 || item.output > 0 || item.requests > 0 || (item.attemptedRequests ?? 0) > 0)
       .sort((left, right) => (right.input + right.output) - (left.input + left.output)),
+  };
+}
+
+const WEEKDAYS = ["周日", "周一", "周二", "周三", "周四", "周五", "周六"];
+const MAX_RANKED_SESSIONS = 10;
+
+/** 最近 N 天的"用量历史"：按模型、按功能的每日堆叠数据、会话排行，以及消息 / 技能 / 插件的使用次数。 */
+export function getUsageHistory(days: number): UsageHistory {
+  const store = ensureLoaded();
+  const span = Math.max(1, Math.min(90, Math.round(days) || 7));
+  const today = new Date();
+  const models = new Map<string, { tokens: number; requests: number }>();
+  const features = new Map<string, { tokens: number; requests: number }>();
+  const sessions = new Map<string, { feature: string; tokens: number; requests: number }>();
+  const skills = new Map<string, number>();
+  const plugins = new Map<string, number>();
+  const result: UsageHistoryDay[] = [];
+  const add = <K>(target: Map<K, { tokens: number; requests: number }>, key: K, tokens: number, requests: number) => {
+    const current = target.get(key) ?? { tokens: 0, requests: 0 };
+    current.tokens += tokens;
+    current.requests += requests;
+    target.set(key, current);
+  };
+  for (let offset = span - 1; offset >= 0; offset -= 1) {
+    const date = new Date(today);
+    date.setDate(date.getDate() - offset);
+    const key = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`;
+    const day = store.days[key];
+    const entry: UsageHistoryDay = {
+      date: `${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`,
+      weekday: WEEKDAYS[date.getDay()]!,
+      tokens: (day?.input ?? 0) + (day?.output ?? 0),
+      requests: day?.requests ?? 0,
+      byModel: {},
+      byFeature: {},
+      messages: day?.activity?.messages ?? 0,
+      skillCalls: 0,
+      pluginCalls: 0,
+    };
+    if (day) {
+      // Older days have no per-model split: the whole day belongs to "未归类".
+      const modelEntries = day.models && Object.keys(day.models).length > 0 ? Object.entries(day.models) : [["未归类", day] as const];
+      for (const [name, value] of modelEntries) {
+        const tokens = (value.input ?? 0) + (value.output ?? 0);
+        if (tokens > 0) entry.byModel[name] = tokens;
+        add(models, name, tokens, value.requests ?? 0);
+      }
+      for (const [name, value] of Object.entries(day.features ?? {})) {
+        const tokens = (value.input ?? 0) + (value.output ?? 0);
+        if (tokens > 0) entry.byFeature[name] = tokens;
+        add(features, name, tokens, value.requests ?? 0);
+      }
+      for (const [id, value] of Object.entries(day.sessions ?? {})) {
+        const current = sessions.get(id) ?? { feature: value.feature, tokens: 0, requests: 0 };
+        current.tokens += (value.input ?? 0) + (value.output ?? 0);
+        current.requests += value.requests ?? 0;
+        sessions.set(id, current);
+      }
+      for (const [id, count] of Object.entries(day.activity?.skills ?? {})) {
+        skills.set(id, (skills.get(id) ?? 0) + count);
+        entry.skillCalls += count;
+      }
+      for (const [id, count] of Object.entries(day.activity?.plugins ?? {})) {
+        plugins.set(id, (plugins.get(id) ?? 0) + count);
+        entry.pluginCalls += count;
+      }
+    }
+    result.push(entry);
+  }
+  const ranked = <K extends string>(map: Map<K, { tokens: number; requests: number }>) => [...map.entries()]
+    .map(([name, value]) => ({ name, ...value }))
+    .filter(item => item.tokens > 0 || item.requests > 0)
+    .sort((left, right) => right.tokens - left.tokens);
+  const counted = (map: Map<string, number>) => [...map.entries()].map(([id, count]) => ({ id, count })).sort((left, right) => right.count - left.count);
+  return {
+    days: result,
+    models: ranked(models),
+    features: ranked(features),
+    sessions: [...sessions.entries()]
+      .map(([id, value]) => ({ id, ...value }))
+      .filter(item => item.tokens > 0)
+      .sort((left, right) => right.tokens - left.tokens)
+      .slice(0, MAX_RANKED_SESSIONS),
+    skills: counted(skills),
+    plugins: counted(plugins),
   };
 }
 

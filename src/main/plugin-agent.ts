@@ -13,6 +13,8 @@ import type { HarnessEvent } from "./orchestrator/harness/types";
 import { ExecutionLedgerStore } from "./orchestrator/execution-ledger";
 import { buildToolSystemPrompt } from "./orchestrator/system-prompt-builder";
 import type { ToolDefinition } from "./orchestrator/tools/registry/tool-registry";
+import { recordPluginCall } from "./token-usage-store";
+import { runWithUsageAttribution } from "./usage-attribution";
 
 const DEFAULT_MAX_ROUNDS = 50;
 const DEFAULT_MAX_WALL_MS = 15 * 60_000;
@@ -188,7 +190,8 @@ export function createPluginAgentRunner(deps: PluginAgentRunnerDeps): NonNullabl
 
     const toolNames = new Map<string, string>();
     console.info("[plugin-agent] 无头任务开始", { label, runId });
-    const result = await runHarness({
+    recordPluginCall(deps.pluginId);
+    const result = await runWithUsageAttribution({ feature: "plugin", pluginId: deps.pluginId }, () => runHarness({
       systemPrompt: promptLayers.stablePrefix,
       promptLayers,
       usageParts: promptLayers.usageParts,
@@ -226,7 +229,7 @@ export function createPluginAgentRunner(deps: PluginAgentRunnerDeps): NonNullabl
       },
       toolOutputStore: new FileToolOutputStore(deps.userDataPath),
       executionLedger: ledgers.forScope(runId),
-    });
+    }));
 
     const terminal = signals.firstAbortSource() === "deadline"
       ? { status: "timeout" as const, reason: "timeout", externalEffectsMayContinue: true }

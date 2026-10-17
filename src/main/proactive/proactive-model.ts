@@ -55,8 +55,8 @@ export async function runProactiveModel(input: RunProactiveModelInput): Promise<
       const sink = input.memoryRun.bindSink(input.transcriptSink);
       await sink.appendAssistant({ message: response.assistantMessage ?? { role: "assistant", content: response.text ?? "" } });
       await sink.checkpoint();
-      recordRequest(input.settings.model);
-      if (response.usage) recordUsage(response.usage.input, response.usage.output, 1, response.usage.cachedInput, input.settings.model, response.usage.cacheCreation);
+      recordRequest(input.settings.model, "proactive");
+      if (response.usage) recordUsage(response.usage.input, response.usage.output, 1, response.usage.cachedInput, input.settings.model, response.usage.cacheCreation, "proactive");
       return parseProactiveDecision(response.text ?? "");
     }
     const request = adapter.buildRequest(modelRequest, input.settings);
@@ -75,9 +75,9 @@ export async function runProactiveModel(input: RunProactiveModelInput): Promise<
     } catch {
       return { kind: "invalid", reason: "invalid_provider_response" };
     }
-    recordRequest(input.settings.model);
+    recordRequest(input.settings.model, "proactive");
     if (parsedResponse.usage) {
-      recordUsage(parsedResponse.usage.input, parsedResponse.usage.output, 1, parsedResponse.usage.cachedInput, input.settings.model, parsedResponse.usage.cacheCreation);
+      recordUsage(parsedResponse.usage.input, parsedResponse.usage.output, 1, parsedResponse.usage.cachedInput, input.settings.model, parsedResponse.usage.cacheCreation, "proactive");
     }
     return parseProactiveDecision(parsedResponse.text ?? "");
   } catch (error) {
