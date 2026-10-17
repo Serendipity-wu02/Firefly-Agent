@@ -11,17 +11,17 @@ import { workspaceRelativePath, type WorkspaceChangedFile, type WorkspaceRunOutp
 import "./WorkspaceRunResults.css";
 
 type ToolRecord = WorkspaceRunOutput["tools"][number];
-type ToolGroup = { kind: "plain"; key: string; name: string; items: ToolRecord[] } | { kind: "delegate"; tool: ToolRecord };
+type ToolGroup = { kind: "plain"; key: string; /** Raw tool name: the identity a group is keyed by. */ toolName: string; /** Visible label only. */ name: string; items: ToolRecord[] } | { kind: "delegate"; tool: ToolRecord };
 
 /** Delegations keep their full cards; consecutive calls of the same ordinary tool fold into one group so a long run reads as a short list. */
 export function groupTools(tools: readonly ToolRecord[]): ToolGroup[] {
   const groups: ToolGroup[] = [];
   for (const tool of tools) {
     if (tool.name === "delegate_agent") { groups.push({ kind: "delegate", tool }); continue; }
-    const name = tool.displayName ?? tool.name;
     const last = groups[groups.length - 1];
-    if (last?.kind === "plain" && last.name === name) last.items.push(tool);
-    else groups.push({ kind: "plain", key: tool.id, name, items: [tool] });
+    // Two tools may share a display name (plugins do not have to make them unique); only the same tool folds together.
+    if (last?.kind === "plain" && last.toolName === tool.name) last.items.push(tool);
+    else groups.push({ kind: "plain", key: tool.id, toolName: tool.name, name: tool.displayName ?? tool.name, items: [tool] });
   }
   return groups;
 }
@@ -36,8 +36,8 @@ const oneLine = (text: string, limit = 90) => {
 
 function ToolFold({ name, items }: { name: string; items: ToolRecord[] }) {
   const { t } = useTranslation();
-  const failed = items.filter(item => item.status === "failed" || item.status === "error").length;
-  const row = (tool: ToolRecord) => <details key={tool.id} className="ff-run-fold ff-run-fold--item" open={tool.status === "failed" || tool.status === "error" ? true : undefined}>
+  const failed = items.filter(item => item.status === "error").length;
+  const row = (tool: ToolRecord) => <details key={tool.id} className="ff-run-fold ff-run-fold--item" open={tool.status === "error" ? true : undefined}>
     <summary>
       <span className="ff-run-fold__preview">{oneLine(tool.result || "") || t("workspace.emptyResult")}</span>
       <span data-tool-status={tool.status}>{t(`workspace.toolStatus.${tool.status}`)}</span>
@@ -52,7 +52,7 @@ function ToolFold({ name, items }: { name: string; items: ToolRecord[] }) {
     <summary>
       <strong>{name}</strong>
       <span className="ff-run-fold__count">{t("workspace.toolGroupCount", { count: items.length })}</span>
-      {failed > 0 && <span className="ff-run-fold__failed" data-tool-status="failed">{t("workspace.toolGroupFailed", { count: failed })}</span>}
+      {failed > 0 && <span className="ff-run-fold__failed" data-tool-status="error">{t("workspace.toolGroupFailed", { count: failed })}</span>}
     </summary>
     <div className="ff-run-fold__items">{items.map(row)}</div>
   </details>;
