@@ -10,6 +10,7 @@ import {projectForClaim,resolveProject} from "../memory-policy/project-scope";
 import {requireCommittedUserSource} from "../memory-policy/main-user-fact-coordinator";
 import type {createMainPolicy} from "../memory-policy/main-policy";
 import type {createMainRecall} from "./main-recall";
+import {assertTypedUserFact} from "../memory-policy/natural-protocol";
 
 export const FACT_SELECTION_VERSION="main-fact-selector-v1";
 export interface SelectedFactRef {factId:string;revision:number;sourceRefs:BoundSourceRef[]}
@@ -21,6 +22,11 @@ type ScopedClaim=MaintenanceClaim&{project:string|undefined};
  * every other project's facts, and every fact whose project this session lacks, fall out here.
  */
 function claimFor(actorKey:string,fact:FactView,project:string|undefined):ScopedClaim|null {
+ if(fact.typed){
+  assertTypedUserFact(actorKey,fact.typed);
+  if(fact.typed.slotKey!==fact.subjectKey||fact.scope==="project"||fact.projectKey!==undefined)return null;
+  return {attribute:fact.typed.legacyAttribute,value:fact.typed.value,context:"default",cardinality:fact.typed.cardinality,operation:"assert",project:undefined};
+ }
  const parsed=extractMaintenance(fact.assertion);if(parsed.kind!=="claims")return null;
  for(const claim of parsed.claims){
   for(const context of ["default","work","personal"] as const){
@@ -42,6 +48,8 @@ function relevance(query:string,claim:MaintenanceClaim):number {
  }
  if(["address","language","response-style"].includes(claim.attribute))return 1;
  if(claim.attribute==="shell"&&/命令|终端|命令行|脚本|shell|terminal|powershell|\bbash\b|\bcmd\b|\bcommand\b/u.test(q))return 3;
+ if(claim.attribute==="tool"&&/工具|软件|编辑器|终端|代码|开发|\b(?:tool|editor|software|code|terminal)\b/u.test(q))return 3;
+ if(claim.attribute==="preference"&&/喜好|偏好|喜欢|主题|\b(?:prefer|preference|like|theme)\b/u.test(q))return 2;
  if(["programming-usage","programming-ability"].includes(claim.attribute)&&/编程|代码|程序|开发|python|rust|typescript|javascript|\bgo\b|\bcode\b|\bprogramming\b/u.test(q))return 3;
  if(q.includes(claim.value.normalize("NFKC").toLowerCase()))return 2;
  return 0;

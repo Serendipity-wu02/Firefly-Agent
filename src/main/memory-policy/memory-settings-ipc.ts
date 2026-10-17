@@ -25,6 +25,7 @@ const safeReasons = new Set([
   "MEMORY_CANDIDATE_NOT_FOUND", "MEMORY_FACT_NOT_FOUND", "MEMORY_BACKEND_UNAVAILABLE",
   "MEMORY_SETTINGS_FAILED", "MEMORY_POLICY_UNRESOLVED", "MEMORY_POLICY_SECRET",
   "MEMORY_CONFIRMATION_NOT_INDEPENDENT", "MEMORY_POLICY_SUPPRESSED", "MEMORY_POLICY_FUTURE",
+  "MEMORY_CONFIRMATION_STALE", "MEMORY_FACT_CONFLICT",
   "MEMORY_SOURCE_INVALID", "MEMORY_SOURCE_STALE", "MEMORY_SOURCE_PENDING", "MEMORY_SOURCE_DELETED",
   "MEMORY_ACTOR_DENIED", "MEMORY_EVENT_DENIED", "MEMORY_USER_SOURCE_DENIED",
   "MEMORY_POLICY_TEMPORARY_UNSUPPORTED", "MEMORY_POLICY_CANCELLED", "MEMORY_CLOSED",
@@ -44,9 +45,13 @@ function unavailable(reason = "MEMORY_BACKEND_UNAVAILABLE"): MemoryPanelState {
   } };
 }
 function parseAction(value: unknown): MemoryPanelAction {
-  const input = objectFields(value, ["kind", "id", "expectedRevision"], ["text"]);
+  const input = objectFields(value, ["kind", "id", "expectedRevision"], ["text", "contentHash"]);
   if (!["confirm", "reject", "correct", "forget"].includes(input.kind as string)) throw new Error("MEMORY_INPUT_INVALID");
   const action: MemoryPanelAction = { kind: input.kind as MemoryPanelAction["kind"], id: parseInternalId(input.id), expectedRevision: positiveRevision(input.expectedRevision) };
+  if (input.contentHash !== undefined) {
+    if (action.kind !== "confirm" || typeof input.contentHash !== "string" || !/^[a-f0-9]{64}$/.test(input.contentHash)) throw Error("MEMORY_INPUT_INVALID");
+    action.contentHash = input.contentHash;
+  }
   if (action.kind === "correct" || input.text !== undefined) {
     if (!["correct", "confirm"].includes(action.kind)) throw new Error("MEMORY_INPUT_INVALID");
     action.text = textField(input.text);
@@ -70,6 +75,7 @@ function stateDto(state: MemoryPanelState): MemoryPanelState {
   const c = state.coverage;
   return { facts: state.facts.map(fact), candidates: state.candidates.map((item) => ({ candidateId: item.candidateId, revision: item.revision, attribute: item.attribute,
     value: item.value, assertion: item.assertion, reason: item.reason, sourceRef: source(item.sourceRef), ...(item.occurredAt !== undefined ? { occurredAt: item.occurredAt } : {}),
+      ...(typeof item.contentHash === "string" && /^[a-f0-9]{64}$/.test(item.contentHash) ? { contentHash: item.contentHash } : {}),
       ...(item.scope === "global" || item.scope === "project" ? { scope: item.scope } : {}),
       ...(typeof item.projectName === "string" && item.projectName ? { projectName: item.projectName.slice(0, 200) } : {}) })),
     backendStatus: { available: state.backendStatus.available, ...(state.backendStatus.reason ? { reason: state.backendStatus.reason } : {}) },
@@ -112,6 +118,7 @@ export function createMemorySettingsIpc(options: Options) {
         const target = candidateAction ? state.candidates.find((item) => item.candidateId === action.id) : state.facts.find((item) => item.factId === action.id);
         if (!target) throw new Error(candidateAction ? "MEMORY_CANDIDATE_NOT_FOUND" : "MEMORY_FACT_NOT_FOUND");
         if (target.revision !== action.expectedRevision) throw new Error("MEMORY_REVISION_CONFLICT");
+        if (action.kind === "confirm" && action.contentHash !== undefined && (!("contentHash" in target) || target.contentHash !== action.contentHash)) throw Error("MEMORY_CONFIRMATION_STALE");
         const result = await options.host.applyAction(event, action);
         authorize(event);
         return outcomeDto(result);

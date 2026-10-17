@@ -180,6 +180,8 @@ export function createMainDefaultMemory(options: MainDefaultMemoryOptions) {
   // Shadow extraction (default off). Verified user sources wait here until their run succeeds.
   interface ShadowPending { sourceRef: BoundSourceRef; userTurnId: string; userText: string; profile: { id: string; revision: number } }
   const shadowPending = new Map<string, ShadowPending>();
+  // Phase 1 has no resumable extraction queue. Shutdown aborts and drains these calls.
+  const naturalTasks = new Set<Promise<unknown>>();
   const shadowKey = (sessionId: string, runId: string) => canonicalJson([sessionId, runId]);
   let shadow: ShadowService | undefined;
   let boot: Promise<Awaited<ReturnType<typeof initialize>>> | undefined;
@@ -720,9 +722,13 @@ export function createMainDefaultMemory(options: MainDefaultMemoryOptions) {
     },
   });
   function parseSettingsAction(value: unknown): MemoryPanelAction {
-    const input = objectFields(value, ["kind", "id", "expectedRevision"], ["text"]);
+    const input = objectFields(value, ["kind", "id", "expectedRevision"], ["text", "contentHash"]);
     if (!["confirm", "reject", "correct", "forget"].includes(input.kind as string)) return fail("MEMORY_INPUT_INVALID");
     const result: MemoryPanelAction = { kind: input.kind as MemoryPanelAction["kind"], id: parseInternalId(input.id), expectedRevision: positiveRevision(input.expectedRevision) };
+    if (input.contentHash !== undefined) {
+      if (result.kind !== "confirm" || typeof input.contentHash !== "string" || !/^[a-f0-9]{64}$/.test(input.contentHash)) return fail("MEMORY_INPUT_INVALID");
+      result.contentHash = input.contentHash;
+    }
     if (result.kind === "correct" || input.text !== undefined) {
       if (result.kind !== "correct" && result.kind !== "confirm") return fail("MEMORY_INPUT_INVALID");
       result.text = textField(input.text);
@@ -769,6 +775,7 @@ export function createMainDefaultMemory(options: MainDefaultMemoryOptions) {
           const selected = (await allCandidates(core)).find(candidate => candidate.candidateId === action.id);
           if (!selected) return fail("MEMORY_CANDIDATE_NOT_FOUND");
           if (selected.revision !== action.expectedRevision) return fail("MEMORY_REVISION_CONFLICT");
+          if (action.contentHash !== undefined && action.contentHash !== selected.contentHash) return fail("MEMORY_CONFIRMATION_STALE");
           assertion = selected.assertion;
         } else {
           const selected = await core.policy.audit(core.settingsActor, action.id);
@@ -781,13 +788,13 @@ export function createMainDefaultMemory(options: MainDefaultMemoryOptions) {
           const text = action.kind === "correct" ? action.text! : `I confirm the selected memory (${action.id}, revision ${action.expectedRevision}): ${assertion}${action.text ? "\n" + action.text : ""}`;
           const extraction = extractPreference(text);
           if (extraction.kind === "rejected") return fail("MEMORY_POLICY_SECRET");
-          if (action.kind === "correct" && extraction.kind !== "direct") return fail("MEMORY_POLICY_UNRESOLVED");
+          if (action.kind === "correct") await core.policy.validateCorrection(core.settingsActor, action.id, action.expectedRevision, text);
           const identity = await settingsSource.commitUserEvent(grant, { messageId: `settings-${nonce}`, text });
           sourceRef = await core.registry.capture(core.access, core.router.token, identity); settingsSource.require(grant);
         }
         const policyEvent = await core.policy.event(core.settingsActor, { kind: action.kind, nonce,
           ...(action.kind === "confirm" || action.kind === "reject" ? { candidateId: action.id } : { factId: action.id }),
-          revision: action.expectedRevision, ...(sourceRef ? { sourceRef } : {}) });
+          revision: action.expectedRevision, ...(sourceRef ? { sourceRef } : {}), ...(action.contentHash ? { contentHash: action.contentHash } : {}) });
         settingsSource.require(grant);
         return core.policy.act(core.settingsActor, policyEvent);
       });
@@ -973,8 +980,6 @@ export function createMainDefaultMemory(options: MainDefaultMemoryOptions) {
         const session = options.getSession(input.sessionId);
         if (!session || session.mode !== "chat" || !owned(input.sessionId) || isTemporary(input.sessionId)) return;
         const core = await resources();
-        const service = await getShadowService();
-        if (!service) return;
         // Fixed to the model this run was admitted with; a later profile change cancels the task.
         let model: ShadowModel;
         try {
@@ -986,6 +991,17 @@ export function createMainDefaultMemory(options: MainDefaultMemoryOptions) {
         } catch {
           model = { profile: item.profile, assertCurrent: () => { throw new Error("MEMORY_RUN_PROFILE_CHANGED"); }, prepare: () => ({ ok: false, reason: "no-output-limit" }) };
         }
+        const state = records.get(input.sessionId);
+        if (state) {
+          const task = core.policy.extractNatural(state.actor, item.sourceRef, model, ownerLifetime.signal);
+          naturalTasks.add(task);
+          try { await task; } catch (error) {
+            console.warn("[memory-natural] extraction unavailable", error instanceof Error && /^MEMORY_[A-Z0-9_]{1,100}$/.test(error.message) ? error.message : "unexpected");
+          } finally { naturalTasks.delete(task); }
+        }
+        if (closing || !owned(input.sessionId)) return;
+        const service = await getShadowService();
+        if (!service) return;
         // The assistant reply right before this user message is context only, never evidence.
         const index = session.messages.findIndex(message => message.id === item.userTurnId);
         const previous = index > 0 ? session.messages[index - 1] : undefined;
@@ -1009,7 +1025,7 @@ export function createMainDefaultMemory(options: MainDefaultMemoryOptions) {
       if (closePromise) return closePromise;
       // Publish before aborting: a synchronous abort listener may reenter close().
       closePromise = Promise.resolve().then(async () => {
-        await Promise.allSettled([mutations, ...opening]);
+        await Promise.allSettled([mutations, ...opening, ...naturalTasks]);
         const core = await boot?.catch(() => undefined);
         if (!core) { await attachments.close(); await settingsSource.close(); await channelSource.close(); await taskSource.close(); models.close(); return; }
         const failures: unknown[] = [];

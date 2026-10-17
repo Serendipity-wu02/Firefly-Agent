@@ -15,6 +15,7 @@ import { createMainContext } from "./main-context";
 import type { MemoryRunAuthority, MemoryRunContext, MemoryRunGrant } from "./main-memory-contracts";
 import { assertContextSecretFree } from "./source-secret-screen";
 import { requestDigest, selectBudget } from "./token-budget";
+import {factContextMessages as memoryMessages} from "./fact-context-messages";
 
 export interface MainMemoryModelBinding {
   readonly profileId: string;
@@ -117,13 +118,6 @@ function contextMessages(units: ContextUnit[]): ChatMessage[] {
     return { ...fields, content: (message as typeof message & { content?: ChatMessage["content"] }).content ?? text };
   }));
 }
-function memoryMessages(facts: ContextFact[]): ChatMessage[] {
-  return facts.length ? [{ role: "system", content: "User-stated memory with source and time metadata:\n" + JSON.stringify(facts.map(fact => ({
-    factId: fact.factId, revision: fact.revision, assertion: fact.assertion, assertionKind: fact.assertionKind,
-    time: fact.time, recordedAt: fact.recordedAt, acceptedAt: fact.acceptedAt, supportSourceRefs: fact.supportSourceRefs,
-  }))) }] : [];
-}
-
 /** Shared Main owner. Each run has isolated preparation state; all use the same actor mutation queue. */
 export function createMainMemoryRuntime(options: MainMemoryRuntimeOptions): MainMemoryRuntime {
   let closing = false, closePromise: Promise<void> | undefined;

@@ -6,7 +6,7 @@ import {SourceLedger} from "../memory-core/source-ledger";
 import {Suppression} from "../memory-core/suppression";
 import {canonicalJson} from "../memory-core/repository-types";
 import {transactionNow} from "../memory-core/transaction-clock";
-export interface ConfirmationProof {nonce:string;targetId:string;targetRevision:number;action:"confirm"|"confirmFact"|"correct"|"remember"}
+export interface ConfirmationProof {nonce:string;targetId:string;targetRevision:number;action:"confirm"|"confirmFact"|"correct"|"remember";contentHash?:string;scopeBinding?:string}
 interface Support {id:string;actorKey:string;factId:string;factRevision:number;subjectKey:string;sourceRef:BoundSourceRef;kind:"automatic"|"explicitUserConfirmed";proof:ConfirmationProof|null;state:"supported"|"suppressed";generation:number;checkedValidity?:string}
 interface Review {actorKey:string;factId:string;factRevision:number;sourceRef:BoundSourceRef;nonce:string;generation:number;state:"recorded"|"suppressed"}
 export interface SupportAudit {factId:string;revision:number|null;status:"eligible"|"pending-review"|"forgotten";reason:string;supports:Array<{sourceRef:BoundSourceRef;kind:Support["kind"];factRevision:number;validity:string;proof:ConfirmationProof|null}>;reviews:Array<{sourceRef:BoundSourceRef;factRevision:number}>}

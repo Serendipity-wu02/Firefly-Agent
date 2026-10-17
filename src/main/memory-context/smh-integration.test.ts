@@ -70,7 +70,9 @@ async function fixture(options:{queryText?:string;unknownTime?:boolean;trust?:"h
 it("cross-session M selection is included in the exact counted request and S durably settles once",async()=>{
  const f=await fixture();expect(await f.policy.recall(f.actor)).toHaveLength(1);
  await f.port.run(f.input);expect(f.sends).toHaveLength(1);
- const instructions=f.sends[0].instructions;expect(instructions).toContain("PowerShell");expect(instructions).toContain("user-statement");expect(instructions).toContain("session-b");expect(instructions).toContain("validFrom");
+ const instructions=f.sends[0].instructions,memory=f.sends[0].input.find((message:any)=>message.role==="user"&&JSON.stringify(message).includes("User-stated memory with source and time metadata"));
+ expect(memory).toBeDefined();for(const value of ["PowerShell","user-statement","session-b","validFrom"])expect(JSON.stringify(memory)).toContain(value);
+ expect(instructions).not.toContain("PowerShell");expect(instructions).toContain("untrusted historical user data");
  expect(f.counts.findLast(body=>body.instructions===instructions)?.input).toBe(f.sends[0].input);
  const raw=(await f.store.read("session-a")).entries;expect(classifySAssistantSettlement(raw,raw.find(e=>e.kind==="assistant")!.id)).toBe("success");
  const metadata=await f.recall.metadata(f.actor,[{factId:(await f.policy.recall(f.actor))[0].factId,revision:1}]);expect(metadata.targets[0].accessCount).toBe(1);
@@ -106,14 +108,17 @@ it.each(["history","imported","model"] as const)("%s current source never become
 it("unknown source event time remains a candidate instead of borrowing the S transcript clock",async()=>{
  const f=await fixture({queryText:"I prefer Bash",unknownTime:true});await f.port.run(f.input);
  const facts=await f.policy.recall(f.actor);expect(facts).toHaveLength(1);expect(facts[0].assertion).toContain("PowerShell");
- expect(f.sends[0].instructions).not.toContain('"assertion":"I prefer Bash"');
+ const memory=f.sends[0].input.find((message:any)=>message.role==="user"&&JSON.stringify(message).includes("User-stated memory with source and time metadata"));
+ expect(memory).toBeDefined();expect(JSON.stringify(memory)).not.toContain("I prefer Bash");
 });
 it("explicit synthetic H evidence and complete tool quotes share the exact M/S counted frame",async()=>{
  const f=await fixture({history:"tool"});await f.port.run(f.input);
  const sent=f.sends[0],quoted=sent.input.find((message:any)=>JSON.stringify(message).includes("quoted historical evidence"));
  expect(quoted).toBeDefined();const text=JSON.stringify(quoted);
  for(const value of ["originalRole","history-user","history-assistant","history-tool","history-call","run_command","Get-ChildItem","synthetic.txt","session-b",'eventTime\\":null'])expect(text).toContain(value);
- expect(sent.instructions).toContain("PowerShell");expect(f.counts.some(body=>body.input===sent.input&&body.instructions===sent.instructions)).toBe(true);expect(f.sends).toHaveLength(1);
+ const memory=sent.input.find((message:any)=>message.role==="user"&&JSON.stringify(message).includes("User-stated memory with source and time metadata"));
+ expect(memory).toBeDefined();expect(JSON.stringify(memory)).toContain("PowerShell");expect(sent.instructions).not.toContain("PowerShell");
+ expect(f.counts.some(body=>body.input===sent.input&&body.instructions===sent.instructions)).toBe(true);expect(f.sends).toHaveLength(1);
  const facts=await f.policy.recall(f.actor);expect(facts).toHaveLength(1);expect((await f.recall.metadata(f.actor,[{factId:facts[0].factId,revision:facts[0].revision}])).targets[0].accessCount).toBe(1);
 });
 it("history default scope excludes other sessions and copied evidence cannot supply authority",async()=>{

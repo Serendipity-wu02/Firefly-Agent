@@ -13,11 +13,11 @@ import {createMainHistory} from "../memory-history/main-history";
 import {createMainContext} from "./main-context";
 
 /** Offline fixture only: caller supplies an explicit synthetic root and owns cleanup. No bootstrap caller. */
-export function createSmhFixture(root:string,input:{clock?:()=>number;key?:Uint8Array}={}) {
+export function createSmhFixture(root:string,input:{clock?:()=>number;key?:Uint8Array;fault?:(stage:"after-record"|"before-receipt")=>void}={}) {
  if(!path.isAbsolute(root))throw new Error("SMH_SYNTHETIC_ROOT_REQUIRED");
  fs.mkdirSync(root,{recursive:true});
  const key=Buffer.from(input.key??randomBytes(32)),clock=input.clock??(()=>1700000000000),databasePath=path.join(root,"memory.sqlite");
- const repo=openMemoryRepository({databasePath,key,clock});
+ const repo=openMemoryRepository({databasePath,key,clock,fault:input.fault});
  const commands:unknown[]=[];
  const command=(run:(c:unknown)=>unknown)=>(c:unknown)=>{commands.push(structuredClone(c));return Promise.resolve().then(()=>run(c))};
  const transport={sourceCommand:command(c=>repo.sourceCommand(c)),policyCommand:command(c=>repo.policyCommand(c)),recallCommand:command(c=>repo.recallCommand(c)),historyCommand:command(c=>repo.historyCommand(c)),contextCommand:command(c=>repo.contextCommand(c))};

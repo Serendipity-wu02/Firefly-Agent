@@ -5,5 +5,5 @@ export interface PolicyBaseline {factId:string;revision:number;subjectKey:string
 /** Private worker/Main contracts, never renderer DTOs. */
 export interface PolicyTransport {policyCommand(value:unknown):Promise<unknown>}
 export interface PolicyOutcome {status:"candidate"|"active"|"rejected"|"suppressed"|"forgotten"|"pending-review";reason?:string;candidateId?:string;candidateRevision?:number;factId?:string;factRevision?:number}
-export interface PolicyCandidate {candidateId:string;revision:number;attribute:Attribute;value:string|null;reason:string;sourceRef:BoundSourceRef;assertion:string;projectKey?:string}
-export interface PolicyEvent {kind:"confirm"|"confirmFact"|"deny"|"reject"|"revise"|"correct"|"forget"|"remember";nonce:string;generation:number;candidateId?:string;factId?:string;revision?:number;sourceRef?:BoundSourceRef;extraction?:Extraction}
+export interface PolicyCandidate {candidateId:string;revision:number;attribute:Attribute;value:string|null;reason:string;sourceRef:BoundSourceRef;assertion:string;projectKey?:string;contentHash?:string;typed?:import("../../shared/memory-contracts").TypedUserFact}
+export interface PolicyEvent {kind:"confirm"|"confirmFact"|"deny"|"reject"|"revise"|"resolve"|"correct"|"forget"|"remember";nonce:string;generation:number;candidateId?:string;factId?:string;revision?:number;sourceRef?:BoundSourceRef;extraction?:Extraction;contentHash?:string;scopeBinding?:string;naturalEdit?:import("./natural-protocol").NaturalProposal;sourceText?:string}

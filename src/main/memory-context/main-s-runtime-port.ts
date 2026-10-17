@@ -1,5 +1,6 @@
 import type {ConversationTranscriptStore} from "../orchestrator/conversation-transcript-store";
 import {consumeSResponseStream} from "./s-response-stream";
+import {factContextMessages} from "./fact-context-messages";
 import {controlledSettlement,copyControlledStreamTarget,type ControlledStreamTarget} from "../orchestrator/controlled-responses";
 import {classifySAssistantSettlement} from "../orchestrator/conversation-transcript-settlement";
 import type {TranscriptEntry,SAssistantBinding} from "../orchestrator/conversation-transcript-types";
@@ -39,7 +40,7 @@ export function createMainSRuntimePort(options:PortOptions):MainSRuntimePort|nul
  function messages(units:ContextUnit[]):ChatMessage[]{return units.flatMap(unit=>unit.messages.map(m=>({role:m.role,content:m.text,...(m.toolCalls?{toolCalls:m.toolCalls}:{}),...(m.toolCallId!==undefined?{toolCallId:m.toolCallId}:{}),...(m.name!==undefined?{name:m.name}:{})})))}
  function fixed():ChatRequest{if(!active)contextFail("MEMORY_CONTEXT_RUNTIME_INACTIVE");return active}
  const context=createMainContext({includeFactSupportMetadata:true,clock:options.clock,registry:options.registry,transport:options.transport,actorAuthority:options.actorAuthority,counter:binding.counter,budget:binding.budget,
-  prepare:(units,facts)=>binding.prepare({...fixed(),messages:[...fixed().messages,...(facts.length?[{role:"system" as const,content:"User-stated memory with source and time metadata:\n"+JSON.stringify(facts.map(f=>({factId:f.factId,revision:f.revision,assertion:f.assertion,assertionKind:f.assertionKind,time:f.time,recordedAt:f.recordedAt,acceptedAt:f.acceptedAt,supportSourceRefs:f.supportSourceRefs})))}]:[]),...messages(units)]}),
+  prepare:(units,facts)=>binding.prepare({...fixed(),messages:[...fixed().messages,...factContextMessages(facts),...messages(units)]}),
   prepareS:units=>{const request=fixed();return binding.prepare({model:request.model,maxTokens:request.maxTokens,stream:false,messages:messages(units)})}
  });
  const transcript=options.createTranscript(context);
