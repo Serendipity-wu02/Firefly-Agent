@@ -1,4 +1,3 @@
-import { SlidingTabs } from "../../../components/ui/SlidingTabs";
 import { useId, useState } from "react";
 import { Switch } from "antd";
 import { X } from "lucide-react";
@@ -11,7 +10,6 @@ import {
   defaultScheduleDraft,
   scheduleDraftFromSchedule,
   type ScheduleDraft,
-  type ScheduleKind,
   type ScheduledTask,
   type SchedulerApi,
   type SchedulerToolInfo,
@@ -21,6 +19,8 @@ import "./ScheduledTaskPanel.css";
 export interface ScheduledTaskEditorProps {
   /** 缺省表示新建。 */
   task?: ScheduledTask;
+  /** A new task starts from this title and prompt (the suggestion cards on the empty page). */
+  preset?: { title: string; prompt: string; schedule?: Partial<ScheduleDraft> };
   api: SchedulerApi | undefined;
   tools: SchedulerToolInfo[];
   onCancel: () => void;
@@ -31,14 +31,14 @@ export interface ScheduledTaskEditorProps {
  * 定时任务编辑器：字段、校验与保存口径与设置窗口的定时任务页一致。
  * 插件创建的任务：工具白名单开关锁定为开启，启用开关写入 pluginUserEnabled。
  */
-export function ScheduledTaskEditor({ task, api, tools, onCancel, onSaved }: ScheduledTaskEditorProps) {
+export function ScheduledTaskEditor({ task, preset, api, tools, onCancel, onSaved }: ScheduledTaskEditorProps) {
   const { t } = useTranslation();
   const formId = useId();
   const isPlugin = Boolean(task?.ownerPluginId);
-  const [title, setTitle] = useState(task?.title ?? "");
-  const [prompt, setPrompt] = useState(task?.prompt ?? "");
+  const [title, setTitle] = useState(task?.title ?? preset?.title ?? "");
+  const [prompt, setPrompt] = useState(task?.prompt ?? preset?.prompt ?? "");
   const [enabled, setEnabled] = useState(task?.enabled ?? true);
-  const [draft, setDraft] = useState<ScheduleDraft>(() => (task ? scheduleDraftFromSchedule(task.schedule) : defaultScheduleDraft()));
+  const [draft, setDraft] = useState<ScheduleDraft>(() => (task ? scheduleDraftFromSchedule(task.schedule) : { ...defaultScheduleDraft(), ...preset?.schedule }));
   const [toolLimit, setToolLimit] = useState(isPlugin || task?.toolMode === "allow-list");
   const [selectedToolIds, setSelectedToolIds] = useState<string[]>(task?.allowedToolIds ?? []);
   const [saving, setSaving] = useState(false);
@@ -135,14 +135,16 @@ export function ScheduledTaskEditor({ task, api, tools, onCancel, onSaved }: Sch
 
         <fieldset className="scheduled-kind">
           <legend className="scheduled-field__label">{t("scheduledPanel.fieldKind")}</legend>
-          <SlidingTabs
-            stretch
-            size="sm"
-            ariaLabel={t("scheduledPanel.fieldKind")}
-            activeId={draft.kind}
-            onChange={(kind) => updateDraft({ kind: kind as ScheduleKind })}
-            tabs={SCHEDULE_KINDS.map((kind) => ({ id: kind, label: t(`scheduledPanel.kinds.${kind}`), tabData: { "data-kind": kind } }))}
-          />
+          {/* 原生单选组：后续替换为滑动胶囊分段控件时只需替换这一块。 */}
+          <div className="scheduled-kind__options">
+            {SCHEDULE_KINDS.map((kind) => (
+              <label key={kind} className={`scheduled-kind__option ${draft.kind === kind ? "is-selected" : ""}`}>
+                <input type="radio" name={`${formId}-kind`} value={kind} checked={draft.kind === kind}
+                  onChange={() => updateDraft({ kind })} />
+                <span>{t(`scheduledPanel.kinds.${kind}`)}</span>
+              </label>
+            ))}
+          </div>
         </fieldset>
 
         <div className="scheduled-form-grid">

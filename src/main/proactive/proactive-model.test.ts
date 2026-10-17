@@ -54,7 +54,7 @@ describe("runProactiveModel", () => {
     expect(request).not.toHaveProperty("tools");
     expect(JSON.stringify(request)).not.toContain("tool_calls");
     expect(result).toEqual({ kind: "send", text: "休息一下吧♪" });
-    expect(mocks.recordUsage).toHaveBeenCalledWith(12, 8, 1, undefined, "model", undefined);
+    expect(mocks.recordUsage).toHaveBeenCalledWith(12, 8, 1, undefined, "model", undefined, "proactive");
   });
 
   it("returns silent only after parsing the complete response", async () => {

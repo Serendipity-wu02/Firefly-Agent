@@ -124,10 +124,10 @@ async function click(element: HTMLElement) {
   await flush();
 }
 
-function kindRadio(kind: string): HTMLButtonElement {
-  const tab = container.querySelector<HTMLButtonElement>(`[role="tab"][data-kind="${kind}"]`);
-  if (!tab) throw new Error(`kind "${kind}" not found`);
-  return tab;
+function kindRadio(kind: string): HTMLInputElement {
+  const radio = container.querySelector<HTMLInputElement>(`input[type="radio"][value="${kind}"]`);
+  if (!radio) throw new Error(`kind "${kind}" not found`);
+  return radio;
 }
 
 async function openNewEditor() {
@@ -221,6 +221,19 @@ describe("ScheduledTaskPanel — create and edit", () => {
     expect(api.add).not.toHaveBeenCalled();
   });
 
+  it("opens a suggestion with the schedule its card promises, and saves exactly that", async () => {
+    const api = installScheduler({ list: vi.fn(async () => ({ ok: true, value: [] })) });
+    await renderPanel();
+    const cards = [...container.querySelectorAll<HTMLButtonElement>(".ff-panel-empty__card")];
+    expect(cards.map(card => card.querySelector(".ff-panel-empty__card-title")?.textContent)).toEqual(["每日工作回顾", "每周计划整理", "定时检查待办"]);
+    await click(cards[1]!);
+    expect(kindRadio("weekly").checked).toBe(true);
+    expect(field<HTMLSelectElement>("星期").value).toBe("1");
+    expect(field<HTMLInputElement>("标题").value).toBe("每周计划整理");
+    await click(buttonByText("保存任务"));
+    expect(api.add).toHaveBeenCalledWith(expect.objectContaining({ schedule: { kind: "weekly", dayOfWeek: 1, timeOfDay: "09:00" } }));
+  });
+
   it("saves a weekly schedule with the chosen weekday", async () => {
     const api = installScheduler();
     await renderPanel();
@@ -241,7 +254,7 @@ describe("ScheduledTaskPanel — create and edit", () => {
     });
     await renderPanel();
     await click(buttonByText("编辑"));
-    expect(kindRadio("interval").getAttribute("aria-selected")).toBe("true");
+    expect(kindRadio("interval").checked).toBe(true);
     expect(field<HTMLInputElement>("间隔数值").value).toBe("2");
     expect(field<HTMLSelectElement>("间隔单位").value).toBe("hours");
   });

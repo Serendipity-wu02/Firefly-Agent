@@ -265,7 +265,7 @@ body {
   position: absolute;
   top: var(--ff-app-titlebar-height);
   bottom: 8px;
-  left: 8px;
+  left: calc(var(--ff-workspace-gutter) + 48px);
   z-index: 40;
   padding: 8px;
   box-sizing: border-box;
@@ -398,14 +398,32 @@ body {
   background: var(--ff-accent);
 }
 
+/* "新对话" is a soft filled pill (Codex's primary row); the temporary chat sits at its right end. */
 .ff-page-newtask {
   display: flex;
-  flex-direction: column;
-  gap: 2px;
+  align-items: center;
+  gap: 4px;
   margin-top: 2px;
   padding: 0 2px;
   flex-shrink: 0;
 }
+.ff-page-newtask > .ff-side-action { flex: 1 1 auto; min-width: 0; height: 34px; gap: 10px; border-radius: 10px; background: var(--ff-bg-hover); }
+.ff-page-newtask > .ff-side-action:hover { background: var(--ff-bg-active); }
+.ff-page-newtask__temporary {
+  display: grid;
+  width: 34px;
+  height: 34px;
+  flex: none;
+  place-items: center;
+  padding: 0;
+  border: 0;
+  border-radius: 10px;
+  background: transparent;
+  color: var(--ff-text-muted);
+  cursor: pointer;
+  transition: background-color 150ms ease, color 150ms ease;
+}
+.ff-page-newtask__temporary:hover { background: var(--ff-bg-hover); color: var(--ff-text); }
 
 .ff-page-conversations {
   flex: 1;
@@ -601,7 +619,8 @@ body {
   white-space: nowrap;
 }
 /* Hover strip that unfolds the hidden sidebar. */
-.ff-page-edge { position: absolute; top: var(--ff-app-titlebar-height); bottom: 0; left: 0; z-index: 39; width: 10px; app-region: no-drag; }
+/* The activity rail stays put, so the strip that unfolds the hidden sidebar runs along the rail's right edge. */
+.ff-page-edge { position: absolute; top: var(--ff-app-titlebar-height); bottom: 0; left: calc(var(--ff-workspace-gutter) + 48px); z-index: 39; width: 10px; app-region: no-drag; }
 
 .ff-side-action--search kbd {
   margin-left: auto;
@@ -628,11 +647,12 @@ body {
 .ff-dock-separator:focus-visible::after { background: var(--ff-accent); }
 
 @media (max-width: 900px) {
+  /* The narrow overlay opens right of the activity rail, never over it: the rail holds the only panel entries. */
   .ff-page-sidebar {
     position: absolute;
     top: var(--ff-app-titlebar-height);
     bottom: 8px;
-    left: 8px;
+    left: calc(var(--ff-workspace-gutter) + 48px);
     z-index: 40;
     box-sizing: border-box;
     padding: 8px;

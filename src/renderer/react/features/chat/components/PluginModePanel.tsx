@@ -1,4 +1,5 @@
-import { AppstoreOutlined, LoadingOutlined, PlusOutlined, ReloadOutlined } from "@ant-design/icons";
+import { AppstoreOutlined, LoadingOutlined } from "@ant-design/icons";
+import { PackagePlus, Plus, Puzzle, RefreshCw, Store } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type {
   MarketListResult,
@@ -12,6 +13,7 @@ import type {
 import { isNewerVersion } from "../../../../../shared/version";
 import { useTranslation } from "../../../i18n";
 import { useFeedback } from "../../../components/feedback/FeedbackProvider";
+import { PanelEmpty, PanelIconButton, PanelPage, PanelPrimaryButton, PanelSidebar, PanelSidebarItem, PanelSidebarSection } from "./PanelShell";
 import "./PluginModePanel.css";
 
 interface PluginModePanelProps {
@@ -362,7 +364,14 @@ export function PluginModePanel({ api: providedApi }: PluginModePanelProps) {
     // Capability declarations are searchable too, so a keyword such as "离线" narrows the catalog by what a plugin says it does.
     return [entry.id, entry.name, entry.description, entry.author, ...(entry.capabilities ?? [])].some(value => value.toLowerCase().includes(keyword));
   });
-  const marketToggleLabel = inMarket ? t("pluginPanel.market.back") : t("pluginPanel.market.toggle");
+  const switchView = (next: PanelView) => {
+    if (next === view) return;
+    marketRequest.current += 1;
+    setMarket({ phase: "idle", plugins: [] });
+    setMarketError(null);
+    setMarketNotice(null);
+    setView(next);
+  };
   const catalogNotice = market.mode === "bundled"
     ? t("pluginPanel.market.bundledNotice")
     : market.mode === "offline-fallback"
@@ -371,64 +380,29 @@ export function PluginModePanel({ api: providedApi }: PluginModePanelProps) {
 
   return (
     <div className="plugin-panel">
-      <header className="plugin-panel__header">
-        <div className="plugin-panel__heading">
-          <h1 className="plugin-panel__title">{inMarket ? t("pluginPanel.market.title") : t("pluginPanel.title")}</h1>
-          <p className="plugin-panel__subtitle">{inMarket ? t("pluginPanel.market.subtitle") : t("pluginPanel.subtitle")}</p>
-          <p className="plugin-panel__subtitle plugin-panel__registry">
-            {inMarket ? t("pluginPanel.market.catalogHint") : t("pluginPanel.registryLink")}
-          </p>
-        </div>
-        <div className="plugin-panel__header-actions">
-          <button
-            type="button"
-            className={`plugin-panel__icon-button${inMarket ? " is-accent" : ""}`}
-            onClick={() => {
-              marketRequest.current += 1;
-              setMarket({ phase: "idle", plugins: [] });
-              setMarketError(null);
-              setMarketNotice(null);
-              setView(inMarket ? "installed" : "market");
-            }}
-            disabled={!api}
-            aria-label={marketToggleLabel}
-            title={marketToggleLabel}
-          >
-            <AppstoreOutlined />
-          </button>
-          <button
-            type="button"
-            className="plugin-panel__icon-button"
-            onClick={() => void (inMarket ? loadMarket() : refreshPlugins())}
-            disabled={!api || anyBusy}
-            aria-label={t("pluginPanel.refresh")}
-            title={t("pluginPanel.refresh")}
-          >
-            <ReloadOutlined spin={headerAction === "refresh" || (inMarket && market.phase === "loading")} />
-          </button>
-          <button
-            type="button"
-            className="plugin-panel__icon-button is-accent"
-            onClick={() => void importPlugin()}
-            disabled={!api || anyBusy}
-            aria-label={t("pluginPanel.add")}
-            title={t("pluginPanel.add")}
-          >
-            <PlusOutlined />
-          </button>
-        </div>
-      </header>
-
-      {(
-        <div className="plugin-panel__search-row">
-          <input
-            className="plugin-panel__search"
-            placeholder={t("pluginPanel.searchPlaceholder")}
-            value={inMarket ? marketFilter : filter}
-            onChange={(event) => (inMarket ? setMarketFilter : setFilter)(event.target.value)}
-          />
-        </div>
-      )}
+      <PanelSidebar
+        title={t("pluginPanel.title")}
+        actions={<PanelIconButton label={t("pluginPanel.refresh")} onClick={() => void (inMarket ? loadMarket() : refreshPlugins())} disabled={!api || anyBusy}>
+          <RefreshCw size={15} strokeWidth={1.7} className={headerAction === "refresh" || (inMarket && market.phase === "loading") ? "ff-spin" : undefined} aria-hidden="true" />
+        </PanelIconButton>}
+        search={{ value: inMarket ? marketFilter : filter, onChange: inMarket ? setMarketFilter : setFilter, placeholder: t("pluginPanel.searchPlaceholder"), className: "plugin-panel__search" }}
+        primary={<PanelPrimaryButton icon={<Plus size={15} strokeWidth={1.8} />} label={t("pluginPanel.add")} onClick={() => void importPlugin()} disabled={!api || anyBusy} />}
+      >
+        <PanelSidebarSection>
+          <PanelSidebarItem icon={<Puzzle size={15} strokeWidth={1.6} />} label={t("pluginPanel.navInstalled")} count={overview.plugins.length}
+            active={!inMarket} disabled={!api} onClick={() => switchView("installed")} />
+          <PanelSidebarItem icon={<Store size={15} strokeWidth={1.6} />} label={t("pluginPanel.market.toggle")}
+            active={inMarket} disabled={!api} onClick={() => switchView("market")} />
+        </PanelSidebarSection>
+      </PanelSidebar>
+      <PanelPage
+        className="plugin-panel__page"
+        title={inMarket ? t("pluginPanel.market.title") : t("pluginPanel.title")}
+        subtitle={<>
+          <span className="plugin-panel__subtitle">{inMarket ? t("pluginPanel.market.subtitle") : t("pluginPanel.subtitle")}</span>
+          <span className="plugin-panel__subtitle plugin-panel__registry">{inMarket ? t("pluginPanel.market.catalogHint") : t("pluginPanel.registryLink")}</span>
+        </>}
+      >
 
       {inMarket ? (
         <>
@@ -574,7 +548,15 @@ export function PluginModePanel({ api: providedApi }: PluginModePanelProps) {
           ) : (
             <div className="plugin-panel__grid">
               {overview.plugins.length === 0 ? (
-                <div className="plugin-panel__empty">{t("pluginPanel.emptyHint")}</div>
+                <PanelEmpty
+                  icon={<Puzzle size={24} strokeWidth={1.5} />}
+                  title={t("pluginPanel.emptyTitle")}
+                  hint={t("pluginPanel.emptyHint")}
+                  suggestions={[
+                    { icon: <Store size={16} strokeWidth={1.6} />, title: t("pluginPanel.suggestMarket"), description: t("pluginPanel.suggestMarketDesc"), onClick: () => switchView("market"), disabled: !api },
+                    { icon: <PackagePlus size={16} strokeWidth={1.6} />, title: t("pluginPanel.suggestImport"), description: t("pluginPanel.suggestImportDesc"), onClick: () => void importPlugin(), disabled: !api || anyBusy },
+                  ]}
+                />
               ) : visiblePlugins.map((plugin) => {
                 const transitioning = plugin.status === "starting" || plugin.status === "stopping";
                 const cardBusy = anyBusy;
@@ -651,6 +633,7 @@ export function PluginModePanel({ api: providedApi }: PluginModePanelProps) {
           )}
         </>
       )}
+      </PanelPage>
     </div>
   );
 }

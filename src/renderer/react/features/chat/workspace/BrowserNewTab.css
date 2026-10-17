@@ -72,7 +72,8 @@
   font: 650 17px/1 var(--rb-font-sans, sans-serif);
 }
 .ff-browser-newtab__name { max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.ff-browser-newtab__hint { margin: 22px 4px 0; color: var(--ff-text-muted); font: 400 12px/1.6 var(--rb-font-sans, sans-serif); }
+.ff-browser-newtab__icon[data-favicon] { background: white; }
+.ff-browser-newtab__icon img { width: 26px; height: 26px; object-fit: contain; }
 @media (prefers-reduced-motion: reduce) {
   .ff-browser-newtab__tile { transition: none; }
   .ff-browser-newtab__tool { transition: none; }

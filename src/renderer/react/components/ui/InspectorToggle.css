@@ -22,6 +22,12 @@
   background: var(--ff-bg-active);
 }
 
+/* A panel switch whose panel is open stays pressed. */
+.ff-inspector-toggle[aria-pressed="true"] {
+  background: var(--ff-bg-active);
+  color: var(--ff-text);
+}
+
 .ff-inspector-toggle > svg {
   transform: scaleY(0.88);
 }

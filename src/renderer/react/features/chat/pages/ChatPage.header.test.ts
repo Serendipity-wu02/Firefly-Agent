@@ -67,13 +67,14 @@ describe("chat header structure", () => {
       }
     } finally { await act(async () => root.unmount()); host.remove(); }
   });
-  it("uses the same bounded row height as right tabs without fake content padding", () => {
+  it("uses a bounded header row whose line the inspector panel headers meet, without fake content padding", () => {
     const root = readFileSync(resolve(__dirname, "../../../styles/react-root.css"), "utf8");
     const right = readFileSync(resolve(__dirname, "../components/RightInspector.css"), "utf8");
     const sheet = document.createElement("style"); sheet.textContent = root + "\n" + right; document.head.append(sheet);
     const rules = Array.from(sheet.sheet!.cssRules) as CSSStyleRule[];
     const header = rules.find(rule => rule.selectorText === ".ff-workspace-header");
-    const tabs = rules.find(rule => rule.selectorText === ".ff-right-inspector__bar");
+    const paneHead = rules.find(rule => rule.selectorText === ".ff-inspector-pane__head");
+    const inspector = rules.find(rule => rule.selectorText === ".ff-right-inspector");
     expect(header?.style.position).toBe("relative");
     // jsdom drops Electron's nonstandard app-region declaration from CSSOM.
     // These are source contracts only; native hit testing still needs Electron QA.
@@ -81,7 +82,8 @@ describe("chat header structure", () => {
     expect(root.match(/^\.ff-workspace-header__actions \{([^}]+)\}/m)?.[1]).toMatch(/app-region:\s*no-drag/);
     expect(root).toMatch(/:root\[data-window-maximized="true"\] \.ff-workspace-header \{[^}]*app-region:\s*no-drag/);
     expect(header?.style.height).toBe("var(--ff-workspace-header-height)");
-    expect(tabs?.style.height).toBe("var(--ff-workspace-header-height)");
+    // 8px inset + 1px frame + 38px header + 1px rule = the 48px header line.
+    expect(Number.parseFloat(inspector!.style.padding) + 1 + Number.parseFloat(paneHead!.style.height) + 1).toBe(48);
     expect(rules.some(rule => rule.selectorText === ".ff-workspace .ff-workspace-composer" && rule.style.paddingTop === "56px")).toBe(false);
     expect(rules.some(rule => rule.selectorText === ".ff-workspace.has-messages .ff-message-list" && rule.style.paddingTop === "52px")).toBe(false);
     sheet.remove();

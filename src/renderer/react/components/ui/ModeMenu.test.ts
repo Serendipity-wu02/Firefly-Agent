@@ -11,8 +11,8 @@ const trigger = () => host.querySelector<HTMLButtonElement>(".ff-mode-menu__trig
 const items = () => [...document.querySelectorAll<HTMLButtonElement>('[role="menuitemradio"]')];
 const flush = () => act(async () => { await new Promise(resolve => setTimeout(resolve, 0)); });
 
-async function render(value: string, onChange: (mode: string) => void, variant: "sidebar" | "compact" = "compact") {
-  await act(async () => root.render(React.createElement(ModeMenu, { value, onChange, variant })));
+async function render(value: string, onChange: (mode: string) => void) {
+  await act(async () => root.render(React.createElement(ModeMenu, { value, onChange })));
 }
 
 beforeEach(() => {
@@ -30,33 +30,7 @@ afterEach(async () => {
   vi.unstubAllGlobals();
 });
 
-describe("ModeMenu sidebar capsule", () => {
-  const tabs = () => [...host.querySelectorAll<HTMLButtonElement>('.ff-mode-switch [role="tab"]')];
-  it("shows Chat, Work and Code at once, marks the current mode and has no popover", async () => {
-    await render("work", () => undefined, "sidebar");
-    expect(host.querySelector('.ff-mode-switch [role="tablist"]')?.getAttribute("aria-label")).toBe("会话模式");
-    expect(tabs().map(tab => tab.textContent)).toEqual(["Chat", "Work", "Code"]);
-    expect(tabs().map(tab => tab.getAttribute("aria-selected"))).toEqual(["false", "true", "false"]);
-    expect(host.querySelector(".ff-mode-menu__trigger")).toBeNull();
-    for (const tab of tabs()) expect(tab.title.length).toBeGreaterThan(0);
-  });
-  it("switches with one click, reports each change once, and ignores the current mode", async () => {
-    const onChange = vi.fn();
-    await render("chat", onChange, "sidebar");
-    await act(async () => tabs()[0].click());
-    expect(onChange).not.toHaveBeenCalled();
-    await act(async () => tabs()[2].click());
-    expect(onChange).toHaveBeenCalledExactlyOnceWith("code");
-  });
-  it("moves between modes with the arrow keys", async () => {
-    const onChange = vi.fn();
-    await render("chat", onChange, "sidebar");
-    await act(async () => tabs()[0].dispatchEvent(new KeyboardEvent("keydown", { key: "ArrowRight", bubbles: true, cancelable: true })));
-    expect(onChange).toHaveBeenCalledWith("work");
-  });
-});
-
-describe("ModeMenu compact dropdown", () => {
+describe("ModeMenu", () => {
   it("shows the current mode on a menu button and keeps the list closed", async () => {
     await render("chat", () => undefined);
     expect(trigger().textContent).toBe("Chat");

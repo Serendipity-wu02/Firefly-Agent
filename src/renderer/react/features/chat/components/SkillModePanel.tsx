@@ -1,6 +1,7 @@
-import { SlidingTabs } from "../../../components/ui/SlidingTabs";
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "../../../i18n";
+import { Briefcase, Code2, Library, RefreshCw, Store } from "lucide-react";
+import { PanelIconButton, PanelPage, PanelSidebar, PanelSidebarItem, PanelSidebarSection } from "./PanelShell";
 import "./SkillModePanel.css";
 import { ExternalSkillsCommitContext, ExternalSkillsPanel, useSkillConfirmationFocus } from "./ExternalSkillsPanel";
 
@@ -232,42 +233,42 @@ export const SkillModePanel: React.FC = () => {
 
   return (
     <div className="skill-panel">
-      <header className="skill-panel__header">
-        <div className="skill-panel__header-row">
-          <div>
-            <h1 className="skill-panel__title">{t("skillPanel.title")}</h1>
-            <p className="skill-panel__subtitle">
-              {t("skillPanel.subtitle", { mode: TABS.find((item) => item.key === tab)?.label })}
-            </p>
-          </div>
-          <div className="skill-panel__actions">
-            <button
-              type="button"
-              className="skill-panel__icon-btn"
-              title={t("skillPanel.rescan")}
-              disabled={view === "external" || loading || refreshing || savingKeys.size > 0 || enabling || committing}
-              onClick={handleRefresh}
-            >
-              <RefreshIcon />
-            </button>
-          </div>
+      <PanelSidebar
+        title={t("skillPanel.title")}
+        actions={<PanelIconButton label={t("skillPanel.rescan")} disabled={view === "external" || loading || refreshing || savingKeys.size > 0 || enabling || committing} onClick={handleRefresh}>
+          <RefreshCw size={15} strokeWidth={1.7} className={refreshing ? "ff-spin" : undefined} aria-hidden="true" />
+        </PanelIconButton>}
+        search={view === "external" ? undefined : { value: filter, onChange: setFilter, placeholder: t("skillPanel.searchPlaceholder"), className: "skill-panel__search" }}
+      >
+        <div className="skill-panel__views" aria-label={t("skillPanel.views")} role="group">
+          <PanelSidebarSection>
+            <PanelSidebarItem icon={<Library size={15} strokeWidth={1.6} />} label={t("skillPanel.installed")} count={catalog.length} active={view === "installed"}
+              disabled={committing || enabling} onClick={() => { if (!commitInFlight.current && !enableInFlight.current) setView("installed"); }} />
+            <PanelSidebarItem icon={<Store size={15} strokeWidth={1.6} />} label={t("skillPanel.marketplace")} active={view === "external"}
+              disabled={committing || enabling} onClick={() => { if (commitInFlight.current || enableInFlight.current) return; setEnableCandidate(undefined); setView("external"); }} />
+          </PanelSidebarSection>
         </div>
-      </header>
-
-      <div className="skill-panel__views">
-        <SlidingTabs
-          ariaLabel={t("skillPanel.views")}
-          activeId={view}
-          tabs={[
-            { id: "installed", label: t("skillPanel.installed"), disabled: committing || enabling },
-            { id: "external", label: t("skillPanel.marketplace"), disabled: committing || enabling },
-          ]}
-          onChange={(id) => {
-            if (commitInFlight.current || enableInFlight.current) return;
-            if (id === "external") { setEnableCandidate(undefined); setView("external"); } else setView("installed");
-          }}
-        />
-      </div>
+        {view === "installed" && (
+          <>
+            <PanelSidebarSection title={t("skillPanel.modeSection")}>
+              {TABS.map(tabItem => (
+                <PanelSidebarItem key={tabItem.key} icon={tabItem.key === "code" ? <Code2 size={15} strokeWidth={1.6} /> : <Briefcase size={15} strokeWidth={1.6} />}
+                  label={tabItem.label} active={tab === tabItem.key} onClick={() => setTab(tabItem.key)} />
+              ))}
+            </PanelSidebarSection>
+            <PanelSidebarSection title={t("skillPanel.sourceSection")}>
+              {SOURCE_OPTIONS.map(opt => (
+                <PanelSidebarItem key={opt.key} label={t(opt.labelKey)} active={source === opt.key} onClick={() => setSource(opt.key)} />
+              ))}
+            </PanelSidebarSection>
+          </>
+        )}
+      </PanelSidebar>
+      <PanelPage
+        className="skill-panel__page"
+        title={view === "external" ? t("skillPanel.marketplace") : t("skillPanel.title")}
+        subtitle={<span className="skill-panel__subtitle">{t("skillPanel.subtitle", { mode: TABS.find((item) => item.key === tab)?.label })}</span>}
+      >
 
       <div role="status" aria-live="polite">
         {Object.entries(saveErrors).map(([key, message]) => <p key={key} className="skill-panel__subtitle">{message}</p>)}
@@ -276,43 +277,6 @@ export const SkillModePanel: React.FC = () => {
       </div>
 
       {view === "external" ? <ExternalSkillsCommitContext.Provider value={setCommitBusy}><ExternalSkillsPanel onImported={load} /></ExternalSkillsCommitContext.Provider> : <>
-
-      <div className="skill-panel__search-row">
-        <input
-          className="skill-panel__search"
-          placeholder={t("skillPanel.searchPlaceholder")}
-          value={filter}
-          onChange={(e) => setFilter(e.target.value)}
-        />
-      </div>
-
-      <div className="skill-panel__tabs">
-        {TABS.map((tabItem) => (
-          <button
-            key={tabItem.key}
-            type="button"
-            className={"skill-panel__tab" + (tab === tabItem.key ? " is-active" : "")}
-            onClick={() => setTab(tabItem.key)}
-          >
-            {tabItem.label}
-          </button>
-        ))}
-      </div>
-
-      <div className="skill-panel__filter-row">
-        {SOURCE_OPTIONS.map((opt) => (
-          <button
-            key={opt.key}
-            type="button"
-            className={
-              "skill-panel__filter-tab" + (source === opt.key ? " is-active" : "")
-            }
-            onClick={() => setSource(opt.key)}
-          >
-            {t(opt.labelKey)}
-          </button>
-        ))}
-      </div>
 
       {loading ? (
         <div className="skill-panel__loading">{t("common.loading")}</div>
@@ -363,6 +327,7 @@ export const SkillModePanel: React.FC = () => {
         </div>
       )}
       </>}
+      </PanelPage>
       {enableCandidate && <div className="skill-panel__confirm-overlay">
         <div ref={enableDialog} role="dialog" aria-modal="true" aria-labelledby="skill-enable-title"
           tabIndex={-1} className="skill-panel__confirm">

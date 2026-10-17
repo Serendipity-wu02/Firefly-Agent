@@ -1,27 +1,52 @@
-/* Session overview: a stack of quiet, collapsible cards inside the right inspector. */
+/* The conversation panel: the dialog on the left, the overview cards on its outer side. */
+.ff-workspace-body { display: flex; min-width: 0; min-height: 0; flex: 1 1 auto; }
+.ff-workspace-content { position: relative; display: flex; min-width: 0; min-height: 0; flex: 1 1 0; flex-direction: column; }
+.ff-chat-cards { display: flex; min-height: 0; flex: 0 0 272px; flex-direction: column; box-sizing: border-box; padding: 8px 8px 8px 0; }
+@media (max-width: 900px) { .ff-chat-cards { flex-basis: 224px; } }
+
+/* Session overview: a stack of quiet, collapsible cards beside the conversation. */
 .ff-session-overview {
+  --fade-top: 0px;
+  --fade-bottom: 0px;
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: 8px;
   min-width: 0;
   height: 100%;
-  padding: 12px;
+  box-sizing: border-box;
+  padding: 0 2px 8px;
   overflow-y: auto;
   overscroll-behavior: contain;
   color: var(--ff-text, #403840);
+  /* Scroll fade: a 28px feathered edge, only where cards are hidden past it. */
+  -webkit-mask-image: linear-gradient(to bottom, transparent 0, #000 var(--fade-top), #000 calc(100% - var(--fade-bottom)), transparent 100%);
+  mask-image: linear-gradient(to bottom, transparent 0, #000 var(--fade-top), #000 calc(100% - var(--fade-bottom)), transparent 100%);
 }
+.ff-session-overview[data-fade-top] { --fade-top: 28px; }
+.ff-session-overview[data-fade-bottom] { --fade-bottom: 28px; }
+.ff-session-overview[data-dragging] { cursor: grabbing; user-select: none; }
 
+/* Each card stands on its own: a hairline ring that lifts a little on hover. */
 .ff-overview-card {
+  position: relative;
   flex: 0 0 auto;
   min-width: 0;
   border: 1px solid var(--ff-border, #dfe1e8);
   border-radius: 12px;
-  background: var(--ff-bg-page, var(--ff-surface));
+  background: var(--ff-bg-workspace, var(--ff-surface));
+  transition: box-shadow 200ms cubic-bezier(.165, .84, .44, 1), border-color 200ms cubic-bezier(.165, .84, .44, 1), transform 200ms cubic-bezier(.32, .72, 0, 1), opacity 120ms ease;
 }
+.ff-overview-card:hover { border-color: color-mix(in srgb, var(--ff-text-muted) 40%, var(--ff-border)); box-shadow: 0 4px 16px -2px rgb(0 0 0 / 7%); }
+/* Resting cards slide aside to make room; the dragged card follows the pointer, tilts slightly and floats above them. */
+.ff-overview-card { transform: translateY(var(--ff-shift-y, 0px)); }
+.ff-overview-card[data-dragging] { z-index: 2; opacity: 0.96; transform: translateY(var(--ff-drag-y, 0px)) rotate(-1.5deg) scale(1.01); box-shadow: 0 12px 32px rgb(0 0 0 / 14%); transition: box-shadow 200ms ease; will-change: transform; }
+.ff-session-overview[data-dragging] .ff-overview-card { will-change: transform; }
+.ff-session-overview[data-settling] .ff-overview-card { transition: none; }
 
+.ff-overview-card__bar { display: flex; min-width: 0; align-items: center; }
 .ff-overview-card__head {
   display: flex;
-  width: 100%;
+  flex: 1 1 auto;
   min-width: 0;
   align-items: center;
   gap: 6px;
@@ -35,10 +60,52 @@
   text-align: left;
   cursor: pointer;
 }
-.ff-overview-card__head:hover { background: var(--ff-bg-hover); }
-.ff-overview-card__head:focus-visible { outline: 2px solid var(--ff-accent, #6b9982); outline-offset: -2px; }
+/* No box around the header on hover or focus: the card's own ring answers instead. */
+.ff-overview-card__head:focus-visible { outline: none; }
+.ff-overview-card:has(.ff-overview-card__head:focus-visible, .ff-overview-card__grip:focus-visible) { border-color: var(--ff-accent, #6b9982); }
+.ff-session-overview[data-dragging] .ff-overview-card__head { cursor: grabbing; }
 .ff-overview-card__chevron { flex: 0 0 auto; color: var(--ff-text-muted, #828396); transition: transform 150ms ease; }
 .ff-overview-card__head[aria-expanded="true"] .ff-overview-card__chevron { transform: rotate(90deg); }
+/* Entry cards (environment, connectors): one row that opens something; the chevron follows the title, as in Claude desktop. */
+.ff-overview-card[data-entry] .ff-overview-card__title { order: 1; }
+.ff-overview-card[data-entry] .ff-overview-card__chevron { order: 2; }
+.ff-overview-card[data-entry] .ff-overview-card__summary { order: 3; }
+.ff-overview-card[data-entry] .ff-overview-card__head:hover .ff-overview-card__chevron { transform: translateX(2px); }
+.ff-overview-card__head:disabled { cursor: default; }
+
+/* The six-dot grip: quiet until the card is hovered or the grip focused. */
+.ff-overview-card__grip {
+  display: inline-grid;
+  width: 24px;
+  height: 24px;
+  flex: none;
+  place-items: center;
+  margin-right: 6px;
+  padding: 0;
+  border: 0;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--ff-text-muted, #828396);
+  cursor: grab;
+  opacity: 0;
+  touch-action: none;
+  transition: opacity 120ms ease, background-color 120ms ease, color 120ms ease;
+}
+.ff-overview-card:hover .ff-overview-card__grip,
+.ff-overview-card__grip:focus-visible,
+.ff-overview-card[data-dragging] .ff-overview-card__grip { opacity: 1; }
+.ff-overview-card__grip:hover { background: var(--ff-bg-hover); color: var(--ff-text); }
+.ff-overview-card__grip:active { cursor: grabbing; }
+.ff-overview-card__grip:focus-visible { outline: none; }
+
+/* Grid 0fr -> 1fr: the body opens and closes without measuring its height. */
+.ff-overview-card__fold {
+  display: grid;
+  grid-template-rows: 0fr;
+  transition: grid-template-rows 220ms cubic-bezier(.19, 1, .22, 1);
+}
+.ff-overview-card[data-open="true"] .ff-overview-card__fold { grid-template-rows: 1fr; }
+.ff-overview-card__fold > .ff-overview-card__body { min-height: 0; overflow: hidden; }
 .ff-overview-card__title { flex: 0 0 auto; font-weight: 600; }
 .ff-overview-card__summary {
   min-width: 0;
@@ -50,7 +117,8 @@
   white-space: nowrap;
 }
 
-.ff-overview-card__body { padding: 0 12px 12px; font-size: 12px; }
+.ff-overview-card__body { padding: 0 12px; font-size: 12px; }
+.ff-overview-card__body > :last-child { margin-bottom: 12px; }
 .ff-overview-card__empty,
 .ff-overview-card__line,
 .ff-overview-card__note { margin: 0; color: var(--ff-text-muted, #828396); line-height: 1.6; }
@@ -109,6 +177,8 @@
 @keyframes ff-overview-pulse { 50% { opacity: 0.4; } }
 
 @media (prefers-reduced-motion: reduce) {
+  .ff-overview-card, .ff-overview-card__fold, .ff-overview-card__grip { transition: none; }
+  .ff-overview-card[data-dragging] { transform: translateY(var(--ff-drag-y, 0px)); }
   .ff-overview-card__chevron { transition: none; }
   .ff-overview-list__pulse { animation: none; }
 }

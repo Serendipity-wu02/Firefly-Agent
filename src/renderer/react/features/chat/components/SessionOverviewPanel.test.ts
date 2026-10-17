@@ -43,7 +43,7 @@ describe("SessionOverviewPanel", () => {
     const html = render({ usage });
 
     expect(html).toContain("已用 21%");
-    expect(html).toContain("210k / 1000k");
+    expect(html).toContain("210k / 1M");
     expect(html).toContain("161k");
     expect(html).toContain("76%");
     expect(html).toContain("剩余空间");
@@ -80,7 +80,8 @@ describe("SessionOverviewPanel", () => {
   it("makes every card a labelled disclosure", () => {
     const html = render({ usage, outputs: [output] });
 
-    expect((html.match(/aria-expanded="true"/g) ?? []).length).toBe(3);
-    expect((html.match(/aria-controls=/g) ?? []).length).toBe(3);
+    // Tasks, context, changes and outputs fold; environment and connectors are one-row entries.
+    expect((html.match(/aria-expanded="true"/g) ?? []).length).toBe(4);
+    expect((html.match(/aria-controls=/g) ?? []).length).toBe(4);
   });
 });

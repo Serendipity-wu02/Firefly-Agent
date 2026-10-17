@@ -79,6 +79,10 @@ describe("context usage helpers", () => {
     expect(formatTokenCount(1234)).toBe("1.2k");
     expect(formatTokenCount(12_345)).toBe("12.3k");
     expect(formatTokenCount(123_456)).toBe("123k");
+    expect(formatTokenCount(1_000_000)).toBe("1M");
+    expect(formatTokenCount(1_500_000)).toBe("1.5M");
+    expect(formatTokenCount(999_700)).toBe("1M");
+    expect(formatTokenCount(2_000_000)).toBe("2M");
     expect(formatTokenCount(Number.NaN)).toBe("0");
   });
 

@@ -12,12 +12,6 @@
   overflow-x: hidden;
 }
 
-.scheduled-panel__header {
-  padding: 22px 28px 4px;
-  min-width: 0;
-  flex-shrink: 0;
-}
-
 .scheduled-panel__title {
   margin: 0;
   font-size: 22px;
@@ -31,16 +25,6 @@
   line-height: 1.5;
   color: var(--ff-text-muted, var(--ff-text-muted));
   overflow-wrap: anywhere;
-}
-
-.scheduled-panel__toolbar {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  justify-content: space-between;
-  gap: 10px 16px;
-  padding: 14px 28px 4px;
-  min-width: 0;
 }
 
 .scheduled-panel__hint {
@@ -61,7 +45,7 @@
 
 .scheduled-state.is-error {
   color: var(--ff-danger, #e5484d);
-  padding: 12px 28px;
+  padding: 12px 0;
   text-align: left;
 }
 
@@ -70,7 +54,7 @@
   flex-direction: column;
   gap: 8px;
   min-width: 0;
-  padding: 14px 28px 24px;
+  padding: 14px 0 24px;
 }
 
 /* ===== 按钮 ===== */
@@ -266,7 +250,7 @@
   gap: 12px;
   min-width: 0;
   box-sizing: border-box;
-  padding: 14px 28px 24px;
+  padding: 14px 0 24px;
 }
 
 .scheduled-editor__header {
@@ -358,7 +342,7 @@
   overflow-wrap: anywhere;
 }
 
-/* 频率：滑动胶囊分段控件 */
+/* 频率：原生单选组，后续可整体替换为滑动胶囊分段控件 */
 .scheduled-kind {
   margin: 0;
   padding: 0;
@@ -369,6 +353,36 @@
 .scheduled-kind legend {
   padding: 0;
   margin-bottom: 6px;
+}
+
+.scheduled-kind__options {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.scheduled-kind__option {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 12px;
+  font-size: 12px;
+  color: var(--ff-text-muted, var(--ff-text-muted));
+  background: var(--ff-bg-page, var(--ff-bg-subtle));
+  border: 1px solid var(--ff-border, var(--ff-border));
+  border-radius: 12px;
+  cursor: pointer;
+}
+
+.scheduled-kind__option input {
+  margin: 0;
+  accent-color: var(--ff-accent, var(--ff-accent-solid));
+}
+
+.scheduled-kind__option.is-selected {
+  color: var(--ff-accent, var(--ff-accent));
+  border-color: var(--ff-accent, var(--ff-accent));
+  background: var(--ff-bg-active, var(--ff-bg-hover));
 }
 
 .scheduled-form-grid {

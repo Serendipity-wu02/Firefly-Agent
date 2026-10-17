@@ -1,6 +1,7 @@
 import type { PluginLlmGenerateOptions, PluginLlmMessage } from "../plugins/api";
 import type { LlmClient } from "./services/llm/llm-client";
 import type { ModelSettings } from "./settings/model-settings";
+import { runWithUsageAttribution } from "./usage-attribution";
 
 export type EnqueuePluginLlmTask = <T>(
   label: string,
@@ -55,7 +56,7 @@ export async function pluginGenerateText(
   return enqueueTask(
     label,
     async () => {
-      const result = await llmClient.chatNonStream(
+      const result = await runWithUsageAttribution({ feature: "plugin" }, () => llmClient.chatNonStream(
         settings,
         messages,
         undefined,
@@ -64,7 +65,7 @@ export async function pluginGenerateText(
         undefined,
         { maxTokens },
         options.signal,
-      );
+      ));
       const text = result.text?.trim();
       if (!text) throw new Error("主聊天模型没有返回文本");
       return text;

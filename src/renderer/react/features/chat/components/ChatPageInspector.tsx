@@ -15,7 +15,6 @@ import { RightInspector, type InspectorTab } from "./RightInspector";
 import type { ManualBrowserTabHandle } from "../workspace/ManualBrowserTab";
 import { BrowserWorkspaceTabs } from "../workspace/BrowserWorkspaceTabs";
 import { BrowserNewTabToolsContext, type BrowserNewTabTool } from "../workspace/BrowserNewTab";
-import { SessionOverviewPanel, type SessionOverviewPanelProps } from "./SessionOverviewPanel";
 import "./ChatPageInspector.css";
 
 /** Open and close length of the docked pane. ChatPageInspector.css animates the width for the same time. */
@@ -92,13 +91,8 @@ export interface ChatPageInspectorProps {
   /** 工作区根路径（未绑定时为空，文件树显示引导态） */
   workspaceRoot?: string;
   filesTabOpen: boolean;
-  /** 文件树标签被钉住（面板里还有其它标签时不可关） */
-  filesTabPinned: boolean;
   browserTabOpen?: boolean;
   tasksTabOpen?: boolean;
-  /** 会话概览标签：固定排在最前。 */
-  overviewTabOpen?: boolean;
-  overview?: SessionOverviewPanelProps;
   taskPanel?: ReactNode;
   /** Entry points offered on the browser new-tab page; omit one to hide it. */
   onOpenFilesTab?: () => void;
@@ -115,6 +109,8 @@ export interface ChatPageInspectorProps {
   activeTabId: string | null;
   onTabChange: (id: string) => void;
   onCloseTab: (id: string) => void;
+  /** Bumped by the page to close the browser through its own cleanup (permission revoke, native page close). */
+  browserCloseRequest?: number;
   /** 文件树里点击文件 → 打开/激活预览标签 */
   onOpenFile: (relPath: string) => void;
 }
@@ -128,11 +124,8 @@ export function ChatPageInspector({
   onOpenResultDiff,
   workspaceRoot,
   filesTabOpen,
-  filesTabPinned,
   browserTabOpen = false,
   tasksTabOpen = false,
-  overviewTabOpen = false,
-  overview,
   taskPanel,
   onOpenFilesTab,
   onOpenTasksTab,
@@ -147,10 +140,16 @@ export function ChatPageInspector({
   activeTabId,
   onTabChange,
   onCloseTab,
+  browserCloseRequest = 0,
   onOpenFile,
 }: ChatPageInspectorProps) {
   const { t } = useTranslation();
   const browserRef = useRef<ManualBrowserTabHandle>(null);
+  useEffect(() => {
+    if (browserCloseRequest === 0) return;
+    if (browserRef.current) browserRef.current.close();
+    else onCloseTab("browser");
+  }, [browserCloseRequest]); // eslint-disable-line react-hooks/exhaustive-deps
   const moving = useInspectorMotion(visible);
   const newTabTools = useMemo<BrowserNewTabTool[]>(() => [
     ...(onOpenOverviewTab ? [{ id: "overview", label: t("sessionOverview.tab"), icon: <LayoutList size={16} strokeWidth={1.8} />, onSelect: onOpenOverviewTab }] : []),
@@ -159,9 +158,6 @@ export function ChatPageInspector({
   ], [onOpenFilesTab, onOpenOverviewTab, onOpenTasksTab, t]);
   const tabs: InspectorTab[] = [];
 
-  if (overviewTabOpen && overview) {
-    tabs.push({ id: "overview", kind: "overview", label: t("sessionOverview.tab"), content: <SessionOverviewPanel {...overview} /> });
-  }
   if (tasksTabOpen) {
     tabs.push({ id: "tasks", kind: "tasks", label: t("workspace.tasks"), content: taskPanel });
   }
@@ -170,8 +166,6 @@ export function ChatPageInspector({
       id: "files",
       kind: "files",
       label: t("fileTree.title"),
-      // 被钉住的文件树标签隐藏 chip 上的 ×，右上角关闭按钮也对它无效
-      closable: !filesTabPinned,
       content: (
         sessionId && workspaceRoot ? <FileTreePanel
           sessionId={sessionId}
@@ -236,7 +230,9 @@ export function ChatPageInspector({
       label: t("browserWorkspace.title"),
       content: <BrowserNewTabToolsContext.Provider value={newTabTools}>
         <BrowserWorkspaceTabs ref={browserRef} sessionId={sessionId} paneClose={soleTab}
-          active={visible && !moving && (activeTabId === "browser" || (!tabs.some(tab => tab.id === activeTabId) && tabs.length === 0))}
+          // Tiled panels are all on screen at once: the page stays attached while the panel is shown, whichever panel has focus.
+          // A panel hidden by another one's enlarge has no size, and the browser detaches its page for that on its own.
+          active={visible && !moving}
           onClose={() => onCloseTab("browser")} />
       </BrowserNewTabToolsContext.Provider>,
     });

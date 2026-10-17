@@ -164,8 +164,9 @@ it("keeps registration current across compact orientation changes and Work mode 
   await click(button("展开/收起右侧面板")); expect(panelWidth()).toBeGreaterThan(0);
   expect(inspector()).toBe(before);
   await click(inspector()!.querySelector<HTMLElement>(".ff-right-inspector__close")!);
-  await click(host.querySelector<HTMLElement>('.ff-mode-switch [role="tab"][data-mode="work"]')!);
-  expect(host.querySelector('.ff-mode-switch [role="tab"][aria-selected="true"]')?.textContent).toContain("Work");
+  await click(host.querySelector<HTMLElement>(".ff-mode-menu__trigger")!);
+  await click([...document.querySelectorAll<HTMLElement>('[role="menuitemradio"]')].find(node => node.textContent?.includes("Work"))!);
+  expect(host.querySelector(".ff-mode-menu__trigger")?.textContent).toContain("Work");
   expect(inspector()?.hidden).toBe(false); expect(panelWidth()).toBeGreaterThan(0);
   expect(fetch).not.toHaveBeenCalled();
 });
@@ -209,8 +210,8 @@ it("mounts an initially hidden browser inspector collapsed and reveals the same 
   expect(hidden).not.toBeNull(); expect(hidden?.hidden).toBe(true); expect(panelWidth()).toBe(0);
   const address = hidden!.querySelector<HTMLInputElement>("input")!;
   expect(address.value).toBe(browserPage.url);
-  // Toggling the open plugin entry again leaves the panel and returns to the workbench.
-  await click(button("插件"));
+  // "会话" on the activity rail leaves the panel and returns to the workbench.
+  await click(button("会话"));
   expect(inspector()).toBe(hidden); expect(inspector()?.hidden).toBe(false); expect(panelWidth()).toBeGreaterThan(0);
   expect(inspector()?.querySelector("input")).toBe(address);
   expect(commands.some(command => command.kind === "close")).toBe(false);
@@ -237,4 +238,39 @@ it("persists a keyboard inspector resize immediately after a sidebar pointercanc
   await click(button("展开/收起右侧面板"));
   expect(panelWidth()).toBeCloseTo(width);
   expect(JSON.parse(localStorage.getItem(key)!).inspector).toBeCloseTo(width);
+});
+
+it("folds the overview cards when a right panel opens and keeps the conversation readable when the separator is dragged", async () => {
+  await click(button("打开会话概览"));
+  expect(host.querySelector(".ff-chat-cards")).not.toBeNull();
+  // The column stays open across modes, conversations and restarts.
+  expect(localStorage.getItem("ff.chat.overviewOpen")).toBe("1");
+  await click(button("文件"));
+  expect(host.querySelector(".ff-chat-cards")).toBeNull();
+  // The header switch still brings them back while the panel stays open.
+  await click(button("打开会话概览"));
+  expect(host.querySelector(".ff-chat-cards")).not.toBeNull();
+  expect(inspector()?.hidden).toBe(false);
+  const separator = host.querySelector<HTMLElement>(".ff-dock-separator")!;
+  for (let step = 0; step < 40; step++) await act(async () => separator.dispatchEvent(new KeyboardEvent("keydown", { key: "ArrowLeft", bubbles: true })));
+  const chat = host.querySelector<HTMLElement>('[data-panel][id="chat"]')!;
+  // The 1000px dock cannot hold the 480px dialog + 280px cards and the panel's own 280px, so the conversation keeps all but those.
+  expect(size(chat, "width")).toBeGreaterThanOrEqual(1000 - 280 - 12 - 1);
+  await click(button("打开会话概览"));
+  expect(host.querySelector(".ff-chat-cards")).toBeNull();
+  for (let step = 0; step < 40; step++) await act(async () => separator.dispatchEvent(new KeyboardEvent("keydown", { key: "ArrowLeft", bubbles: true })));
+  expect(size(chat, "width")).toBeGreaterThanOrEqual(479);
+});
+
+it("closes the browser from the header switch through its own cleanup", async () => {
+  browserPage = { browserId: "switch-browser-fixture", conversationId: "inspector-fixture", requestId: 1, closed: false, loading: false, url: "https://example.invalid/switch", pendingUrl: null, canGoBack: false, canGoForward: false, error: null };
+  await click(button("打开浏览器"));
+  expect(host.querySelector('[data-inspector-pane="browser"]')).not.toBeNull();
+  const revokedBefore = revoked;
+  await click(button("打开浏览器"));
+  await act(async () => { await new Promise(resolve => setTimeout(resolve, 0)); });
+  await measuredUpdate();
+  // The switch went through the browser's own close: its grant is revoked (Main then closes its pages), not a bare unmount.
+  expect(revoked).toBe(revokedBefore + 1);
+  expect(host.querySelector('[data-inspector-pane="browser"]')).toBeNull();
 });

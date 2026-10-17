@@ -19,6 +19,7 @@ import { createTaskTraceBuffer } from "./task-trace-buffer";
 import { settleChildExecution } from "./child-run-lifecycle";
 import type { TaskWriteEvidence, ModelExecutionEvent } from "../../shared/agent-execution-evidence";
 import type { PromptLayers } from "./prompt-layers";
+import { runAsSubagent } from "../usage-attribution";
 
 export function buildChildPromptLayers(parent: ChildSessionParent, profilePrompt: string): PromptLayers {
   const workspace = parent.resolvedWorkspaceRoot
@@ -31,7 +32,12 @@ export function buildChildPromptLayers(parent: ChildSessionParent, profilePrompt
   };
 }
 
-export async function runChildSession(input: {
+/** Runs a child session; its model requests count under the sub-agent feature of the parent conversation. */
+export function runChildSession(input: Parameters<typeof runChildSessionInner>[0]): Promise<ChildSessionResult> {
+  return runAsSubagent(() => runChildSessionInner(input));
+}
+
+async function runChildSessionInner(input: {
   parent: ChildSessionParent;
   store: TaskSessionStore;
   session: TaskSession;

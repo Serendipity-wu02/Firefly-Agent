@@ -1,5 +1,7 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "../../../i18n";
+import { Briefcase, Code2, MessageSquare } from "lucide-react";
+import { PanelPage, PanelSidebar, PanelSidebarItem, PanelSidebarSection } from "./PanelShell";
 import "./ToolModePanel.css";
 
 type ToolMode = "work" | "code" | "chat";
@@ -221,13 +223,23 @@ export const ToolModePanel: React.FC = () => {
 
   return (
     <div className="tool-panel">
-      <header className="tool-panel__header">
-        <h1 className="tool-panel__title">{t("toolPanel.title")}</h1>
-        <p className="tool-panel__subtitle">
-          {t("toolPanel.subtitle", { mode: TABS.find((item) => item.key === tab)?.label })}
-        </p>
-      </header>
-
+      <PanelSidebar
+        title={t("toolPanel.title")}
+        search={{ value: filter, onChange: setFilter, placeholder: t("toolPanel.searchPlaceholder"), className: "tool-panel__search" }}
+      >
+        <PanelSidebarSection title={t("toolPanel.modeSection")}>
+          {TABS.map(tabItem => (
+            <PanelSidebarItem key={tabItem.key}
+              icon={tabItem.key === "code" ? <Code2 size={15} strokeWidth={1.6} /> : tabItem.key === "work" ? <Briefcase size={15} strokeWidth={1.6} /> : <MessageSquare size={15} strokeWidth={1.6} />}
+              label={tabItem.label} active={tab === tabItem.key} onClick={() => setTab(tabItem.key)} />
+          ))}
+        </PanelSidebarSection>
+      </PanelSidebar>
+      <PanelPage
+        className="tool-panel__page"
+        title={t("toolPanel.title")}
+        subtitle={<span className="tool-panel__subtitle">{t("toolPanel.subtitle", { mode: TABS.find((item) => item.key === tab)?.label })}</span>}
+      >
       <div className="tool-panel__master">
         <div className="tool-panel__master-text">
           <strong>{t("toolPanel.chatEnhanceTitle")}</strong>
@@ -243,28 +255,6 @@ export const ToolModePanel: React.FC = () => {
         >
           <span className="tool-card__pill-knob" />
         </button>
-      </div>
-
-      <div className="tool-panel__search-row">
-        <input
-          className="tool-panel__search"
-          placeholder={t("toolPanel.searchPlaceholder")}
-          value={filter}
-          onChange={(e) => setFilter(e.target.value)}
-        />
-      </div>
-
-      <div className="tool-panel__tabs">
-        {TABS.map((tabItem) => (
-          <button
-            key={tabItem.key}
-            type="button"
-            className={"tool-panel__tab" + (tab === tabItem.key ? " is-active" : "")}
-            onClick={() => setTab(tabItem.key)}
-          >
-            {tabItem.label}
-          </button>
-        ))}
       </div>
 
       {loading ? (
@@ -298,6 +288,7 @@ export const ToolModePanel: React.FC = () => {
           {visibleTools.length === 0 && <div className="tool-panel__empty">{t("toolPanel.noMatch")}</div>}
         </div>
       )}
+      </PanelPage>
     </div>
   );
 };
