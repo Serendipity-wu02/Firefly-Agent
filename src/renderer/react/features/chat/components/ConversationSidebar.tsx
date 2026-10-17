@@ -177,13 +177,19 @@ export const ConversationSidebar = memo(function ConversationSidebar({
   const needsInput = useMemo(() => new Set(needsInputSessionIds ?? []), [needsInputSessionIds]);
   // "By status": needs input / working / done, chosen from the arrangement menu and remembered per mode on this device.
   const [statusView, setStatusView] = useStatusView(mode);
-  const statusOf = useMemo(() => statusView ? new Map(groupByStatus(sessions, running, needsInput).map(item => [item.session.id, item.status] as const)) : null,
-    [statusView, sessions, running, needsInput]);
+  // Status grouping still honours the arrangement's hidden projects: only conversations the projection shows take part.
+  const statusSessions = useMemo(() => {
+    if (!projection) return sessions;
+    const shown = new Set(projection.groups.flatMap(group => group.sessionIds));
+    return sessions.filter(session => shown.has(session.id));
+  }, [sessions, projection]);
+  const statusOf = useMemo(() => statusView ? new Map(groupByStatus(statusSessions, running, needsInput).map(item => [item.session.id, item.status] as const)) : null,
+    [statusView, statusSessions, running, needsInput]);
   const [statusExpanded, setStatusExpanded] = useState<string[]>(() => STATUS_ORDER.map(statusGroupId));
 
   const sortedSessions = useMemo(
     () => {
-      if (statusView) return groupByStatus(sessions, running, needsInput).map(item => item.session);
+      if (statusView) return groupByStatus(statusSessions, running, needsInput).map(item => item.session);
       if (projection) {
         const byId = new Map(sessions.map(session => [session.id, session]));
         return projection.groups.flatMap(group => group.sessionIds.map(id => byId.get(id)!).filter(Boolean));
@@ -194,7 +200,7 @@ export const ConversationSidebar = memo(function ConversationSidebar({
         return b.updatedAt - a.updatedAt;
       });
     },
-    [sessions, projection, statusView, running, needsInput],
+    [sessions, projection, statusView, statusSessions, running, needsInput],
   );
 
   // 阶段 1A：items 数组 useMemo——避免每次渲染重建（Conversations 拿到新数组引用即重渲染全部条目）
