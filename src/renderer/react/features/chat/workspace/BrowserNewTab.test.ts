@@ -26,12 +26,17 @@ const toolButtons = () => Array.from(host.querySelectorAll<HTMLButtonElement>("[
 const tiles = () => Array.from(host.querySelectorAll<HTMLButtonElement>("[data-browser-site]"));
 
 describe("browser new-tab page", () => {
-  it("lays the start sites out as letter tiles with names beneath, each carrying its address", () => {
+  it("recommends only Bing, Wikipedia and Bilibili, each with its own icon", () => {
+    expect(BROWSER_START_SITES.map(site => site.url)).toEqual(["https://www.bing.com/", "https://zh.wikipedia.org/", "https://www.bilibili.com/"]);
+    expect(BROWSER_START_SITES.every(site => site.icon.length > 0)).toBe(true);
+  });
+
+  it("lays the start sites out as icon tiles with names beneath, each carrying its address", () => {
     render();
     expect(host.querySelector("[data-browser-newtab]")).not.toBeNull();
     expect(tiles().map(tile => tile.dataset.browserSite)).toEqual(BROWSER_START_SITES.map(site => site.url));
     const first = tiles()[0]!;
-    expect(first.querySelector(".ff-browser-newtab__icon")?.textContent).toBe("B");
+    expect(first.querySelector(".ff-browser-newtab__icon img")?.getAttribute("src")).toBe(BROWSER_START_SITES[0]!.icon);
     expect(first.querySelector(".ff-browser-newtab__name")?.textContent).toBe(BROWSER_START_SITES[0]!.title);
     expect(first.getAttribute("title")).toBe(BROWSER_START_SITES[0]!.url);
   });
@@ -89,14 +94,14 @@ describe("browser new-tab page", () => {
   it("opens a tile through the address path with its own address", () => {
     const onOpen = vi.fn();
     render({ onOpen });
-    act(() => tiles()[2]!.click());
-    expect(onOpen).toHaveBeenCalledExactlyOnceWith(BROWSER_START_SITES[2]!.url);
+    act(() => tiles()[1]!.click());
+    expect(onOpen).toHaveBeenCalledExactlyOnceWith(BROWSER_START_SITES[1]!.url);
   });
 
-  it("keeps the hint and disables every tile while the browser is unavailable", () => {
+  it("has no footnote and disables every tile while the browser is unavailable", () => {
     render({ available: false });
     expect(host.querySelector("[data-browser-newtab]")!.hasAttribute("data-disabled")).toBe(true);
-    expect(host.querySelector(".ff-browser-newtab__hint")?.textContent).toBe("browserWorkspace.newTabLocalHint");
+    expect(host.querySelector(".ff-browser-newtab__hint")).toBeNull();
   });
 });
 

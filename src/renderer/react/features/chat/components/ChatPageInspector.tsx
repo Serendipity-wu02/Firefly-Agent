@@ -15,7 +15,6 @@ import { RightInspector, type InspectorTab } from "./RightInspector";
 import type { ManualBrowserTabHandle } from "../workspace/ManualBrowserTab";
 import { BrowserWorkspaceTabs } from "../workspace/BrowserWorkspaceTabs";
 import { BrowserNewTabToolsContext, type BrowserNewTabTool } from "../workspace/BrowserNewTab";
-import { SessionOverviewPanel, type SessionOverviewPanelProps } from "./SessionOverviewPanel";
 import "./ChatPageInspector.css";
 
 /** Open and close length of the docked pane. ChatPageInspector.css animates the width for the same time. */
@@ -92,13 +91,8 @@ export interface ChatPageInspectorProps {
   /** 工作区根路径（未绑定时为空，文件树显示引导态） */
   workspaceRoot?: string;
   filesTabOpen: boolean;
-  /** 文件树标签被钉住（面板里还有其它标签时不可关） */
-  filesTabPinned: boolean;
   browserTabOpen?: boolean;
   tasksTabOpen?: boolean;
-  /** 会话概览标签：固定排在最前。 */
-  overviewTabOpen?: boolean;
-  overview?: SessionOverviewPanelProps;
   taskPanel?: ReactNode;
   /** Entry points offered on the browser new-tab page; omit one to hide it. */
   onOpenFilesTab?: () => void;
@@ -128,11 +122,8 @@ export function ChatPageInspector({
   onOpenResultDiff,
   workspaceRoot,
   filesTabOpen,
-  filesTabPinned,
   browserTabOpen = false,
   tasksTabOpen = false,
-  overviewTabOpen = false,
-  overview,
   taskPanel,
   onOpenFilesTab,
   onOpenTasksTab,
@@ -159,9 +150,6 @@ export function ChatPageInspector({
   ], [onOpenFilesTab, onOpenOverviewTab, onOpenTasksTab, t]);
   const tabs: InspectorTab[] = [];
 
-  if (overviewTabOpen && overview) {
-    tabs.push({ id: "overview", kind: "overview", label: t("sessionOverview.tab"), content: <SessionOverviewPanel {...overview} /> });
-  }
   if (tasksTabOpen) {
     tabs.push({ id: "tasks", kind: "tasks", label: t("workspace.tasks"), content: taskPanel });
   }
@@ -170,8 +158,6 @@ export function ChatPageInspector({
       id: "files",
       kind: "files",
       label: t("fileTree.title"),
-      // 被钉住的文件树标签隐藏 chip 上的 ×，右上角关闭按钮也对它无效
-      closable: !filesTabPinned,
       content: (
         sessionId && workspaceRoot ? <FileTreePanel
           sessionId={sessionId}

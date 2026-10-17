@@ -272,7 +272,13 @@
     "failed": "This round didn't quite go through — check my reply for details, then try again."
   },
   "rightInspector": {
-    "closeTab": "Close {{name}} (Delete on the tab)",
+    "reorder": "Move “{{name}}”",
+    "reorderHint": "Drag to move, or press ↑ ↓",
+    "expand": "Enlarge",
+    "restore": "Restore",
+    "closeTab": "Close {{name}} (Delete on its header)",
+    "resize": "Resize panels (Left/Right arrow keys)",
+    "resizeRows": "Resize stacked panels (Up/Down arrow keys)",
     "panelAria": "Inspector panel",
     "toggle": "Toggle right panel"
   },
@@ -842,6 +848,7 @@
     "windDirNNW": "NNW"
   },
   "sidebar": {
+    "sessionRunning": "Running",
     "viewMode": "View",
     "projectView": "By project",
     "mergedView": "All conversations",
@@ -927,6 +934,10 @@
     "noReadableContent": "This message has nothing to read aloud"
   },
   "ui": {
+    "pinToRail": "Pin {{name}} to the bar",
+    "unpinFromRail": "Unpin {{name}} from the bar",
+    "conversationsHome": "Conversations",
+    "activityRail": "Activity bar",
     "modeSelector": "Switch mode, current: {{mode}}",
     "modeMenu": "Conversation mode",
     "modeChatDescription": "Everyday conversation and companionship",
@@ -983,7 +994,6 @@
     "newTabTools": "Tools",
     "newTabSites": "Recommended",
     "newTabRecent": "Recent",
-    "newTabLocalHint": "Type a local or private-network address such as localhost:5173 or 192.168.1.5:3000; it is confirmed separately before opening.",
     "ready": "Enter a HTTPS page address to browse.",
     "sessionRequired": "Start or select a conversation to browse.",
     "title": "Browser",
@@ -1108,6 +1118,8 @@
     }
   },
   "sessionOverview": {
+    "reorder": "Move the “{{name}}” card",
+    "reorderHint": "Drag to reorder, or press ↑ ↓",
     "title": "Session overview",
     "tab": "Overview",
     "open": "Open session overview",
@@ -1123,7 +1135,16 @@
     "contextEmpty": "Context usage appears after you send a message",
     "contextEstimate": "Estimated from text length, not the provider's reported usage.",
     "changes": "Changes",
-    "changesEmpty": "No file changes in this session yet"
+    "changesEmpty": "No file changes in this session yet",
+    "environment": "Environment",
+    "environmentLocal": "This computer · Chat",
+    "environmentTemporary": "Temporary chat",
+    "environmentNoProject": "No project chosen",
+    "connectors": "Connectors",
+    "connectorsManage": "Manage in settings",
+    "outputs": "Outputs",
+    "outputsEmpty": "No outputs in this session yet",
+    "outputCounts": "{{files}} files · {{tools}} tools"
   },
   "workspace": {
     "resizeSidebar": "Resize conversation sidebar",

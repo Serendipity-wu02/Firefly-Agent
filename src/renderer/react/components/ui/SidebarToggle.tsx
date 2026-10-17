@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { PanelLeftClose, PanelLeftOpen } from "lucide-react";
 import { useTranslation } from "../../i18n";
 
 interface SidebarToggleProps {
@@ -30,35 +31,7 @@ export function SidebarToggle({ collapsed: controlledCollapsed, onToggle }: Side
       aria-controls="firefly-context-sidebar"
       type="button"
     >
-      <svg width="20" height="20" viewBox="0 0 48 48" fill="none">
-        {/* 框 - 不变 */}
-        <rect x="6" y="6" width="36" height="36" rx="3" stroke="currentColor" strokeWidth="3.5" strokeLinejoin="round" />
-
-        {/* 竖线 */}
-        <path
-          className="ff-sidebar-line"
-          d="M24 6V42"
-          stroke="currentColor"
-          strokeWidth="3.5"
-          strokeLinecap="round"
-          strokeLinejoin="round"
-        />
-
-        {/* 上横线 */}
-        <path d="M11 6H36" stroke="currentColor" strokeWidth="3.5" strokeLinecap="round" strokeLinejoin="round" />
-        {/* 下横线 */}
-        <path d="M11 42H36" stroke="currentColor" strokeWidth="3.5" strokeLinecap="round" strokeLinejoin="round" />
-
-        {/* Chevron */}
-        <path
-          className="ff-sidebar-chevron"
-          d="M32 20L28 24L32 28"
-          stroke="currentColor"
-          strokeWidth="3.5"
-          strokeLinecap="round"
-          strokeLinejoin="round"
-        />
-      </svg>
+      {collapsed ? <PanelLeftOpen size={18} strokeWidth={1.6} aria-hidden="true" /> : <PanelLeftClose size={18} strokeWidth={1.6} aria-hidden="true" />}
     </button>
   );
 }

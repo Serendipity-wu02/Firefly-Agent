@@ -14,3 +14,18 @@ export function useCompactDock(ref: RefObject<HTMLDivElement | null>): boolean {
   }, [ref]);
   return compact;
 }
+
+/** The element's current width in whole pixels (0 until first measured), following resizes. */
+export function useElementWidth(ref: RefObject<HTMLDivElement | null>): number {
+  const [width, setWidth] = useState(0);
+  useEffect(() => {
+    const element = ref.current;
+    if (!element) return;
+    const update = (next: number) => setWidth(Math.round(next));
+    update(element.getBoundingClientRect().width);
+    const observer = new ResizeObserver(([entry]) => update(entry.contentRect.width));
+    observer.observe(element);
+    return () => observer.disconnect();
+  }, [ref]);
+  return width;
+}

@@ -43,18 +43,20 @@ describe("Codex-reference workbench presentation", () => {
     expect(padding.replace(/var\((--[\w-]+)\)/g, (_, token: string) => value("root", ":root", token)))
       .toBe("50px 8px 8px 8px");
     expect(value("root", ".ff-page", "border-radius")).toBe("12px");
-    for (const [file, selector] of [["root", ".ff-workspace"], ["inspector", ".ff-right-inspector"]] as const) {
-      expect(value(file, selector, "border")).toBe("0px");
-      expect(value(file, selector, "box-shadow")).toBe("none");
-      expect(value(file, selector, "border-radius")).toBe("12px");
-    }
+    expect(value("root", ".ff-workspace", "border")).toBe("0px");
+    expect(value("root", ".ff-workspace", "box-shadow")).toBe("none");
+    expect(value("root", ".ff-workspace", "border-radius")).toBe("12px");
+    // Inspector panels are rounded cards of the same 12px radius on the page ground.
+    expect(value("inspector", ".ff-inspector-pane", "border-radius")).toBe("12px");
   });
   it("aligns conversation and inspector headers on the shared 48px row under the title bar", () => {
     expect(value("root", ":root", "--ff-workspace-header-height")).toBe("48px");
     expect(value("root", ".ff-workspace-header", "height")).toBe("var(--ff-workspace-header-height)");
     expect(value("root", ".ff-page-titlebar", "height")).toBe("var(--ff-app-titlebar-height)");
-    expect(value("inspector", ".ff-right-inspector__tabs > .ant-tabs-nav", "height"))
-      .toBe("var(--ff-workspace-header-height)");
+    // A panel header's bottom edge lands on the chat header's 48px line: 8px inset + 1px frame + 38px header + 1px rule.
+    const px = (text: string) => Number.parseFloat(text);
+    expect(px(value("inspector", ".ff-right-inspector", "padding")) + 1 + px(value("inspector", ".ff-inspector-pane__head", "height")) + 1)
+      .toBe(px(value("root", ":root", "--ff-workspace-header-height")));
   });
   it("keeps the titlebar clear when the narrow sidebar floats over the workspace", () => {
     const media = "(max-width: 900px)";
@@ -74,9 +76,9 @@ describe("Codex-reference workbench presentation", () => {
     expect(value("root", ".ff-sidebar-resizer::after", "width")).toBe("1px");
     expect(value("root", ".ff-sidebar-resizer::after", "background")).toBe("var(--ff-border)");
   });
-  it("uses rounded tab chips and keeps native browser bounds stable during entry", () => {
-    expect(value("inspector", ".ff-right-inspector__tabs.ant-tabs .ant-tabs-tab", "border-radius")).toBe("12px");
-    expect(value("inspector", ".ff-right-inspector__tabs .ant-tabs-tab.ant-tabs-tab-active", "box-shadow")).toBe("none");
+  it("uses rounded panel cards and keeps native browser bounds stable during entry", () => {
+    expect(value("inspector", ".ff-inspector-pane", "border-radius")).toBe("12px");
+    expect(value("inspector", ".ff-inspector-pane__action", "border-radius")).toBe("7px");
     expect(sources.inspector).not.toContain("transform: translateX");
   });
   it("centres the empty-state greeting in the free space and docks the composer at the bottom, without changing the composer's component lifetime", () => {
