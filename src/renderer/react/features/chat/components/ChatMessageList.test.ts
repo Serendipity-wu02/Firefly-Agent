@@ -294,7 +294,7 @@ describe("review panel visibility", () => {
     expect(reviewItem?.avatar).toBeTruthy();
     const stylesheet = readFileSync(resolve(__dirname, "ChatMessageList.css"), "utf8");
     expect(stylesheet).toMatch(/\.ff-message--review-run \.ant-bubble-avatar \{\s*display: block;\s*visibility: hidden/);
-    expect(stylesheet).toMatch(/\.ff-message--review-run \.ant-bubble-body \{[\s\S]*width: calc\(100% - 54px\)/);
+    expect(stylesheet).toMatch(/\.ff-message--review-run \.ant-bubble-body \{[\s\S]*width: calc\(100% - 38px - var\(--ff-avatar-gap\)\)/);
   });
 
   it("does not append review bubble while streaming", () => {

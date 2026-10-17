@@ -9,8 +9,8 @@ describe("reference composer (open-claude-ui)", () => {
     expect(composer).toMatch(/\.ff-composer-shell:hover \{ box-shadow:/);
     expect(composer).toMatch(/\.ff-composer-shell:focus-within \{\s*box-shadow:/);
   });
-  it("keeps the text area between 48px and 384px and lays the toolbar out start / end", () => {
-    expect(composer).toMatch(/\.ff-composer \.ant-sender-input \{ min-height: 48px; max-height: 384px;/);
+  it("keeps the text area between 56px and 384px and lays the toolbar out start / end", () => {
+    expect(composer).toMatch(/\.ff-composer \.ant-sender-input \{ min-height: 56px; max-height: 384px;/);
     expect(composer).toMatch(/\.ff-composer__toolbar \{[^}]*justify-content: space-between;/);
     expect(composer).toMatch(/\.ff-composer \.ant-sender-actions-btn:active:not\(:disabled\) \{ transform: scale\(0\.95\); \}/);
   });
