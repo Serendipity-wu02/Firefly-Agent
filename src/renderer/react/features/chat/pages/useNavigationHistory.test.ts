@@ -140,4 +140,16 @@ describe("navigation history", () => {
     act(() => { window.dispatchEvent(new MouseEvent("mouseup", { button: 4 })); });
     expect(go).toHaveBeenLastCalledWith(session("b"));
   });
+
+  it("returns the same back and forward functions on every render, and hands go the mode of the place it is going to", () => {
+    show(session("a", "work"));
+    show(session("b", "chat"));
+    const { back, forward } = api;
+    show(session("b", "chat"));
+    show(session("b", "chat"));
+    expect(api.back).toBe(back);
+    expect(api.forward).toBe(forward);
+    act(() => api.back());
+    expect(go).toHaveBeenLastCalledWith(session("a", "work"));
+  });
 });

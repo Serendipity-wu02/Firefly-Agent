@@ -1564,15 +1564,20 @@ export function ChatPage() {
     current: { mode, sessionId: activeSessionId, panel: activePanel },
     go: (location) => {
       setActivePanel((location.panel as ChatPagePanel | null) ?? null);
+      // The place may be in another mode: show that mode first, then (for a conversation) open it there.
+      if (location.mode !== mode) navModeChange(location.mode);
       if (location.panel === null && location.sessionId) {
         setPendingTemporary(false);
         void navActionsRef.current.selectSession(location.sessionId, location.mode as ConversationMode);
-      } else if (location.mode !== mode && isConversationMode(location.mode)) {
-        setMode(location.mode);
       }
     },
     isAvailable: (location) => location.panel !== null || (sessionsByMode[location.mode as ConversationMode] ?? []).some(session => session.id === location.sessionId),
   });
+  // One stable object: the navigation is memoised, so a fresh one per render would re-render it on every streamed token.
+  const navHistoryProp = useMemo(
+    () => ({ canBack: navHistory.canBack, canForward: navHistory.canForward, onBack: navHistory.back, onForward: navHistory.forward }),
+    [navHistory.canBack, navHistory.canForward, navHistory.back, navHistory.forward],
+  );
   const navMinimize = useCallback(() => window.chat?.minimize(), []);
   useMaximizedWindowDrag();
   const navMaximize = useCallback(() => window.chat?.toggleMaximize(), []);
@@ -1592,7 +1597,7 @@ export function ChatPage() {
         runningSessionIds={runningSessionIds}
         activePanel={activePanel}
         onPanelSlot={setPanelSlot}
-        navHistory={{ canBack: navHistory.canBack, canForward: navHistory.canForward, onBack: navHistory.back, onForward: navHistory.forward }}
+        navHistory={navHistoryProp}
         mode={mode}
         sessions={sessions}
         sessionListStatus={sessionListErrors[mode] ? "error" : sessionsByMode[mode] === undefined ? "loading" : "ready"}
