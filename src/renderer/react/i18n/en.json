@@ -580,6 +580,7 @@
     "sourceBuiltin": "Built-in",
     "sourceUser": "User",
     "disabledBadge": "Disabled",
+    "translating": "Translating skill descriptions…",
     "noDescription": "No description",
     "noMatch": "No matching skill",
     "saveFailed": "Could not save {{skill}} ({{mode}}). The previous setting was restored. Please try again.",

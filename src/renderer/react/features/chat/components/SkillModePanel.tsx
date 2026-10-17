@@ -13,6 +13,8 @@ interface SkillCatalogItem {
   id: string;
   name: string;
   description: string;
+  /** Chinese description saved for this exact English text, if any. */
+  descriptionZh?: string;
   enabled: boolean;
   source: SkillSource;
   modes: SkillMode[] | null;
@@ -125,6 +127,20 @@ export const SkillModePanel: React.FC = () => {
     }
   }, []);
 
+  // Opening the page translates descriptions that still have no Chinese, once, with the default model.
+  const [translating, setTranslating] = useState(false);
+  const [zh, setZh] = useState<Record<string, string>>({});
+  useEffect(() => {
+    if (!catalog.some(skill => !skill.descriptionZh && skill.description.trim())) return;
+    const translate = (window.settings as { translateSkillDescriptions?: () => Promise<{ translated?: Record<string, string> }> } | undefined)?.translateSkillDescriptions;
+    if (!translate) return;
+    let active = true;
+    setTranslating(true);
+    void translate().then(result => { if (active && result?.translated) setZh(result.translated); }).catch(() => undefined)
+      .finally(() => { if (active) setTranslating(false); });
+    return () => { active = false; };
+  }, [catalog]);
+
   useEffect(() => {
     let cancelled = false;
     alive.current = true;
@@ -220,7 +236,8 @@ export const SkillModePanel: React.FC = () => {
           (s) =>
             s.id.toLowerCase().includes(kw) ||
             s.name.toLowerCase().includes(kw) ||
-            s.description.toLowerCase().includes(kw),
+            s.description.toLowerCase().includes(kw) ||
+            (zh[s.id] ?? s.descriptionZh ?? "").toLowerCase().includes(kw),
         )
       : shown;
     return [...searched].sort((a, b) => {
@@ -282,6 +299,7 @@ export const SkillModePanel: React.FC = () => {
         <div className="skill-panel__loading">{t("common.loading")}</div>
       ) : (
         <div className="skill-panel__list">
+          {translating && <p className="skill-panel__translating" role="status">{t("skillPanel.translating")}</p>}
           {visibleSkills.map((skill) => {
             const isOn = skill.enabled && isVisibleForMode(skill, tab, overrides);
             return (
@@ -318,7 +336,7 @@ export const SkillModePanel: React.FC = () => {
                   {!skill.enabled && <button type="button" className="skill-card__enable" disabled={refreshing || enabling || savingKeys.size > 0} onClick={event => { enableOpener.current = event.currentTarget; setEnableError(""); setEnableCandidate(skill); }}>{t("skillPanel.enable")}</button>}
                 </div>
                 <div className="skill-card__desc">
-                  {skill.description.split("\n")[0] || t("skillPanel.noDescription")}
+                  {(zh[skill.id] ?? skill.descriptionZh ?? skill.description).split("\n")[0] || t("skillPanel.noDescription")}
                 </div>
               </div>
             );

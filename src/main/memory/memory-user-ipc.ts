@@ -1,4 +1,7 @@
 import { dialog } from "electron";
+import { cachedZhMap, parseTranslation, translateMissing, translationMessages } from "../skills/skill-description-zh";
+import { createLlmClient } from "../services/llm/llm-client";
+import { loadModelSettings, resolveModelSettingsProfile } from "../settings/model-settings";
 import type { IpcMainInvokeEvent } from "electron";
 import { isTrustedExternalMainFrame } from "../skills/external-ipc";
 import { isExternalSkillId } from "../skills/skill-scanner";
@@ -207,10 +210,11 @@ export function registerMemoryUserToolIpc(deps: MemoryUserToolIpcDependencies): 
   // Skill 目录元数据（skill 页展示用；只暴露可序列化字段）
   // hiddenFromUi = true 的技能（如角色语气校准）不显示在设置面板。
   ipc.handle(IPC.SKILL_GET_CATALOG, () => {
-    return skillRegistry
-      .getAll()
-      .filter((s) => !s.hiddenFromUi)
+    const visible = skillRegistry.getAll().filter((s) => !s.hiddenFromUi);
+    const zh = cachedZhMap(visible);
+    return visible
       .map((s) => ({
+        descriptionZh: zh[s.id],
         id: s.id,
         name: s.name,
         description: s.description,
@@ -221,6 +225,22 @@ export function registerMemoryUserToolIpc(deps: MemoryUserToolIpcDependencies): 
         references: s.references,
         external: s.external,
       }));
+  });
+
+  // 技能页打开时：把还没有中文的描述交给默认模型翻一次，存在本机（不改技能文件），返回所有已知的中文描述。
+  ipc.handle(IPC.SKILL_TRANSLATE_DESCRIPTIONS, async () => {
+    const visible = skillRegistry.getAll().filter((s) => !s.hiddenFromUi).map((s) => ({ id: s.id, description: s.description }));
+    try {
+      const settings = resolveModelSettingsProfile(loadModelSettings());
+      const client = createLlmClient();
+      const translated = await translateMissing(visible, async (batch) => {
+        const reply = await client.chatNonStream(settings, translationMessages(batch), 0, 90_000, "skill-description-zh");
+        return parseTranslation(reply.text, batch);
+      });
+      return { ok: true, translated };
+    } catch (error) {
+      return { ok: false, error: error instanceof Error ? error.message : String(error), translated: cachedZhMap(visible) };
+    }
   });
 
   // 重新扫描 user skills 目录，安装/删除 skill 后无需重启即可刷新 UI。

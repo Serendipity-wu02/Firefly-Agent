@@ -263,6 +263,7 @@ export const IPC = {
   SKILL_GET_CATALOG: "skill:get-catalog",
   // 重新扫描 user skills 目录，安装/删除 skill 后无需重启即可刷新 UI
   SKILL_RESCAN: "skill:rescan",
+  SKILL_TRANSLATE_DESCRIPTIONS: "skill:translate-descriptions",
 
   // scheduled tasks
   SCHEDULER_LIST: "scheduler:list",

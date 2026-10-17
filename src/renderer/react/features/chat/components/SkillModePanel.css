@@ -31,9 +31,11 @@
   min-width: 0;
   min-height: 0;
   box-sizing: border-box;
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
+  /* Two columns of cards, one on narrow panes; messages and empty states span both. */
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 340px), 1fr));
+  align-content: start;
+  gap: 8px;
   padding: 6px 0 24px;
 }
 
@@ -206,3 +208,10 @@
 .skill-panel__confirm { width: min(480px, 100%); padding: 24px; border-radius: 16px; background: var(--ff-bg-workspace, var(--ff-surface)); color: var(--ff-text, var(--ff-text)); }
 .skill-panel__confirm h2, .skill-panel__confirm p { overflow-wrap: anywhere; }
 .skill-panel__confirm > div { display: flex; gap: 10px; justify-content: flex-end; }
+
+.skill-panel__translating,
+.skill-panel__list > .skill-panel__empty { grid-column: 1 / -1; }
+.skill-panel__translating { margin: 0 0 4px; color: var(--ff-text-muted); font-size: 12px; }
+/* In the grid each card is a bordered tile; the description is clamped to three lines. */
+.skill-panel__list > .skill-card { border: 1px solid var(--ff-border); background: var(--ff-surface, transparent); }
+.skill-panel__list > .skill-card .skill-card__desc { -webkit-line-clamp: 3; }

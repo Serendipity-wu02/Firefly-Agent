@@ -580,6 +580,7 @@
     "sourceBuiltin": "内置",
     "sourceUser": "用户",
     "disabledBadge": "已禁用",
+    "translating": "正在把技能说明翻译成中文…",
     "noDescription": "暂无描述",
     "noMatch": "无匹配 skill",
     "saveFailed": "未能保存 {{skill}}（{{mode}}）设置，已恢复原状态，请重试。",
