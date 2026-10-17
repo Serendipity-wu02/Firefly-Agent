@@ -77,7 +77,7 @@ describe("custom-color foreground and surface pairs", () => {
   });
 
   it("keeps the existing light defaults when custom colors are disabled", () => {
-    expect(declaration("ChatMessageList", ".ff-message--user .ant-bubble-content", "color")).toBe("var(--ff-on-accent)");
+    expect(declaration("ChatMessageList", ".ff-message--user .ant-bubble-content", "color")).toBe("var(--ff-text)");
     expect(declaration("ConversationSidebar", ".ff-session-rename-input", "background")).toBe("var(--ff-surface)");
     expect(declaration("RunExperience", ".ff-interaction-panel", "background")).toBe("var(--ff-popover)");
     const dom = new JSDOM('<div class="ff-session-rename-input"></div>');
