@@ -56,17 +56,21 @@ it("drags a header onto the lower half of another panel to stack it there", asyn
   const before = host.querySelector('[data-inspector-pane="files"]');
   mouse(header("files"), "pointerdown", 20, 10);
   mouse(header("files"), "pointermove", 22, 10);
-  expect(host.querySelector(".ff-inspector-ghost")).toBeNull();
+  expect(host.querySelector("[data-lifted]")).toBeNull();
   mouse(document.body, "pointermove", 158, 150);
-  expect(host.querySelector(".ff-inspector-ghost")?.textContent).toBe("Files");
-  expect(host.querySelector<HTMLElement>(".ff-inspector-drop")?.dataset.zone).toBe("bottom");
+  // The whole panel is lifted and follows the pointer; no drop box, no label.
+  expect(host.querySelector('[data-inspector-pane="files"]')?.hasAttribute("data-lifted")).toBe(true);
+  expect(host.querySelector(".ff-inspector-drop, .ff-inspector-ghost")).toBeNull();
+  // The others already sit where they would be if it were dropped now.
+  expect(placed("file:a/notes.md")).toEqual({ column: "1", row: "1" });
+  expect(placed("files")).toEqual({ column: "1", row: "2" });
   expect(host.querySelector(".ff-right-inspector")?.hasAttribute("data-shielded")).toBe(true);
   mouse(document.body, "pointerup", 158, 150);
   expect(placed("file:a/notes.md")).toEqual({ column: "1", row: "1" });
   expect(placed("files")).toEqual({ column: "1", row: "2" });
   expect(placed("diff:notes.md").column).toBe("3");
   expect(host.querySelector('[data-inspector-pane="files"]')).toBe(before);
-  expect(host.querySelector(".ff-inspector-ghost")).toBeNull();
+  expect(host.querySelector("[data-lifted]")).toBeNull();
 });
 
 it("Escape puts a lifted panel back, and a short press never starts a drag", async () => {

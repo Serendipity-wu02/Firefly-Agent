@@ -2,8 +2,8 @@
 // 环境、连接器是单行入口（点开对应面板或设置页）；其余可折叠。
 // 上下文来自主进程的估算快照（不是账单）；变更与后台任务来自本会话各次 run 的工具/委托记录。
 // 卡片没有数据时说明"暂无"，不放示例内容。
-// 交互参照 open-claude-ui：卡片右上角六点抓取柄可上下拖动换顺序（4px 死区，落点显示强调色线，
-// 被拖卡片微倾斜），键盘在抓取柄上按 ↑↓ 也能挪；顺序记在本机。展开收起用 Grid 0fr→1fr 的高度动画。
+// 交互参照 open-claude-ui：按住卡片标题或右上角六点抓取柄可上下拖动换顺序（4px 死区，整张卡片跟着鼠标走、
+// 微倾斜浮起，其余卡片实时滑开让位），键盘在抓取柄上按 ↑↓ 也能挪；顺序记在本机。展开收起用 Grid 0fr→1fr 的高度动画。
 
 import { useEffect, useId, useRef, useState, type CSSProperties, type KeyboardEvent, type PointerEvent as ReactPointerEvent, type ReactNode } from "react";
 import { ChevronRight, GripVertical } from "lucide-react";
@@ -63,16 +63,16 @@ function fileBaseName(file: string): string {
 }
 
 interface CardDrag {
-  /** The grip's own handlers; the card list owns the drag state. */
-  onGripPointerDown(event: ReactPointerEvent<HTMLButtonElement>): void;
-  onGripPointerMove(event: ReactPointerEvent<HTMLButtonElement>): void;
-  onGripPointerUp(): void;
-  onGripPointerCancel(): void;
+  /** Starts a press that becomes a drag after the dead zone; the whole card follows the pointer. */
+  onPointerDown(event: ReactPointerEvent<HTMLElement>): void;
   onGripKeyDown(event: KeyboardEvent<HTMLButtonElement>): void;
+  /** True right after a drag ended on this card, so the release does not also fold it. */
+  consumeClick(): boolean;
   dragging: boolean;
-  dropBefore: boolean;
   /** How far the pointer has travelled since the press, so the lifted card follows it. */
   offsetY: number;
+  /** How far this card slides to make room for the dragged one. */
+  shiftY: number;
 }
 
 function OverviewCard({ id, title, summary, defaultOpen = true, drag, onActivate, children }: {
@@ -92,8 +92,9 @@ function OverviewCard({ id, title, summary, defaultOpen = true, drag, onActivate
   const bodyId = useId();
   return (
     <section className="ff-overview-card" data-overview-card={id} data-open={isEntry ? undefined : open} data-entry={isEntry || undefined}
-      data-dragging={drag?.dragging || undefined} data-drop-before={drag?.dropBefore || undefined}
-      style={drag?.dragging ? { "--ff-drag-y": `${drag.offsetY}px` } as CSSProperties : undefined}>
+      data-dragging={drag?.dragging || undefined}
+      style={drag?.dragging ? { "--ff-drag-y": `${drag.offsetY}px` } as CSSProperties
+        : drag?.shiftY ? { "--ff-shift-y": `${drag.shiftY}px` } as CSSProperties : undefined}>
       <div className="ff-overview-card__bar">
         <button
           type="button"
@@ -101,7 +102,12 @@ function OverviewCard({ id, title, summary, defaultOpen = true, drag, onActivate
           aria-expanded={isEntry ? undefined : open}
           aria-controls={isEntry ? undefined : bodyId}
           disabled={isEntry && !onActivate}
-          onClick={() => { if (isEntry) { onActivate?.(); return; } setOpen(!open); writeOpen(id, !open); }}
+          onPointerDown={drag?.onPointerDown}
+          onClick={() => {
+            if (drag?.consumeClick()) return;
+            if (isEntry) { onActivate?.(); return; }
+            setOpen(!open); writeOpen(id, !open);
+          }}
         >
           <ChevronRight className="ff-overview-card__chevron" size={14} aria-hidden="true" />
           <span className="ff-overview-card__title">{title}</span>
@@ -110,8 +116,7 @@ function OverviewCard({ id, title, summary, defaultOpen = true, drag, onActivate
         {drag && (
           <button type="button" className="ff-overview-card__grip" data-overview-grip=""
             aria-label={t("sessionOverview.reorder", { name: title })} title={t("sessionOverview.reorderHint")}
-            onPointerDown={drag.onGripPointerDown} onPointerMove={drag.onGripPointerMove}
-            onPointerUp={drag.onGripPointerUp} onPointerCancel={drag.onGripPointerCancel} onKeyDown={drag.onGripKeyDown}>
+            onPointerDown={drag.onPointerDown} onKeyDown={drag.onGripKeyDown}>
             <GripVertical size={14} aria-hidden="true" />
           </button>
         )}
@@ -189,6 +194,28 @@ export interface SessionOverviewPanelProps {
   onOpenOutput?: (output: WorkspaceRunOutput) => void;
 }
 
+interface CardSlot { id: string; top: number; height: number }
+interface CardDragState { id: string; startY: number; offsetY: number; active: boolean; target: number; slots: CardSlot[]; gap: number }
+
+/** Where the dragged card lands among the others: its centre against each other card's resting midpoint. */
+function landingIndex(state: CardDragState): number {
+  const dragged = state.slots.find(slot => slot.id === state.id)!;
+  const centre = dragged.top + state.offsetY + dragged.height / 2;
+  const others = state.slots.filter(slot => slot.id !== state.id);
+  const index = others.findIndex(slot => centre < slot.top + slot.height / 2);
+  return index < 0 ? others.length : index;
+}
+
+/** How far a resting card slides so the dragged one has room at its landing place. */
+function slideFor(state: CardDragState, id: string): number {
+  const from = state.slots.findIndex(slot => slot.id === state.id);
+  const at = state.slots.findIndex(slot => slot.id === id);
+  if (from < 0 || at < 0 || at === from) return 0;
+  const among = at > from ? at - 1 : at;
+  const landed = among >= state.target ? among + 1 : among;
+  return (landed - at) * (state.slots[from]!.height + state.gap);
+}
+
 /** Entry cards that sit on top, as in Claude desktop, even for an order saved before they existed. */
 const LEADING_CARDS = ["environment", "connectors"];
 
@@ -204,8 +231,18 @@ export function SessionOverviewPanel({ usage, outputs, environment, onOpenChange
   const tasks = summarizeTasks(outputs);
   const hasTasks = tasks.running.length > 0 || tasks.finished > 0;
   const [order, setOrder] = useState<string[]>(readOrder);
-  const [drag, setDrag] = useState<{ id: string; startY: number; offsetY: number; active: boolean; target: number | null } | null>(null);
+  const [drag, setDrag] = useState<CardDragState | null>(null);
+  const [settling, setSettling] = useState(false);
   const listRef = useRef<HTMLDivElement>(null);
+  const stopRef = useRef<(() => void) | null>(null);
+  const justDraggedRef = useRef<string | null>(null);
+  useEffect(() => () => stopRef.current?.(), []);
+  // After a drop the cards already sit where they land; turn their slide off for one frame so nothing animates back.
+  useEffect(() => {
+    if (!settling) return;
+    const frame = requestAnimationFrame(() => setSettling(false));
+    return () => cancelAnimationFrame(frame);
+  }, [settling]);
   // Scroll fade: a 28px feathered edge only where cards are hidden past it.
   const updateFade = (element: HTMLElement) => {
     element.toggleAttribute("data-fade-top", element.scrollTop > 2);
@@ -315,40 +352,62 @@ export function SessionOverviewPanel({ usage, outputs, environment, onOpenChange
   const reconciled = reconcileOrder(order, cards.map(card => card.id));
   const leading = LEADING_CARDS.filter(id => !order.includes(id));
   const ordered = [...leading, ...reconciled.filter(id => !leading.includes(id))].map(id => cards.find(card => card.id === id)!);
-  const others = drag?.active ? ordered.filter(card => card.id !== drag.id) : [];
-  const dropBeforeId = drag?.active && drag.target !== null ? others[drag.target]?.id ?? null : null;
-  const dropAtEnd = Boolean(drag?.active && drag.target !== null && drag.target >= others.length);
-
   const commit = (next: string[]) => { setOrder(next); writeOrder(next); };
-  /** Where the dragged card would land, from the pointer against each other card's midpoint. */
-  const dropIndex = (clientY: number, draggedId: string) => {
-    const nodes = Array.from(listRef.current?.querySelectorAll<HTMLElement>("[data-overview-card]") ?? [])
-      .filter(node => node.dataset.overviewCard !== draggedId);
-    const index = nodes.findIndex(node => { const rect = node.getBoundingClientRect(); return clientY < rect.top + rect.height / 2; });
-    return index < 0 ? nodes.length : index;
+  /** Presses on a card's header or grip become a drag past the dead zone; listening on the window keeps it following the pointer anywhere. */
+  const beginDrag = (id: string, event: ReactPointerEvent<HTMLElement>) => {
+    if (event.button !== 0) return;
+    stopRef.current?.();
+    const nodes = Array.from(listRef.current?.querySelectorAll<HTMLElement>("[data-overview-card]") ?? []);
+    const slots = nodes.map(node => { const rect = node.getBoundingClientRect(); return { id: node.dataset.overviewCard!, top: rect.top, height: rect.height }; });
+    const gap = slots.length > 1 ? Math.max(0, slots[1]!.top - (slots[0]!.top + slots[0]!.height)) : 0;
+    let state: CardDragState = { id, startY: event.clientY, offsetY: 0, active: false, target: 0, slots, gap };
+    const move = (next: PointerEvent) => {
+      if (!state.active && Math.abs(next.clientY - state.startY) <= DRAG_DEAD_ZONE) return;
+      state = { ...state, active: true, offsetY: next.clientY - state.startY };
+      state = { ...state, target: landingIndex(state) };
+      setDrag(state);
+    };
+    const stop = () => {
+      window.removeEventListener("pointermove", move);
+      window.removeEventListener("pointerup", up);
+      window.removeEventListener("pointercancel", cancel);
+      window.removeEventListener("keydown", key);
+      stopRef.current = null;
+    };
+    const up = () => {
+      stop();
+      if (state.active) {
+        justDraggedRef.current = id;
+        setTimeout(() => { if (justDraggedRef.current === id) justDraggedRef.current = null; }, 0);
+        setSettling(true);
+        commit(moveId(slots.map(slot => slot.id), id, state.target));
+      }
+      setDrag(null);
+    };
+    const cancel = () => { stop(); setDrag(null); };
+    // Escape puts a lifted card back where it was, like the reference's drag state machine.
+    const key = (next: globalThis.KeyboardEvent) => { if (next.key === "Escape" && state.active) { next.preventDefault(); cancel(); } };
+    window.addEventListener("pointermove", move);
+    window.addEventListener("pointerup", up);
+    window.addEventListener("pointercancel", cancel);
+    window.addEventListener("keydown", key);
+    stopRef.current = stop;
   };
   const dragFor = (id: string): CardDrag => ({
     dragging: Boolean(drag?.active && drag.id === id),
-    dropBefore: dropBeforeId === id,
     offsetY: drag?.id === id ? drag.offsetY : 0,
-    onGripPointerDown: (event) => {
-      if (event.button !== 0) return;
-      event.currentTarget.setPointerCapture?.(event.pointerId);
-      setDrag({ id, startY: event.clientY, offsetY: 0, active: false, target: null });
+    shiftY: drag?.active ? slideFor(drag, id) : 0,
+    onPointerDown: (event) => {
+      // The grip and the header both start a drag; buttons inside a card body do not.
+      if ((event.target as HTMLElement).closest(".ff-overview-card__fold")) return;
+      beginDrag(id, event);
     },
-    onGripPointerMove: (event) => {
-      if (!drag || drag.id !== id) return;
-      if (!drag.active && Math.abs(event.clientY - drag.startY) <= DRAG_DEAD_ZONE) return;
-      setDrag({ ...drag, active: true, offsetY: event.clientY - drag.startY, target: dropIndex(event.clientY, id) });
+    consumeClick: () => {
+      if (justDraggedRef.current !== id) return false;
+      justDraggedRef.current = null;
+      return true;
     },
-    onGripPointerUp: () => {
-      if (drag?.active && drag.target !== null) commit(moveId(ordered.map(card => card.id), drag.id, drag.target));
-      setDrag(null);
-    },
-    onGripPointerCancel: () => setDrag(null),
     onGripKeyDown: (event) => {
-      // Escape puts a lifted card back where it was, like the reference's drag state machine.
-      if (event.key === "Escape" && drag?.active) { event.preventDefault(); setDrag(null); return; }
       if (event.key !== "ArrowUp" && event.key !== "ArrowDown") return;
       event.preventDefault();
       const ids = ordered.map(card => card.id);
@@ -358,13 +417,12 @@ export function SessionOverviewPanel({ usage, outputs, environment, onOpenChange
 
   return (
     <div ref={listRef} className="ff-session-overview" aria-label={t("sessionOverview.title")}
-      data-dragging={drag?.active || undefined} onScroll={event => updateFade(event.currentTarget)}>
+      data-dragging={drag?.active || undefined} data-settling={settling || undefined} onScroll={event => updateFade(event.currentTarget)}>
       {ordered.map(card => (
         <OverviewCard key={card.id} id={card.id} title={card.title} summary={card.summary} drag={dragFor(card.id)} onActivate={card.onActivate}>
           {card.body}
         </OverviewCard>
       ))}
-      {dropAtEnd && <div className="ff-overview-drop-end" aria-hidden="true" />}
     </div>
   );
 }

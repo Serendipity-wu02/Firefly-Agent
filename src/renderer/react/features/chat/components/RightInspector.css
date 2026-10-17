@@ -33,11 +33,8 @@
 /* While a panel is lifted or a separator dragged, the browser's native view would swallow the pointer: fold its body (zero size hides the view). */
 .ff-right-inspector[data-shielded] .ff-inspector-pane[data-inspector-kind="browser"] .ff-inspector-pane__body { display: none; }
 .ff-right-inspector[data-moving], .ff-right-inspector[data-moving] .ff-inspector-pane__head { cursor: grabbing; user-select: none; }
-.ff-inspector-pane[data-lifted] { opacity: 0.55; }
-
-/* Where the lifted panel would land: a tinted half of the panel under the pointer. */
-.ff-inspector-drop { position: absolute; z-index: 5; box-sizing: border-box; pointer-events: none; border: 2px solid var(--ff-accent); border-radius: 12px; background: color-mix(in srgb, var(--ff-accent) 12%, transparent); transition: left 120ms ease, top 120ms ease, width 120ms ease, height 120ms ease; }
-.ff-inspector-ghost { position: fixed; z-index: 30; max-width: 220px; padding: 6px 12px; overflow: hidden; border: 1px solid var(--ff-border); border-radius: 10px; background: var(--ff-bg-workspace); box-shadow: 0 10px 28px rgb(0 0 0 / 16%); color: var(--ff-text); font: 600 12.5px/1 var(--rb-font-sans, sans-serif); text-overflow: ellipsis; white-space: nowrap; transform: rotate(-1.5deg); pointer-events: none; }
+/* The lifted panel floats above the others while it follows the pointer. */
+.ff-inspector-pane[data-lifted] { z-index: 6; box-shadow: 0 16px 40px rgb(0 0 0 / 16%); transition: none; will-change: transform; }
 
 .ff-inspector-pane {
   position: relative;
@@ -126,6 +123,6 @@
 
 @media (prefers-reduced-motion: reduce) {
   .ff-right-inspector, .ff-right-inspector__dot.is-executing { animation: none; }
-  .ff-inspector-pane, .ff-inspector-drop, .ff-inspector-resizer::after { animation: none; transition: none; }
+  .ff-inspector-pane, .ff-inspector-resizer::after { animation: none; transition: none; }
   .ff-inspector-pane__action { transition: none; }
 }

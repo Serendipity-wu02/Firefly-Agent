@@ -95,7 +95,10 @@ it("drags a card to the end, shows where it lands, and remembers the order", () 
   pointer(grip("tasks"), "pointerdown", 250);
   pointer(grip("tasks"), "pointermove", 590);
   expect(card("tasks").hasAttribute("data-dragging")).toBe(true);
-  expect(host.querySelector(".ff-overview-drop-end")).not.toBeNull();
+  // No drop line: the cards below slide up into the gap the lifted card left.
+  expect(host.querySelector(".ff-overview-drop-end")).toBeNull();
+  expect(["context", "changes", "outputs"].map(id => card(id).style.getPropertyValue("--ff-shift-y"))).toEqual(["-100px", "-100px", "-100px"]);
+  expect(card("connectors").style.getPropertyValue("--ff-shift-y")).toBe("");
   pointer(grip("tasks"), "pointerup", 590);
   const moved = ["environment", "connectors", "context", "changes", "outputs", "tasks"];
   expect(order()).toEqual(moved);
@@ -130,4 +133,18 @@ it("lifts the dragged card so it follows the pointer, and Escape puts it back", 
   expect(host.querySelector("[data-dragging]")).toBeNull();
   pointer(grip("tasks"), "pointerup", 330);
   expect(order()).toEqual(DEFAULT);
+});
+
+it("drags a whole card by its header, and the release does not also fold it", () => {
+  render();
+  pointer(head("context"), "pointerdown", 350);
+  pointer(head("context"), "pointermove", 110);
+  expect(card("context").hasAttribute("data-dragging")).toBe(true);
+  expect(card("connectors").style.getPropertyValue("--ff-shift-y")).toBe("100px");
+  pointer(head("context"), "pointerup", 110);
+  act(() => head("context").click());
+  expect(order()).toEqual(["environment", "context", "connectors", "tasks", "changes", "outputs"]);
+  expect(card("context").dataset.open).toBe("true");
+  act(() => head("context").click());
+  expect(card("context").dataset.open).toBe("false");
 });

@@ -1,11 +1,11 @@
 // RightInspector — 右侧面板，参照 Claude 桌面版：
 // - 打开的项（浏览器、文件、文件预览、改动、任务……）是大面板，默认横向并列，中间的分隔条可以拖动调宽（或用方向键）；
-// - 拖动面板标题栏可以把它挪到另一块的左边/右边（并列）或上边/下边（叠放）；Alt+方向键也能挪；
+// - 按住面板标题栏，整块面板跟着鼠标走，其余面板实时滑到放下后的位置（左右并列或上下叠放）；Alt+方向键也能挪；
 // - 打开/关闭由主区标题行的图标开关负责，这里没有标签条。标题行：图标、名称、状态 ··· 放大、关闭。
 // 放大时其余大面板隐藏（保持挂载，浏览器等状态不丢）；关闭后的焦点回退仍由上层 ChatPage 决定。
 // 浏览器面板里是原生视图，会盖住页面：拖动期间先把它的内容区收起（它自己遇到零尺寸就会隐藏原生视图），松手后复原。
 
-import { useEffect, useRef, useState, type KeyboardEvent, type PointerEvent as ReactPointerEvent, type ReactNode } from "react";
+import { useEffect, useLayoutEffect, useRef, useState, type KeyboardEvent, type PointerEvent as ReactPointerEvent, type ReactNode } from "react";
 import { File, Files, FolderTree, GitCompareArrows, Globe, ListChecks, Maximize2, Minimize2, SquareTerminal, X } from "lucide-react";
 import { useTranslation } from "../../../i18n";
 import { DRAG_DEAD_ZONE } from "./reorder-list";
@@ -29,7 +29,10 @@ export interface InspectorTab {
 const tabIcons = { files: FolderTree, file: File, diff: GitCompareArrows, browser: Globe, tasks: SquareTerminal, plan: ListChecks, result: Files };
 
 type Box = { left: number; top: number; width: number; height: number };
-interface PanelDrag { id: string; startX: number; startY: number; active: boolean; x: number; y: number; drop: { id: string; zone: DropZone; box: Box } | null }
+/** A lifted panel: where it was grabbed, where the pointer is, and the panel and edge it currently sits beside. */
+interface PanelDrag { id: string; startX: number; startY: number; grabX: number; grabY: number; active: boolean; x: number; y: number; drop: { id: string; zone: DropZone } | null }
+const SLIDE = { duration: 200, easing: "cubic-bezier(.32, .72, 0, 1)" };
+const reducedMotion = () => typeof window.matchMedia === "function" && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 type Direction = "left" | "right" | "up" | "down";
 const ARROW_DIRECTION: Record<string, Direction | undefined> = { ArrowLeft: "left", ArrowRight: "right", ArrowUp: "up", ArrowDown: "down" };
 
@@ -57,7 +60,64 @@ export function RightInspector({
   const paneRefs = useRef(new Map<string, HTMLElement>());
   const stopRef = useRef<(() => void) | null>(null);
   const columnsRef = useRef<PanelColumn[]>([]);
+  /** Resting rectangles of every panel in the current layout (no drag offset, no slide), for hit tests and slides. */
+  const restingRef = useRef(new Map<string, Box>());
+  const layoutKeyRef = useRef("");
+  /** The grid placement this render produced; a change in it is what makes panels slide. */
+  const currentLayoutRef = useRef("");
+  /** The offset currently applied to the lifted panel, so its resting place can be read back from its rectangle. */
+  const liftRef = useRef<{ id: string; x: number; y: number } | null>(null);
   useEffect(() => () => stopRef.current?.(), []);
+  const measure = () => {
+    const rects = new Map<string, Box>();
+    for (const [id, node] of paneRefs.current) {
+      const rect = node.getBoundingClientRect();
+      const lift = liftRef.current?.id === id ? liftRef.current : null;
+      rects.set(id, { left: rect.left - (lift?.x ?? 0), top: rect.top - (lift?.y ?? 0), width: rect.width, height: rect.height });
+    }
+    return rects;
+  };
+  // Panels slide to their new places (FLIP) whenever the layout changes, and the lifted panel follows the pointer.
+  // A browser panel never slides once the drag is over: its native view is placed from the panel's rectangle.
+  useLayoutEffect(() => {
+    const key = currentLayoutRef.current;
+    if (key !== layoutKeyRef.current) {
+      for (const node of paneRefs.current.values()) node.getAnimations?.().forEach(animation => animation.finish());
+      const before = restingRef.current;
+      const after = measure();
+      const moving = drag?.active ?? false;
+      if (!reducedMotion()) {
+        for (const [id, rect] of after) {
+          const node = paneRefs.current.get(id), was = before.get(id);
+          if (!node || !was || id === liftRef.current?.id || typeof node.animate !== "function") continue;
+          if (!moving && node.dataset.inspectorKind === "browser") continue;
+          const dx = was.left - rect.left, dy = was.top - rect.top;
+          if (Math.abs(dx) + Math.abs(dy) < 1) continue;
+          node.animate([{ transform: `translate(${dx}px, ${dy}px)` }, { transform: "none" }], SLIDE);
+        }
+      }
+      restingRef.current = after;
+      layoutKeyRef.current = key;
+    }
+    const lifted = drag?.active ? paneRefs.current.get(drag.id) : undefined;
+    const rest = drag?.active ? restingRef.current.get(drag.id) : undefined;
+    if (drag?.active && lifted && rest) {
+      const x = drag.x - drag.grabX - rest.left, y = drag.y - drag.grabY - rest.top;
+      lifted.style.transform = `translate(${x}px, ${y}px)`;
+      liftRef.current = { id: drag.id, x, y };
+    } else if (liftRef.current) {
+      const { id, x, y } = liftRef.current;
+      const node = paneRefs.current.get(id);
+      liftRef.current = null;
+      if (node) {
+        node.style.transform = "";
+        // The dropped panel settles from where it was let go into its place.
+        if (!reducedMotion() && typeof node.animate === "function" && node.dataset.inspectorKind !== "browser") {
+          node.animate([{ transform: `translate(${x}px, ${y}px)` }, { transform: "none" }], SLIDE);
+        }
+      }
+    }
+  });
   if (tabs.length === 0) return null;
   const active = tabs.find(tab => tab.id === activeTabId) ?? tabs[0];
   const panels = tabs;
@@ -67,25 +127,19 @@ export function RightInspector({
   const expandedId = expanded !== null && panels.length > 1 && panels.some(tab => tab.id === expanded) ? expanded : null;
   const focus = (id: string) => { if (id !== active.id) onTabChange(id); };
   const activeDrag = drag?.active ? drag : null;
+  // While a panel is lifted the others already take the places they would have if it were dropped now.
+  const live = activeDrag?.drop ? movePanel(columns, activeDrag.id, activeDrag.drop.id, activeDrag.drop.zone) : columns;
   // Expanding one panel lays it out alone; the others stay mounted, just hidden.
-  const placed = expandedId === null ? columns : [{ ids: [expandedId], weight: 1 }];
+  const placed = expandedId === null ? live : [{ ids: [expandedId], weight: 1 }];
   const { rows, byId: placement } = gridPlacement(placed);
+  currentLayoutRef.current = JSON.stringify([expandedId, [...placement]]);
 
-  /** The panel under the pointer and which edge of it the pointer is nearest, for the drop marker. */
+  /** The resting panel under the pointer and which edge of it the pointer is nearest. */
   const dropAt = (id: string, x: number, y: number): PanelDrag["drop"] => {
-    const aside = asideRef.current;
-    if (!aside) return null;
-    const origin = aside.getBoundingClientRect();
-    for (const node of aside.querySelectorAll<HTMLElement>("[data-inspector-pane]")) {
-      const targetId = node.dataset.inspectorPane!;
-      const rect = node.getBoundingClientRect();
-      if (targetId === id || node.hidden || x < rect.left || x > rect.right || y < rect.top || y > rect.bottom) continue;
-      const zone = dropZoneAt(rect, x, y);
-      // Show the half of the panel the dragged one would take.
-      const sideways = zone === "left" || zone === "right";
-      const width = sideways ? rect.width / 2 : rect.width, height = sideways ? rect.height : rect.height / 2;
-      const left = rect.left - origin.left + (zone === "right" ? width : 0), top = rect.top - origin.top + (zone === "bottom" ? height : 0);
-      return { id: targetId, zone, box: { left, top, width, height } };
+    for (const [targetId, rect] of restingRef.current) {
+      const node = paneRefs.current.get(targetId);
+      if (targetId === id || !node || node.hidden || x < rect.left || x > rect.left + rect.width || y < rect.top || y > rect.top + rect.height) continue;
+      return { id: targetId, zone: dropZoneAt(rect, x, y) };
     }
     return null;
   };
@@ -110,12 +164,15 @@ export function RightInspector({
   const beginPanelDrag = (tab: InspectorTab, event: ReactPointerEvent<HTMLElement>) => {
     if (event.button !== 0 || (event.target as HTMLElement).closest("button") || panels.length < 2 || expandedId !== null) return;
     stopRef.current?.();
-    let state: PanelDrag = { id: tab.id, startX: event.clientX, startY: event.clientY, active: false, x: event.clientX, y: event.clientY, drop: null };
+    restingRef.current = measure();
+    const home = restingRef.current.get(tab.id);
+    let state: PanelDrag = { id: tab.id, startX: event.clientX, startY: event.clientY, grabX: event.clientX - (home?.left ?? 0), grabY: event.clientY - (home?.top ?? 0), active: false, x: event.clientX, y: event.clientY, drop: null };
     setDrag(state);
     const abort = listen({
       move: next => {
         if (!state.active && Math.hypot(next.clientX - state.startX, next.clientY - state.startY) <= DRAG_DEAD_ZONE) return;
-        state = { ...state, active: true, x: next.clientX, y: next.clientY, drop: dropAt(tab.id, next.clientX, next.clientY) };
+        // Over a gap or over its own empty slot the panel keeps the last place it was offered.
+        state = { ...state, active: true, x: next.clientX, y: next.clientY, drop: dropAt(tab.id, next.clientX, next.clientY) ?? state.drop };
         setDrag(state);
       },
       up: () => {
@@ -154,7 +211,7 @@ export function RightInspector({
         gridTemplateColumns: placed.flatMap((column, index) => [...(index > 0 ? ["8px"] : []), `minmax(${MIN_COLUMN_WIDTH}px, ${column.weight}fr)`]).join(" "),
         gridTemplateRows: `repeat(${rows}, minmax(0, 1fr))`,
       }}>
-        {expandedId === null && columns.slice(1).map((column, index) => (
+        {expandedId === null && live.slice(1).map((column, index) => (
           <div key={`resizer:${column.ids[0]}`} className="ff-inspector-resizer" role="separator" aria-orientation="vertical" tabIndex={0}
             aria-label={t("rightInspector.resize")} style={{ gridColumn: (index + 1) * 2, gridRow: "1 / -1" }}
             onPointerDown={event => startResize(index, event)} onKeyDown={event => resizeByKey(index, event)} />
@@ -210,15 +267,6 @@ export function RightInspector({
           );
         })}
       </div>
-      {activeDrag?.drop && (
-        <div className="ff-inspector-drop" data-zone={activeDrag.drop.zone} aria-hidden="true"
-          style={{ left: activeDrag.drop.box.left, top: activeDrag.drop.box.top, width: activeDrag.drop.box.width, height: activeDrag.drop.box.height }} />
-      )}
-      {activeDrag && (
-        <div className="ff-inspector-ghost" aria-hidden="true" style={{ left: activeDrag.x + 12, top: activeDrag.y + 8 }}>
-          {byId.get(activeDrag.id)?.label}
-        </div>
-      )}
     </aside>
   );
 }
