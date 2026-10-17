@@ -49,9 +49,15 @@
 }
 
 .ff-message {
+  /* Space between an avatar and its message; the body width below is derived from it so run cards stay aligned. */
+  --ff-avatar-gap: 20px;
   width: 100%;
   max-width: none;
   min-width: 0;
+}
+
+.ff-message.ant-bubble {
+  column-gap: var(--ff-avatar-gap);
 }
 
 .ff-message .ant-bubble-avatar {
@@ -201,8 +207,8 @@
 
 .ff-message--assistant .ant-bubble-body {
   min-width: 0;
-  width: calc(100% - 54px);
-  max-width: calc(100% - 54px);
+  width: calc(100% - 38px - var(--ff-avatar-gap));
+  max-width: calc(100% - 38px - var(--ff-avatar-gap));
 }
 
 /* 运行块内的正文：头像已钉在活动卡头部，这里视觉隐藏但保留占位，
@@ -256,8 +262,8 @@
 }
 
 .ff-message--review-run .ant-bubble-body {
-  width: calc(100% - 54px);
-  max-width: calc(100% - 54px);
+  width: calc(100% - 38px - var(--ff-avatar-gap));
+  max-width: calc(100% - 38px - var(--ff-avatar-gap));
 }
 
 .ff-message--waiting {
@@ -288,8 +294,8 @@
 
 /* 头像钉在活动卡头部（状态行左侧）：一次运行只出现一次，时间线内容缩进到头像右侧 */
 .ff-message--activity .ant-bubble-body {
-  width: calc(100% - 54px);
-  max-width: calc(100% - 54px);
+  width: calc(100% - 38px - var(--ff-avatar-gap));
+  max-width: calc(100% - 38px - var(--ff-avatar-gap));
 }
 
 .ff-message--activity .ant-bubble-content {

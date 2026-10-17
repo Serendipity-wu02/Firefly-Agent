@@ -655,12 +655,12 @@
 :root[data-ui-theme="firefly-dark"] .ff-composer-shell:focus-within {
   box-shadow: 0 4px 24px rgba(0, 0, 0, 0.65), inset 0 0 0 1px rgba(255, 255, 255, 0.22), 0 0 0 1px rgba(255, 255, 255, 0.22);
 }
-.ff-composer .ant-sender-content { min-height: 0; padding: 14px 14px 0; }
-.ff-composer .ant-sender-input { min-height: 48px; max-height: 384px; padding-inline: 6px; font: 400 15px/1.4 var(--rb-font-sans, sans-serif); }
-.ff-composer .ant-sender-footer { padding: 6px 10px 10px; }
-.ff-composer__toolbar { display: flex; min-width: 0; align-items: center; justify-content: space-between; gap: 8px; }
+.ff-composer .ant-sender-content { min-height: 0; padding: 18px 20px 0; }
+.ff-composer .ant-sender-input { min-height: 56px; max-height: 384px; padding-inline: 4px; font: 400 15px/1.5 var(--rb-font-sans, sans-serif); }
+.ff-composer .ant-sender-footer { padding: 8px 16px 14px; }
+.ff-composer__toolbar { display: flex; min-width: 0; align-items: center; justify-content: space-between; gap: 12px; }
 .ff-composer__toolbar-start,
-.ff-composer__toolbar-end { display: flex; min-width: 0; align-items: center; gap: 6px; }
+.ff-composer__toolbar-end { display: flex; min-width: 0; align-items: center; gap: 10px; }
 .ff-composer__toolbar-start { flex-wrap: wrap; }
 .ff-composer__toolbar-end { flex: none; }
 /* Send: a 32px rounded square that gives a little under the press. */
