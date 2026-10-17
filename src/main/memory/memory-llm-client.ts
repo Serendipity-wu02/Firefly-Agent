@@ -233,10 +233,10 @@ export async function invokeMemoryStructuredOutput<T>(options: InvokeMemoryStruc
       const parsed = adapter.parseResponse(data);
 
       // best-effort usage recording
-      recordRequest(cfg.model);
+      recordRequest(cfg.model, "memory");
       if (parsed.usage) {
         try {
-          recordUsage(parsed.usage.input, parsed.usage.output, 1, parsed.usage.cachedInput, cfg.model, parsed.usage.cacheCreation);
+          recordUsage(parsed.usage.input, parsed.usage.output, 1, parsed.usage.cachedInput, cfg.model, parsed.usage.cacheCreation, "memory");
         } catch { /* ignore */ }
       }
 
@@ -348,10 +348,10 @@ export async function invokeMemoryLlm(request: MemoryLlmRequest): Promise<Memory
   }
 
   const parsed = adapter.parseResponse(data);
-  recordRequest(cfg.model);
+  recordRequest(cfg.model, "memory");
   if (parsed.usage) {
     try {
-      recordUsage(parsed.usage.input, parsed.usage.output, 1, parsed.usage.cachedInput, cfg.model, parsed.usage.cacheCreation);
+      recordUsage(parsed.usage.input, parsed.usage.output, 1, parsed.usage.cachedInput, cfg.model, parsed.usage.cacheCreation, "memory");
     } catch { /* ignore */ }
   }
 
