@@ -175,3 +175,6 @@
 .ff-panel-page__subtitle .plugin-panel__subtitle { display: block; margin: 0; }
 .ff-panel-page__subtitle .plugin-panel__subtitle + .plugin-panel__subtitle { margin-top: 4px; }
 .ff-panel-page__subtitle .skill-panel__subtitle, .ff-panel-page__subtitle .tool-panel__subtitle, .ff-panel-page__subtitle .model-panel__subtitle, .ff-panel-page__subtitle .scheduled-panel__subtitle { margin: 0; font-size: inherit; }
+
+/* An empty state inside a page's card grid spans the whole grid instead of sitting in one cell. */
+.ff-panel-empty { grid-column: 1 / -1; width: 100%; box-sizing: border-box; }
