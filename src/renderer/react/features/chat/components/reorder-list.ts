@@ -14,10 +14,3 @@ export function moveId(order: readonly string[], id: string, toIndex: number): s
   const index = Math.max(0, Math.min(toIndex, rest.length));
   return [...rest.slice(0, index), id, ...rest.slice(index)];
 }
-
-/** Splits panels into columns of at most `perColumn`, filling each column top to bottom before starting the next. */
-export function tileColumns<T>(items: readonly T[], perColumn = 2): T[][] {
-  const columns: T[][] = [];
-  for (let index = 0; index < items.length; index += perColumn) columns.push(items.slice(index, index + perColumn));
-  return columns;
-}

@@ -3,7 +3,7 @@ import React, { act, useState } from "react";
 import { createRoot } from "react-dom/client";
 import { afterEach, beforeEach, expect, it, vi } from "vitest";
 import { RightInspector, type InspectorTab } from "./RightInspector";
-import { moveId, reconcileOrder, tileColumns } from "./reorder-list";
+import { moveId, reconcileOrder } from "./reorder-list";
 let host: HTMLDivElement, root: ReturnType<typeof createRoot>;
 beforeEach(() => {
   vi.stubGlobal("IS_REACT_ACT_ENVIRONMENT", true);
@@ -20,14 +20,78 @@ const tabs: InspectorTab[] = [
 const header = (id: string) => host.querySelector<HTMLElement>(`[data-inspector-pane="${id}"] .ff-inspector-pane__head`)!;
 const keys = (element: Element, key: string) => act(() => element.dispatchEvent(new KeyboardEvent("keydown", { key, bubbles: true, cancelable: true })));
 
-it("tiles panels two per column, filling a column before starting the next", async () => {
-  await act(async () => root.render(React.createElement(RightInspector, { tabs, activeTabId: "files", onTabChange() {}, onCloseTab() {} })));
-  const many = [...tabs, { id: "browser", label: "Browser", content: React.createElement("p", null, "Web") }, { id: "tasks", label: "Tasks", content: React.createElement("p", null, "Run") }];
-  await act(async () => root.render(React.createElement(RightInspector, { tabs: many, activeTabId: "files", onTabChange() {}, onCloseTab() {} })));
-  const columns = [...host.querySelectorAll(".ff-inspector-grid__column")].map(column =>
-    [...column.querySelectorAll("[data-inspector-pane]")].map(pane => (pane as HTMLElement).dataset.inspectorPane));
-  expect(columns).toEqual([["files", "file:a/notes.md"], ["diff:notes.md", "browser"], ["tasks"]]);
-  expect(tileColumns([1, 2, 3, 4, 5])).toEqual([[1, 2], [3, 4], [5]]);
+const IDS = ["files", "file:a/notes.md", "diff:notes.md"];
+const placed = (id: string) => {
+  // jsdom does not model the grid shorthands, so read them from the style attribute.
+  const css = (host.querySelector(`[data-inspector-pane="${id}"]`) as HTMLElement).getAttribute("style") ?? "";
+  return { column: /grid-column:\s*(\d+)/.exec(css)?.[1] ?? "", row: /grid-row:\s*(\d+)/.exec(css)?.[1] ?? "" };
+};
+const where = () => IDS.map(id => `${placed(id).column}/${placed(id).row}`);
+const render = (list: InspectorTab[]) => act(async () => root.render(React.createElement(RightInspector, { tabs: list, activeTabId: "files", onTabChange() {}, onCloseTab() {} })));
+const rect = (left: number, top: number, width: number, height: number) => ({ left, top, width, height, right: left + width, bottom: top + height, x: left, y: top, toJSON() {} }) as DOMRect;
+const altKey = (element: Element, key: string) => act(() => element.dispatchEvent(new KeyboardEvent("keydown", { key, altKey: true, bubbles: true, cancelable: true })));
+const mouse = (element: Element, type: string, x: number, y: number) => act(() => { element.dispatchEvent(new MouseEvent(type, { bubbles: true, button: 0, buttons: 1, clientX: x, clientY: y })); });
+
+it("lays panels side by side with a separator between each pair", async () => {
+  await render(tabs);
+  expect(where()).toEqual(["1/1", "3/1", "5/1"]);
+  expect(host.querySelectorAll('[role="separator"]')).toHaveLength(2);
+});
+
+it("moves a panel with Alt+arrows without re-parenting it", async () => {
+  await render(tabs);
+  const before = host.querySelector('[data-inspector-pane="files"]');
+  altKey(header("files"), "ArrowRight");
+  expect(where()).toEqual(["3/1", "1/1", "5/1"]);
+  altKey(header("diff:notes.md"), "ArrowLeft");
+  expect(where()).toEqual(["5/1", "1/1", "3/1"]);
+  // Moving never re-parents a panel, so a browser or an editor draft inside it is not remounted.
+  expect(host.querySelector('[data-inspector-pane="files"]')).toBe(before);
+});
+
+it("drags a header onto the lower half of another panel to stack it there", async () => {
+  await render(tabs);
+  const boxes = [rect(0, 0, 100, 200), rect(108, 0, 100, 200), rect(216, 0, 100, 200)];
+  IDS.forEach((id, index) => { (host.querySelector(`[data-inspector-pane="${id}"]`) as HTMLElement).getBoundingClientRect = () => boxes[index]!; });
+  const before = host.querySelector('[data-inspector-pane="files"]');
+  mouse(header("files"), "pointerdown", 20, 10);
+  mouse(header("files"), "pointermove", 22, 10);
+  expect(host.querySelector(".ff-inspector-ghost")).toBeNull();
+  mouse(header("files"), "pointermove", 158, 150);
+  expect(host.querySelector(".ff-inspector-ghost")?.textContent).toBe("Files");
+  expect(host.querySelector<HTMLElement>(".ff-inspector-drop")?.dataset.zone).toBe("bottom");
+  expect(host.querySelector(".ff-right-inspector")?.hasAttribute("data-shielded")).toBe(true);
+  mouse(header("files"), "pointerup", 158, 150);
+  expect(placed("file:a/notes.md")).toEqual({ column: "1", row: "1" });
+  expect(placed("files")).toEqual({ column: "1", row: "2" });
+  expect(placed("diff:notes.md").column).toBe("3");
+  expect(host.querySelector('[data-inspector-pane="files"]')).toBe(before);
+  expect(host.querySelector(".ff-inspector-ghost")).toBeNull();
+});
+
+it("Escape puts a lifted panel back, and a short press never starts a drag", async () => {
+  await render(tabs);
+  mouse(header("files"), "pointerdown", 20, 10);
+  mouse(header("files"), "pointermove", 23, 10);
+  expect(host.querySelector("[data-lifted]")).toBeNull();
+  mouse(header("files"), "pointermove", 80, 40);
+  expect(host.querySelector("[data-lifted]")).not.toBeNull();
+  keys(header("files"), "Escape");
+  expect(host.querySelector("[data-lifted]")).toBeNull();
+  mouse(header("files"), "pointerup", 80, 40);
+  expect(where()).toEqual(["1/1", "3/1", "5/1"]);
+});
+
+it("widens a column with the arrow keys on its separator and hides the separators while a panel is enlarged", async () => {
+  await render(tabs);
+  (host.querySelector('[data-inspector-pane="files"]') as HTMLElement).getBoundingClientRect = () => rect(0, 0, 300, 100);
+  (host.querySelector('[data-inspector-pane="file:a/notes.md"]') as HTMLElement).getBoundingClientRect = () => rect(308, 0, 300, 100);
+  const grid = host.querySelector<HTMLElement>(".ff-inspector-grid")!;
+  keys(host.querySelector('[role="separator"]')!, "ArrowRight");
+  expect(grid.style.gridTemplateColumns).toContain("316fr");
+  expect(grid.style.gridTemplateColumns).toContain("284fr");
+  await act(async () => host.querySelector<HTMLButtonElement>('[data-inspector-pane="files"] [aria-pressed]')!.click());
+  expect(host.querySelectorAll('[role="separator"]')).toHaveLength(0);
 });
 
 it("shows full context for identical filenames and keeps every panel mounted when one is enlarged", async () => {

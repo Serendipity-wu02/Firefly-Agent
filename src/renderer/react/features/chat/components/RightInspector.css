@@ -1,6 +1,7 @@
-/* RightInspector — big panels tiled two per column.
+/* RightInspector — big panels side by side, resizable, and movable by their headers.
    Width comes from the outer react-resizable-panels Panel; the inspector only fills it. */
 .ff-right-inspector {
+  position: relative;
   display: flex;
   width: 100%;
   min-width: 0;
@@ -21,16 +22,28 @@
   to { opacity: 1; }
 }
 
-/* ── the tiled panels ── */
-.ff-inspector-grid { display: flex; min-width: 0; flex: 1 1 0; gap: 8px; }
-.ff-inspector-grid__column { display: flex; min-width: 0; flex: 1 1 0; flex-direction: column; gap: 8px; }
-.ff-inspector-grid__column[hidden] { display: none; }
+/* ── the panels: one grid; each panel is placed by inline grid-column / grid-row, so moving one never re-parents it ── */
+.ff-inspector-grid { display: grid; min-width: 0; min-height: 0; flex: 1 1 0; column-gap: 0; row-gap: 8px; }
+
+/* Separator between two columns: 8px of room, a hairline accent on hover or focus. */
+.ff-inspector-resizer { position: relative; z-index: 2; cursor: col-resize; outline: none; touch-action: none; }
+.ff-inspector-resizer::after { content: ""; position: absolute; inset: 0 3px; border-radius: 2px; background: transparent; transition: background-color 120ms ease; }
+.ff-inspector-resizer:hover::after, .ff-inspector-resizer:focus-visible::after, .ff-right-inspector[data-shielded] .ff-inspector-resizer:active::after { background: var(--ff-accent); }
+
+/* While a panel is lifted or a separator dragged, the browser's native view would swallow the pointer: fold its body (zero size hides the view). */
+.ff-right-inspector[data-shielded] .ff-inspector-pane[data-inspector-kind="browser"] .ff-inspector-pane__body { display: none; }
+.ff-right-inspector[data-moving], .ff-right-inspector[data-moving] .ff-inspector-pane__head { cursor: grabbing; user-select: none; }
+.ff-inspector-pane[data-lifted] { opacity: 0.55; }
+
+/* Where the lifted panel would land: a tinted half of the panel under the pointer. */
+.ff-inspector-drop { position: absolute; z-index: 5; box-sizing: border-box; pointer-events: none; border: 2px solid var(--ff-accent); border-radius: 12px; background: color-mix(in srgb, var(--ff-accent) 12%, transparent); transition: left 120ms ease, top 120ms ease, width 120ms ease, height 120ms ease; }
+.ff-inspector-ghost { position: fixed; z-index: 30; max-width: 220px; padding: 6px 12px; overflow: hidden; border: 1px solid var(--ff-border); border-radius: 10px; background: var(--ff-bg-workspace); box-shadow: 0 10px 28px rgb(0 0 0 / 16%); color: var(--ff-text); font: 600 12.5px/1 var(--rb-font-sans, sans-serif); text-overflow: ellipsis; white-space: nowrap; transform: rotate(-1.5deg); pointer-events: none; }
 
 .ff-inspector-pane {
   position: relative;
   display: flex;
-  flex: 1 1 0;
-  min-height: 120px;
+  min-width: 0;
+  min-height: 0;
   flex-direction: column;
   overflow: hidden;
   border: 1px solid var(--ff-border);
@@ -47,6 +60,7 @@
 .ff-inspector-pane__head {
   display: flex;
   height: 38px;
+  cursor: grab;
   flex: none;
   align-items: center;
   gap: 6px;
@@ -112,6 +126,6 @@
 
 @media (prefers-reduced-motion: reduce) {
   .ff-right-inspector, .ff-right-inspector__dot.is-executing { animation: none; }
-  .ff-inspector-pane { animation: none; transition: none; }
+  .ff-inspector-pane, .ff-inspector-drop, .ff-inspector-resizer::after { animation: none; transition: none; }
   .ff-inspector-pane__action { transition: none; }
 }
