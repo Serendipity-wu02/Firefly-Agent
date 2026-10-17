@@ -8,8 +8,8 @@
 }
 
 .ff-scroll-pill {
-  position: absolute;
-  z-index: 3;
+  position: fixed;
+  z-index: 30;
   width: 4px;
   border-radius: 999px;
   background: var(--ff-scroll-thumb);

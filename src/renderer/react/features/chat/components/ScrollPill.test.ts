@@ -5,15 +5,14 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { PILL_LENGTH, ScrollPill, pillGeometry } from "./ScrollPill";
 
 describe("scroll pill geometry", () => {
-  const base = { scrollHeight: 3000, clientHeight: 1000, columnRight: 900, width: 1800 };
+  const base = { scrollHeight: 3000, clientHeight: 1000, listTop: 100, panelRight: 1800 };
   it("keeps one fixed length and travels from top to bottom with the scroll position", () => {
-    expect(pillGeometry({ ...base, scrollTop: 0 }).top).toBe(8);
-    expect(pillGeometry({ ...base, scrollTop: 2000 }).top).toBe(1000 - PILL_LENGTH - 8);
-    expect(pillGeometry({ ...base, scrollTop: 1000 }).top).toBe(Math.round(8 + 0.5 * (1000 - PILL_LENGTH - 16)));
+    expect(pillGeometry({ ...base, scrollTop: 0 }).top).toBe(108);
+    expect(pillGeometry({ ...base, scrollTop: 2000 }).top).toBe(100 + 1000 - PILL_LENGTH - 8);
+    expect(pillGeometry({ ...base, scrollTop: 1000 }).top).toBe(Math.round(108 + 0.5 * (1000 - PILL_LENGTH - 16)));
   });
-  it("sits just right of the reading column, not against the window or the cards", () => {
-    expect(pillGeometry({ ...base, scrollTop: 0 }).left).toBe(914);
-    expect(pillGeometry({ ...base, scrollTop: 0, columnRight: 1795 }).left).toBe(1790);
+  it("hugs the right edge of the whole panel, outside the overview cards", () => {
+    expect(pillGeometry({ ...base, scrollTop: 0 }).left).toBe(1792);
   });
   it("is hidden when there is nothing to scroll", () => {
     expect(pillGeometry({ ...base, scrollHeight: 1000, scrollTop: 0 }).visible).toBe(false);
@@ -31,7 +30,7 @@ describe("scroll pill", () => {
     host.append(list);
     const ref = createRef<HTMLElement>();
     (ref as { current: HTMLElement }).current = list;
-    act(() => root.render(React.createElement(ScrollPill, { target: ref, column: ".none" })));
+    act(() => root.render(React.createElement(ScrollPill, { target: ref, panel: ".none" })));
     const pill = host.querySelector<HTMLElement>(".ff-scroll-pill")!;
     expect(pill.style.height).toBe(`${PILL_LENGTH}px`);
     expect(pill.classList.contains("is-active")).toBe(false);
@@ -51,7 +50,7 @@ describe("scroll pill", () => {
     const ref = createRef<HTMLElement>();
     (ref as { current: HTMLElement }).current = list;
     const onUserScroll = vi.fn();
-    act(() => root.render(React.createElement(ScrollPill, { target: ref, column: ".none", onUserScroll })));
+    act(() => root.render(React.createElement(ScrollPill, { target: ref, panel: ".none", onUserScroll })));
     const pill = host.querySelector<HTMLElement>(".ff-scroll-pill")!;
     act(() => {
       pill.dispatchEvent(new PointerEvent("pointerdown", { bubbles: true, pointerId: 2, clientY: 400 }));

@@ -1377,7 +1377,7 @@ export function ChatMessageList({
           )}
           <Bubble.List items={items} role={roles} autoScroll />
         </div>
-        <ScrollPill target={containerRef} column=".ant-bubble-list" onUserScroll={markUserScroll} />
+        <ScrollPill target={containerRef} panel=".ff-workspace-body" onUserScroll={markUserScroll} />
         </div>
       </LastTurnIdsContext.Provider>
     </FileLinkContext.Provider>
