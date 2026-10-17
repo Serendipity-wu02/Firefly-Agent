@@ -649,3 +649,50 @@
 .ff-composer .ant-sender-content { min-height: 76px; padding: 12px 16px 6px; row-gap: 0; }
 .ff-composer .ant-sender-input { min-height: 40px; }
 .ff-composer__footer { padding: 0 12px 8px; }
+
+/* ===== Composer, after the Codex window: every control in the row is plain text with an icon, no fills and no outlines;
+   they only gain a soft hover. One height (30px), one radius (8px), one gap. ===== */
+.ff-composer-shell { border-radius: 20px; }
+.ff-composer .ant-sender-content { min-height: 76px; padding: 14px 16px 4px; }
+.ff-composer .ant-sender-input { font-size: 14.5px; line-height: 1.55; }
+.ff-composer__footer { padding: 0 12px 10px; }
+.ff-composer__prefix-actions,
+.ff-composer__suffix { gap: 4px; }
+
+.ff-composer__add-button,
+.ff-composer__mic { width: 30px; height: 30px; border-radius: 8px; }
+.ff-composer__prefix-actions .ff-composer__footer-button,
+.ff-composer__prefix-actions .ff-composer__agent-button,
+.ff-composer__suffix .ff-composer__agent-button {
+  min-height: 30px;
+  height: 30px;
+  padding: 0 8px;
+  border: 0;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--ff-text-secondary);
+  font: 500 13px/1 var(--rb-font-sans, sans-serif);
+  transition: background-color 120ms ease, color 120ms ease;
+}
+.ff-composer__prefix-actions .ff-composer__footer-button:hover:not(:disabled),
+.ff-composer__prefix-actions .ff-composer__agent-button:hover,
+.ff-composer__suffix .ff-composer__agent-button:hover { background: var(--ff-bg-hover); color: var(--ff-text); }
+/* Full access: no warm block or ring, just the label; the shield icon alone keeps the warm hint. */
+.ff-composer .ff-permission-control.is-full { background: transparent; color: var(--ff-text-secondary); box-shadow: none; }
+.ff-composer .ff-permission-control.is-full:hover:not(:disabled) { background: var(--ff-bg-hover); color: var(--ff-text); }
+.ff-composer .ff-permission-control.is-full > svg:first-child { color: #d9652b; }
+/* The model button: plain text like the rest, the effort a shade lighter. */
+.ff-composer__suffix .ff-model-effort { border: 0; background: transparent; }
+.ff-composer .ant-sender-actions-btn { width: 32px; height: 32px; border-radius: 50%; }
+
+/* The project tab: same inset as the card's corner radius, a lighter grey, and a hairline that matches the card. */
+.ff-composer__project-strip {
+  margin: 0 20px -14px;
+  padding: 4px 8px 18px;
+  border-color: var(--ff-border);
+  border-radius: 14px 14px 0 0;
+  background: color-mix(in srgb, var(--ff-bg-hover) 70%, var(--ff-surface));
+}
+.ff-composer__project-strip .ff-composer__footer-button { min-height: 26px; border-radius: 8px; font-size: 12.5px; }
+/* The permission chip's dropdown arrow: small and muted like the model button's, not a bold dark caret. */
+.ff-composer .ff-permission-control > svg:last-child:not(:first-child) { width: 12px; height: 12px; color: var(--ff-text-muted); stroke-width: 2; }

@@ -40,7 +40,7 @@ export function createModelConnectionState() {
   let attempt = 0;
   let defaultProfileId: string | undefined;
   function snapshot(): ModelConnectionSnapshot {
-    return { ...(defaultProfileId ? { defaultProfileId } : {}), profiles: [...entries.values()].map((entry) => ({ ...entry.public })) };
+    return { ...(defaultProfileId ? { defaultProfileId } : {}), profiles: [...entries.values()].map((entry) => ({ ...entry.public, configured: entry.fingerprint !== null })) };
   }
   function publish() {
     for (const listener of listeners) {

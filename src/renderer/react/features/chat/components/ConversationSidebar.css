@@ -123,6 +123,9 @@
 
 .ff-session-label { display: flex; min-width: 0; align-items: center; gap: 6px; }
 .ff-session-label__title { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+/* Grouped by status: plain headings like the reference, and a warning mark on a conversation that needs the user. */
+.ff-conversation-status { color: var(--ff-text); font-weight: 600; }
+.ff-session-label__needs-input { flex: none; margin-left: auto; color: var(--ff-warning, #d98a1c); }
 /* A run in flight: a quiet spinner after the title. */
 .ff-session-label { width: 100%; }
 .ff-session-label__title { flex: 1 1 auto; }

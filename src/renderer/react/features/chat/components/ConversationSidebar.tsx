@@ -1,7 +1,8 @@
-import { Download, Folder, FolderCode, LoaderCircle, PencilLine, Pin, PinOff, Trash2 } from "lucide-react";
+import { Download, Folder, FolderCode, LoaderCircle, PencilLine, Pin, PinOff, Trash2, TriangleAlert } from "lucide-react";
 import { chatStore } from "../pages/chat-page-bridge";
 import { useSidebarLayout } from "../pages/use-sidebar-layout";
 import { projectSidebar } from "../pages/sidebar-projection";
+import { STATUS_ORDER, groupByStatus, statusGroupId, useStatusView, type SessionStatus } from "../pages/sidebar-status";
 import { SidebarLayoutControls } from "./SidebarLayoutControls";
 import { Conversations, type ConversationItemType } from "@ant-design/x";
 import { Input, Menu, Popover } from "antd";
@@ -19,6 +20,8 @@ interface ConversationSidebarProps {
   activeSessionId?: string;
   /** Sessions with a run in flight: a spinner follows their title. */
   runningSessionIds?: readonly string[];
+  /** Sessions with an approval, question or plan waiting on the user. */
+  needsInputSessionIds?: readonly string[];
   onSelect: (sessionId: string) => void;
   onOpenProject: (workspaceRoot: string) => void;
   onRename: (sessionId: string, newTitle: string) => void | Promise<void>;
@@ -96,6 +99,7 @@ export const ConversationSidebar = memo(function ConversationSidebar({
   listStatus,
   activeSessionId,
   runningSessionIds,
+  needsInputSessionIds,
   onSelect,
   onOpenProject,
   onRename,
@@ -170,9 +174,22 @@ export const ConversationSidebar = memo(function ConversationSidebar({
   }, [editing]);
 
   const running = useMemo(() => new Set(runningSessionIds ?? []), [runningSessionIds]);
+  const needsInput = useMemo(() => new Set(needsInputSessionIds ?? []), [needsInputSessionIds]);
+  // "By status": needs input / working / done, chosen from the arrangement menu and remembered per mode on this device.
+  const [statusView, setStatusView] = useStatusView(mode);
+  // Status grouping still honours the arrangement's hidden projects: only conversations the projection shows take part.
+  const statusSessions = useMemo(() => {
+    if (!projection) return sessions;
+    const shown = new Set(projection.groups.flatMap(group => group.sessionIds));
+    return sessions.filter(session => shown.has(session.id));
+  }, [sessions, projection]);
+  const statusOf = useMemo(() => statusView ? new Map(groupByStatus(statusSessions, running, needsInput).map(item => [item.session.id, item.status] as const)) : null,
+    [statusView, statusSessions, running, needsInput]);
+  const [statusExpanded, setStatusExpanded] = useState<string[]>(() => STATUS_ORDER.map(statusGroupId));
 
   const sortedSessions = useMemo(
     () => {
+      if (statusView) return groupByStatus(statusSessions, running, needsInput).map(item => item.session);
       if (projection) {
         const byId = new Map(sessions.map(session => [session.id, session]));
         return projection.groups.flatMap(group => group.sessionIds.map(id => byId.get(id)!).filter(Boolean));
@@ -183,7 +200,7 @@ export const ConversationSidebar = memo(function ConversationSidebar({
         return b.updatedAt - a.updatedAt;
       });
     },
-    [sessions, projection],
+    [sessions, projection, statusView, statusSessions, running, needsInput],
   );
 
   // 阶段 1A：items 数组 useMemo——避免每次渲染重建（Conversations 拿到新数组引用即重渲染全部条目）
@@ -219,14 +236,16 @@ export const ConversationSidebar = memo(function ConversationSidebar({
           ) : (
             <span className="ff-session-label">
               <span className="ff-session-label__title" title={session.title || t("sidebar.defaultSessionTitle")}>{session.title || t("sidebar.defaultSessionTitle")}</span>
-              {running.has(session.id) && (
+              {statusOf?.get(session.id) === "needs-input" ? (
+                <TriangleAlert className="ff-session-label__needs-input" size={14} strokeWidth={1.8} role="img" aria-label={t("sidebar.status.needsInputLabel")} />
+              ) : running.has(session.id) && (
                 <LoaderCircle className="ff-session-label__running" size={14} strokeWidth={1.8} role="img" aria-label={t("sidebar.sessionRunning")} />
               )}
             </span>
           ),
-        group: groupBySession.get(session.id) ?? (supportsProjects ? session.workspaceRoot ?? `unbound:${session.id}` : session.pinned ? "pinned" : "recent"),
+        group: statusOf ? statusGroupId(statusOf.get(session.id) ?? "done") : groupBySession.get(session.id) ?? (supportsProjects ? session.workspaceRoot ?? `unbound:${session.id}` : session.pinned ? "pinned" : "recent"),
       })),
-    [sortedSessions, editing, t, supportsProjects, onRename, groupBySession, running],
+    [sortedSessions, editing, t, supportsProjects, onRename, groupBySession, running, statusOf],
   );
 
   function openContextMenu(event: React.MouseEvent, sessionId: string) {
@@ -304,6 +323,7 @@ export const ConversationSidebar = memo(function ConversationSidebar({
     <nav className="ff-conversation-sidebar" aria-label={supportsProjects ? t("sidebar.projectsAndConversationsAria") : t("sidebar.conversationListAria")}>
       {layout.snapshot && projection
         ? <SidebarLayoutControls mode={mode} snapshot={layout.snapshot} groups={projection.groups} title={sectionTitle}
+          statusView={statusView} onStatusViewChange={setStatusView}
           projectIds={sessions.map(session => layout.snapshot!.sessionProjectIds[session.id]).filter((id): id is string => !!id)} pending={layout.pending} mutate={layout.mutate} />
         : <div className="ff-conversation-sidebar__title">{sectionTitle}</div>}
       {layout.error && <p className="ff-sidebar-layout__error" role="alert">{t(layout.error === "conflict" ? "sidebar.layoutConflict" : "sidebar.layoutFailed")}</p>}
@@ -327,7 +347,7 @@ export const ConversationSidebar = memo(function ConversationSidebar({
             }}
           >
             <Conversations
-              rootClassName={flat ? "ff-conversation-list ff-conversation-list--flat" : "ff-conversation-list"}
+              rootClassName={flat && !statusView ? "ff-conversation-list ff-conversation-list--flat" : `ff-conversation-list${statusView ? " ff-conversation-list--status" : ""}`}
               items={items}
               activeKey={activeSessionId}
               onActiveChange={(key) => {
@@ -335,13 +355,14 @@ export const ConversationSidebar = memo(function ConversationSidebar({
               }}
               groupable={{
                 collapsible: true,
-                expandedKeys: persistedExpanded ?? expandedKeys,
+                expandedKeys: statusView ? statusExpanded : persistedExpanded ?? expandedKeys,
                 // @ant-design/x 2.9.0 在 setState updater 内部调用 onExpand（use-collapsible.js），
                 // updater 会在渲染期执行，直接 setExpandedKeys 会触发
                 // "Cannot update a component while rendering a different component"。
                 // 用 queueMicrotask 把 setState 挪出渲染期，行为不变。
                 onExpand: (keys) => {
                   queueMicrotask(() => {
+                    if (statusView) { setStatusExpanded(keys); return; }
                     if (projection && layout.snapshot) {
                       for (const group of projection.groups) {
                         const expanded = keys.includes(group.groupId);
@@ -353,6 +374,10 @@ export const ConversationSidebar = memo(function ConversationSidebar({
                   });
                 },
                 label: (group) => {
+                  if (group.startsWith("status:")) {
+                    const status = group.slice("status:".length) as SessionStatus;
+                    return <span className="ff-conversation-status" data-status={status}>{t(`sidebar.status.${status}`)}</span>;
+                  }
                   if (group === "pinned") return t("sidebar.pinnedTitle");
                   if (group === "recent") return t("sidebar.recentTitle");
                   const projected = projection?.groups.find(item => item.groupId === group);

@@ -154,3 +154,35 @@ it.each([true, false])("locked enable keeps focus and Tab in the dialog until it
   expect(toggle().disabled).toBe(!accepted); expect(enable).toHaveBeenCalledExactlyOnceWith("fixture-skill", true);
   if (accepted) expect(element.textContent).not.toContain("Disabled"); else expect(status()).toContain("Could not enable");
 });
+
+it("translates descriptions that have no Chinese once on opening, then shows the Chinese text", async () => {
+  (globalThis as any).IS_REACT_ACT_ENVIRONMENT = true;
+  const translateSkillDescriptions = vi.fn(async () => ({ ok: true, translated: { "fixture-skill": "合成的测试技能" } }));
+  window.settings = {
+    getSkillCatalog: async () => [
+      { id: "fixture-skill", name: "Fixture", description: "Synthetic Skill", enabled: true, source: "builtin", modes: ["work", "code"], references: [] },
+      { id: "known", name: "Known", description: "Already done", descriptionZh: "已经翻译过", enabled: true, source: "user", modes: null, references: [] },
+    ],
+    getSkillModeOverrides: async () => ({}), translateSkillDescriptions,
+  } as any;
+  element = document.createElement("div"); document.body.append(element);
+  root = createRoot(element);
+  await act(async () => { root!.render(React.createElement(SkillModePanel)); });
+  await act(async () => { await Promise.resolve(); });
+  expect(translateSkillDescriptions).toHaveBeenCalledOnce();
+  const descriptions = [...element.querySelectorAll(".skill-card__desc")].map(node => node.textContent);
+  expect(descriptions).toEqual(["合成的测试技能", "已经翻译过"]);
+});
+
+it("does not ask for a translation when every description already has Chinese", async () => {
+  (globalThis as any).IS_REACT_ACT_ENVIRONMENT = true;
+  const translateSkillDescriptions = vi.fn(async () => ({ ok: true, translated: {} }));
+  window.settings = {
+    getSkillCatalog: async () => [{ id: "known", name: "Known", description: "Done", descriptionZh: "完成", enabled: true, source: "user", modes: null, references: [] }],
+    getSkillModeOverrides: async () => ({}), translateSkillDescriptions,
+  } as any;
+  element = document.createElement("div"); document.body.append(element);
+  root = createRoot(element);
+  await act(async () => { root!.render(React.createElement(SkillModePanel)); });
+  expect(translateSkillDescriptions).not.toHaveBeenCalled();
+});

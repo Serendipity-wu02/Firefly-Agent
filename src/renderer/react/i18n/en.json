@@ -186,6 +186,15 @@
     "title": "Context: {{summary}}",
     "footnote": "Estimated value; refreshes after each message"
   },
+  "slash": {
+    "label": "Commands",
+    "compact": "Compact the context by summarising earlier turns",
+    "new": "Start a new task",
+    "clear": "Clear the input",
+    "skill": "Skill",
+    "compactDone": "Context compacted",
+    "compactFailed": "Could not compact the context"
+  },
   "tokenUsageBar": {
     "ariaLabel": "Token usage, last {{days}} days",
     "requests": "{{count}} requests",
@@ -601,6 +610,7 @@
     "sourceBuiltin": "Built-in",
     "sourceUser": "User",
     "disabledBadge": "Disabled",
+    "translating": "Translating skill descriptions…",
     "noDescription": "No description",
     "noMatch": "No matching skill",
     "saveFailed": "Could not save {{skill}} ({{mode}}). The previous setting was restored. Please try again.",
@@ -802,6 +812,7 @@
     "followModel": "Follow model"
   },
   "modelEffort": {
+    "reset": "Back to automatic",
     "sliderLabel": "Thinking effort",
     "unsupported": "This model does not support adjusting thinking effort"
   },
@@ -945,6 +956,8 @@
     "recentSessions": "Recent tasks",
     "noSearchResults": "No matching tasks",
     "viewProjectsShort": "Projects",
+    "viewStatusShort": "Status",
+    "status": {"needs-input": "Needs input", "working": "Working", "done": "Completed", "needsInputLabel": "Waiting for you"},
     "viewMergedShort": "Merged",
     "dragToReorder": "Drag to reorder",
     "reorderHint": "Drag, or press Alt+Up or Alt+Down, to reorder",
@@ -984,6 +997,9 @@
     "modeChatDescription": "Everyday conversation and companionship",
     "modeWorkDescription": "Organize documents and drive project tasks",
     "modeCodeDescription": "Write, edit and debug code",
+    "navHistory": "Back and forward",
+    "navBack": "Back",
+    "navForward": "Forward",
     "toggleSidebar": "Toggle sidebar",
     "minimize": "Minimize",
     "maximizeOrRestore": "Maximize or restore",
@@ -1004,6 +1020,7 @@
     "more": "More",
     "navigation": "Main navigation",
     "connectionStatus": "API: {{state}}",
+    "connectionConfigured": "API configured",
     "connectionUnverified": "Not verified",
     "connectionChecking": "Checking",
     "connectionConnected": "Last test passed",

@@ -6,6 +6,8 @@ export interface ModelProfileConnection {
   state: "unverified" | "checking" | "connected" | "failed";
   checkedAt?: number;
   reason?: "test_failed" | "test_error";
+  /** Provider, address, model and key are all filled in, so the profile can be used even before anyone tests it. */
+  configured?: boolean;
 }
 export interface ModelConnectionSnapshot {
   defaultProfileId?: string;

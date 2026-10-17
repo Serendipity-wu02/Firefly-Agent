@@ -28,10 +28,11 @@ export function ModelConnectionIndicator({ activeProfileId, onOpenSettings }: {
   const connection = profiles.find(profile => profile.profileId === activeProfileId)
     ?? profiles.find(profile => profile.profileId === snapshot?.defaultProfileId)
     ?? profiles[0];
+  // A filled-in profile shows green even before a test; a failed last test still shows red.
   const state = connection && ["checking", "connected", "failed"].includes(connection.state)
-    ? connection.state : "unverified";
+    ? connection.state : connection?.configured ? "configured" : "unverified";
   const statusKey = {
-    unverified: "ui.connectionUnverified", checking: "ui.connectionChecking",
+    unverified: "ui.connectionUnverified", configured: "ui.connectionConfigured", checking: "ui.connectionChecking",
     connected: "ui.connectionConnected", failed: "ui.connectionFailed",
   }[state];
   const label = t("ui.connectionStatus", { state: t(statusKey) });

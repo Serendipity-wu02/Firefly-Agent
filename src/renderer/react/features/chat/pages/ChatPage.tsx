@@ -24,6 +24,9 @@ import {
 } from "../components/run-presentation";
 import { ChatMessageList } from "../components/ChatMessageList";
 import { ChatPageNavigation, type ChatPagePanel } from "../components/ChatPageNavigation";
+import { useNavigationHistory } from "./useNavigationHistory";
+import { CodeRain } from "../components/CodeRain";
+import { sessionsNeedingInput } from "./sidebar-status";
 import {
   ContextCompressionNotice,
   FileDropOverlay,
@@ -1041,7 +1044,13 @@ export function ChatPage() {
     const picked = await store.pickWorkspaceFolder();
     if (!picked.ok || !picked.path) return;
 
-    const workspace = { path: picked.path, displayName: picked.displayName ?? t("chatPage.defaultWorkspaceName") };
+    await applyWorkspace(targetMode, { path: picked.path, displayName: picked.displayName ?? t("chatPage.defaultWorkspaceName") });
+  }
+
+  /** Puts the current (or the next new) task of this mode into a workspace folder. */
+  async function applyWorkspace(targetMode: ConversationMode, workspace: { path: string; displayName: string }) {
+    const store = chatStore();
+    if (!store) return;
     setWorkspaceNames((current) => ({ ...current, [targetMode]: workspace.displayName }));
 
     const activeId = activeSessionIdsRef.current[targetMode];
@@ -1486,6 +1495,7 @@ export function ChatPage() {
 
   // Sessions with a run in flight, for the sidebar spinner. The registry is a ref: a run starting flips the busy state,
   // a run finishing bumps the registry version, and either recomputes the list.
+  const needsInputSessionIds = useMemo(() => sessionsNeedingInput(interactionsBySession, planReviewBySession), [interactionsBySession, planReviewBySession]);
   const runningSessionIds = useMemo(() => Object.keys(activeRunsBySession.current), [runRegistryVersion, modelBusyByMode]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // ── 阶段 1A：导航 props 引用稳定化 ──
@@ -1558,6 +1568,25 @@ export function ChatPage() {
       }
     });
   }, [feedback, t]);
+  // Back / forward through the conversations and panels already visited.
+  const navHistory = useNavigationHistory({
+    current: { mode, sessionId: activeSessionId, panel: activePanel },
+    go: (location) => {
+      setActivePanel((location.panel as ChatPagePanel | null) ?? null);
+      // The place may be in another mode: show that mode first, then (for a conversation) open it there.
+      if (location.mode !== mode) navModeChange(location.mode);
+      if (location.panel === null && location.sessionId) {
+        setPendingTemporary(false);
+        void navActionsRef.current.selectSession(location.sessionId, location.mode as ConversationMode);
+      }
+    },
+    isAvailable: (location) => location.panel !== null || (sessionsByMode[location.mode as ConversationMode] ?? []).some(session => session.id === location.sessionId),
+  });
+  // One stable object: the navigation is memoised, so a fresh one per render would re-render it on every streamed token.
+  const navHistoryProp = useMemo(
+    () => ({ canBack: navHistory.canBack, canForward: navHistory.canForward, onBack: navHistory.back, onForward: navHistory.forward }),
+    [navHistory.canBack, navHistory.canForward, navHistory.back, navHistory.forward],
+  );
   const navMinimize = useCallback(() => window.chat?.minimize(), []);
   useMaximizedWindowDrag();
   const navMaximize = useCallback(() => window.chat?.toggleMaximize(), []);
@@ -1575,8 +1604,10 @@ export function ChatPage() {
       <ChatPageNavigation
         collapsed={collapsed}
         runningSessionIds={runningSessionIds}
+        needsInputSessionIds={needsInputSessionIds}
         activePanel={activePanel}
         onPanelSlot={setPanelSlot}
+        navHistory={navHistoryProp}
         mode={mode}
         sessions={sessions}
         sessionListStatus={sessionListErrors[mode] ? "error" : sessionsByMode[mode] === undefined ? "loading" : "ready"}
@@ -1700,6 +1731,7 @@ export function ChatPage() {
           </ChatInspectorActionsContext.Provider>
         )}
         <ContextCompressionNotice visible={isCompressingContext} />
+        {!hasMessages && <CodeRain />}
         {!hasMessages && <div className="ff-workspace-greeting">
           <h2 className="ff-workspace-greeting__title">{t(mode === "chat" ? "chatPage.emptyGreeting" : "chatPage.emptyGreetingTask")}</h2>
           <p className="ff-workspace-greeting__hint">{t(`chatPage.emptyHint.${mode}`)}</p>
@@ -1727,6 +1759,8 @@ export function ChatPage() {
             value={draft}
             mode={mode}
             docked={hasMessages}
+            onNewTask={navNewTask}
+            onNotice={(message, tone) => feedback.notice({ tone, message })}
             conversationId={activeSessionId ?? undefined}
             workspaceName={workspaceNames[mode]}
             workspaceRoot={activeSession?.workspaceBinding?.workspaceRoot}

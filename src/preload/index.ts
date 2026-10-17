@@ -322,6 +322,8 @@ const settingsApi = {
   // 三模适配层：skill-模式覆盖层（UI 设置面板用）
   getSkillCatalog: () => ipcRenderer.invoke(IPC.SKILL_GET_CATALOG),
   rescanSkills: () => ipcRenderer.invoke(IPC.SKILL_RESCAN),
+  /** Translates skill descriptions that have no Chinese yet with the default model; resolves to id → Chinese for every known one. */
+  translateSkillDescriptions: () => ipcRenderer.invoke(IPC.SKILL_TRANSLATE_DESCRIPTIONS),
   getSkillModeOverrides: () => ipcRenderer.invoke(IPC.SKILL_GET_MODE_OVERRIDES),
   setSkillModeOverride: (skillId: string, mode: string, enabled: boolean) =>
     ipcRenderer.invoke(IPC.SKILL_SET_MODE_OVERRIDE, { skillId, mode, enabled }),

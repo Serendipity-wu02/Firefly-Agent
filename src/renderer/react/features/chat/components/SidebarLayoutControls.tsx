@@ -24,9 +24,11 @@ export function mergeGroupOrder(groupOrder: readonly string[], nextVisibleOrder:
 }
 
 /** The arrangement menu (group by, sort by, which projects to show, reset) and the groups dialog it opens. */
-export function SidebarLayoutControls({ mode, snapshot, groups, projectIds, pending, mutate, title }: {
+export function SidebarLayoutControls({ mode, snapshot, groups, projectIds, pending, mutate, title, statusView = false, onStatusViewChange }: {
   mode: ConversationMode; snapshot: SidebarSnapshot; groups: SidebarProjectionGroup[]; title: string;
   projectIds: readonly string[]; pending: boolean; mutate(patch: SidebarPatch): Promise<boolean>;
+  /** Grouped by status (needs input / working / done) instead of the stored view; kept on this device only. */
+  statusView?: boolean; onStatusViewChange?(on: boolean): void;
 }) {
   const { t } = useTranslation();
   const [menuOpen, setMenuOpen] = useState(false);
@@ -35,7 +37,7 @@ export function SidebarLayoutControls({ mode, snapshot, groups, projectIds, pend
   const projects = snapshot.layout.projects.filter(project => projectIds.includes(project.id));
   const hiddenProjects = projects.filter(project => state.hiddenProjectIds.includes(project.id));
   const defaultView = mode === "chat" ? "merged" : "project";
-  const atDefaults = state.viewMode === defaultView && state.sortMode === "recent" && hiddenProjects.length === 0;
+  const atDefaults = !statusView && state.viewMode === defaultView && state.sortMode === "recent" && hiddenProjects.length === 0;
   const label = (group: SidebarProjectionGroup) => group.projectId || group.sectionId ? group.label
     : t(mode === "chat" || state.viewMode === "merged" ? "sidebar.recentTitle" : "sidebar.unboundProject");
   /** Applies patches one after another and stops at the first one that did not go through. */
@@ -43,11 +45,11 @@ export function SidebarLayoutControls({ mode, snapshot, groups, projectIds, pend
     for (const patch of patches) if (!(await mutate(patch))) return;
   };
   const unhide = hiddenProjects.map(project => ({ mode, kind: "set-project-visible", projectId: project.id, visible: true } as const));
-  const resetDefaults = () => applyInOrder([
+  const resetDefaults = () => { onStatusViewChange?.(false); return applyInOrder([
     ...(state.viewMode === defaultView ? [] : [{ mode, kind: "set-view", viewMode: defaultView } as const]),
     ...(state.sortMode === "recent" ? [] : [{ mode, kind: "set-sort", sortMode: "recent" } as const]),
     ...unhide,
-  ]);
+  ]); };
 
   // Every project appears in the dialog exactly once: in the ordered list while it has a group, otherwise in the visibility list.
   const groupRows: SidebarGroupRow[] = groups.map(group => ({ groupId: group.groupId, label: label(group), sectionId: group.sectionId, projectId: group.projectId }));
@@ -57,12 +59,22 @@ export function SidebarLayoutControls({ mode, snapshot, groups, projectIds, pend
 
   const items: MenuProps["items"] = [
     ...(mode === "chat" ? [] : [{
-      key: "group-by", label: t("sidebar.groupBy"), extra: t(state.viewMode === "project" ? "sidebar.viewProjectsShort" : "sidebar.viewMergedShort"), disabled: pending,
-      children: (["project", "merged"] as const).map(view => ({
-        key: `view:${view}`, icon: checked(state.viewMode === view), disabled: pending,
-        label: t(view === "project" ? "sidebar.viewProjectsShort" : "sidebar.viewMergedShort"),
-        onClick: () => { if (state.viewMode !== view) void mutate({ mode, kind: "set-view", viewMode: view }); },
-      })),
+      key: "group-by", label: t("sidebar.groupBy"),
+      extra: t(statusView ? "sidebar.viewStatusShort" : state.viewMode === "project" ? "sidebar.viewProjectsShort" : "sidebar.viewMergedShort"), disabled: pending,
+      children: [
+        ...(["project", "merged"] as const).map(view => ({
+          key: `view:${view}`, icon: checked(!statusView && state.viewMode === view), disabled: pending,
+          label: t(view === "project" ? "sidebar.viewProjectsShort" : "sidebar.viewMergedShort"),
+          onClick: () => {
+            onStatusViewChange?.(false);
+            if (state.viewMode !== view) void mutate({ mode, kind: "set-view", viewMode: view });
+          },
+        })),
+        ...(onStatusViewChange ? [{
+          key: "view:status", icon: checked(statusView), disabled: pending,
+          label: t("sidebar.viewStatusShort"), onClick: () => onStatusViewChange(true),
+        }] : []),
+      ],
     }]),
     {
       key: "sort-by", label: t("sidebar.sortBy"), extra: t(state.sortMode === "recent" ? "sidebar.recentSort" : "sidebar.manualSort"), disabled: pending,

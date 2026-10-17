@@ -186,6 +186,15 @@
     "title": "上下文 {{summary}}",
     "footnote": "估算值（按字符折算），对话后自动刷新"
   },
+  "slash": {
+    "label": "指令",
+    "compact": "压缩上下文，整理较早的对话",
+    "new": "新建任务",
+    "clear": "清空输入框",
+    "skill": "技能",
+    "compactDone": "已压缩上下文",
+    "compactFailed": "压缩上下文失败"
+  },
   "tokenUsageBar": {
     "ariaLabel": "近 {{days}} 天 token 用量",
     "requests": "{{count}} 次请求",
@@ -601,6 +610,7 @@
     "sourceBuiltin": "内置",
     "sourceUser": "用户",
     "disabledBadge": "已禁用",
+    "translating": "正在把技能说明翻译成中文…",
     "noDescription": "暂无描述",
     "noMatch": "无匹配 skill",
     "saveFailed": "未能保存 {{skill}}（{{mode}}）设置，已恢复原状态，请重试。",
@@ -802,6 +812,7 @@
     "followModel": "跟随模型"
   },
   "modelEffort": {
+    "reset": "恢复自动",
     "sliderLabel": "思考强度",
     "unsupported": "当前模型不支持调节思考强度"
   },
@@ -945,6 +956,8 @@
     "recentSessions": "最近任务",
     "noSearchResults": "没有匹配的任务",
     "viewProjectsShort": "项目",
+    "viewStatusShort": "按状态",
+    "status": {"needs-input": "需要你处理", "working": "进行中", "done": "已完成", "needsInputLabel": "等待你处理"},
     "viewMergedShort": "合并",
     "dragToReorder": "拖动排序",
     "reorderHint": "拖动或按 Alt+↑ / Alt+↓ 调整顺序",
@@ -984,6 +997,9 @@
     "modeChatDescription": "日常交流与陪伴",
     "modeWorkDescription": "整理文档、推进项目任务",
     "modeCodeDescription": "编写、修改与调试代码",
+    "navHistory": "前进与后退",
+    "navBack": "后退",
+    "navForward": "前进",
     "toggleSidebar": "切换侧栏",
     "minimize": "最小化",
     "maximizeOrRestore": "最大化或还原",
@@ -1004,6 +1020,7 @@
     "more": "更多",
     "navigation": "主导航",
     "connectionStatus": "API：{{state}}",
+    "connectionConfigured": "已配置 API",
     "connectionUnverified": "未验证",
     "connectionChecking": "正在检查",
     "connectionConnected": "最近测试通过",

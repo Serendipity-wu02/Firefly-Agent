@@ -141,7 +141,7 @@ describe("ChatComposer Code sticker policy", () => {
     });
   });
 
-  it("keeps the plan mode toggle in the Code composer footer", () => {
+  it("no longer shows a plan mode toggle in the Code composer row", () => {
     renderToStaticMarkup(createElement(ChatComposer, {
       ...baseProps,
       mode: "code",
@@ -149,7 +149,7 @@ describe("ChatComposer Code sticker policy", () => {
     }));
     const html = renderToStaticMarkup(senderProps?.prefix as React.ReactElement);
 
-    expect(html).toContain("计划模式 · off");
-    expect(html).toContain("ff-plan-control");
+    expect(html).not.toContain("计划模式");
+    expect(html).not.toContain("ff-plan-control");
   });
 });
