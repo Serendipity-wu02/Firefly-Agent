@@ -150,9 +150,15 @@
   background: var(--ff-bg-page);
 }
 :root .ff-page.is-collapsed .ff-workspace-header { padding-left: 96px; }
-/* The right-most header leaves room for the window buttons. */
-:root .ff-page-dock:not(.has-inspector) .ff-workspace-header,
-:root .ff-right-inspector__bar { padding-right: 150px; }
+/* Without panels the canvas header is the right-most and leaves room for the window buttons.
+   With panels open, the panel column starts below a 45px strip that holds them, like the reference's pane cards. */
+:root .ff-page-dock:not(.has-inspector) .ff-workspace-header { padding-right: 150px; }
+:root .ff-page-dock.has-inspector .ff-chat-inspector {
+  box-sizing: border-box;
+  padding-top: var(--ff-app-titlebar-height);
+  background: var(--ff-bg-workspace);
+}
+:root .ff-page-dock.has-inspector .ff-right-inspector__bar { border-top: var(--cds-hairline) solid var(--ff-border); }
 
 /* ---------- 3. Canvas and panels: flat surfaces split by hairlines ---------- */
 :root .ff-workspace {
@@ -206,7 +212,6 @@
 
 /* ---------- 5. Messages: a quiet neutral user bubble, assistant text straight on the canvas ---------- */
 :root .ff-message--user .ant-bubble-content {
-  max-width: 85%;
   padding: 10px 14px;
   border-radius: 12px;
   background: var(--cds-bg-user-message);
