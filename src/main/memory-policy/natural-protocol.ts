@@ -13,6 +13,7 @@ export const factDigest=(value:unknown)=>createHash("sha256").update(canonicalJs
 const attributes:Record<ShadowAttribute,TypedUserFact["attribute"]>={"form-of-address":"address",language:"language","response-style":"response-style",tool:"tool",preference:"preference"};
 const normalize=(s:string)=>s.normalize("NFKC").trim().toLowerCase();
 const NEGATIVE=/不|没(?:有)?|未(?:曾)?|讨厌|\b(?:not|never|dislike|hate|without|avoid)\b|\bno longer\b|\bstopp?ed (?:using|liking)\b|\b(?:don|doesn|didn|isn|wasn|aren)['’]t\b/i;
+const AMBIGUOUS_NEGATIVE=/\b(?:do\s+not|don['’]t|never|no\s+longer)\s+(?:dislike|hate|avoid)\b/i;
 // Quotation boundaries exclude in-word apostrophes such as don't. Wishes and questions
 // without a question mark still are not evidence of an existing durable preference.
 const NON_FACT=/["“”‘「」『』`\n]|(?:^|\s)['’]|['’](?:$|\s)|(?:^|\s)>|如果|假如|假设|比如|例如|示例|引用|翻译|他说|她说|可能|也许|是否|这句话|这段话|想知道|想问|请问|不得不|不能不|(?:没|未|不)(?:有)?(?:说过|说|表示|确认)|[?？]|\b(?:if|suppose|hypothetical|example|quote|pretend|translate|maybe|wish|wonder)\b|\b(?:never said|did not say|didn't say|not saying|the sentence|the phrase|can I|could I|should I|do I|not only)\b/i;
@@ -20,6 +21,48 @@ const MULTI_CLAUSE=/[,，;；\n]|但是|不过|然而|\b(?:but|however|although)
 const QUALIFIED=/工作|职场|项目|个人时|在家时|\bwhen\b|\bat work\b|\bfor work\b|\bin this project\b/i;
 const INSTRUCTION=/忽略.*(?:规则|指令)|覆盖.*(?:规则|指令)|系统提示|执行命令|\b(?:ignore|override)\b.*\b(?:instructions?|rules?|system)\b|\b(?:system prompt|run_command|execute command)\b/i;
 const aliases:Record<string,string[]>={zh:["中文","chinese","汉语"],en:["英文","英语","english"],mixed:["中英混合","bilingual"],concise:["简洁","简短","短一点","少一点","concise","brief","short"],detailed:["详细","展开","detailed"]};
+
+// A self pronoun somewhere in the quote does not make another person's object ours.
+// Keep this conservative: ambiguous paraphrases stay outside persistent candidates.
+const SELF_PREDICATES:Record<ShadowAttribute,RegExp[]>={
+ "form-of-address":[
+  /^(?:please\s+)?(?:call me|my (?:name|nickname) is|i go by)\s+(.+)$/iu,
+  /^(?:(?:以后|请|就|还是)\s*)*(?:叫我|称呼我)\s*(.+)$/u,
+  /^我的(?:称呼|昵称|名字)(?:是|叫)\s*(.+)$/u,
+  /^(.+?)\s*是我(?:习惯|一直|通常|平时|默认|喜欢)*(?:用的|的)?(?:称呼|昵称)(?:[，,。.!！].*)?$/u,
+ ],
+ language:[
+  /^i\s+(?:(?:always|usually|normally|personally)\s+)*(?:(?:do not|don't|don’t|never)\s+)?(?:prefer|use|speak)\s+(.+)$/iu,
+  /^我(?:一直|通常|平时|默认|更|习惯)*(?:用|使用|说|喜欢|偏好)\s*(.+)$/u,
+  /^以后(?:都)?(?:请)?(?:用|使用)\s*(.+)$/u,
+ ],
+ "response-style":[
+  /^i\s+(?:(?:always|usually|normally|personally)\s+)*(?:(?:do not|don't|don’t|never)\s+)?(?:prefer|like|want)\s+(.+)$/iu,
+  /^(?:我(?:一直|通常|更|现在)*(?:喜欢|希望|偏好)|以后(?:都)?(?:请)?)(?:回答|回复)?\s*(.+)$/u,
+ ],
+ tool:[
+  /^i\s+(?:(?:always|usually|often|normally|regularly|personally)\s+)*(?:(?:do not|don't|don’t|never|no longer)\s+)?use\s+(.+)$/iu,
+  /^my\s+(?:editor|ide|shell|terminal|browser|tool)\s+is\s+(.+)$/iu,
+  /^我(?:一直|平时|通常|经常|习惯|始终|默认|现在|更常|常|不再|从不|没有|没|不)*(?:使用|用|改用)\s*(.+)$/u,
+  /^我的(?:编辑器|工具|终端|浏览器)(?:是|用)\s*(.+)$/u,
+ ],
+ preference:[
+  /^i\s+(?:(?:always|usually|normally|personally)\s+)*(?:(?:do not|don't|don’t|never)\s+)?(?:like|love|prefer|dislike|hate)\s+(.+)$/iu,
+  /^my\s+favou?rite(?:\s+(?:food|drink|theme|color|colour))?\s+is\s+(.+)$/iu,
+  /^我(?:一直|平时|通常|始终|更|不再|从不|没有|没|不)*(?:喜欢|爱|偏好|讨厌)\s*(.+)$/u,
+ ],
+};
+
+function hasSelfPredicate(attribute:ShadowAttribute,clauseText:string,value:string):boolean {
+ clauseText=clauseText.replace(/^(?:(?:但是|不过|然而)\s*|(?:but|however)\s+)/iu,"");
+ const values=[value,...(aliases[value]??[])];
+ return SELF_PREDICATES[attribute].some(pattern=>{
+  let object=pattern.exec(clauseText)?.[1]?.trim();if(!object)return false;
+  if(attribute==="preference")object=object.replace(/^(?:(?:drinking|eating|using|wearing)\s+|喝|吃|使用|用)/u,"");
+  object=object.replace(/^(?:the|an?)\s+/u,"");
+  return values.some(candidate=>object.startsWith(candidate)&&!(/[a-z0-9_]$/iu.test(candidate)&&/[a-z0-9_]/iu.test(object[candidate.length]??"")));
+ });
+}
 
 function sentence(text:string,start:number,end:number):string {
  const boundary=/[。！？!?;；\n]/;let from=start,to=end;
@@ -38,15 +81,17 @@ export function validateNaturalResponse(raw:unknown,text:string,messageId:string
  if(extractPreference(text).kind==="rejected")return [];
  try{assertContextSecretFree(text)}catch{return []}
  return validateShadowResponse(raw,{user:{id:messageId,text}}).candidates.flatMap(c=>{
-  const start=text.indexOf(c.evidence.quote),end=start+c.evidence.quote.length,s=sentence(text,start,end);
-  if(start!==text.lastIndexOf(c.evidence.quote)||c.status!=="asserted"||NON_FACT.test(s)||QUALIFIED.test(s)||INSTRUCTION.test(s)||INSTRUCTION.test(c.value))return [];
+  // Match source spans in the original text; normalization can change their length.
+  const start=text.indexOf(c.evidence.quote),end=start+c.evidence.quote.length,s=normalize(sentence(text,start,end)),quote=normalize(c.evidence.quote);
+  if(start!==text.lastIndexOf(c.evidence.quote)||c.status!=="asserted"||NON_FACT.test(s)||AMBIGUOUS_NEGATIVE.test(s)||QUALIFIED.test(s)||INSTRUCTION.test(s)||INSTRUCTION.test(normalize(c.value)))return [];
   // A requested one-off operation, a quote, or the assistant's guess cannot become self-evidence.
-  if(!/我|以后|一直|通常|始终|\b(?:I|my|always)\b|\bcall me\b/i.test(c.evidence.quote)||(MULTI_CLAUSE.test(c.evidence.quote)&&NEGATIVE.test(c.evidence.quote)))return [];
+  if(!/我|以后|一直|通常|始终|\b(?:I|my|always)\b|\bcall me\b/i.test(quote)||(MULTI_CLAUSE.test(quote)&&NEGATIVE.test(quote)))return [];
   // A negation in a different clause cannot authorize this assertion. Conversely a
   // model may not trim an enclosing negation out of its evidence span.
-  if(NEGATIVE.test(c.evidence.quote)!==(c.polarity==="negative")||NEGATIVE.test(clause(text,start,end))!==NEGATIVE.test(c.evidence.quote))return [];
-  const value=normalize(c.value),support=normalize(c.evidence.quote);
+  if(NEGATIVE.test(quote)!==(c.polarity==="negative")||NEGATIVE.test(normalize(clause(text,start,end)))!==NEGATIVE.test(quote))return [];
+  const value=normalize(c.value),support=quote;
   if(!support.includes(value)&&!(aliases[value]?.some(alias=>support.includes(alias))))return [];
+  if(!hasSelfPredicate(c.attribute,normalize(clause(text,start,end)),value))return [];
   try{for(const part of [c.value,c.reason,c.evidence.quote])assertContextSecretFree(part)}catch{return []}
   return [{attribute:attributes[c.attribute],value:c.value.trim(),polarity:c.polarity,quote:c.evidence.quote,span:{start,end}}];
  });
@@ -76,15 +121,16 @@ export function naturalAssertion(fact:TypedUserFact):string {
  * No model/queue participates in correction or revision. */
 export function parseNaturalEdit(text:string,attribute:TypedUserFact["attribute"]):NaturalProposal {
  if(typeof text!=="string"||text.length>200||extractPreference(text).kind==="rejected")throw Error("MEMORY_POLICY_UNRESOLVED");
- if(NON_FACT.test(text)||INSTRUCTION.test(text))throw Error("MEMORY_POLICY_UNRESOLVED");
- const polarity=NEGATIVE.test(text)?"negative":"positive";
+ const semantic=normalize(text);
+ if(NON_FACT.test(semantic)||AMBIGUOUS_NEGATIVE.test(semantic)||INSTRUCTION.test(semantic))throw Error("MEMORY_POLICY_UNRESOLVED");
+ const polarity=NEGATIVE.test(semantic)?"negative":"positive";
  let value=text.normalize("NFKC").trim().replace(/[。.!！]$/u,"");
  const prefixes:Record<TypedUserFact["attribute"],RegExp>={
   address:/^(?:(?:以后|请|就|还是)\s*)*(?:叫我|称呼我|call me\s+)/iu,
-  language:/^(?:我(?:现在|以后|更)?(?:喜欢|偏好|默认用)|以后(?:都)?(?:请)?用|I (?:prefer|use)\s+)/iu,
-  "response-style":/^(?:我(?:现在|更)?(?:喜欢|希望|偏好)|以后(?:都)?(?:请)?|I (?:prefer|like|want)\s+)/iu,
-  tool:/^(?:我(?:现在|平时|通常|以后)?(?:更常|不再|从不)?(?:不使用|不用|使用|改用|用)|I (?:don['’]t use|never use|use|prefer)\s+)/iu,
-  preference:/^(?:我(?:现在|平时|通常)?(?:更|不再)?(?:不喜欢|不爱|喜欢|偏好|爱)|I (?:dislike|don['’]t like|like|prefer)\s+)/iu,
+  language:/^(?:我(?:现在|以后|更)?(?:喜欢|偏好|默认用)|以后(?:都)?(?:请)?用|I (?:(?:do not|don['’]t|never)\s+)?(?:prefer|use)\s+)/iu,
+  "response-style":/^(?:我(?:现在|更)?(?:喜欢|希望|偏好)|以后(?:都)?(?:请)?|I (?:(?:do not|don['’]t|never)\s+)?(?:prefer|like|want)\s+)/iu,
+  tool:/^(?:我(?:现在|平时|通常|以后)?(?:更常|不再|从不)?(?:不使用|不用|使用|改用|用)|I (?:(?:do not|don['’]t|never)\s+)?(?:use|prefer)\s+)/iu,
+  preference:/^(?:我(?:现在|平时|通常)?(?:更|不再)?(?:不喜欢|不爱|喜欢|偏好|爱)|I (?:(?:do not|don['’]t|never)\s+)?(?:dislike|like|prefer)\s+)/iu,
  };
  value=value.replace(prefixes[attribute],"").trim();
  if(attribute==="language")value=value.replace(/(?:和我交流|回答|回复)$/u,"").trim();

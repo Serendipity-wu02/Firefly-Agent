@@ -7,9 +7,11 @@ const FIELDS=['subject','attribute','value','polarity','status','quote','reason'
 /** 第一批不收的类别。宁可多丢：这里命中就不进影子记录。 */
 const SENSITIVE=new RegExp([
  '健康','疾病','生病','病史','病情','过敏','药','症','怀孕','体重','身高','血压','血糖','医院','医生','诊断','治疗','抑郁','焦虑','心理','手术','残疾',
+ '糖尿病','胰岛素','肿瘤','癌','哮喘','癫痫','艾滋',
  '银行','账户','账号','卡号','工资','收入','存款','贷款','负债','欠款','身份证','护照','驾照','社保','住址','家庭地址','门牌','小区','电话','手机号','邮箱',
  '宗教','信仰','政治','性取向','同性','种族','民族',
  'health','medical','medicine','medication','allerg','disease','illness','diagnos','symptom','pregnan','therapy','depress','anxiety','surgery','disab',
+ 'diabet','cancer','tumou?r','leuk[ae]m','epilep','asthma','chemotherap','antidepress','\\b(?:hiv|aids|insulin|metformin|sertraline|fluoxetine|steroids?)\\b',
  'bank','account number','card number','salary','income','debt','loan','passport','social security','\\bssn\\b','driver\'?s licen','home address','phone number','e-?mail',
  'religio','politic','sexual','ethnic','\\brace\\b',
 ].join('|'),'i');
