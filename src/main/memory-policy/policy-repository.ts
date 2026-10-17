@@ -246,9 +246,9 @@ export class PolicyRepository {
     else if(cmd.kind==="candidateBinding")result={contentHash:this.contentHash(scope,this.candidate(scope,actor,input.candidateId,input.revision)),scopeBinding:scope};
     else{
      const owner=input.candidateId?this.candidate(scope,actor,input.candidateId,input.revision):this.records(scope).find(r=>r.actorKey===actor&&r.state==="active"&&r.factId===parseInternalId(input.factId));
-     if(!owner?.typed)throw Error("MEMORY_POLICY_UNRESOLVED");
+     if(!owner)throw Error("MEMORY_FACT_NOT_FOUND");
      if(input.factId&&!this.facts.current(scope).some(f=>f.factId===owner.factId&&f.revision===positiveRevision(input.revision)))throw Error("MEMORY_REVISION_CONFLICT");
-     result={typed:owner.typed};
+     result={typed:owner.typed??null};
     }
     this.db.exec("COMMIT");return result;
    })}catch(error){this.db.exec("ROLLBACK");throw error}

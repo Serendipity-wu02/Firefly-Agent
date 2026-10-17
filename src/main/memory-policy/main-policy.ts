@@ -70,9 +70,10 @@ export function createMainPolicy(options:{registry:ReturnType<typeof createMainS
   },
   async validateCorrection(token:object,factId:string,revision:number,text:string):Promise<void> {
    const actor=actorContext(token),parsed=extractPreference(text);
-   if(parsed.kind==="rejected")throw Error("MEMORY_POLICY_SECRET");if(parsed.kind==="direct")return;
-   const target=await command<{typed:import("../../shared/memory-contracts").TypedUserFact}>(actor,"editBinding",{factId:parseInternalId(factId),revision:positiveRevision(revision)});
-   parseNaturalEdit(text,target.typed.attribute);
+   if(parsed.kind==="rejected")throw Error("MEMORY_POLICY_SECRET");
+   const target=await command<{typed:import("../../shared/memory-contracts").TypedUserFact|null}>(actor,"editBinding",{factId:parseInternalId(factId),revision:positiveRevision(revision)});
+   if(target.typed)parseNaturalEdit(text,target.typed.attribute);
+   else if(parsed.kind!=="direct")throw Error("MEMORY_POLICY_UNRESOLVED");
   },
   async integrate(token:object,value:BoundSourceRef,signal?:AbortSignal):Promise<import("./policy-contracts").IntegrationResult> {
    const actor=actorContext(token),ref=boundSource(actor,value),project=resolveProject(actorAuthority.requireActor(token));
@@ -110,11 +111,13 @@ export function createMainPolicy(options:{registry:ReturnType<typeof createMainS
     body.sourceRef=boundSource(actor,v.sourceRef);const text=await read(actor,body.sourceRef),parsed=extractPreference(text);
     if(parsed.kind==="rejected")throw new Error("MEMORY_POLICY_SECRET");
     if(["revise","resolve","correct","remember"].includes(kind as string)){
-     if(parsed.kind==="direct")body.extraction=parsed;
-     else if(kind==="correct"||kind==="revise"){
-      const target=await command<{typed:import("../../shared/memory-contracts").TypedUserFact}>(actor,"editBinding",{revision:body.revision,...(kind==="correct"?{factId:body.factId}:{candidateId:body.candidateId})});
-      body.naturalEdit=parseNaturalEdit(text,target.typed.attribute);body.sourceText=text;
-     }else throw new Error("MEMORY_POLICY_UNRESOLVED");
+     if(kind==="correct"||kind==="revise"){
+      const target=await command<{typed:import("../../shared/memory-contracts").TypedUserFact|null}>(actor,"editBinding",{revision:body.revision,...(kind==="correct"?{factId:body.factId}:{candidateId:body.candidateId})});
+      if(target.typed){body.naturalEdit=parseNaturalEdit(text,target.typed.attribute);body.sourceText=text;}
+      else if(parsed.kind==="direct")body.extraction=parsed;
+      else throw new Error("MEMORY_POLICY_UNRESOLVED");
+     }else if(parsed.kind==="direct")body.extraction=parsed;
+     else throw new Error("MEMORY_POLICY_UNRESOLVED");
     }
    }
    const event=Object.freeze({});events.set(event,{actor:token,body:structuredClone(body)});return event;

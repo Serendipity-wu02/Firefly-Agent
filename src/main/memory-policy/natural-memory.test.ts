@@ -47,7 +47,7 @@ it("natural statement is confirmed, reopened, selected into another session, cor
  expect(recalled.snapshot.request.body.facts).toEqual(["用户称呼：小周"]);
  const corrected=await f.source("请叫我小林");
  await f.policy.act(f.actor,await f.policy.event(f.actor,{kind:"correct",nonce:randomUUID(),factId:active.factId,revision:1,sourceRef:corrected.ref}));
- const updated=await select(f);expect(updated.snapshot.request.body.facts).toEqual(["请叫我小林"]);expect(updated.refs[0].revision).toBe(2);
+ const updated=await select(f);expect(updated.snapshot.request.body.facts).toEqual(["用户称呼：小林"]);expect(updated.refs[0].revision).toBe(2);
  await expect(f.context.validateForDispatch(recalled.actor,recalled.snapshot)).rejects.toThrow();
  await f.policy.act(f.actor,await f.policy.event(f.actor,{kind:"forget",nonce:randomUUID(),factId:active.factId,revision:2}));
  expect((await select(f)).snapshot.request.body.facts).toEqual([]);
@@ -150,6 +150,57 @@ it("confirm is bound to hash and scope; a revised candidate cannot consume a sta
  await confirm(f,next.candidateId!,next.candidateRevision!);expect((await f.policy.recall(f.actor))[0].typed).toMatchObject({value:"Emacs"});
  const raw=f.commands.findLast(c=>(c as {kind:string;body:{kind?:string}}).kind==="event"&&(c as {body:{kind?:string}}).body.kind==="confirm") as {body:Record<string,unknown>};
  expect(raw.body).toMatchObject({scopeBinding:"scope-a"});
+});
+
+it.each([
+ ["Vim","I use PowerShell","powershell","shell","one"],
+ ["PowerShell","I use Vim","Vim","tool","many"],
+] as const)("selected typed tool correction accepts a complete statement from %s",async(initial,replacement,expected,legacyAttribute,cardinality)=>{
+ const f=fixture(),text=`I usually use ${initial}`,s=await f.source(text);
+ const c=(await extract(f,s.ref,model(response(text,{attribute:"tool",value:initial})))).items[0],a=await confirm(f,c.candidateId!,1);
+ const old=await select(f,"session-b","Help with a terminal tool");expect(old.refs).toHaveLength(1);
+ await f.policy.validateCorrection(f.actor,a.factId!,1,replacement);
+ const edit=await f.source(replacement);
+ expect(await f.policy.act(f.actor,await f.policy.event(f.actor,{kind:"correct",nonce:randomUUID(),factId:a.factId,revision:1,sourceRef:edit.ref}))).toMatchObject({status:"active",factId:a.factId,factRevision:2});
+ const fact=(await f.policy.recall(f.actor))[0];
+ expect(fact.typed).toMatchObject({attribute:"tool",value:expected,legacyAttribute,cardinality});
+ expect(fact.subjectKey).toBe(fact.typed!.slotKey);
+ const current=await select(f,"session-b","Help with a terminal tool");
+ expect(current.refs).toMatchObject([{factId:a.factId,revision:2}]);
+ expect(current.snapshot.request.body.facts.join(" ")).toContain(expected);
+ expect(current.snapshot.request.body.facts.join(" ").toLowerCase()).not.toContain(initial.toLowerCase());
+ await expect(f.context.validateForDispatch(old.actor,old.snapshot)).rejects.toThrow();
+ const lateSource=await f.source(`I use ${initial}`),late=await f.policy.event(f.actor,{kind:"correct",nonce:randomUUID(),factId:a.factId,revision:2,sourceRef:lateSource.ref});
+ await f.policy.act(f.actor,await f.policy.event(f.actor,{kind:"forget",nonce:randomUUID(),factId:a.factId,revision:2}));
+ await expect(f.policy.act(f.actor,late)).rejects.toThrow("MEMORY_POLICY_SUPPRESSED");
+ const replay=await f.registry.capture(f.access,f.adapter,s.id);
+ expect((await extract(f,replay,model(response(text,{attribute:"tool",value:initial})))).items.every(i=>i.status==="suppressed")).toBe(true);
+ expect((await select(f,"session-b","Help with a terminal tool")).refs).toEqual([]);
+});
+
+it.each([
+ ["Vim","I use PowerShell","powershell","shell","one"],
+ ["PowerShell","I use Vim","Vim","tool","many"],
+] as const)("selected typed tool revision replaces %s and invalidates its old confirmation",async(initial,replacement,expected,legacyAttribute,cardinality)=>{
+ const f=fixture(),text=`I usually use ${initial}`,s=await f.source(text);
+ const c=(await extract(f,s.ref,model(response(text,{attribute:"tool",value:initial})))).items[0];
+ const before=(await f.policy.candidates(f.actor,{limit:100})).items[0],proof=await f.source("I confirm this candidate");
+ const stale=await f.policy.event(f.actor,{kind:"confirm",nonce:randomUUID(),candidateId:c.candidateId,revision:1,contentHash:before.contentHash,sourceRef:proof.ref});
+ const edit=await f.source(replacement),next=await f.policy.act(f.actor,await f.policy.event(f.actor,{kind:"revise",nonce:randomUUID(),candidateId:c.candidateId,revision:1,sourceRef:edit.ref}));
+ expect(next).toMatchObject({status:"candidate",candidateRevision:1});expect(next.candidateId).not.toBe(c.candidateId);
+ expect(f.repo.current("scope-a")).toEqual([]);
+ const after=(await f.policy.candidates(f.actor,{limit:100})).items;
+ expect(after).toHaveLength(1);expect(after[0].typed).toMatchObject({attribute:"tool",value:expected,legacyAttribute,cardinality});
+ expect(after[0].contentHash).not.toBe(before.contentHash);
+ await expect(f.policy.act(f.actor,stale)).rejects.toThrow("MEMORY_REVISION_CONFLICT");
+ await expect(f.policy.event(f.actor,{kind:"confirm",nonce:randomUUID(),candidateId:next.candidateId,revision:1,contentHash:before.contentHash,sourceRef:proof.ref})).rejects.toThrow("MEMORY_CONFIRMATION_STALE");
+ const active=await confirm(f,next.candidateId!,1),fact=(await f.policy.recall(f.actor))[0];
+ expect(fact.typed).toMatchObject({attribute:"tool",value:expected,legacyAttribute,cardinality});expect(fact.subjectKey).toBe(fact.typed!.slotKey);
+ expect((await select(f,"session-b","Help with a terminal tool")).refs).toMatchObject([{factId:active.factId,revision:1}]);
+ await f.policy.act(f.actor,await f.policy.event(f.actor,{kind:"forget",nonce:randomUUID(),factId:active.factId,revision:1}));
+ const replay=await f.registry.capture(f.access,f.adapter,edit.id);
+ expect((await extract(f,replay,model(response(replacement,{attribute:"tool",value:expected})))).items.every(i=>i.status==="suppressed")).toBe(true);
+ expect((await select(f,"session-b","Help with a terminal tool")).refs).toEqual([]);
 });
 
 it("a deterministic change of a typed shell keeps the typed value and the old slot consistent",async()=>{
