@@ -243,6 +243,8 @@ it("persists a keyboard inspector resize immediately after a sidebar pointercanc
 it("folds the overview cards when a right panel opens and keeps the conversation readable when the separator is dragged", async () => {
   await click(button("打开会话概览"));
   expect(host.querySelector(".ff-chat-cards")).not.toBeNull();
+  // The column stays open across modes, conversations and restarts.
+  expect(localStorage.getItem("ff.chat.overviewOpen")).toBe("1");
   await click(button("文件"));
   expect(host.querySelector(".ff-chat-cards")).toBeNull();
   // The header switch still brings them back while the panel stays open.

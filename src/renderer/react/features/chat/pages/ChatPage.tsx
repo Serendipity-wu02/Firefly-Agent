@@ -157,6 +157,8 @@ interface NavActions {
   openProject: (workspaceRoot: string) => void;
 }
 
+/** Whether the overview card column is open, kept on this computer. */
+const OVERVIEW_OPEN_KEY = "ff.chat.overviewOpen";
 /** The narrowest the conversation (messages + composer) may get from dragging the dock separator, in px. */
 const CHAT_MIN_WIDTH = 480;
 /** The overview card column inside the conversation panel, with its inset. */
@@ -182,7 +184,13 @@ export function ChatPage() {
   const [filesTabOpen, setFilesTabOpen] = useState(false);
   const [browserTabOpen, setBrowserTabOpen] = useState(false);
   const [tasksTabOpen, setTasksTabOpen] = useState(false);
-  const [overviewTabOpen, setOverviewTabOpen] = useState(false);
+  // The overview cards stay where the user left them, across modes, conversations and restarts.
+  const [overviewTabOpen, setOverviewTabOpen] = useState(() => {
+    try { return window.localStorage.getItem(OVERVIEW_OPEN_KEY) === "1"; } catch { return false; }
+  });
+  useEffect(() => {
+    try { window.localStorage.setItem(OVERVIEW_OPEN_KEY, overviewTabOpen ? "1" : "0"); } catch { /* remembered for this window only */ }
+  }, [overviewTabOpen]);
   const [inspectorHidden, setInspectorHidden] = useState(false);
   // The panel's real state: dragging the separator to zero (or End) collapses it while inspectorHidden stays false.
   const [inspectorCollapsed, setInspectorCollapsed] = useState(false);
@@ -1304,7 +1312,6 @@ export function ChatPage() {
     setResultTabIds([]);
     setFilesTabOpen(false);
     setTasksTabOpen(mode !== "chat");
-    setOverviewTabOpen(false);
     setInspectorHidden(false);
     setActiveTabId(current => current === "browser" ? "browser" : mode !== "chat" ? "tasks" : null);
   }, [activeSessionId, mode]);
@@ -1442,7 +1449,7 @@ export function ChatPage() {
 
   // The conversation keeps a readable width: the dock separator cannot squeeze it below this, and it grows by the
   // overview card column (272px + its 8px inset) while that column is shown.
-  const chatCardsShown = overviewTabOpen && Boolean(activeSessionId) && !activePanel;
+  const chatCardsShown = overviewTabOpen && !activePanel;
   // On a narrow page the right panel keeps its own 280px minimum, so the conversation yields first.
   const chatMinWidth = Math.min(CHAT_MIN_WIDTH + (chatCardsShown ? CHAT_CARDS_WIDTH : 0),
     dockWidth > 0 ? Math.max(300, dockWidth - INSPECTOR_MIN_WIDTH - 12) : Number.POSITIVE_INFINITY);
@@ -1625,11 +1632,11 @@ export function ChatPage() {
               <button type="button" className="ff-inspector-toggle" aria-label={t("fileTree.title")}
                 title={t("fileTree.title")} aria-expanded={filesTabOpen && !inspectorHidden} aria-pressed={filesTabOpen && !inspectorHidden}
                 onClick={() => togglePanel("files", filesTabOpen, openFilesTab)}><FolderOpenOutlined aria-hidden="true" /></button>
-              {activeSessionId && <button type="button" className="ff-inspector-toggle"
+              <button type="button" className="ff-inspector-toggle"
                 aria-label={t("sessionOverview.open")} title={t("sessionOverview.open")}
                 aria-expanded={overviewTabOpen} aria-pressed={overviewTabOpen}
                 onClick={() => setOverviewTabOpen(open => !open)}>
-                <ProfileOutlined aria-hidden="true" /></button>}
+                <ProfileOutlined aria-hidden="true" /></button>
               {(mode !== "chat" || workspaceOutputs.length > 0) && <button type="button" className="ff-inspector-toggle"
                 aria-label={t("workspace.tasks")} title={t("workspace.tasks")}
                 aria-expanded={tasksTabOpen && !inspectorHidden} aria-pressed={tasksTabOpen && !inspectorHidden}
@@ -1821,7 +1828,7 @@ export function ChatPage() {
         </div>
         </div>
         {/* The overview cards live in the conversation panel, on the outer side of the dialog. */}
-        {overviewTabOpen && activeSessionId && (
+        {overviewTabOpen && (
           <aside className="ff-chat-cards" aria-label={t("sessionOverview.title")}>
             <SessionOverviewPanel usage={latestContextUsage} outputs={workspaceOutputs} onOpenChange={openResultDiff} onOpenTask={openTaskInRun}
               environment={{ mode, workspaceName: activeSession?.workspaceBinding?.displayName, temporary: activeSession?.temporary }}
@@ -1862,7 +1869,7 @@ export function ChatPage() {
                 onOpenFilesTab={openFilesTab}
                 onOpenTasksTab={mode !== "chat" || workspaceOutputs.length > 0
                   ? () => { setTasksTabOpen(true); setInspectorHidden(false); setActiveTabId("tasks"); } : undefined}
-                onOpenOverviewTab={activeSessionId ? () => setOverviewTabOpen(true) : undefined}
+                onOpenOverviewTab={() => setOverviewTabOpen(true)}
                 pendingWorkspaceName={pendingWorkspaceByMode[mode]?.displayName}
                 onChooseWorkspace={mode !== "chat" ? () => void chooseWorkspace() : undefined}
                 taskPanel={<div className="ff-workspace-task-panel">{mode === "work"
