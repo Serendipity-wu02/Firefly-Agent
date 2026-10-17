@@ -57,11 +57,11 @@ it("drags a header onto the lower half of another panel to stack it there", asyn
   mouse(header("files"), "pointerdown", 20, 10);
   mouse(header("files"), "pointermove", 22, 10);
   expect(host.querySelector(".ff-inspector-ghost")).toBeNull();
-  mouse(header("files"), "pointermove", 158, 150);
+  mouse(document.body, "pointermove", 158, 150);
   expect(host.querySelector(".ff-inspector-ghost")?.textContent).toBe("Files");
   expect(host.querySelector<HTMLElement>(".ff-inspector-drop")?.dataset.zone).toBe("bottom");
   expect(host.querySelector(".ff-right-inspector")?.hasAttribute("data-shielded")).toBe(true);
-  mouse(header("files"), "pointerup", 158, 150);
+  mouse(document.body, "pointerup", 158, 150);
   expect(placed("file:a/notes.md")).toEqual({ column: "1", row: "1" });
   expect(placed("files")).toEqual({ column: "1", row: "2" });
   expect(placed("diff:notes.md").column).toBe("3");

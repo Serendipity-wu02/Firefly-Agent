@@ -1432,6 +1432,21 @@ export function ChatPage() {
   const inspectorVisible = !activePanel && !inspectorHidden;
   const { panelRef: inspectorPanelRef, onLayoutChange: onInspectorLayoutChange } = useInspectorPanelVisibility(inspectorVisible, dockGroupRef, `${inspectorTabIds.length}:${compactDock}`);
 
+  // Panels sit side by side, so the right dock widens (never narrows) to give each opened panel room, up to 70% of the page.
+  // The resize is programmatic, so it is not saved as the user's own drag width.
+  const inspectorPanelCount = inspectorTabIds.length;
+  useEffect(() => {
+    if (compactDock || !inspectorVisible || inspectorPanelCount === 0) return;
+    const frame = requestAnimationFrame(() => {
+      const panel = inspectorPanelRef.current;
+      const dockWidth = dockRef.current?.offsetWidth ?? 0;
+      if (!panel || dockWidth === 0) return;
+      const wanted = Math.min(inspectorPanelCount * 360, dockWidth * 0.7);
+      if (panel.getSize().inPixels < wanted - 1) panel.resize(Math.round(wanted));
+    });
+    return () => cancelAnimationFrame(frame);
+  }, [inspectorPanelCount, inspectorVisible, compactDock, inspectorPanelRef]);
+
   // ── 阶段 1A：导航 props 引用稳定化 ──
   // 下方 6 个动作函数读取大量页面状态、内部调用链每次渲染都产生新引用，
   // 属"需读最新状态且引用不能变"的场景：用 ref 转发当次渲染的最新实现，

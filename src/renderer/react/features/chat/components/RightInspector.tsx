@@ -5,7 +5,7 @@
 // 放大时其余大面板隐藏（保持挂载，浏览器等状态不丢）；关闭后的焦点回退仍由上层 ChatPage 决定。
 // 浏览器面板里是原生视图，会盖住页面：拖动期间先把它的内容区收起（它自己遇到零尺寸就会隐藏原生视图），松手后复原。
 
-import { useRef, useState, type KeyboardEvent, type PointerEvent as ReactPointerEvent, type ReactNode } from "react";
+import { useEffect, useRef, useState, type KeyboardEvent, type PointerEvent as ReactPointerEvent, type ReactNode } from "react";
 import { File, Files, FolderTree, GitCompareArrows, Globe, ListChecks, Maximize2, Minimize2, SquareTerminal, X } from "lucide-react";
 import { useTranslation } from "../../../i18n";
 import { DRAG_DEAD_ZONE } from "./reorder-list";
@@ -55,10 +55,14 @@ export function RightInspector({
   const [resizing, setResizing] = useState(false);
   const asideRef = useRef<HTMLElement>(null);
   const paneRefs = useRef(new Map<string, HTMLElement>());
+  const stopRef = useRef<(() => void) | null>(null);
+  const columnsRef = useRef<PanelColumn[]>([]);
+  useEffect(() => () => stopRef.current?.(), []);
   if (tabs.length === 0) return null;
   const active = tabs.find(tab => tab.id === activeTabId) ?? tabs[0];
   const panels = tabs;
   const columns = reconcileColumns(saved, panels.map(tab => tab.id));
+  columnsRef.current = columns;
   const byId = new Map(panels.map(tab => [tab.id, tab]));
   const expandedId = expanded !== null && panels.length > 1 && panels.some(tab => tab.id === expanded) ? expanded : null;
   const focus = (id: string) => { if (id !== active.id) onTabChange(id); };
@@ -85,41 +89,56 @@ export function RightInspector({
     }
     return null;
   };
-  const headerDrag = (tab: InspectorTab) => ({
-    onPointerDown: (event: ReactPointerEvent<HTMLElement>) => {
-      if (event.button !== 0 || (event.target as HTMLElement).closest("button") || panels.length < 2 || expandedId !== null) return;
-      event.currentTarget.setPointerCapture?.(event.pointerId);
-      setDrag({ id: tab.id, startX: event.clientX, startY: event.clientY, active: false, x: event.clientX, y: event.clientY, drop: null });
-    },
-    onPointerMove: (event: ReactPointerEvent<HTMLElement>) => {
-      if (!drag || drag.id !== tab.id) return;
-      if (!drag.active && Math.hypot(event.clientX - drag.startX, event.clientY - drag.startY) <= DRAG_DEAD_ZONE) return;
-      setDrag({ ...drag, active: true, x: event.clientX, y: event.clientY, drop: dropAt(tab.id, event.clientX, event.clientY) });
-    },
-    onPointerUp: () => {
-      if (drag?.active && drag.drop) setSaved(movePanel(columns, drag.id, drag.drop.id, drag.drop.zone));
-      setDrag(null);
-    },
-    onPointerCancel: () => setDrag(null),
-  });
+  // Drags listen on the window, so they follow the pointer wherever it goes and never depend on pointer capture.
+  const listen = (handlers: { move(event: PointerEvent): void; up(): void; cancel(): void; key?(event: globalThis.KeyboardEvent): void }) => {
+    const stop = () => {
+      window.removeEventListener("pointermove", handlers.move);
+      window.removeEventListener("pointerup", end);
+      window.removeEventListener("pointercancel", abort);
+      if (handlers.key) window.removeEventListener("keydown", handlers.key);
+      stopRef.current = null;
+    };
+    const end = () => { stop(); handlers.up(); };
+    const abort = () => { stop(); handlers.cancel(); };
+    window.addEventListener("pointermove", handlers.move);
+    window.addEventListener("pointerup", end);
+    window.addEventListener("pointercancel", abort);
+    if (handlers.key) window.addEventListener("keydown", handlers.key);
+    stopRef.current = stop;
+    return abort;
+  };
+  const beginPanelDrag = (tab: InspectorTab, event: ReactPointerEvent<HTMLElement>) => {
+    if (event.button !== 0 || (event.target as HTMLElement).closest("button") || panels.length < 2 || expandedId !== null) return;
+    stopRef.current?.();
+    let state: PanelDrag = { id: tab.id, startX: event.clientX, startY: event.clientY, active: false, x: event.clientX, y: event.clientY, drop: null };
+    setDrag(state);
+    const abort = listen({
+      move: next => {
+        if (!state.active && Math.hypot(next.clientX - state.startX, next.clientY - state.startY) <= DRAG_DEAD_ZONE) return;
+        state = { ...state, active: true, x: next.clientX, y: next.clientY, drop: dropAt(tab.id, next.clientX, next.clientY) };
+        setDrag(state);
+      },
+      up: () => {
+        if (state.active && state.drop) setSaved(movePanel(columnsRef.current, state.id, state.drop.id, state.drop.zone));
+        setDrag(null);
+      },
+      cancel: () => setDrag(null),
+      // Escape puts a lifted panel back.
+      key: next => { if (next.key === "Escape") abort(); },
+    });
+  };
   const columnWidths = () => columns.map(column => paneRefs.current.get(column.ids[0]!)?.getBoundingClientRect().width ?? 0);
   const startResize = (index: number, event: ReactPointerEvent<HTMLElement>) => {
     if (event.button !== 0) return;
+    stopRef.current?.();
     const widths = columnWidths();
     const startX = event.clientX;
-    const target = event.currentTarget;
-    target.setPointerCapture?.(event.pointerId);
     setResizing(true);
-    const move = (next: PointerEvent) => setSaved(resizeColumns(columns, index, widths, (widths[index] ?? 0) + next.clientX - startX));
-    const stop = () => {
-      setResizing(false);
-      target.removeEventListener("pointermove", move);
-      target.removeEventListener("pointerup", stop);
-      target.removeEventListener("pointercancel", stop);
-    };
-    target.addEventListener("pointermove", move);
-    target.addEventListener("pointerup", stop);
-    target.addEventListener("pointercancel", stop);
+    listen({
+      move: next => setSaved(resizeColumns(columnsRef.current, index, widths, (widths[index] ?? 0) + next.clientX - startX)),
+      up: () => setResizing(false),
+      cancel: () => setResizing(false),
+    });
   };
   const resizeByKey = (index: number, event: KeyboardEvent<HTMLElement>) => {
     if (event.key !== "ArrowLeft" && event.key !== "ArrowRight") return;
@@ -154,7 +173,7 @@ export function RightInspector({
               style={spot ? { gridColumn: spot.column, gridRow: `${spot.row} / span ${spot.span}` } : undefined}
               onFocusCapture={() => focus(tab.id)} onPointerDownCapture={() => focus(tab.id)}>
               <header className="ff-inspector-pane__head" tabIndex={0} aria-keyshortcuts="Alt+ArrowLeft Alt+ArrowRight Alt+ArrowUp Alt+ArrowDown"
-                {...headerDrag(tab)}
+                onPointerDown={event => beginPanelDrag(tab, event)}
                 onKeyDown={event => {
                   if (event.target !== event.currentTarget) return;
                   // Delete on a focused header closes that panel, like its close button.
