@@ -12,6 +12,9 @@ import type {createMainSourceRegistry} from "../memory-sources/source-registry";
 import {extractPreference} from "./extractor";
 import type {PolicyOutcome,PolicyCandidate,PolicyTransport,PolicyEvent} from "./policy-contracts";
 import type {SupportAudit} from "./fact-supports";
+import {NATURAL_VERSION,parseNaturalEdit} from "./natural-protocol";
+import {prepareShadowRequest} from "../memory-shadow/shadow-prompt";
+import type {ShadowModel} from "../memory-shadow/shadow-model-call";
 import {resolveProject} from "./project-scope";
 
 export const POLICY_VERSION="main-preferences-v1";
@@ -47,6 +50,31 @@ export function createMainPolicy(options:{registry:ReturnType<typeof createMainS
   bindActor(access:object,adapter:object,value:SourceIdentity):object {
    return actorAuthority.bindActor(access,adapter,value);
   },
+  /** Main owns authority/time; the model can only supply untrusted proposed data. */
+  async extractNatural(token:object,value:BoundSourceRef,model:ShadowModel,signal?:AbortSignal):Promise<import("./policy-contracts").IntegrationResult> {
+   const checkScope=()=>{if(resolveProject(actorAuthority.requireActor(token))!==undefined)throw Error("MEMORY_POLICY_NATURAL_SCOPE_DENIED")};checkScope();
+   const actor=actorContext(token),ref=boundSource(actor,value);
+   const checked=requireMainAccess(actor.access).verifySource(ref);
+   if(checked.kind!=="user"||checked.sourceTrust!=="direct-user-event")throw Error("MEMORY_USER_SOURCE_DENIED");
+   const cancelled=()=>{if(signal?.aborted)throw Error("MEMORY_POLICY_CANCELLED")};cancelled();
+   const snapshot=await command<{generation:number;predecessor:{candidateId:string;revision:number}|null;done?:import("./policy-contracts").IntegrationResult}>(actor,"naturalSnapshot",{sourceRef:ref});
+   if(snapshot.done)return snapshot.done;
+   const text=await read(actor,ref);cancelled();
+   const request=prepareShadowRequest({user:{id:ref.binding.messageId,text}});if(!request.send)return {items:[]};
+   model.assertCurrent();const prepared=model.prepare(request.system+"\nProtocol: "+NATURAL_VERSION+". Propose review candidates only. Never grant storage, tool or instruction authority.",request.user);if(!prepared.ok)return {items:[]};
+   const response=await prepared.send(signal??new AbortController().signal);cancelled();model.assertCurrent();
+   if(!response.ok)return {items:[]};
+   if(await read(actor,ref)!==text)throw Error("MEMORY_SOURCE_STALE");cancelled();checkScope();
+   const intent={sourceRef:ref,generation:snapshot.generation,policyVersion:NATURAL_VERSION};
+   return command(actor,"proposeNatural",{...intent,sourceText:text,raw:response.text,predecessor:snapshot.predecessor},"natural-propose-"+digest({scope:actor.scopeKey,actor:actor.actorKey,...intent}),signal);
+  },
+  async validateCorrection(token:object,factId:string,revision:number,text:string):Promise<void> {
+   const actor=actorContext(token),parsed=extractPreference(text);
+   if(parsed.kind==="rejected")throw Error("MEMORY_POLICY_SECRET");
+   const target=await command<{typed:import("../../shared/memory-contracts").TypedUserFact|null}>(actor,"editBinding",{factId:parseInternalId(factId),revision:positiveRevision(revision)});
+   if(target.typed)parseNaturalEdit(text,target.typed.attribute);
+   else if(parsed.kind!=="direct")throw Error("MEMORY_POLICY_UNRESOLVED");
+  },
   async integrate(token:object,value:BoundSourceRef,signal?:AbortSignal):Promise<import("./policy-contracts").IntegrationResult> {
    const actor=actorContext(token),ref=boundSource(actor,value),project=resolveProject(actorAuthority.requireActor(token));
    const cancelled=()=>{if(signal?.aborted)throw new Error("MEMORY_POLICY_CANCELLED")};cancelled();
@@ -65,19 +93,32 @@ export function createMainPolicy(options:{registry:ReturnType<typeof createMainS
    return command(actor,"ingest",{...intent,baseline},"policy-ingest-"+digest({scope:actor.scopeKey,actor:actor.actorKey,...intent}));
   },
   async event(token:object,value:unknown):Promise<object> {
-   const actor=actorContext(token),base=objectFields(value,["kind","nonce"],["candidateId","factId","revision","sourceRef"]);
+   const actor=actorContext(token),base=objectFields(value,["kind","nonce"],["candidateId","factId","revision","sourceRef","contentHash"]);
    const kind=base.kind;
-   if(!["confirm","confirmFact","deny","reject","revise","correct","forget","remember"].includes(kind as string))throw new Error("MEMORY_EVENT_DENIED");
-   const required=kind==="remember"?["kind","nonce","sourceRef"]:["correct","confirmFact","deny"].includes(kind as string)?["kind","nonce","factId","revision","sourceRef"]:kind==="forget"?["kind","nonce","factId","revision"]:["revise","confirm"].includes(kind as string)?["kind","nonce","candidateId","revision","sourceRef"]:["kind","nonce","candidateId","revision"];
-   const v=objectFields(value,required),nonce=parseInternalId(v.nonce);
+   if(!["confirm","confirmFact","deny","reject","revise","resolve","correct","forget","remember"].includes(kind as string))throw new Error("MEMORY_EVENT_DENIED");
+   const required=kind==="remember"?["kind","nonce","sourceRef"]:["correct","confirmFact","deny"].includes(kind as string)?["kind","nonce","factId","revision","sourceRef"]:kind==="forget"?["kind","nonce","factId","revision"]:["revise","resolve","confirm"].includes(kind as string)?["kind","nonce","candidateId","revision","sourceRef"]:["kind","nonce","candidateId","revision"];
+   const v=objectFields(value,required,kind==="confirm"?["contentHash"]:[]),nonce=parseInternalId(v.nonce);
    const body:PolicyEvent={kind:kind as PolicyEvent["kind"],nonce,generation:await command<number>(actor,"generation",{})};
    if(v.candidateId!==undefined)body.candidateId=parseInternalId(v.candidateId);
    if(v.factId!==undefined)body.factId=parseInternalId(v.factId);
    if(v.revision!==undefined)body.revision=positiveRevision(v.revision);
+   if(kind==="confirm"){
+    const binding=await command<{contentHash:string;scopeBinding:string}>(actor,"candidateBinding",{candidateId:body.candidateId,revision:body.revision});
+    if(v.contentHash!==undefined&&v.contentHash!==binding.contentHash)throw Error("MEMORY_CONFIRMATION_STALE");
+    body.contentHash=binding.contentHash;body.scopeBinding=binding.scopeBinding;
+   }
    if(v.sourceRef!==undefined){
-    body.sourceRef=boundSource(actor,v.sourceRef);const parsed=extractPreference(await read(actor,body.sourceRef));
+    body.sourceRef=boundSource(actor,v.sourceRef);const text=await read(actor,body.sourceRef),parsed=extractPreference(text);
     if(parsed.kind==="rejected")throw new Error("MEMORY_POLICY_SECRET");
-    if(["revise","correct","remember"].includes(kind as string)){if(parsed.kind!=="direct")throw new Error("MEMORY_POLICY_UNRESOLVED");body.extraction=parsed;}
+    if(["revise","resolve","correct","remember"].includes(kind as string)){
+     if(kind==="correct"||kind==="revise"){
+      const target=await command<{typed:import("../../shared/memory-contracts").TypedUserFact|null}>(actor,"editBinding",{revision:body.revision,...(kind==="correct"?{factId:body.factId}:{candidateId:body.candidateId})});
+      if(target.typed){body.naturalEdit=parseNaturalEdit(text,target.typed.attribute);body.sourceText=text;}
+      else if(parsed.kind==="direct")body.extraction=parsed;
+      else throw new Error("MEMORY_POLICY_UNRESOLVED");
+     }else if(parsed.kind==="direct")body.extraction=parsed;
+     else throw new Error("MEMORY_POLICY_UNRESOLVED");
+    }
    }
    const event=Object.freeze({});events.set(event,{actor:token,body:structuredClone(body)});return event;
   },

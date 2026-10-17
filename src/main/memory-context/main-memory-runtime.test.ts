@@ -249,6 +249,8 @@ it("includes authorized M assertions with their actual source and time provenanc
   const readsBefore = f.reads; await run.call(f.input()); expect(f.reads).toBeGreaterThan(readsBefore);
   const body = JSON.parse(f.sent[0]), memory = body.messages.find((message: any) => message.content.startsWith("User-stated memory"));
   expect(memory.content).toContain("I prefer bash"); expect(memory.content).toContain("supportSourceRefs");
+  expect(memory.role).toBe("user");
+  expect(body.messages.filter((message: any) => message.role === "system").every((message: any) => !message.content.includes("I prefer bash"))).toBe(true);
   expect(memory.content).toContain(source.ref.sourceId); expect(memory.content).toContain("session-b");
   const actualFact = JSON.parse(memory.content.slice(memory.content.indexOf("\n") + 1))[0];
   expect(actualFact.time.referenceTime).toBe(1699999999000);

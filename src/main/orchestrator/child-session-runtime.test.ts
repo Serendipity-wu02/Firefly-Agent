@@ -18,6 +18,7 @@ import type { HarnessInput } from "./harness/index";
 vi.mock("../token-usage-store", () => ({ recordUsage: () => undefined, recordRequest: () => undefined }));
 
 const roots: string[] = [];
+const plannedWriteFailure = "synthetic planned snapshot failure PRIVATE_BODY_CANARY";
 beforeEach(() => { vi.stubGlobal("fetch", () => { throw new Error("unexpected network request"); }); });
 afterEach(() => {
   vi.restoreAllMocks();
@@ -49,7 +50,7 @@ function fixture(options: { failPlannedWrite?: boolean; cancelAfterPlannedWrite?
         plannedWrites.push(snapshot.toolCalls);
         if (options.failPlannedWrite && !plannedWriteFailed) {
           plannedWriteFailed = true;
-          throw new Error("synthetic planned snapshot failure");
+          throw new Error(plannedWriteFailure);
         }
         rename(from, to);
         if (options.cancelAfterPlannedWrite) controller.abort();
@@ -128,7 +129,10 @@ it("executes no child tool when the complete planned snapshot cannot be atomical
   const f = fixture({ failPlannedWrite: true });
   const result = await f.execute();
   expect(result.status).toBe("failed");
-  expect(result.error?.message).toContain("synthetic planned snapshot failure");
+  expect(result.error?.code).toBe("TASK_RUNTIME_ERROR");
+  expect(result.error?.message).toContain("E_TOOL_EXECUTION_FAILED");
+  expect(JSON.stringify(result)).not.toContain(plannedWriteFailure);
+  expect(new TaskSessionStore(f.root).get(f.session.id)?.error).toEqual(result.error);
   expect(f.plannedWrites.map(batch => batch.map(call => call.toolCallId))).toEqual([f.calls.map(call => call.id)]);
   expect(f.executionSnapshots).toHaveLength(0);
   expect(new HarnessRunStore(f.root).get(f.session.childRunId)?.toolCalls).toEqual([]);

@@ -863,7 +863,7 @@ const shadowCmd = (f: Awaited<ReturnType<typeof fixture>>, kind: string, body: R
   (f.repo as any).shadowCommand({ kind, scopeKey: SHADOW_SCOPE, ...(["status", "export"].includes(kind) ? {} : { commandId: "t-" + Math.random().toString(36).slice(2) }), body: { actorKey: SHADOW_ACTOR, ...body } });
 const enableShadow = (f: Awaited<ReturnType<typeof fixture>>) => shadowCmd(f, "configure", { enabled: true, dailyCap: 50, expectedRevision: shadowCmd(f, "status").revision });
 const shadowAnswer = (quote: string) => Response.json({ choices: [{ message: { role: "assistant", content: JSON.stringify({ facts: [{ subject: "user", attribute: "tool", value: "VS Code", polarity: "positive", status: "asserted", quote, reason: "stated directly" }] }) }, finish_reason: "stop" }] });
-const shadowRequests = (f: Awaited<ReturnType<typeof fixture>>) => f.sent.filter(body => body.includes("userMessage"));
+const shadowRequests = (f: Awaited<ReturnType<typeof fixture>>) => f.sent.filter(body => body.includes("userMessage") && !body.includes("user-fact-v2"));
 async function waitUntil(check: () => boolean) { for (let i = 0; i < 300 && !check(); i++) await new Promise(resolve => setTimeout(resolve, 10)); }
 async function finishTurn(f: Awaited<ReturnType<typeof fixture>>, text: string, runId = "run-a", id = "session-a") {
   const quote = text;
@@ -876,12 +876,35 @@ async function finishTurn(f: Awaited<ReturnType<typeof fixture>>, text: string, 
   return run;
 }
 
-it("shadow extraction does nothing while the switch is off", async () => {
+it("ordinary Chat proposes a new natural fact with shadow off, then settings confirmation reaches another session's request", async () => {
+  const f = await fixture("chat", { withoutShadow: true }), run = await finishTurn(f, "我平时用 VS Code");
+  await f.memory.onTurnSucceeded({ sessionId: "session-a", runId: "run-a" });
+  const pending = await f.memory.settingsHost.getState(f.settingsEvent);
+  expect(pending.facts).toEqual([]);
+  expect(pending.candidates).toMatchObject([{ assertion: "用户使用工具：VS Code", attribute: "tool", value: "VS Code" }]);
+  const candidate = pending.candidates[0];
+  const accepted = await f.memory.settingsHost.applyAction(f.settingsEvent, { kind: "confirm", id: candidate.candidateId, expectedRevision: candidate.revision });
+  expect(accepted.status).toBe("active"); await run.close();
+  f.sessions.set("session-b", { id: "session-b", mode: "chat", messages: [], modelProfileId: "luna" }); f.select("session-b");
+  await f.user("session-b", "按我的习惯推荐编辑器", "b1"); f.memory.authorizeRun(f.event, "session-b");
+  const next = await f.memory.openRun(f.input("session-b", "next-run")); await next.call(f.call());
+  expect(f.sent.at(-1)).toContain("用户使用工具：VS Code");
+  const wire = JSON.parse(f.sent.at(-1)!);
+  expect(wire.messages.find((message: {content:string}) => message.content.startsWith("User-stated memory")).role).toBe("user");
+  expect(wire.messages.filter((message: {role:string}) => message.role === "system").every((message: {content:string}) => !message.content.includes("用户使用工具：VS Code"))).toBe(true);
+  await f.memory.settingsHost.applyAction(f.settingsEvent, { kind: "correct", id: accepted.factId!, expectedRevision: 1, text: "我平时用 Vim" });
+  expect((await f.memory.settingsHost.getState(f.settingsEvent)).facts).toMatchObject([{ revision: 2, assertion: "用户使用工具：Vim" }]);
+  await f.memory.settingsHost.applyAction(f.settingsEvent, { kind: "forget", id: accepted.factId!, expectedRevision: 2 });
+  expect((await f.memory.settingsHost.getState(f.settingsEvent)).facts).toEqual([]); await next.close();
+});
+
+it("shadow stays off while the separate natural pipeline produces only pending candidates", async () => {
   const f = await fixture(); const run = await finishTurn(f, "我平时用 VS Code");
   const before = f.sent.length;
   await f.memory.onTurnSucceeded({ sessionId: "session-a", runId: "run-a" });
   await new Promise(resolve => setTimeout(resolve, 100));
-  expect(f.sent).toHaveLength(before); expect(shadowCmd(f, "status")).toMatchObject({ enabled: false, used: 0, counters: {} });
+  expect(f.sent).toHaveLength(before + 1); expect(shadowRequests(f)).toHaveLength(0); expect(shadowCmd(f, "status")).toMatchObject({ enabled: false, used: 0, counters: {} });
+  expect((await f.memory.settingsHost.getState(f.settingsEvent)).facts).toEqual([]);
   await run.close();
 });
 

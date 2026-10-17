@@ -25,6 +25,8 @@ export interface FireflyRunTerminalResult {
   status: FireflyTerminalStatus;
   /** 机器可读原因码（max_rounds / call_timeout / user_cancelled / run_timeout 等）。 */
   reason?: string;
+  /** Safe origin metadata; no exception messages, provider bodies or tool output. */
+  errorSource?: import("./run-failure").RunFailureSource;
   /**
    * 已冻结的 invariant：渲染端据此决定是否假定 run 已干净结束。
    * - 普通成功、无 unresolved uncertainty → false

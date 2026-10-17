@@ -205,6 +205,35 @@ function mutationTool(id = "write_file"): ToolDefinition {
 // ── Tests ──────────────────────────────────────────────
 
 describe("FireflyHarness completion", () => {
+  it.each(["assistant", "adjustment", "checkpoint"] as const)("keeps %s failures reason-only and preserves context codes", async boundary => {
+    const secret="SYNTHETIC_SECRET_MUST_NOT_ESCAPE";
+    const error=Object.assign(new Error(secret),{code:"MEMORY_CONTEXT_TRANSCRIPT_SECRET"});
+    const log=vi.spyOn(console,"error").mockImplementation(()=>undefined);
+    if (boundary !== "adjustment") fakeStreamChatWithSdk.mockResolvedValueOnce(assistantResponse({text:"safe"}));
+    const result=await runFireflyHarness({
+      systemPrompt:"test",messages:[],tools:[],vendorConfig,
+      ...(boundary === "assistant" ? {transcriptSink:{appendAssistant:async()=>{throw error;}} as unknown as TranscriptSink} : {}),
+      ...(boundary === "adjustment" ? {pollRunAdjustments:()=>Promise.reject(error)} : {}),
+      ...(boundary === "checkpoint" ? {onCheckpoint:()=>{throw error;}} : {}),
+    });
+    expect(result.failure).toEqual({code:"MEMORY_CONTEXT_TRANSCRIPT_SECRET",source:"context"});
+    expect(result.terminateReason).toBe("error");
+    expect(result.finalAnswer).not.toContain(secret);
+    expect(JSON.stringify(log.mock.calls)).not.toContain(secret);
+    log.mockRestore();
+  });
+  it("preserves a context rejection as safe failure metadata without publishing provider or credential text", async () => {
+    const secret="SYNTHETIC_SECRET_MUST_NOT_ESCAPE";
+    const error=Object.assign(new Error(secret),{code:"MEMORY_CONTEXT_TRANSCRIPT_SECRET"});
+    fakeStreamChatWithSdk.mockRejectedValueOnce(error);
+    const log=vi.spyOn(console,"error").mockImplementation(()=>undefined);
+    const result=await runFireflyHarness({systemPrompt:"test",messages:[],tools:[],vendorConfig});
+    expect(result.failure).toEqual({code:"MEMORY_CONTEXT_TRANSCRIPT_SECRET",source:"context"});
+    expect(result.terminateReason).toBe("error");
+    expect(result.finalAnswer).not.toContain(secret);
+    expect(JSON.stringify(log.mock.calls)).not.toContain(secret);
+    log.mockRestore();
+  });
   beforeEach(() => {
     mockedDispatch.mockReset();
     fakeStreamChatWithSdk.mockClear();

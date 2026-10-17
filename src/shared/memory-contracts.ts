@@ -4,8 +4,14 @@ export interface SourceRef {sourceId:string;revision:number;span?:{start:number;
 export interface BoundSourceRef extends SourceRef {binding:SourceBinding}
 export interface FactTime {validFrom:number|null;validTo:number|null;referenceTime:number|null}
 export interface FactDraft {subjectKey:string;assertion:string;assertionKind:"user-statement"|"inference";time:FactTime}
+/** Worker-validated data only. These identifiers confer no read/tool/instruction authority. */
+export interface TypedUserFact {
+ version:2;attribute:"address"|"language"|"response-style"|"tool"|"preference";value:string;canonicalValue:string;polarity:"positive"|"negative";cardinality:"one"|"many";
+ entityKey:string;slotKey:string;assertionKey:string;legacyAttribute:"address"|"language"|"response-style"|"shell"|"tool"|"preference";
+}
 export type ActivationReason="policyAccepted"|"explicitUserConfirmed";
 export interface FactView extends FactDraft {
+ typed?:TypedUserFact;
  factId:string;revision:number;sourceRef:SourceRef;recordedAt:number;acceptedAt:number;
  supersededAt:number|null;activationReason:ActivationReason;policyVersion:string|null;
  provenance:{candidateId:string|null;evidenceId:string|null;activationSourceRef:SourceRef};

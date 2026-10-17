@@ -49,6 +49,8 @@ import { appendInternalTranscriptMessage, createInternalTranscriptMessage } from
 import { callLLM, summarizeHistory } from "./harness-llm";
 import { ChatTimeStreamPrefixFilter } from "../../chat-time-stream-filter";
 import { runToolRound, type ToolRoundOutcome } from "./tool-round";
+import { publicRunFailure, type RunFailure, type RunFailureSource } from "../../../shared/run-failure";
+import { ContextError } from "../../memory-context/context-contracts";
 import {
   buildStableSystemPrefix,
   type PromptLayers,
@@ -76,6 +78,7 @@ export interface HarnessRun {
   /** 已完成的工具执行轮数（最终无工具的回复轮不计入；LLM 请求轮数 = rounds + 最终回复轮）。 */
   rounds: number;
   checkpointFailure?: string;
+  failure?: RunFailure;
   checkpoint(): void;
   /** Infrastructure failure recorded before owned cancellation starts. */
   toolExecutionFailure?: { error: unknown };
@@ -154,7 +157,8 @@ async function runHarnessLoop(run: HarnessRun): Promise<HarnessResult> {
         adjustments = await adjustmentPoll;
       } catch (error) {
         // 双写任一步失败（fail-closed）：pending 保留，终止运行，不假装注入成功
-        return finishRun(run, `插话提交失败：${errorMessage(error)}`, true, "error");
+        const failure = recordFailure(run, error, "runtime");
+        return finishRun(run, `插话提交失败：${failure.code}`, true, "error");
       }
       if (adjustments.length > 0) {
         for (const adjustment of adjustments) {
@@ -195,17 +199,8 @@ async function runHarnessLoop(run: HarnessRun): Promise<HarnessResult> {
     } catch (err) {
       // signal abort 属于用户取消：按 cancelled 结算，不归类为 error。
       if (input.signal?.aborted) return abortedResult(run);
-      // 失败摘要：模型名 / 请求地址 / 错误码置顶，堆栈跟在后面，定位不用翻设置。
-      const errorMsg = err instanceof Error ? err.message : String(err);
-      const errCode = (err as { code?: string }).code ?? "无错误码";
-      console.error(
-        `${LOG_PREFIX} LLM call failed:`,
-        `\n  model id: ${input.vendorConfig.model}`,
-        `\n  baseUrl: ${input.vendorConfig.baseUrl}`,
-        `\n  error: ${errCode} ${errorMsg}`,
-        err,
-      );
-      return finishRun(run, `抱歉，模型调用失败：${errorMsg}`, true, "error");
+      const failure = recordFailure(run, err, err instanceof ContextError ? "context" : "model");
+      return finishRun(run, failure.code, true, "error");
     }
 
     // ── Assistant response 必须写回 transcript（否则模型下一轮看不到自己上一轮的回复）──
@@ -219,7 +214,8 @@ async function runHarnessLoop(run: HarnessRun): Promise<HarnessResult> {
         roundId,
       });
     } catch (error) {
-      return finishRun(run, `会话轨迹保存失败：${errorMessage(error)}`, true, "error");
+      const failure = recordFailure(run, error, "runtime");
+      return finishRun(run, `会话轨迹保存失败：${failure.code}`, true, "error");
     }
     if (response.text) {
       run.streamController.bufferProgressContent(response.text);
@@ -248,9 +244,8 @@ async function runHarnessLoop(run: HarnessRun): Promise<HarnessResult> {
         // 非取消错误：统一走 finishRun 终态结算，不得冲出 runFireflyHarness。
         if (!run.toolExecutionFailure && input.signal?.aborted) return abortedResult(run);
         error = run.toolExecutionFailure ? run.toolExecutionFailure.error : error;
-        console.error(`${LOG_PREFIX} tool round failed:`, error);
-        const errorMsg = error instanceof Error ? error.message : String(error);
-        return finishRun(run, `工具执行异常：${errorMsg}`, true, "error");
+        const failure = recordFailure(run, error, "tool");
+        return finishRun(run, `工具执行异常：${failure.code}`, true, "error");
       }
       if (outcome === "cancelled") return abortedResult(run);
       input.onEvent?.({ type: "round_end", roundId });
@@ -276,7 +271,8 @@ async function runHarnessLoop(run: HarnessRun): Promise<HarnessResult> {
       endAdjustments = await input.pollRunAdjustments?.() ?? [];
     } catch (error) {
       // 双写任一步失败（fail-closed）：pending 保留，终止运行，不假装注入成功
-      return finishRun(run, `插话提交失败：${errorMessage(error)}`, true, "error");
+      const failure = recordFailure(run, error, "runtime");
+      return finishRun(run, `插话提交失败：${failure.code}`, true, "error");
     }
     if (endAdjustments.length > 0) {
       const intermediate = run.streamController.commitProgressBuffer() + truncatedSuffix;
@@ -518,8 +514,10 @@ function checkpoint(run: HarnessRun): void {
       at: Date.now(),
     });
   } catch (error) {
-    run.checkpointFailure = error instanceof Error ? error.message : String(error);
-    console.error(`${LOG_PREFIX} checkpoint failed:`, error);
+    const failure = publicRunFailure(error);
+    run.failure ??= failure;
+    run.checkpointFailure = failure.code;
+    console.error(`${LOG_PREFIX} checkpoint failed:`, {runId:run.input.runId,round:run.rounds,...failure});
   }
 }
 
@@ -560,7 +558,7 @@ async function cancelledResult(run: HarnessRun): Promise<HarnessResult> {
   run.input.quiesceExecution?.();
   await settleRun(run);
   if (run.checkpointFailure) {
-    return buildResult(`执行状态保存失败：${run.checkpointFailure}`, run.state, true, "error", run.rounds);
+    return buildResult(`执行状态保存失败：${run.checkpointFailure}`, run.state, true, "error", run.rounds, run.failure);
   }
   return {
     finalAnswer: "",
@@ -586,9 +584,9 @@ async function finishRun(
     const message = run.toolExecutionFailure
       ? finalAnswer + (finalAnswer.includes(checkpointError) ? "" : `\n${checkpointError}`)
       : checkpointError;
-    return buildResult(message, run.state, true, "error", run.rounds);
+    return buildResult(message, run.state, true, "error", run.rounds, run.failure);
   }
-  return buildResult(finalAnswer, run.state, terminated, terminateReason, run.rounds);
+  return buildResult(finalAnswer, run.state, terminated, terminateReason, run.rounds, run.failure);
 }
 
 /** 总超时的兜底回复：带上待办与未知副作用清单，方便用户续跑。 */
@@ -647,6 +645,7 @@ function buildResult(
   terminated: boolean,
   terminateReason: HarnessResult["terminateReason"],
   rounds: number,
+  failure?: RunFailure,
 ): HarnessResult {
   return {
     finalAnswer,
@@ -654,10 +653,18 @@ function buildResult(
     terminated,
     terminateReason,
     rounds,
+    ...(failure ? {failure} : {}),
   };
 }
 
 // ═══ 小工具 ═══════════════════════════════════════════════
+
+function recordFailure(run: HarnessRun, error: unknown, source: RunFailureSource): RunFailure {
+  const failure = publicRunFailure(error, source);
+  run.failure = failure;
+  console.error(`${LOG_PREFIX} run failed:`, {runId:run.input.runId,round:run.rounds,...failure});
+  return failure;
+}
 
 /** 把模型回复规约为 transcript 消息（适配器未提供时兜底构造）。 */
 function toAssistantMessage(response: ChatResponse): ChatMessage {
@@ -666,11 +673,6 @@ function toAssistantMessage(response: ChatResponse): ChatMessage {
     content: response.text,
     ...(response.toolCalls?.length ? { toolCalls: response.toolCalls } : {}),
   };
-}
-
-/** 统一错误消息提取（轨迹/工具失败文案用）。 */
-function errorMessage(error: unknown): string {
-  return error instanceof Error ? error.message : String(error);
 }
 
 /** 防御外部共享引用：initialState 的调用方在 run 期间可能复用/修改原对象。 */

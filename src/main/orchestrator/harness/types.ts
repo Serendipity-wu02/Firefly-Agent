@@ -329,6 +329,8 @@ export interface HarnessInput {
 }
 
 export interface HarnessResult {
+  /** Allowlisted code and origin, independent of human-readable/provider error text. */
+  failure?: import("../../../shared/run-failure").RunFailure;
   /** 最终回复文本 */
   finalAnswer: string;
   /** 最终 Agent State 快照 */

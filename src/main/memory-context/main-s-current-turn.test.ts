@@ -37,6 +37,13 @@ async function fixture(facts=false,captureOnly=false,revisionOffset=0){
  function stream(){const sink=createTranscriptSink({store,conversationId:"session-a",runId:"run-current",assistantTurnId:"assistant-current"});return {request:{...request,stream:true},stream:{conversationId:"session-a",runId:"run-current",userTurnId:"u2",assistantTurnId:"assistant-current",sink,onEvent:()=>{},isCurrent:()=>true}}}
  return {...f,store,port,sent,counted,user,forget,request,stream};
 }
+it("controlled context keeps persisted memory values out of system authority",async()=>{
+ const f=await fixture(true);expect((await f.port.run({request:f.request})).status).toBe("sent");
+ const body=f.sent[0] as {input:Array<{role:string;content:unknown}>};
+ const memory=body.input.find(message=>JSON.stringify(message.content).includes("User-stated memory"));
+ expect(memory?.role).toBe("user");
+ expect(body.input.filter(message=>["system","developer"].includes(message.role)).every(message=>!JSON.stringify(message.content).includes("I prefer bash"))).toBe(true);
+});
 it.each([false,true])("normal policy forget denies current-turn dispatch with facts=%s",async facts=>{
  const f=await fixture(facts);await f.forget();
  await expect(f.port.run(f.stream())).rejects.toThrow("MEMORY_CONTEXT_SOURCE_UNAVAILABLE");

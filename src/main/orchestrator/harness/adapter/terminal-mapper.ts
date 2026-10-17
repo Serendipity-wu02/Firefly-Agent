@@ -1,4 +1,5 @@
 import type { FireflyRunTerminalResult } from "../../../../shared/run-terminal";
+import { publicRunFailure, type RunFailure } from "../../../../shared/run-failure";
 
 /**
  * Harness 结束原因到旧 AgentLoop 结果和标准终态（canonical terminal）的纯映射。
@@ -26,6 +27,7 @@ export function mapTerminateReason(
 export function mapTerminateReasonToTerminal(
   reason: HarnessTerminateReason,
   hasUncertainEffects: boolean = false,
+  failure?: RunFailure,
 ): FireflyRunTerminalResult {
   switch (reason) {
     case "max_rounds":
@@ -35,6 +37,10 @@ export function mapTerminateReasonToTerminal(
     case "cancelled":
       return { status: "cancelled", reason: "user_cancelled", externalEffectsMayContinue: true };
     case "error":
+      if (failure) {
+        const safe = publicRunFailure(failure);
+        return {status:"runtime_error",reason:safe.code,errorSource:safe.source,externalEffectsMayContinue:true};
+      }
       return { status: "runtime_error", reason: "E_HARNESS_FAILURE", externalEffectsMayContinue: true };
     default:
       return { status: "success", externalEffectsMayContinue: hasUncertainEffects };

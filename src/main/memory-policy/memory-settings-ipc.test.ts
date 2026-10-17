@@ -30,6 +30,15 @@ vi.mock("electron", () => ({ contextBridge: { exposeInMainWorld: (name: string, 
   ipcRenderer: { invoke: preload.invoke, send: vi.fn(), on: vi.fn(), removeListener: vi.fn(), off: vi.fn() }, webUtils: {} }));
 
 describe("settings memory IPC trust boundary", () => {
+  it("preserves a candidate content hash through the DTO and checks it before forwarding confirmation", async () => {
+    const f = fixture(), contentHash = "a".repeat(64);
+    f.state.candidates[0].contentHash = contentHash;
+    expect((await f.api.getMemoryPanelState(f.event)).candidates[0].contentHash).toBe(contentHash);
+    expect(await f.api.applyMemoryPanelAction(f.event, { ...confirm, contentHash: "b".repeat(64) })).toEqual({ status: "rejected", reason: "MEMORY_CONFIRMATION_STALE" });
+    expect(f.actions).toEqual([]);
+    expect(await f.api.applyMemoryPanelAction(f.event, { ...confirm, contentHash })).toMatchObject({ status: "active" });
+    expect(f.actions).toEqual([{ ...confirm, contentHash }]);
+  });
   it("accepts the exact settings main frame and returns current state", async () => {
     const f = fixture();
     expect(await f.api.getMemoryPanelState(f.event)).toEqual(f.state);

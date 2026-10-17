@@ -39,7 +39,7 @@ it.each(["started persistence", "transcript append", "committed persistence", "r
     const siblingStarted = deferred();
     const siblingAborted = deferred();
     const actualSettlement = deferred();
-    const error = new Error(`synthetic ${failurePoint} failure`);
+    const error = Object.assign(new Error(`synthetic ${failurePoint} failure`), {code:"E_TOOL_EXECUTION_FAILED"});
     let returned = false;
     let quiesceCalls = 0;
     let siblingSettled = false;
@@ -98,8 +98,13 @@ it.each(["started persistence", "transcript append", "committed persistence", "r
       actualSettlement.resolve();
       const result = await pending;
       expect(result.terminateReason).toBe("error");
-      expect(result.finalAnswer).toContain(error.message);
-      if (failurePoint === "started then checkpoint") expect(result.finalAnswer).toContain("secondary checkpoint failure");
+      expect(result.failure).toEqual({code:"E_TOOL_EXECUTION_FAILED",source:"tool"});
+      expect(result.finalAnswer).toContain("E_TOOL_EXECUTION_FAILED");
+      expect(result.finalAnswer).not.toContain(error.message);
+      if (failurePoint === "started then checkpoint") {
+        expect(result.finalAnswer).toContain("执行状态保存失败：E_HARNESS_FAILURE");
+        expect(result.finalAnswer).not.toContain("secondary checkpoint failure");
+      }
       expect(siblingSettled).toBe(true);
       expect(external.signal.aborted).toBe(false);
       expect(fakeLLM).toHaveBeenCalledOnce();

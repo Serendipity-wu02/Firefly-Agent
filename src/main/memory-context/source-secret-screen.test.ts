@@ -1,5 +1,38 @@
 import { expect, it } from "vitest";
 import { assertContextSecretFree } from "./source-secret-screen";
+
+const maskedGhStatus = "github.com\n  - Active account: true\n  - Token: gho_" + "*".repeat(36) + "\n  - Token scopes: 'repo'\n";
+it.each([
+ maskedGhStatus, "token: ********", 'api_key="********"', "password: '********'", "密钥：********",
+ {token:"********", nested:{auth_token:"gho_"+"*".repeat(36)}},
+ JSON.stringify({stdout:maskedGhStatus,exitCode:1,errorCode:"E_SHELL_EXIT"}),
+ JSON.stringify({role:"tool",content:JSON.stringify({output:JSON.stringify({stdout:maskedGhStatus})})}),
+])("allows only fully masked credential placeholders, including serialized tool results %#", value=>{
+ expect(()=>assertContextSecretFree(value)).not.toThrow();
+});
+it.each([
+ "token: gho_CANARY********", "token: ********CANARY", "token: ****-CANARY", "token: gho_***CANARY***",
+ 'token: "******** CANARY"', 'token: "********" + CANARY', "token: ********.CANARY",
+ "token: ********\u200bCANARY", "token: ****\\nCANARY", "token: gho_***\\u0041",
+ "password: ********;SYNTHETIC_ONLY_CANARY", 'token: "********", "SYNTHETIC_ONLY_CANARY"',
+ "token: ********}SYNTHETIC_ONLY_CANARY", "token: ********]SYNTHETIC_ONLY_CANARY",
+ {token:"gho_CANARY********"}, {token:"******** CANARY"}, {token:"********\u0000CANARY"},
+ JSON.stringify({stdout:'token: "******** CANARY"'}),
+ JSON.stringify({stdout:maskedGhStatus,access_token:"SYNTHETIC_ONLY_CANARY"}),
+ '{"token":123456}',
+ '{"api_key=SYNTHETIC_ONLY_CANARY":"ok"}',
+ '{"ghp_abcdefghijklmnop123456":"ok"}',
+ '{"\\u0061pi_key=SYNTHETIC_ONLY_CANARY":"ok"}',
+ maskedGhStatus+"api_key=SYNTHETIC_ONLY_CANARY", "token: ****; password=SYNTHETIC_ONLY_CANARY",
+])("rejects partial masks, disguised values, and secrets adjacent to placeholders %#",value=>{
+ expect(()=>assertContextSecretFree(value)).toThrow(/^MEMORY_CONTEXT_TRANSCRIPT_SECRET$/);
+});
+it.each([
+ '{"token":"SYNTHETIC_ONLY_CANARY","token":"********"}',
+ '{"token":"SYNTHETIC_ONLY_CANARY","\\u0074oken":"********"}',
+])("rejects duplicate JSON keys before a later mask can hide an earlier secret %#",value=>{
+ expect(()=>assertContextSecretFree(value)).toThrow(/^MEMORY_CONTEXT_INPUT_INVALID$/);
+});
 it.each([
  "Explain the api_key field and password validation", "The refresh_token property is optional",
  "请解释密码字段如何校验，不要保存密钥", "x".repeat(120000),

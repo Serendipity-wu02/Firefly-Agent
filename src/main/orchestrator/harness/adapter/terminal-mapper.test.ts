@@ -2,6 +2,11 @@ import { describe, expect, it } from "vitest";
 import { mapTerminateReason, mapTerminateReasonToTerminal } from "./terminal-mapper";
 
 describe("harness terminal mapper", () => {
+  it("retains safe context failure metadata instead of replacing it with a generic harness code", () => {
+    expect(mapTerminateReasonToTerminal("error", true, {source:"context",code:"MEMORY_CONTEXT_TRANSCRIPT_SECRET"})).toStrictEqual({
+      status:"runtime_error",reason:"MEMORY_CONTEXT_TRANSCRIPT_SECRET",errorSource:"context",externalEffectsMayContinue:true,
+    });
+  });
   it.each([
     [undefined, "no_tool"],
     ["cancelled", "no_tool"],

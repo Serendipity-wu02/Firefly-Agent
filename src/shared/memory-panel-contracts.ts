@@ -6,6 +6,7 @@ export interface MemoryPanelAction {
   id: string;
   expectedRevision: number;
   text?: string;
+  contentHash?: string;
 }
 export interface MemoryPanelOutcome {
   status: "candidate" | "active" | "rejected" | "suppressed" | "forgotten" | "pending-review";
@@ -29,6 +30,7 @@ export interface MemoryPanelCandidate {
   projectName?: string;
   /** Main-internal; removed before the renderer sees it. */
   projectKey?: string;
+  contentHash?: string;
 }
 /** Structural mirror of the metadata-only native PresenceCoverage, without a Main import. */
 export interface MemoryPanelCoverage {
