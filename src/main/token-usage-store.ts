@@ -395,7 +395,7 @@ export function recordSkillUse(skillId: string): void {
   if (!id || UNSAFE_KEYS.has(id)) return;
   bestEffort("skill call", () => {
     const skills = activityFor(dayFor(ensureLoaded())).skills;
-    skills[id] = (skills[id] ?? 0) + 1;
+    skills[id] = (Object.prototype.hasOwnProperty.call(skills, id) ? skills[id]! : 0) + 1;
     scheduleFlush();
   });
 }
@@ -406,7 +406,7 @@ export function recordPluginCall(pluginId: string): void {
   if (!id || UNSAFE_KEYS.has(id)) return;
   bestEffort("plugin call", () => {
     const plugins = activityFor(dayFor(ensureLoaded())).plugins;
-    plugins[id] = (plugins[id] ?? 0) + 1;
+    plugins[id] = (Object.prototype.hasOwnProperty.call(plugins, id) ? plugins[id]! : 0) + 1;
     scheduleFlush();
   });
 }

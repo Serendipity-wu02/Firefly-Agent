@@ -183,4 +183,13 @@ describe("session stats", () => {
       expect(attribution.delegations).toBe(1);
     });
   });
+
+  it("counts skills and plugins named like inherited object members as plain numbers", async () => {
+    await setup();
+    const token = await import("./token-usage-store");
+    token.recordSkillUse("toString"); token.recordSkillUse("toString"); token.recordPluginCall("valueOf");
+    const history = token.getUsageHistory(1);
+    expect(history.skills).toEqual([{ id: "toString", count: 2 }]);
+    expect(history.plugins).toEqual([{ id: "valueOf", count: 1 }]);
+  });
 });

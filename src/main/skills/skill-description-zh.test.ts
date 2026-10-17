@@ -54,6 +54,19 @@ describe("skill description translation", () => {
     expect(translate).toHaveBeenCalledOnce();
   });
 
+  it("gives a skill added during a running translation its own pass afterwards", async () => {
+    let release!: () => void;
+    const gate = new Promise<void>(resolve => { release = resolve; });
+    const seen: string[][] = [];
+    const translate = async (batch: readonly { id: string }[]) => { seen.push(batch.map(item => item.id)); await gate; return Object.fromEntries(batch.map(item => [item.id, "好"])); };
+    const first = translateMissing([skill("a", "A.")], translate);
+    const second = translateMissing([skill("a", "A."), skill("b", "B.")], translate);
+    release();
+    expect(await second).toEqual({ a: "好", b: "好" });
+    await first;
+    expect(seen).toEqual([["a"], ["b"]]);
+  });
+
   it("refuses ids that could poison the cache", async () => {
     const translate = vi.fn(async () => ({}));
     await translateMissing([skill("__proto__", "Bad.")], translate);

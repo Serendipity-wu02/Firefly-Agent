@@ -56,11 +56,23 @@ export function cachedZhMap(skills: readonly SkillText[]): Record<string, string
   return result;
 }
 
-let running: Promise<Record<string, string>> | null = null;
+interface Run { promise: Promise<Record<string, string>>; covered: Set<string> }
+let running: Run | null = null;
+const keyOf = (skill: SkillText) => `${skill.id}:${hash(skill.description)}`;
 
-/** Translates the skills that still lack a Chinese description, saves them, and returns every Chinese description now known. */
+/**
+ * Translates the skills that still lack a Chinese description, saves them, and returns every Chinese description now known.
+ * Overlapping requests share one run; a request that names skills the active run does not cover (one imported meanwhile)
+ * waits for it and then gets its own pass for the rest.
+ */
 export function translateMissing(skills: readonly SkillText[], translate: Translator): Promise<Record<string, string>> {
-  running ??= (async () => {
+  if (running) {
+    const active = running;
+    if (skills.every(skill => active.covered.has(keyOf(skill)))) return active.promise;
+    return active.promise.catch(() => ({})).then(() => translateMissing(skills, translate));
+  }
+  const run: Run = { covered: new Set(skills.map(keyOf)), promise: Promise.resolve({}) };
+  run.promise = (async () => {
     const cache = readCache();
     const missing = skills.filter(skill => !UNSAFE.has(skill.id) && skill.description.trim() && !cachedZh(skill.id, skill.description, cache));
     for (let start = 0; start < missing.length; start += BATCH) {
@@ -74,8 +86,9 @@ export function translateMissing(skills: readonly SkillText[], translate: Transl
       store()?.write(cache);
     }
     return cachedZhMap(skills);
-  })().finally(() => { running = null; });
-  return running;
+  })().finally(() => { if (running === run) running = null; });
+  running = run;
+  return run.promise;
 }
 
 /** Prompt for one batch: JSON in, a JSON object of id → Chinese out. */
