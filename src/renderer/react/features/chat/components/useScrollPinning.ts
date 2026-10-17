@@ -21,6 +21,8 @@ export interface ScrollPinning {
   containerRef: RefObject<HTMLDivElement | null>;
   onScroll(): void;
   scrollToBottom(behavior?: ScrollBehavior): void;
+  /** A scroll the user drives from outside the container (the scroll pill): counts like a wheel or scrollbar drag. */
+  markUserScroll(): void;
 }
 
 export function useScrollPinning(onAwayChange?: (away: boolean) => void): ScrollPinning {
@@ -46,6 +48,8 @@ export function useScrollPinning(onAwayChange?: (away: boolean) => void): Scroll
     element.scrollTo({ top: element.scrollHeight, behavior });
     reportAway(false);
   }, [reportAway]);
+
+  const markUserScroll = useCallback(() => { lastUserInputRef.current = performance.now(); }, []);
 
   const onScroll = useCallback(() => {
     const element = containerRef.current;
@@ -109,5 +113,5 @@ export function useScrollPinning(onAwayChange?: (away: boolean) => void): Scroll
     };
   }, [reportAway]);
 
-  return { containerRef, onScroll, scrollToBottom };
+  return { containerRef, onScroll, scrollToBottom, markUserScroll };
 }
