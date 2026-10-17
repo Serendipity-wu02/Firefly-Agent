@@ -33,6 +33,8 @@ export interface ChatPageNavigationProps {
   onNewTemporaryChat?: () => void;
   /** Sessions with a run in flight, shown with a spinner in the list. */
   runningSessionIds?: readonly string[];
+  /** Sessions waiting on the user (approval, question or plan review). */
+  needsInputSessionIds?: readonly string[];
   onTogglePanel: (panel: ChatPagePanel) => void;
   onSelectSession: (sessionId: string) => void;
   onOpenProject: (workspaceRoot: string) => void;
@@ -66,6 +68,7 @@ export const ChatPageNavigation = React.memo(function ChatPageNavigation({
   onNewTask,
   onNewTemporaryChat,
   runningSessionIds,
+  needsInputSessionIds,
   onTogglePanel,
   onSelectSession,
   onOpenProject,
@@ -204,6 +207,7 @@ export const ChatPageNavigation = React.memo(function ChatPageNavigation({
             listStatus={sessionListStatus}
             activeSessionId={activeSessionId}
             runningSessionIds={runningSessionIds}
+            needsInputSessionIds={needsInputSessionIds}
             onSelect={onSelectSession}
             onOpenProject={onOpenProject}
             onRename={onRenameSession}

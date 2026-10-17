@@ -76,6 +76,7 @@
     "planApprovedAutoMessage": "已批准计划，请开始执行。",
     "resumeLastTaskMessage": "继续上次任务",
     "emptyGreeting": "有什么可以帮你的吗？",
+    "projectChooser": {"label": "选择项目", "browse": "选择其他文件夹", "browseFirst": "选择项目文件夹"},
     "emptyGreetingTask": "我们要构建什么？",
     "emptyHint": {
       "chat": "随便聊聊，或者让我帮你查资料、写点东西。",
@@ -924,6 +925,8 @@
     "recentSessions": "最近任务",
     "noSearchResults": "没有匹配的任务",
     "viewProjectsShort": "项目",
+    "viewStatusShort": "按状态",
+    "status": {"needs-input": "需要你处理", "working": "进行中", "done": "已完成", "needsInputLabel": "等待你处理"},
     "viewMergedShort": "合并",
     "dragToReorder": "拖动排序",
     "reorderHint": "拖动或按 Alt+↑ / Alt+↓ 调整顺序",

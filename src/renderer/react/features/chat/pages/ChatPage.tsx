@@ -25,6 +25,10 @@ import {
 import { ChatMessageList } from "../components/ChatMessageList";
 import { ChatPageNavigation, type ChatPagePanel } from "../components/ChatPageNavigation";
 import { useNavigationHistory } from "./useNavigationHistory";
+import { CodeRain } from "../components/CodeRain";
+import { PixelFirefly } from "../components/PixelFirefly";
+import { ProjectChooserCard, recentProjects } from "../components/ProjectChooserCard";
+import { sessionsNeedingInput } from "./sidebar-status";
 import {
   ContextCompressionNotice,
   FileDropOverlay,
@@ -1042,7 +1046,13 @@ export function ChatPage() {
     const picked = await store.pickWorkspaceFolder();
     if (!picked.ok || !picked.path) return;
 
-    const workspace = { path: picked.path, displayName: picked.displayName ?? t("chatPage.defaultWorkspaceName") };
+    await applyWorkspace(targetMode, { path: picked.path, displayName: picked.displayName ?? t("chatPage.defaultWorkspaceName") });
+  }
+
+  /** Puts the current (or the next new) task of this mode into a workspace folder. */
+  async function applyWorkspace(targetMode: ConversationMode, workspace: { path: string; displayName: string }) {
+    const store = chatStore();
+    if (!store) return;
     setWorkspaceNames((current) => ({ ...current, [targetMode]: workspace.displayName }));
 
     const activeId = activeSessionIdsRef.current[targetMode];
@@ -1487,6 +1497,7 @@ export function ChatPage() {
 
   // Sessions with a run in flight, for the sidebar spinner. The registry is a ref: a run starting flips the busy state,
   // a run finishing bumps the registry version, and either recomputes the list.
+  const needsInputSessionIds = useMemo(() => sessionsNeedingInput(interactionsBySession, planReviewBySession), [interactionsBySession, planReviewBySession]);
   const runningSessionIds = useMemo(() => Object.keys(activeRunsBySession.current), [runRegistryVersion, modelBusyByMode]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // ── 阶段 1A：导航 props 引用稳定化 ──
@@ -1595,6 +1606,7 @@ export function ChatPage() {
       <ChatPageNavigation
         collapsed={collapsed}
         runningSessionIds={runningSessionIds}
+        needsInputSessionIds={needsInputSessionIds}
         activePanel={activePanel}
         onPanelSlot={setPanelSlot}
         navHistory={navHistoryProp}
@@ -1721,9 +1733,20 @@ export function ChatPage() {
           </ChatInspectorActionsContext.Provider>
         )}
         <ContextCompressionNotice visible={isCompressingContext} />
+        {!hasMessages && <CodeRain />}
         {!hasMessages && <div className="ff-workspace-greeting">
-          <h2 className="ff-workspace-greeting__title">{t(mode === "chat" ? "chatPage.emptyGreeting" : "chatPage.emptyGreetingTask")}</h2>
-          <p className="ff-workspace-greeting__hint">{t(`chatPage.emptyHint.${mode}`)}</p>
+          {mode === "chat" ? <>
+            <h2 className="ff-workspace-greeting__title">{t("chatPage.emptyGreeting")}</h2>
+            <p className="ff-workspace-greeting__hint">{t(`chatPage.emptyHint.${mode}`)}</p>
+          </> : (
+            // Work / Code start by choosing where the task runs, like the reference's environment card.
+            <ProjectChooserCard
+              projects={recentProjects(sessionsByMode[mode] ?? [])}
+              selectedPath={activeSession?.workspaceBinding?.workspaceRoot ?? pendingWorkspaceByMode[mode]?.path}
+              onPick={(project) => void applyWorkspace(mode, { path: project.path, displayName: project.displayName })}
+              onBrowse={() => void chooseWorkspace()}
+            />
+          )}
         </div>}
         {mode === "chat" && (pendingTemporary || activeSession?.temporary === true) && (
           <p className="ff-temporary-chat-banner" role="status">
@@ -1748,6 +1771,7 @@ export function ChatPage() {
             value={draft}
             mode={mode}
             docked={hasMessages}
+            mascot={hasMessages ? undefined : <PixelFirefly className="ff-composer-mascot" />}
             conversationId={activeSessionId ?? undefined}
             workspaceName={workspaceNames[mode]}
             workspaceRoot={activeSession?.workspaceBinding?.workspaceRoot}

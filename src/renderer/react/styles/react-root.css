@@ -522,6 +522,9 @@ body {
 
 /* Empty conversation: the greeting is centred in the free space above the docked composer. */
 .ff-workspace-greeting { display: none; }
+/* The code rain paints behind the new-session page; the greeting and composer stay above it. */
+.ff-workspace.is-empty .ff-workspace-greeting { position: relative; z-index: 1; }
+.ff-workspace.is-empty .ff-workspace-composer { z-index: 1; }
 .ff-workspace.is-empty .ff-workspace-greeting {
   display: flex;
   flex: 1 1 auto;

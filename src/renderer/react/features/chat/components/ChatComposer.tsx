@@ -1,3 +1,4 @@
+import type { ReactNode } from "react";
 import { DesktopAsrButton } from "./DesktopAsrButton";
 import { Sender } from "@ant-design/x";
 import { Popover } from "antd";
@@ -19,6 +20,8 @@ interface ChatComposerProps {
   value: string;
   mode: string;
   docked: boolean;
+  /** Something sitting on the composer's top edge (the pixel Firefly on the new-session page). */
+  mascot?: ReactNode;
   /** 当前会话 ID：用于上下文用量与计划模式状态。 */
   conversationId?: string;
   workspaceName?: string;
@@ -241,6 +244,7 @@ export function ChatComposer({
   value,
   mode,
   docked,
+  mascot,
   conversationId,
   workspaceName,
   workspaceRoot,
@@ -378,6 +382,7 @@ export function ChatComposer({
           </button>
         </div>
       )}
+      {mascot && <div className="ff-composer-mascot-anchor">{mascot}</div>}
       <div className="ff-composer-shell">
         <input
           ref={fileInputRef}
